@@ -1,5 +1,9 @@
+import {AddressCard} from "@/app/dashboard/components/AddressCard";
+
 export default function Dashboard() {
     return (
-        <>HOLA en el dashboard</>
+        <>
+            <AddressCard/>
+        </>
     );
 }
