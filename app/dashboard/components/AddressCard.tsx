@@ -11,22 +11,24 @@ import {
     Chip,
     Divider,
     List,
-    ListItemButton,
-    ListItemSecondaryAction,
 } from "@mui/material";
 
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import {BaseIcon} from "@/app/components/atoms/BaseIcon";
-import {OPIcon} from "@/app/components/atoms/OPIcon";
 import BaseChainItem from "@/app/components/molecules/BaseChainItem";
 import OptimismChainItem from "@/app/components/molecules/OptimismChainItem";
 import {useMemo, useState} from "react";
 import CeloChainItem from "@/app/components/molecules/CeloChainItem";
+import {Address} from "abitype";
 
-export const AddressCard = () => {
+interface IAddressCardProps {
+    Address: Address
+}
+
+export const AddressCard = ({
+        Address
+    }: IAddressCardProps) => {
     const [showMore, setShowMore] = useState(false);
 
     const bgGradient = useMemo(() => {
