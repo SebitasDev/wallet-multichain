@@ -1,0 +1,70 @@
+"use client";
+
+import { Box, Button, Stack, Typography } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+
+type Props = {
+  onAdd: () => void;
+};
+
+export function TopBar({ onAdd }: Props) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        px: { xs: 2.5, md: 5 },
+        py: 2.25,
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Box
+          sx={{
+            width: 42,
+            height: 42,
+            borderRadius: 12,
+            background: "linear-gradient(160deg, #1f50ff 0%, #1db4c3 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            fontWeight: 800,
+            boxShadow: "0 8px 25px rgba(59,130,246,0.35)",
+            fontSize: 18,
+          }}
+        >
+          M
+        </Box>
+        <Box>
+          <Typography fontWeight={800} fontSize={18}>
+            MultiChain Wallet
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12.5 }}>
+            Gestiona todas tus addresses en un solo lugar
+          </Typography>
+        </Box>
+      </Stack>
+
+      <Button
+        startIcon={<AddIcon />}
+        sx={{
+          textTransform: "none",
+          px: 2.8,
+          py: 1,
+          borderRadius: 2,
+          fontWeight: 700,
+          color: "#fff",
+          background: "linear-gradient(120deg, #1e62ff 0%, #1a9cff 100%)",
+          boxShadow: "0 8px 20px rgba(32,114,255,0.35)",
+          "&:hover": {
+            background: "linear-gradient(120deg, #1b57e6 0%, #188bdf 100%)",
+          },
+        }}
+        onClick={onAdd}
+      >
+        Agregar Address
+      </Button>
+    </Box>
+  );
+}
