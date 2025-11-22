@@ -3,26 +3,30 @@
 import { Box } from "@mui/material";
 import { useEffect, useState } from "react";
 import { AddressCard } from "./components/AddressCard";
-import { WalletCard } from "./components/WalletCard";
 import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
-import { Wallet } from "./types";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { WalletInfo } from "../state/useWalletManager";
-import { useWallet } from "./utils/wallet";
+import { useWallet } from "../hook/useWallet";
+import {useBalanceStore} from "@/app/dashboard/hooks/useBalanceStore";
 
 export default function Dashboard() {
   const [heroBg, setHeroBg] = useState(
     "linear-gradient(110deg, #1f3fb8 0%, #0086b7 50%, #1aa167 100%)",
   );
-  const [heroTotal, setHeroTotal] = useState<number | null>(null);
   const [openModal, setOpenModal] = useState(false);
   const [walletName, setWalletName] = useState("");
   const [addressValue, setAddressValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
+  const { chainIncrement } = useBalanceStore();
   const { addWallet, wallets } = useWallet();
+  const resetModalFields = () => {
+    setWalletName("");
+    setAddressValue("");
+    setPasswordValue("");
+  };
+  const { value } = useBalanceStore();
 
   useEffect(() => {
     const pastelOscuro = () =>
@@ -30,9 +34,6 @@ export default function Dashboard() {
     const c1 = pastelOscuro();
     const c2 = pastelOscuro();
     setHeroBg(`linear-gradient(135deg, ${c1}, ${c2})`);
-
-    const randomTotal = Math.random() * 15000 + 12000;
-    setHeroTotal(Number(randomTotal.toFixed(2)));
   }, []);
   const words = addressValue.trim() ? addressValue.trim().split(/\s+/).filter(Boolean) : [];
 
@@ -41,21 +42,25 @@ export default function Dashboard() {
     try {
       const updated = await addWallet(addressValue, passwordValue, walletName);
       setOpenModal(false);
-      setWalletName("");
-      setAddressValue("");
-      setPasswordValue("");
+      resetModalFields();
       toast.success(`Wallet "${walletName}" agregada y cifrada correctamente`);
     } catch (err) {
       console.error(err);
       toast.error((err as Error).message || "No se pudo agregar la wallet");
+      resetModalFields();
     }
   };
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f6fb" }}>
-      <TopBar onAdd={() => setOpenModal(true)} />
+      <TopBar
+        onAdd={() => {
+          resetModalFields();
+          setOpenModal(true);
+        }}
+      />
 
-      <HeroBanner background={heroBg} total={heroTotal} />
+      <HeroBanner background={heroBg} total={value} />
 
       <Box
         sx={{
@@ -95,7 +100,10 @@ export default function Dashboard() {
         onPhraseChange={setAddressValue}
         onPasswordChange={setPasswordValue}
         onConfirm={handleAddWallet}
-        onClose={() => setOpenModal(false)}
+        onClose={() => {
+          setOpenModal(false);
+          resetModalFields();
+        }}
       />
       <ToastContainer position="top-right" />
     </Box>

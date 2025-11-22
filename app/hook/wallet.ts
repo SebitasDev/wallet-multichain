@@ -3,7 +3,7 @@ import { wordlist } from "@scure/bip39/wordlists/english";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import { privateKeyToAccount } from "viem/accounts";
 import { Buffer } from "buffer";
-import { encryptSeed } from "./cripto";
+import { encryptSeed } from "../utils/cripto";
 import { WalletInfo } from "@/app/state/useWalletManager";
 import { useEffect, useState } from "react";
 
@@ -44,6 +44,13 @@ export const useWallet = ()=> {
     }
     const privateKey = `0x${Buffer.from(child.privateKey).toString("hex")}` as `0x${string}`;
     const account = privateKeyToAccount(privateKey);
+
+    const alreadyExists = wallets.some(
+      (w) => w.address.toLowerCase() === account.address.toLowerCase(),
+    );
+    if (alreadyExists) {
+      throw new Error("Esta wallet ya está agregada.");
+    }
 
     const newWallet: WalletInfo = {
       name: walletName,

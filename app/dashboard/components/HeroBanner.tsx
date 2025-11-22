@@ -1,7 +1,8 @@
 "use client";
 
+import { formatCurrency } from "@/app/utils/formatCurrency";
 import { Box, Typography } from "@mui/material";
-import { formatCurrency } from "../utils/formatCurrency";
+import {useBalanceStore} from "@/app/dashboard/hooks/useBalanceStore";
 
 type Props = {
   background: string;
@@ -9,6 +10,8 @@ type Props = {
 };
 
 export function HeroBanner({ background, total }: Props) {
+  const { totalChains } = useBalanceStore();
+
   return (
     <Box
       sx={{
@@ -30,7 +33,7 @@ export function HeroBanner({ background, total }: Props) {
         {total !== null ? formatCurrency(total) : "--"}
       </Typography>
       <Typography variant="body2" sx={{ mt: 1, fontSize: 13 }}>
-        2 addresses conectadas
+          {totalChains} addresses conectadas
       </Typography>
     </Box>
   );
