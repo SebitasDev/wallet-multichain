@@ -2,7 +2,8 @@ import {Address} from "abitype";
 import {baseSepolia, celoSepolia, optimismSepolia} from "viem/chains";
 import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
 import {useEffect, useState} from "react";
-import {useBalanceStore} from "@/app/dashboard/hooks/useBalanceStore";
+import {useBalanceStore} from "@/app/store/useBalanceStore";
+import {useWalletsStore} from "@/app/store/useWalletsStore";
 
 export const useAddressInfo = (address: Address) => {
     const { balance: baseBalance, loading: baseLoading } =
@@ -17,12 +18,17 @@ export const useAddressInfo = (address: Address) => {
     const [total, setTotal] = useState("0");
 
     const { increment } = useBalanceStore();
+    const { addWalletInfo } = useWalletsStore();
 
     useEffect(() => {
-        // Esperamos a que los tres hayan cargado
-        if (baseLoading || celoLoading || optimismLoading) return;
+        // Ejecutar solo cuando TODOS terminaron de cargar
+        const allLoaded =
+            !baseLoading &&
+            !celoLoading &&
+            !optimismLoading;
 
-        // Convertimos a número y sumamos
+        if (!allLoaded) return;
+
         const sum =
             Number(baseBalance) +
             Number(celoBalance) +
@@ -31,7 +37,17 @@ export const useAddressInfo = (address: Address) => {
         setTotal(sum.toString());
         increment(sum);
 
-    }, [baseBalance, celoBalance, optimismBalance, baseLoading, celoLoading, optimismLoading]);
+        addWalletInfo({
+            address: address,
+            totalAmount: sum,
+            chains: [
+                { chainId: baseSepolia.id.toString(), chainAmount: Number(baseBalance) },
+                { chainId: celoSepolia.id.toString(), chainAmount: Number(celoBalance) },
+                { chainId: optimismSepolia.id.toString(), chainAmount: Number(optimismBalance) },
+            ]
+        });
+
+    }, [baseLoading, celoLoading, optimismLoading]);
 
     return {
         baseBalance,

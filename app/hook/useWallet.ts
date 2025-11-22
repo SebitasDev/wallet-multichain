@@ -6,7 +6,7 @@ import { Buffer } from "buffer";
 import { useEffect, useState } from "react";
 import { encryptSeed } from "../utils/cripto";
 import {WalletInfo} from "@/app/store/useWalletManager";
-import {useBalanceStore} from "@/app/dashboard/hooks/useBalanceStore";
+import {useBalanceStore} from "@/app/store/useBalanceStore";
 
 export const useWallet = ()=> {
 
