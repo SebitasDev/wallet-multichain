@@ -19,8 +19,11 @@ type Props = {
   walletName: string;
   phrase: string;
   wordsCount: number;
+  password: string;
   onWalletNameChange: (value: string) => void;
   onPhraseChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onConfirm: () => void;
   onClose: () => void;
 };
 
@@ -29,11 +32,15 @@ export function AddSecretModal({
   walletName,
   phrase,
   wordsCount,
+  password,
   onWalletNameChange,
   onPhraseChange,
+  onPasswordChange,
+  onConfirm,
   onClose,
 }: Props) {
   const has12Words = wordsCount === 12;
+  const canConfirm = walletName.trim().length > 0 && password.trim().length > 0 && has12Words;
 
   return (
     <Dialog
@@ -123,6 +130,20 @@ export function AddSecretModal({
               minRows={3}
             />
           </Box>
+          <Box>
+            <Typography fontWeight={700} fontSize={13} sx={{ mb: 0.6, color: "#111827" }}>
+              Password para cifrar
+            </Typography>
+            <TextField
+              fullWidth
+              size="medium"
+              type="password"
+              value={password}
+              onChange={(e) => onPasswordChange(e.target.value)}
+              placeholder="••••••••"
+              InputProps={{ sx: { borderRadius: 2, background: "#f8fafc" } }}
+            />
+          </Box>
         </Stack>
       </DialogContent>
       <DialogActions
@@ -156,8 +177,8 @@ export function AddSecretModal({
         <Button
           fullWidth
           variant="contained"
-          onClick={onClose}
-          disabled={!walletName.trim() || !has12Words}
+          onClick={onConfirm}
+          disabled={!canConfirm}
           sx={{
             textTransform: "none",
             borderRadius: 1.5,

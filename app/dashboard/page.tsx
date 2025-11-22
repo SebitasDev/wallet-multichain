@@ -8,6 +8,10 @@ import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
 import { Wallet } from "./types";
+import { addWallet, WalletInfo } from "./utils/wallet";
+import { loadWallets, saveWallets } from "./utils/storage";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const wallets: Wallet[] = [];
 
@@ -19,6 +23,8 @@ export default function Dashboard() {
   const [openModal, setOpenModal] = useState(false);
   const [walletName, setWalletName] = useState("");
   const [addressValue, setAddressValue] = useState("");
+  const [passwordValue, setPasswordValue] = useState("");
+  const [savedWallets, setSavedWallets] = useState<WalletInfo[]>([]);
 
   useEffect(() => {
     const pastelOscuro = () =>
@@ -31,7 +37,31 @@ export default function Dashboard() {
     setHeroTotal(Number(randomTotal.toFixed(2)));
   }, []);
 
+  useEffect(() => {
+    setSavedWallets(loadWallets());
+  }, []);
+
+  useEffect(() => {
+    saveWallets(savedWallets);
+  }, [savedWallets]);
+
   const words = addressValue.trim() ? addressValue.trim().split(/\s+/).filter(Boolean) : [];
+
+  const handleAddWallet = async () => {
+    if (!walletName.trim() || !passwordValue.trim() || words.length !== 12) return;
+    try {
+      const updated = await addWallet(addressValue, passwordValue, savedWallets, walletName);
+      setSavedWallets(updated);
+      setOpenModal(false);
+      setWalletName("");
+      setAddressValue("");
+      setPasswordValue("");
+      toast.success(`Wallet "${walletName}" agregada y cifrada correctamente`);
+    } catch (err) {
+      console.error(err);
+      toast.error((err as Error).message || "No se pudo agregar la wallet");
+    }
+  };
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f6fb" }}>
@@ -81,10 +111,14 @@ export default function Dashboard() {
         walletName={walletName}
         phrase={addressValue}
         wordsCount={words.length}
+        password={passwordValue}
         onWalletNameChange={setWalletName}
         onPhraseChange={setAddressValue}
+        onPasswordChange={setPasswordValue}
+        onConfirm={handleAddWallet}
         onClose={() => setOpenModal(false)}
       />
+      <ToastContainer position="top-right" />
     </Box>
   );
 }

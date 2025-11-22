@@ -21,6 +21,7 @@ import OptimismChainItem from "@/app/components/molecules/OptimismChainItem";
 import {useMemo, useState} from "react";
 import CeloChainItem from "@/app/components/molecules/CeloChainItem";
 import {Address} from "abitype";
+import { randomPastelGradient } from "../utils/gradients";
 
 interface IAddressCardProps {
     Address: Address
@@ -31,15 +32,7 @@ export const AddressCard = ({
     }: IAddressCardProps) => {
     const [showMore, setShowMore] = useState(false);
 
-    const bgGradient = useMemo(() => {
-        const pastelClaro = () =>
-            `hsl(${Math.floor(Math.random() * 360)}, 90%, 95%)`;
-
-        const c1 = pastelClaro();
-        const c2 = pastelClaro();
-
-        return `linear-gradient(135deg, ${c1}, ${c2})`;
-    }, []);
+    const bgGradient = useMemo(() => randomPastelGradient(), []);
 
     return (
         <Card
