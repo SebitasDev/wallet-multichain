@@ -6,6 +6,7 @@ import { AddressCard } from "./components/AddressCard";
 import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
+import { SendMoneyModal } from "./components/SendMoneyModal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useWallet } from "../hook/useWallet";
@@ -19,11 +20,24 @@ export default function Dashboard() {
   const [walletName, setWalletName] = useState("");
   const [addressValue, setAddressValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
+  const [openSendModal, setOpenSendModal] = useState(false);
+  const [fromAddress, setFromAddress] = useState("");
+  const [toAddress, setToAddress] = useState("");
+  const [sendAmount, setSendAmount] = useState("");
+  const [sendPassword, setSendPassword] = useState("");
+  const [sendChain, setSendChain] = useState("base");
   const { addWallet, wallets } = useWallet();
   const resetModalFields = () => {
     setWalletName("");
     setAddressValue("");
     setPasswordValue("");
+  };
+  const resetSendFields = () => {
+    setFromAddress("");
+    setToAddress("");
+    setSendAmount("");
+    setSendPassword("");
+    setSendChain("base");
   };
 
   useEffect(() => {
@@ -52,12 +66,31 @@ export default function Dashboard() {
     }
   };
 
+  const handleSend = () => {
+    if (!fromAddress || !toAddress.trim() || !sendAmount.trim() || !sendPassword.trim()) {
+      toast.error("Completa todos los campos para enviar");
+      return;
+    }
+    toast.success("Transferencia iniciada (demo)");
+    setOpenSendModal(false);
+    resetSendFields();
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f6fb" }}>
       <TopBar
         onAdd={() => {
           resetModalFields();
           setOpenModal(true);
+        }}
+        onSend={() => {
+          resetSendFields();
+          setFromAddress(wallets[0]?.address ?? "");
+          if (!wallets[0]) {
+            toast.error("Primero agrega una wallet de origen.");
+            return;
+          }
+          setOpenSendModal(true);
         }}
       />
 
@@ -105,6 +138,23 @@ export default function Dashboard() {
           setOpenModal(false);
           resetModalFields();
         }}
+      />
+      <SendMoneyModal
+        open={openSendModal}
+        fromAddress={fromAddress}
+        toAddress={toAddress}
+        amount={sendAmount}
+        password={sendPassword}
+        chain={sendChain}
+        onToChange={setToAddress}
+        onAmountChange={setSendAmount}
+        onPasswordChange={setSendPassword}
+        onChainChange={setSendChain}
+        onClose={() => {
+          setOpenSendModal(false);
+          resetSendFields();
+        }}
+        onSend={handleSend}
       />
       <ToastContainer position="top-right" />
     </Box>

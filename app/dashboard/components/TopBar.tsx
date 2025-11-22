@@ -2,12 +2,14 @@
 
 import { Box, Button, Stack, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import SendIcon from "@mui/icons-material/Send";
 
 type Props = {
   onAdd: () => void;
+  onSend: () => void;
 };
 
-export function TopBar({ onAdd }: Props) {
+export function TopBar({ onAdd, onSend }: Props) {
   return (
     <Box
       sx={{
@@ -46,25 +48,46 @@ export function TopBar({ onAdd }: Props) {
         </Box>
       </Stack>
 
-      <Button
-        startIcon={<AddIcon />}
-        sx={{
-          textTransform: "none",
-          px: 2.8,
-          py: 1,
-          borderRadius: 2,
-          fontWeight: 700,
-          color: "#fff",
-          background: "linear-gradient(120deg, #1e62ff 0%, #1a9cff 100%)",
-          boxShadow: "0 8px 20px rgba(32,114,255,0.35)",
-          "&:hover": {
-            background: "linear-gradient(120deg, #1b57e6 0%, #188bdf 100%)",
-          },
-        }}
-        onClick={onAdd}
-      >
-        Agregar Address
-      </Button>
+      <Stack direction="row" spacing={1.5}>
+        <Button
+          startIcon={<SendIcon />}
+          sx={{
+            textTransform: "none",
+            px: 2.2,
+            py: 1,
+            borderRadius: 2,
+            fontWeight: 700,
+            color: "#0f172a",
+            backgroundColor: "#e0f2fe",
+            boxShadow: "0 4px 12px rgba(59,130,246,0.25)",
+            "&:hover": {
+              backgroundColor: "#cfe7fb",
+            },
+          }}
+          onClick={onSend}
+        >
+          Send Money
+        </Button>
+        <Button
+          startIcon={<AddIcon />}
+          sx={{
+            textTransform: "none",
+            px: 2.8,
+            py: 1,
+            borderRadius: 2,
+            fontWeight: 700,
+            color: "#fff",
+            background: "linear-gradient(120deg, #1e62ff 0%, #1a9cff 100%)",
+            boxShadow: "0 8px 20px rgba(32,114,255,0.35)",
+            "&:hover": {
+              background: "linear-gradient(120deg, #1b57e6 0%, #188bdf 100%)",
+            },
+          }}
+          onClick={onAdd}
+        >
+          Agregar Address
+        </Button>
+      </Stack>
     </Box>
   );
 }
