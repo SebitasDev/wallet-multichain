@@ -14,9 +14,18 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {OPIcon} from "@/app/components/atoms/OPIcon";
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
+import {Address} from "abitype";
+import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
+import {optimismSepolia} from "viem/chains";
 
-export default function OptimismChainItem() {
+interface IOptimismChainItemProps {
+    address: Address;
+}
+
+export default function OptimismChainItem({ address } : IOptimismChainItemProps) {
     const [open, setOpen] = useState(false);
+
+    const { balance } = useGetBalanceFromChain(optimismSepolia, address, "0x5fd84259d66Cd46123540766Be93DFE6D43130D7")
 
     return (
         <>
@@ -43,7 +52,7 @@ export default function OptimismChainItem() {
                 <ListItemSecondaryAction
                     sx={{ display: "flex", alignItems: "center", gap: 1, pr: 2 }}
                 >
-                    <Typography fontWeight="600">$5,612.76</Typography>
+                    <Typography fontWeight="600">${balance}</Typography>
 
                     {open ? (
                         <ExpandMoreIcon fontSize="small" color="disabled" />
@@ -74,13 +83,13 @@ export default function OptimismChainItem() {
                         <Box display="flex" flexDirection="column">
                             <Typography fontWeight="600">USDC</Typography>
                             <Typography variant="caption" color="text.secondary">
-                                Balance: 120.00
+                                Balance: {balance}
                             </Typography>
                         </Box>
 
                         {/* Reemplazo del ListItemSecondaryAction */}
                         <Box sx={{ ml: "auto", pr: 2 }}>
-                            <Typography fontWeight="600">$120.00</Typography>
+                            <Typography fontWeight="600">${balance}</Typography>
                         </Box>
                     </ListItem>
                 </List>

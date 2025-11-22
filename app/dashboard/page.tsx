@@ -8,12 +8,10 @@ import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
 import { Wallet } from "./types";
-import { addWallet, WalletInfo } from "./utils/wallet";
-import { loadWallets, saveWallets } from "./utils/storage";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-const wallets: Wallet[] = [];
+import { WalletInfo } from "../state/useWalletManager";
+import { useWallet } from "./utils/wallet";
 
 export default function Dashboard() {
   const [heroBg, setHeroBg] = useState(
@@ -24,7 +22,7 @@ export default function Dashboard() {
   const [walletName, setWalletName] = useState("");
   const [addressValue, setAddressValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
-  const [savedWallets, setSavedWallets] = useState<WalletInfo[]>([]);
+  const { addWallet, wallets } = useWallet();
 
   useEffect(() => {
     const pastelOscuro = () =>
@@ -36,22 +34,12 @@ export default function Dashboard() {
     const randomTotal = Math.random() * 15000 + 12000;
     setHeroTotal(Number(randomTotal.toFixed(2)));
   }, []);
-
-  useEffect(() => {
-    setSavedWallets(loadWallets());
-  }, []);
-
-  useEffect(() => {
-    saveWallets(savedWallets);
-  }, [savedWallets]);
-
   const words = addressValue.trim() ? addressValue.trim().split(/\s+/).filter(Boolean) : [];
 
   const handleAddWallet = async () => {
     if (!walletName.trim() || !passwordValue.trim() || words.length !== 12) return;
     try {
-      const updated = await addWallet(addressValue, passwordValue, savedWallets, walletName);
-      setSavedWallets(updated);
+      const updated = await addWallet(addressValue, passwordValue, walletName);
       setOpenModal(false);
       setWalletName("");
       setAddressValue("");
@@ -90,19 +78,10 @@ export default function Dashboard() {
           }}
         >
           {wallets.map((wallet) => (
-            <Box key={wallet.name} sx={{ minWidth: 0 }}>
-              <WalletCard wallet={wallet} />
+            <Box key={wallet.address} sx={{ minWidth: 0 }}>
+              <AddressCard address={wallet.address} walletName={wallet.name}/>
             </Box>
           ))}
-          <Box sx={{ minWidth: 0 }}>
-            <AddressCard />
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <AddressCard />
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <AddressCard />
-          </Box>
         </Box>
       </Box>
 

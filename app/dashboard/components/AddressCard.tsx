@@ -21,18 +21,29 @@ import OptimismChainItem from "@/app/components/molecules/OptimismChainItem";
 import {useMemo, useState} from "react";
 import CeloChainItem from "@/app/components/molecules/CeloChainItem";
 import {Address} from "abitype";
-import { randomPastelGradient } from "../utils/gradients";
+import {useAddressInfo} from "@/app/dashboard/hooks/useAddressInfo";
 
 interface IAddressCardProps {
-    Address: Address
+    address: Address
+    walletName: string
 }
 
 export const AddressCard = ({
-        Address
+        address,
+        walletName
     }: IAddressCardProps) => {
     const [showMore, setShowMore] = useState(false);
+    const {total} = useAddressInfo(address);
 
-    const bgGradient = useMemo(() => randomPastelGradient(), []);
+    const bgGradient = useMemo(() => {
+        const pastelClaro = () =>
+            `hsl(${Math.floor(Math.random() * 360)}, 90%, 95%)`;
+
+        const c1 = pastelClaro();
+        const c2 = pastelClaro();
+
+        return `linear-gradient(135deg, ${c1}, ${c2})`;
+    }, []);
 
     return (
         <Card
@@ -59,7 +70,7 @@ export const AddressCard = ({
                         <Box display="flex" alignItems="center" gap={1}>
                             {/* Wallet name */}
                             <Typography variant="h6" fontWeight="bold">
-                                wallet name
+                                {walletName}
                             </Typography>
 
                             {/* numero de chains disponibles */}
@@ -82,7 +93,7 @@ export const AddressCard = ({
                                 }}
                             >
                                 {/* address */}
-                                0x742d...bEb7
+                                {address.slice(0, 2 + 4)}…{address.slice(-4)}
                             </Typography>
 
                             <IconButton size="small">
@@ -104,7 +115,7 @@ export const AddressCard = ({
                     {/* Right */}
                     <Box textAlign="right">
                         <Typography variant="h5" fontWeight="bold">
-                            $12,847.32
+                            ${total}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                             Valor Total
@@ -118,16 +129,16 @@ export const AddressCard = ({
                 <List disablePadding>
                     {/* Base */}
                     <Divider />
-                    <BaseChainItem/>
+                    <BaseChainItem address={address}/>
 
                     {/* Optimism */}
                     <Divider/>
-                    <OptimismChainItem/>
+                    <OptimismChainItem address={address}/>
 
                     {showMore && (
                         <>
                             <Divider />
-                            <CeloChainItem />
+                            <CeloChainItem address={address}/>
                         </>
                     )}
                 </List>

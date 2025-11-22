@@ -4,43 +4,62 @@ import { HDKey } from "ethereum-cryptography/hdkey";
 import { privateKeyToAccount } from "viem/accounts";
 import { Buffer } from "buffer";
 import { encryptSeed } from "./cripto";
+import { WalletInfo } from "@/app/state/useWalletManager";
+import { useEffect, useState } from "react";
 
-export interface WalletInfo {
-  name: string;
-  address: string;
-  encryptedSeed: string;
-}
+export const useWallet = ()=> {
 
-export const addWallet = async (
+  const [wallets, setWallets] = useState<WalletInfo[]>([]);
+
+  useEffect(() => {
+        const stored = localStorage.getItem("wallets");
+        if (stored) setWallets(JSON.parse(stored));
+    }, []);
+
+    const saveWallets = (updated: WalletInfo[]) => {
+        setWallets(updated);
+        localStorage.setItem("wallets", JSON.stringify(updated));
+    };
+
+  const addWallet = async (
   mnemonic: string,
   password: string,
-  wallets: WalletInfo[],
   walletName: string,
-): Promise<WalletInfo[]> => {
-  const trimmed = mnemonic.trim();
+  ): Promise<WalletInfo[]> => {
+    const trimmed = mnemonic.trim();
 
-  if (!validateMnemonic(trimmed, wordlist)) {
-    throw new Error(
-      "Frase semilla inválida. Asegúrate de escribir las 12/24 palabras correctamente.",
-    );
-  }
+    if (!validateMnemonic(trimmed, wordlist)) {
+      throw new Error(
+        "Frase semilla inválida. Asegúrate de escribir las 12/24 palabras correctamente.",
+      );
+    }
 
-  const encryptedSeed = encryptSeed(trimmed, password);
+    const encryptedSeed = encryptSeed(trimmed, password);
 
-  const seed = mnemonicToSeedSync(trimmed);
-  const root = HDKey.fromMasterSeed(seed);
-  const child = root.derive("m/44'/60'/0'/0/0");
-  if (!child.privateKey) {
-    throw new Error("No se pudo derivar la llave privada.");
-  }
-  const privateKey = `0x${Buffer.from(child.privateKey).toString("hex")}` as `0x${string}`;
-  const account = privateKeyToAccount(privateKey);
+    const seed = mnemonicToSeedSync(trimmed);
+    const root = HDKey.fromMasterSeed(seed);
+    const child = root.derive("m/44'/60'/0'/0/0");
+    if (!child.privateKey) {
+      throw new Error("No se pudo derivar la llave privada.");
+    }
+    const privateKey = `0x${Buffer.from(child.privateKey).toString("hex")}` as `0x${string}`;
+    const account = privateKeyToAccount(privateKey);
 
-  const newWallet: WalletInfo = {
-    name: walletName,
-    address: account.address,
-    encryptedSeed,
+    const newWallet: WalletInfo = {
+      name: walletName,
+      address: account.address,
+      encryptedSeed,
+    };
+
+    const updated = [...wallets, newWallet];
+
+    saveWallets(updated);
+
+    return [newWallet];
   };
 
-  return [...wallets, newWallet];
-};
+  return {
+    addWallet,
+    wallets
+  }
+}

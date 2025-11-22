@@ -15,10 +15,19 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import CeloIcon from "@/app/components/atoms/CeloIcon";
-import {UsdcIcon} from "@/app/components/atoms/UsdcIcon"; // tu ícono
+import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
+import {Address} from "abitype";
+import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
+import {celoSepolia} from "viem/chains"; // tu ícono
 
-export default function CeloChainItem() {
+interface ICeloChainItemProps {
+    address: Address;
+}
+
+export default function CeloChainItem({ address } : ICeloChainItemProps) {
     const [open, setOpen] = useState(false);
+
+    const { balance } = useGetBalanceFromChain(celoSepolia, address, "0x01C5C0122039549AD1493B8220cABEdD739BC44E")
 
     return (
         <>
@@ -46,7 +55,7 @@ export default function CeloChainItem() {
                 <ListItemSecondaryAction
                     sx={{ display: "flex", alignItems: "center", gap: 1, pr: 2 }}
                 >
-                    <Typography fontWeight="600">$2,981.44</Typography>
+                    <Typography fontWeight="600">${balance}</Typography>
 
                     {open ? (
                         <ExpandMoreIcon fontSize="small" color="disabled" />
@@ -77,13 +86,13 @@ export default function CeloChainItem() {
                         <Box display="flex" flexDirection="column">
                             <Typography fontWeight="600">USDC</Typography>
                             <Typography variant="caption" color="text.secondary">
-                                Balance: 120.00
+                                Balance: {balance}
                             </Typography>
                         </Box>
 
                         {/* Reemplazo del ListItemSecondaryAction */}
                         <Box sx={{ ml: "auto", pr: 2 }}>
-                            <Typography fontWeight="600">$120.00</Typography>
+                            <Typography fontWeight="600">${balance}</Typography>
                         </Box>
                     </ListItem>
                 </List>

@@ -13,3 +13,9 @@ export type Wallet = {
   total: number;
   defaultExpanded?: boolean;
 };
+
+export interface WalletInfo {
+  name: string;
+  address: string;
+  encryptedSeed: string;
+}
