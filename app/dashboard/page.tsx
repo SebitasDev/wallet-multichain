@@ -25,6 +25,8 @@ export default function Dashboard() {
   const [sendAmount, setSendAmount] = useState("");
   const [sendPassword, setSendPassword] = useState("");
   const [sendChain, setSendChain] = useState("base");
+  const [sendLoading, setSendLoading] = useState(false);
+  const [routeReady, setRouteReady] = useState(false);
   const { addWallet, wallets } = useWallet();
   const resetModalFields = () => {
     setWalletName("");
@@ -37,6 +39,8 @@ export default function Dashboard() {
     setSendAmount("");
     setSendPassword("");
     setSendChain("base");
+    setSendLoading(false);
+    setRouteReady(false);
   };
 
   useEffect(() => {
@@ -63,13 +67,24 @@ export default function Dashboard() {
   };
 
   const handleSend = () => {
+    if (routeReady) {
+      toast.success("Transferencia iniciada (demo)");
+      setOpenSendModal(false);
+      resetSendFields();
+      return;
+    }
+
     if (!fromAddress || !toAddress.trim() || !sendAmount.trim() || !sendPassword.trim()) {
       toast.error("Completa todos los campos para enviar");
       return;
     }
-    toast.success("Transferencia iniciada (demo)");
-    setOpenSendModal(false);
-    resetSendFields();
+
+    setSendLoading(true);
+    setTimeout(() => {
+      setSendLoading(false);
+      setRouteReady(true);
+      toast.info("Ruta encontrada. Ahora puedes enviar.");
+    }, 5000);
   };
 
   return (
@@ -142,6 +157,10 @@ export default function Dashboard() {
         amount={sendAmount}
         password={sendPassword}
         chain={sendChain}
+        loading={sendLoading}
+        routeReady={routeReady}
+        recipient={toAddress}
+        netAmount={(parseFloat(sendAmount || "0") * 0.99).toFixed(2)}
         onToChange={setToAddress}
         onAmountChange={setSendAmount}
         onPasswordChange={setSendPassword}

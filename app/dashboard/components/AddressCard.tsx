@@ -22,6 +22,7 @@ import {useMemo, useState} from "react";
 import CeloChainItem from "@/app/components/molecules/CeloChainItem";
 import {Address} from "abitype";
 import {useAddressInfo} from "@/app/dashboard/hooks/useAddressInfo";
+import { toast } from "react-toastify";
 
 interface IAddressCardProps {
     address: Address
@@ -44,6 +45,46 @@ export const AddressCard = ({
 
         return `linear-gradient(135deg, ${c1}, ${c2})`;
     }, []);
+
+    const copyToClipboard = async (value: string, label: string) => {
+        const text = value ?? "";
+        if (!text) {
+            toast.error("No hay nada para copiar");
+            return;
+        }
+        const onSuccess = () => toast.success(`${label} copiado`);
+        const onError = () => toast.error("No se pudo copiar");
+        const fallbackCopy = () => {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                const ok = document.execCommand("copy");
+                ok ? onSuccess() : onError();
+            } catch {
+                onError();
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        };
+
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+                onSuccess();
+            } else {
+                fallbackCopy();
+            }
+        } catch {
+            fallbackCopy();
+        }
+    };
+
+    const truncated = `${address.slice(0, 6)}...${address.slice(-4)}`;
 
     return (
         <Card
@@ -92,18 +133,23 @@ export const AddressCard = ({
                                     fontSize: "12px",
                                 }}
                             >
-                                {/* address */}
-                                {address.slice(0, 2 + 4)}…{address.slice(-4)}
+                                {truncated}
                             </Typography>
 
-                            <IconButton size="small">
+                            <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    copyToClipboard(address, "Address");
+                                }}
+                            >
                                 <ContentCopyIcon fontSize="inherit" />
                             </IconButton>
 
                             <IconButton
                                 size="small"
                                 component="a"
-                                href="https://etherscan.io/address/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7"
+                                href={`https://etherscan.io/address/${address}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >

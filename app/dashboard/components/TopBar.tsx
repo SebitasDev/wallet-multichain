@@ -16,11 +16,18 @@ export function TopBar({ onAdd, onSend }: Props) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        gap: 2,
+        flexWrap: "wrap",
         px: { xs: 2.5, md: 5 },
         py: 2.25,
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1.5}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1.5}
+        sx={{ flex: 1, minWidth: 240 }}
+      >
         <Box
           sx={{
             width: 42,
@@ -48,7 +55,16 @@ export function TopBar({ onAdd, onSend }: Props) {
         </Box>
       </Stack>
 
-      <Stack direction="row" spacing={1.5}>
+      <Stack
+        direction="row"
+        spacing={1.5}
+        sx={{
+          width: { xs: "100%", sm: "auto" },
+          justifyContent: { xs: "flex-start", sm: "flex-end" },
+          flexWrap: "wrap",
+          rowGap: 1,
+        }}
+      >
         <Button
           startIcon={<SendIcon />}
           sx={{
