@@ -6,11 +6,10 @@ import {useBalanceStore} from "@/app/dashboard/hooks/useBalanceStore";
 
 type Props = {
   background: string;
-  total: number | null;
 };
 
-export function HeroBanner({ background, total }: Props) {
-  const { totalChains } = useBalanceStore();
+export function HeroBanner({ background }: Props) {
+  const { totalChains, value } = useBalanceStore();
 
   return (
     <Box
@@ -30,7 +29,7 @@ export function HeroBanner({ background, total }: Props) {
       <Typography
         sx={{ fontSize: { xs: 34, md: 44 }, fontWeight: 900, mt: 1, lineHeight: 1 }}
       >
-        {total !== null ? formatCurrency(total) : "--"}
+        {value !== null ? formatCurrency(value) : "--"}
       </Typography>
       <Typography variant="body2" sx={{ mt: 1, fontSize: 13 }}>
           {totalChains} addresses conectadas
