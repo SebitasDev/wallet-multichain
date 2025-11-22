@@ -55,7 +55,7 @@ export default function PolyChainItem({ address } : IPolChainItemProps) {
                 <ListItemSecondaryAction
                     sx={{ display: "flex", alignItems: "center", gap: 1, pr: 2 }}
                 >
-                    <Typography fontWeight="600">${balance}</Typography>
+                    <Typography fontWeight="600">${(Math.floor(Number(balance) * 100) / 100).toFixed(2)}</Typography>
 
                     {open ? (
                         <ExpandMoreIcon fontSize="small" color="disabled" />
@@ -86,13 +86,13 @@ export default function PolyChainItem({ address } : IPolChainItemProps) {
                         <Box display="flex" flexDirection="column">
                             <Typography fontWeight="600">USDC</Typography>
                             <Typography variant="caption" color="text.secondary">
-                                Balance: {balance}
+                                Balance: {(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
                             </Typography>
                         </Box>
 
                         {/* Reemplazo del ListItemSecondaryAction */}
                         <Box sx={{ ml: "auto", pr: 2 }}>
-                            <Typography fontWeight="600">${balance}</Typography>
+                            <Typography fontWeight="600">${(Math.floor(Number(balance) * 100) / 100).toFixed(2)}</Typography>
                         </Box>
                     </ListItem>
                 </List>
