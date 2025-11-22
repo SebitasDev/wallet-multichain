@@ -60,7 +60,7 @@ export function HeroBanner({ background }: Props) {
           {value !== null ? formatCurrency(value) : "--"}
         </Typography>
         <Typography variant="body2" sx={{ mt: 1, fontSize: 13, position: "relative" }}>
-          {totalChains} addresses conectadas
+          {totalChains} wallets conectadas
       </Typography>
     </Box>
   );

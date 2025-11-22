@@ -2,7 +2,6 @@
 "use client";
 
 import { Box } from "@mui/material";
-import { useState } from "react";
 import { AddressCard } from "./components/AddressCard";
 import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
@@ -16,59 +15,20 @@ import {useSendModalState} from "@/app/dashboard/store/useSendModalState";
 import {useModalStore} from "@/app/store/useModalStore";
 
 export default function Dashboard() {
-    const { addOpen, receiveOpen, closeAdd, closeReceive } = useModalStore();
-    const [openModal, setOpenModal] = useState(false);
-    const [walletName, setWalletName] = useState("");
-    const [addressValue, setAddressValue] = useState("");
-    const [passwordValue, setPasswordValue] = useState("");
+    const { addOpen, receiveOpen, openAdd, openReceive, closeAdd, closeReceive } = useModalStore();
     const { setSendModal } = useSendModalState();
-    const [openReceiveModal, setOpenReceiveModal] = useState(false);
-    const [receiveWallet, setReceiveWallet] = useState("");
-    const [receiveChain, setReceiveChain] = useState("base");
-    const { addWallet, wallets, unlockWallet } = useWallet();
+    const { wallets } = useWallet();
     const walletNamesMap = wallets.reduce<Record<string, string>>((acc, w) => {
         acc[w.address.toLowerCase()] = w.name;
         return acc;
     }, {});
     const heroBg = "var(--gradient-hero)";
-    const resetModalFields = () => {
-        setWalletName("");
-        setAddressValue("");
-        setPasswordValue("");
-    };
-
-    const words = addressValue.trim() ? addressValue.trim().split(/\s+/).filter(Boolean) : [];
-
-    const handleAddWallet = async () => {
-        if (!walletName.trim() || !passwordValue.trim() || words.length !== 12) return;
-        try {
-            const updated = await addWallet(addressValue, passwordValue, walletName);
-            setOpenModal(false);
-            resetModalFields();
-            toast.success(`Wallet "${walletName}" agregada y cifrada correctamente`);
-        } catch (err) {
-            console.error(err);
-            toast.error((err as Error).message || "No se pudo agregar la wallet");
-            resetModalFields();
-        }
-    };
-
-    const openReceive = () => {
-        if (!wallets.length) {
-            toast.error("Primero agrega una wallet.");
-            return;
-        }
-        setReceiveWallet(wallets[0]?.address || "");
-        setReceiveChain("base");
-        setOpenReceiveModal(true);
-    };
 
     return (
         <Box sx={{ minHeight: "100vh", backgroundColor: "#141516ff" }}>
             <TopBar
                 onAdd={() => {
-                    resetModalFields();
-                    setOpenModal(true);
+                    openAdd();
                 }}
                 onSend={() => {
                     //resetSendFields();
@@ -79,7 +39,13 @@ export default function Dashboard() {
                     }
                     setSendModal(true);
                 }}
-                onReceive={openReceive}
+                onReceive={() => {
+                    if (!wallets.length) {
+                        toast.error("Primero agrega una wallet.");
+                        return;
+                    }
+                    openReceive();
+                }}
             />
 
             <HeroBanner background={heroBg}/>
