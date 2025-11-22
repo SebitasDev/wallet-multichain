@@ -14,39 +14,39 @@ import {
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
-import CeloIcon from "@/app/components/atoms/CeloIcon";
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 import {Address} from "abitype";
 import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
-import {celoSepolia} from "viem/chains"; // tu ícono
+import PolyIcon from "@/app/components/atoms/PolyIcon";
+import {polygonAmoy} from "viem/chains";
 
-interface ICeloChainItemProps {
+interface IPolChainItemProps {
     address: Address;
 }
 
-export default function CeloChainItem({ address } : ICeloChainItemProps) {
+export default function PolyChainItem({ address } : IPolChainItemProps) {
     const [open, setOpen] = useState(false);
 
-    const { balance } = useGetBalanceFromChain(celoSepolia, address, "0x01C5C0122039549AD1493B8220cABEdD739BC44E")
+    const { balance } = useGetBalanceFromChain(polygonAmoy, address, "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582")
 
     return (
         <>
-            {/* Celo */}
+            {/* POL */}
             <Divider />
 
             <ListItemButton sx={{ py: 2 }} onClick={() => setOpen(!open)}>
                 <Box display="flex" alignItems="center" gap={2}>
-                    <CeloIcon />
+                    <PolyIcon />
 
                     <Box>
-                        <Typography fontWeight="600">Celo</Typography>
+                        <Typography fontWeight="600">Polygon</Typography>
                         <Typography variant="caption" color="text.secondary">
                             1 token
                         </Typography>
                     </Box>
 
                     <Chip
-                        label="CELO"
+                        label="POLYGON"
                         size="small"
                         sx={{ ml: 1, backgroundColor: "#facc1533" }} // amarillo suave
                     />

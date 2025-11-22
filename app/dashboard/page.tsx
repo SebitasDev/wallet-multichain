@@ -1,7 +1,7 @@
 "use client";
 
-import { Box, Button } from "@mui/material";
-import { useEffect, useState } from "react";
+import { Box } from "@mui/material";
+import { useState } from "react";
 import { AddressCard } from "./components/AddressCard";
 import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
@@ -13,26 +13,18 @@ import "react-toastify/dist/ReactToastify.css";
 import { useWallet } from "../hook/useWallet";
 import { useFindBestRoute } from "./hooks/useFindBestRoute";
 import { AllocationSummary } from "./types";
+import {useSendModalState} from "@/app/dashboard/store/useSendModalState";
 
 export default function Dashboard() {
   const [openModal, setOpenModal] = useState(false);
   const [walletName, setWalletName] = useState("");
   const [addressValue, setAddressValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
-  const [openSendModal, setOpenSendModal] = useState(false);
-  const [fromAddress, setFromAddress] = useState("");
-  const [toAddress, setToAddress] = useState("");
-  const [sendAmount, setSendAmount] = useState("");
-  const [sendPassword, setSendPassword] = useState("");
-  const [sendChain, setSendChain] = useState("base");
-  const [sendLoading, setSendLoading] = useState(false);
-  const [routeReady, setRouteReady] = useState(false);
-  const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
+  const { setSendModal } = useSendModalState();
   const [openReceiveModal, setOpenReceiveModal] = useState(false);
   const [receiveWallet, setReceiveWallet] = useState("");
   const [receiveChain, setReceiveChain] = useState("base");
-  const { addWallet, wallets } = useWallet();
-  const { allocateAcrossNetworks } = useFindBestRoute();
+  const { addWallet, wallets, unlockWallet } = useWallet();
   const walletNamesMap = wallets.reduce<Record<string, string>>((acc, w) => {
     acc[w.address.toLowerCase()] = w.name;
     return acc;
@@ -42,16 +34,6 @@ export default function Dashboard() {
     setWalletName("");
     setAddressValue("");
     setPasswordValue("");
-  };
-  const resetSendFields = () => {
-    setFromAddress("");
-    setToAddress("");
-    setSendAmount("");
-    setSendPassword("");
-    setSendChain("base");
-    setSendLoading(false);
-    setRouteReady(false);
-    setRouteSummary(null);
   };
 
   const words = addressValue.trim() ? addressValue.trim().split(/\s+/).filter(Boolean) : [];
@@ -68,33 +50,6 @@ export default function Dashboard() {
       toast.error((err as Error).message || "No se pudo agregar la wallet");
       resetModalFields();
     }
-  };
-
-  const handleSend = () => {
-    if (routeReady) {
-      toast.success("Transferencia iniciada (demo)");
-      setOpenSendModal(false);
-      resetSendFields();
-      return;
-    }
-
-    if (!fromAddress || !toAddress.trim() || !sendAmount.trim() || !sendPassword.trim()) {
-      toast.error("Completa todos los campos para enviar");
-      return;
-    }
-
-    setSendLoading(true);
-    allocateAcrossNetworks(Number(sendAmount))
-      .then((summary) => {
-        setRouteSummary(summary);
-        setRouteReady(true);
-        toast.info("Ruta encontrada. Ahora puedes enviar.");
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error("No se pudo calcular la ruta");
-      })
-      .finally(() => setSendLoading(false));
   };
 
   const openReceive = () => {
@@ -115,13 +70,13 @@ export default function Dashboard() {
           setOpenModal(true);
         }}
         onSend={() => {
-          resetSendFields();
-          setFromAddress(wallets[0]?.address ?? "");
+          //resetSendFields();
+          //setFromAddress(wallets[0]?.address ?? "");
           if (!wallets[0]) {
             toast.error("Primero agrega una wallet de origen.");
             return;
           }
-          setOpenSendModal(true);
+          setSendModal(true);
         }}
         onReceive={openReceive}
       />
@@ -172,27 +127,7 @@ export default function Dashboard() {
         }}
       />
       <SendMoneyModal
-        open={openSendModal}
-        fromAddress={fromAddress}
-        toAddress={toAddress}
-        amount={sendAmount}
-        password={sendPassword}
-        chain={sendChain}
-        loading={sendLoading}
-        routeReady={routeReady}
-        recipient={toAddress}
-        netAmount={(parseFloat(sendAmount || "0") * 0.99).toFixed(2)}
-        routeSummary={routeSummary}
         walletNames={walletNamesMap}
-        onToChange={setToAddress}
-        onAmountChange={setSendAmount}
-        onPasswordChange={setSendPassword}
-        onChainChange={setSendChain}
-        onClose={() => {
-          setOpenSendModal(false);
-          resetSendFields();
-        }}
-        onSend={handleSend}
       />
       <ReceiveModal
         open={openReceiveModal}

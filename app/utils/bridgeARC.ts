@@ -27,23 +27,9 @@ export const bridgeUSDC = async (
         const adapter = createAdapterFromPrivateKey({ privateKey });
 
         console.log("---------------Starting Bridging---------------");
+        console.log(recipient)
 
-        console.log(amount)
-
-        const gasEstimation = await estimateBridge({
-            from: { adapter, chain: toChain },
-            to: {
-                adapter,
-                chain: fromChain,
-                recipientAddress: recipient
-            },
-            amount,
-            config: {
-                transferSpeed: TransferSpeed.FAST
-            }
-        })
-
-        console.log(gasEstimation)
+        const fixedAmount = Number(amount).toFixed(6);
 
         const result = await kit.bridge({
             from: { adapter, chain: fromChain },
@@ -52,13 +38,9 @@ export const bridgeUSDC = async (
                 chain: toChain,
                 recipientAddress: recipient
             },
-            amount,
+            amount: fixedAmount,
             config: {
-                transferSpeed: TransferSpeed.FAST,
-                customFee: {
-                    recipientAddress: "0x49fc88d0e7972e8a470ec21D42d44f751C3b7D47",
-                    value: '0.1'
-                },
+                transferSpeed: TransferSpeed.FAST
             }
         });
 
@@ -67,6 +49,7 @@ export const bridgeUSDC = async (
         return result;
     } catch (err) {
         console.log("ERROR", inspect(err, false, null, true));
+        console.log(err);
         return null;
     }
 };

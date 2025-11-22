@@ -15,10 +15,10 @@ import { QRCodeCanvas } from "qrcode.react";
 import ContentCopyOutlined from "@mui/icons-material/ContentCopyOutlined";
 import { BaseIcon } from "@/app/components/atoms/BaseIcon";
 import { OPIcon } from "@/app/components/atoms/OPIcon";
-import CeloIcon from "@/app/components/atoms/CeloIcon";
 import { useMemo } from "react";
 import { toast } from "react-toastify";
 import { WalletInfo } from "@/app/store/useWalletManager";
+import PolyIcon from "@/app/components/atoms/PolyIcon";
 
 type Props = {
   open: boolean;
@@ -33,7 +33,7 @@ type Props = {
 const chains = [
   { id: "base", label: "Base", icon: <BaseIcon /> },
   { id: "optimism", label: "Optimism", icon: <OPIcon /> },
-  { id: "celo", label: "Celo", icon: <CeloIcon /> },
+  { id: "pol", label: "Polygon", icon: <PolyIcon /> },
 ];
 
 export function ReceiveModal({
@@ -51,7 +51,7 @@ export function ReceiveModal({
   }, [selectedWallet, wallets]);
 
   const currentChain =
-    chains.find((c) => c.id === selectedChain) || chains.find((c) => c.id === "celo");
+    chains.find((c) => c.id === selectedChain) || chains.find((c) => c.id === "arc");
   // Usamos esquema ethereum:<address> para compatibilidad con wallets (EIP-681 básico).
   const qrValue = currentAddress
     ? `ethereum:${currentAddress}`

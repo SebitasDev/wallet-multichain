@@ -1,14 +1,17 @@
 import { useWalletsStore } from "@/app/store/useWalletsStore";
+import {Address} from "abitype";
 
 export const useFindBestRoute = () => {
     const { wallets } = useWalletsStore();
 
-    async function allocateAcrossNetworks(targetAmount: number) {
+    async function allocateAcrossNetworks(targetAmount: number, toAddress: Address) {
         const balances: Array<{ from: string; networkId: string; amount: number }> = [];
 
         console.log("wallets", wallets);
 
-        for (const wallet of wallets) {
+        const filteredWallets = wallets.filter(wallet => wallet.address.toLowerCase() !== toAddress.toLowerCase());
+
+        for (const wallet of filteredWallets) {
             for (const chain of wallet.chains) {
                 if (chain.chainAmount <= 0) continue;
 

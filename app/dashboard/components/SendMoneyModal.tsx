@@ -19,57 +19,126 @@ import CircularProgress from "@mui/material/CircularProgress";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { BaseIcon } from "@/app/components/atoms/BaseIcon";
 import { OPIcon } from "@/app/components/atoms/OPIcon";
-import CeloIcon from "@/app/components/atoms/CeloIcon";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { AllocationSummary } from "../types";
+import PolyIcon from "@/app/components/atoms/PolyIcon";
+import {optimismSepolia, polygonAmoy} from "viem/chains";
+import {useState} from "react";
+import {toast} from "react-toastify";
+import {useFindBestRoute} from "@/app/dashboard/hooks/useFindBestRoute";
+import {useWallet} from "@/app/hook/useWallet";
+import {useSendModalState} from "@/app/dashboard/store/useSendModalState";
+import {Address} from "abitype";
 
 type Props = {
-  open: boolean;
-  fromAddress: string;
-  toAddress: string;
-  amount: string;
-  password: string;
-  chain: string;
-  loading: boolean;
-  routeReady: boolean;
-  recipient: string;
-  netAmount: string;
-  routeSummary?: AllocationSummary | null;
-  walletNames?: Record<string, string>;
-  onToChange: (v: string) => void;
-  onAmountChange: (v: string) => void;
-  onPasswordChange: (v: string) => void;
-  onChainChange: (v: string) => void;
-  onClose: () => void;
-  onSend: () => void;
+    walletNames?: Record<string, string>;
 };
 
-export function SendMoneyModal({
-  open,
-  fromAddress,
-  toAddress,
-  amount,
-  password,
-  chain,
-  loading,
-  routeReady,
-  recipient,
-  netAmount,
-  routeSummary,
-  walletNames,
-  onToChange,
-  onAmountChange,
-  onPasswordChange,
-  onChainChange,
-  onClose,
-  onSend,
-}: Props) {
+export function SendMoneyModal({walletNames}: Props) {
+
+    const [toAddress, setToAddress] = useState("");
+    const [sendAmount, setSendAmount] = useState("");
+    const [sendPassword, setSendPassword] = useState("");
+    const [sendChain, setSendChain] = useState("base");
+    const [sendLoading, setSendLoading] = useState(false);
+    const [routeReady, setRouteReady] = useState(false);
+    const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
+    const { allocateAcrossNetworks } = useFindBestRoute();
+    const { unlockWallet } = useWallet();
+    const { setSendModal, isOpen } = useSendModalState();
+
+    const handleSend = () => {
+        if (routeReady) {
+            toast.success("Transferencia iniciada (demo)");
+            setSendModal(false);
+            resetSendFields();
+            return;
+        }
+
+        if (!toAddress.trim() || !sendAmount.trim() || !sendPassword.trim()) {
+            toast.error("Completa todos los campos para enviar");
+            return;
+        }
+
+        setSendLoading(true);
+        allocateAcrossNetworks(Number(sendAmount), toAddress as Address)
+            .then((summary) => {
+                setRouteSummary(summary);
+                setRouteReady(true);
+                toast.info("Ruta encontrada. Ahora puedes enviar.");
+            })
+            .catch((err) => {
+                console.error(err);
+                toast.error("No se pudo calcular la ruta");
+            })
+            .finally(() => setSendLoading(false));
+    };
+
+    const handleOnTest = async () => {
+        const privateKey =  await unlockWallet(routeSummary!.allocations[0].from, "1")
+
+        //const client = getPrivateClientByNetworkName(routeSummary!.allocations[0].chains[0].chainId, account)
+
+        let toValidChain: string;
+
+        if (sendChain === "optimism") {
+            toValidChain = "Optimism_Sepolia";
+        } else if (sendChain === "pol") {
+            toValidChain = "Polygon_Amoy_Testnet";
+        } else {
+            toValidChain = "Base_Sepolia"; // fallback
+        }
+
+        routeSummary?.allocations.map(async(allocation) => {
+            let privateKey =  await unlockWallet(allocation.from, "1")
+
+            for (const chain of allocation.chains) {
+                let fromValidChain: string;
+
+                if(chain.chainId === optimismSepolia.id.toString()){
+                    fromValidChain = "Optimism_Sepolia"
+                } else if (chain.chainId === polygonAmoy.id.toString()){
+                    fromValidChain = "Polygon_Amoy_Testnet"
+                } else {
+                    fromValidChain = "Base_Sepolia"
+                }
+
+                await fetch("/api/bridge-usdc", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        amount: chain.amount,
+                        fromChain: fromValidChain,
+                        toChain: toValidChain,
+                        recipient: toAddress,
+                        privateKey: privateKey
+                    }),
+                })
+            }
+        })
+
+        /*await fetch("/api/bridge-usdc", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                amount: sendAmount,
+                fromChain: "Base_Sepolia",
+                toChain: toValidChain,
+                recipient: toAddress,
+                privateKey: privateKey
+            }),
+        });*/
+
+        //const json = await res.json();
+
+    };
+
   const canSend =
-    !!fromAddress && !!toAddress.trim() && !!amount.trim() && !!password.trim();
+    !!toAddress.trim() && !!sendAmount.trim() && !!sendPassword.trim();
   const chains = [
     { id: "base", label: "Base", icon: <BaseIcon /> },
     { id: "optimism", label: "Optimism", icon: <OPIcon /> },
-    { id: "celo", label: "Celo", icon: <CeloIcon /> },
+    { id: "pol", label: "Polygon", icon: <PolyIcon /> },
   ];
 
   const resolveChain = (chainId: string | number) => {
@@ -80,8 +149,8 @@ export function SendMoneyModal({
     if (idStr === "optimism" || idStr === "10" || idStr === "11155420") {
       return { label: "Optimism", icon: <OPIcon /> };
     }
-    if (idStr === "celo" || idStr === "42220" || idStr === "44787") {
-      return { label: "Celo", icon: <CeloIcon /> };
+    if (idStr === "pol" || idStr === polygonAmoy.id.toString()) {
+      return { label: "Polygon", icon: <PolyIcon /> };
     }
     return { label: idStr.toUpperCase(), icon: null };
   };
@@ -101,10 +170,23 @@ export function SendMoneyModal({
       }),
     })) ?? [];
 
+    const resetSendFields = () => {
+        setToAddress("");
+        setSendAmount("");
+        setSendPassword("");
+        setSendChain("base");
+        setSendLoading(false);
+        setRouteReady(false);
+        setRouteSummary(null);
+    };
+
   return (
     <Dialog
-      open={open}
-      onClose={onClose}
+      open={isOpen}
+      onClose={() => {
+          setSendModal(false);
+          resetSendFields();
+      }}
       maxWidth="sm"
       fullWidth
       PaperProps={{
@@ -151,7 +233,7 @@ export function SendMoneyModal({
       </Box>
 
       <DialogContent sx={{ px: 3, pb: 1.5, pt: 2.5 }}>
-        {loading && (
+        {sendLoading && (
           <Box
             sx={{
               mb: 2,
@@ -181,9 +263,9 @@ export function SendMoneyModal({
               label="Chain destino"
               fullWidth
               size="medium"
-              value={chain}
-              onChange={(e) => onChainChange(e.target.value)}
-              disabled={loading}
+              value={sendChain}
+              onChange={(e) => setSendChain(e.target.value)}
+              disabled={sendLoading}
             >
               {chains.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
@@ -199,30 +281,30 @@ export function SendMoneyModal({
               fullWidth
               size="medium"
               value={toAddress}
-              onChange={(e) => onToChange(e.target.value)}
+              onChange={(e) => setToAddress(e.target.value)}
               placeholder="0x..."
-              disabled={loading}
+              disabled={sendLoading}
             />
             <TextField
               label="Monto"
               fullWidth
               size="medium"
-              value={amount}
-              onChange={(e) => onAmountChange(e.target.value)}
+              value={sendAmount}
+              onChange={(e) => setSendAmount(e.target.value)}
               placeholder="0.00"
               type="number"
               inputProps={{ min: "0", step: "0.0001" }}
-              disabled={loading}
+              disabled={sendLoading}
             />
             <TextField
               label="Password de la wallet"
               fullWidth
               size="medium"
               type="password"
-              value={password}
-              onChange={(e) => onPasswordChange(e.target.value)}
+              value={sendPassword}
+              onChange={(e) => setSendPassword(e.target.value)}
               placeholder="********"
-              disabled={loading}
+              disabled={sendLoading}
             />
           </Stack>
         ) : (
@@ -327,20 +409,20 @@ export function SendMoneyModal({
               <Box>
                 <Typography fontWeight={800}>Destinatario</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {recipient || "N/D"}
+                  {routeReady || "N/D"}
                 </Typography>
                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
-                  {chains.find((c) => c.id === chain)?.icon}
+                  {chains.find((c) => c.id === sendChain)?.icon}
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Llega en {chains.find((c) => c.id === chain)?.label || "Chain destino"}
+                      Llega en {chains.find((c) => c.id === sendChain)?.label || "Chain destino"}
                     </Typography>
                   </Box>
                 </Stack>
               </Box>
               <Box textAlign={{ xs: "left", sm: "right" }}>
                 <Typography fontWeight={800}>Recibe</Typography>
-                <Typography fontWeight={900}>{formatCurrency(Number(netAmount) || 0)}</Typography>
+                <Typography fontWeight={900}>{formatCurrency(Number((parseFloat(sendAmount || "0") * 0.99).toFixed(2)) || 0)}</Typography>
                 <Typography variant="body2" color="text.secondary">
                   Monto neto luego de comisión estimada
                 </Typography>
@@ -353,7 +435,10 @@ export function SendMoneyModal({
       <DialogActions sx={{ px: 3, pb: 2.5, pt: 1 }}>
         <Button
           variant="outlined"
-          onClick={onClose}
+          onClick={() => {
+              setSendModal(false);
+              resetSendFields();
+          }}
           sx={{
             textTransform: "none",
             borderRadius: 1.5,
@@ -371,8 +456,8 @@ export function SendMoneyModal({
         </Button>
         <Button
           variant="contained"
-          onClick={onSend}
-          disabled={!canSend || loading}
+          onClick={handleSend}
+          disabled={!canSend || sendLoading}
           sx={{
             textTransform: "none",
             borderRadius: 1.5,
@@ -385,8 +470,13 @@ export function SendMoneyModal({
             },
           }}
         >
-          {loading ? "Aceptar" : routeReady ? "Enviar" : "Aceptar"}
+          {sendLoading ? "Aceptar" : routeReady ? "Enviar" : "Aceptar"}
         </Button>
+          <Button
+            onClick={handleOnTest}
+          >
+              HOLI
+          </Button>
       </DialogActions>
     </Dialog>
   );
