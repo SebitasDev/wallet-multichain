@@ -14,9 +14,17 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {BaseIcon} from "@/app/components/atoms/BaseIcon";
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
+import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
+import {baseSepolia} from "viem/chains";
+import {Address} from "abitype";
 
-export default function BaseChainItem() {
+interface IBaseChainItemProps {
+    address: Address;
+}
+
+export default function BaseChainItem({ address } : IBaseChainItemProps) {
     const [open, setOpen] = useState(false);
+    const { balance } = useGetBalanceFromChain(baseSepolia, address, "0x036CbD53842c5426634e7929541eC2318f3dCF7e")
 
     return (
         <>
@@ -44,7 +52,7 @@ export default function BaseChainItem() {
                 <ListItemSecondaryAction
                     sx={{ display: "flex", alignItems: "center", gap: 1, pr: 2 }}
                 >
-                    <Typography fontWeight="600">$4,234.56</Typography>
+                    <Typography fontWeight="600">${balance}</Typography>
 
                     {open ? (
                         <ExpandMoreIcon fontSize="small" color="disabled" />
@@ -75,13 +83,13 @@ export default function BaseChainItem() {
                         <Box display="flex" flexDirection="column">
                             <Typography fontWeight="600">USDC</Typography>
                             <Typography variant="caption" color="text.secondary">
-                                Balance: 120.00
+                                Balance: {balance}
                             </Typography>
                         </Box>
 
                         {/* Reemplazo del ListItemSecondaryAction */}
                         <Box sx={{ ml: "auto", pr: 2 }}>
-                            <Typography fontWeight="600">$120.00</Typography>
+                            <Typography fontWeight="600">${balance}</Typography>
                         </Box>
                     </ListItem>
                 </List>
