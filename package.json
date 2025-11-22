@@ -15,7 +15,6 @@
     "@mui/material": "^7.3.5",
     "@scure/bip39": "^1.4.0",
     "buffer": "^6.0.3",
-    "crypto-js": "^4.2.0",
     "ethereum-cryptography": "^2.2.0",
     "next": "16.0.3",
     "react": "19.2.0",
@@ -28,6 +27,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "crypto-js": "^4.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
     "typescript": "^5"

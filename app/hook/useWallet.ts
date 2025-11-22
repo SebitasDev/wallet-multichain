@@ -3,22 +3,28 @@ import { wordlist } from "@scure/bip39/wordlists/english";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import { privateKeyToAccount } from "viem/accounts";
 import { Buffer } from "buffer";
-import { WalletInfo } from "@/app/state/useWalletManager";
 import { useEffect, useState } from "react";
 import { encryptSeed } from "../utils/cripto";
+import {WalletInfo} from "@/app/store/useWalletManager";
+import {useBalanceStore} from "@/app/dashboard/hooks/useBalanceStore";
 
 export const useWallet = ()=> {
 
   const [wallets, setWallets] = useState<WalletInfo[]>([]);
+  const { setTotalChains } = useBalanceStore();
 
   useEffect(() => {
         const stored = localStorage.getItem("wallets");
-        if (stored) setWallets(JSON.parse(stored));
+        if (stored){
+            setWallets(JSON.parse(stored));
+            setTotalChains(JSON.parse(stored).length);
+        }
     }, []);
 
     const saveWallets = (updated: WalletInfo[]) => {
         setWallets(updated);
-        localStorage.setItem("wallets", JSON.stringify(updated));
+        localStorage.setItem("wallets", JSON.stringify(updated))
+        setTotalChains(updated.length);
     };
 
   const addWallet = async (

@@ -2,6 +2,7 @@ import {Address} from "abitype";
 import {baseSepolia, celoSepolia, optimismSepolia} from "viem/chains";
 import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
 import {useEffect, useState} from "react";
+import {useBalanceStore} from "@/app/dashboard/hooks/useBalanceStore";
 
 export const useAddressInfo = (address: Address) => {
     const { balance: baseBalance, loading: baseLoading } =
@@ -15,6 +16,8 @@ export const useAddressInfo = (address: Address) => {
 
     const [total, setTotal] = useState("0");
 
+    const { increment } = useBalanceStore();
+
     useEffect(() => {
         // Esperamos a que los tres hayan cargado
         if (baseLoading || celoLoading || optimismLoading) return;
@@ -26,6 +29,8 @@ export const useAddressInfo = (address: Address) => {
             Number(optimismBalance);
 
         setTotal(sum.toString());
+        increment(sum);
+
     }, [baseBalance, celoBalance, optimismBalance, baseLoading, celoLoading, optimismLoading]);
 
     return {
