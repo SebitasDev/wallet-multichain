@@ -19,3 +19,13 @@ export interface WalletInfo {
   address: string;
   encryptedSeed: string;
 }
+
+export type AllocationSummary = {
+  targetAmount: number;
+  totalAmountTaken: number;
+  remainingToCover: number;
+  allocations: Array<{
+    from: string;
+    chains: Array<{ chainId: string; amount: number }>;
+  }>;
+};

@@ -18,7 +18,7 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import BaseChainItem from "@/app/components/molecules/BaseChainItem";
 import OptimismChainItem from "@/app/components/molecules/OptimismChainItem";
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import CeloChainItem from "@/app/components/molecules/CeloChainItem";
 import {Address} from "abitype";
 import {useAddressInfo} from "@/app/dashboard/hooks/useAddressInfo";
@@ -36,14 +36,14 @@ export const AddressCard = ({
     const [showMore, setShowMore] = useState(false);
     const {total} = useAddressInfo(address);
 
-    const bgGradient = useMemo(() => {
+    const [bgGradient, setBgGradient] = useState("linear-gradient(135deg, #f1f5ff, #e8f5f1)");
+
+    useEffect(() => {
         const pastelClaro = () =>
             `hsl(${Math.floor(Math.random() * 360)}, 90%, 95%)`;
-
         const c1 = pastelClaro();
         const c2 = pastelClaro();
-
-        return `linear-gradient(135deg, ${c1}, ${c2})`;
+        setBgGradient(`linear-gradient(135deg, ${c1}, ${c2})`);
     }, []);
 
     const copyToClipboard = async (value: string, label: string) => {
@@ -54,6 +54,10 @@ export const AddressCard = ({
         }
         const onSuccess = () => toast.success(`${label} copiado`);
         const onError = () => toast.error("No se pudo copiar");
+        const promptFallback = () => {
+            const manual = window.prompt("Copia y pega:", text);
+            if (manual !== null) onSuccess();
+        };
         const fallbackCopy = () => {
             const textarea = document.createElement("textarea");
             textarea.value = text;
@@ -67,6 +71,7 @@ export const AddressCard = ({
                 ok ? onSuccess() : onError();
             } catch {
                 onError();
+                promptFallback();
             } finally {
                 document.body.removeChild(textarea);
             }
@@ -138,6 +143,7 @@ export const AddressCard = ({
 
                             <IconButton
                                 size="small"
+                                aria-label="Copiar address"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     copyToClipboard(address, "Address");

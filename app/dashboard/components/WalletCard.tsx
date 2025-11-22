@@ -60,7 +60,7 @@ export function WalletCard({ wallet }: Props) {
   );
 
   const copyToClipboard = async (value: string, label: string) => {
-    const text = value ?? "";
+    const text = value ? String(value) : "";
     if (!text) {
       toast.error("No hay nada para copiar");
       return;
@@ -68,6 +68,10 @@ export function WalletCard({ wallet }: Props) {
 
     const onSuccess = () => toast.success(`${label} copiado`);
     const onError = () => toast.error("No se pudo copiar");
+    const promptFallback = () => {
+      const manual = window.prompt("Copia y pega:", text);
+      if (manual !== null) onSuccess();
+    };
     const fallbackCopy = () => {
       const textarea = document.createElement("textarea");
       textarea.value = text;
@@ -81,6 +85,7 @@ export function WalletCard({ wallet }: Props) {
         ok ? onSuccess() : onError();
       } catch {
         onError();
+        promptFallback();
       } finally {
         document.body.removeChild(textarea);
       }

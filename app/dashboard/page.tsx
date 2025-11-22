@@ -10,6 +10,8 @@ import { SendMoneyModal } from "./components/SendMoneyModal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useWallet } from "../hook/useWallet";
+import { useFindBestRoute } from "./hooks/useFindBestRoute";
+import { AllocationSummary } from "./types";
 
 export default function Dashboard() {
   const [heroBg, setHeroBg] = useState(
@@ -27,7 +29,13 @@ export default function Dashboard() {
   const [sendChain, setSendChain] = useState("base");
   const [sendLoading, setSendLoading] = useState(false);
   const [routeReady, setRouteReady] = useState(false);
+  const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
   const { addWallet, wallets } = useWallet();
+  const { allocateAcrossNetworks } = useFindBestRoute();
+  const walletNamesMap = wallets.reduce<Record<string, string>>((acc, w) => {
+    acc[w.address.toLowerCase()] = w.name;
+    return acc;
+  }, {});
   const resetModalFields = () => {
     setWalletName("");
     setAddressValue("");
@@ -41,6 +49,7 @@ export default function Dashboard() {
     setSendChain("base");
     setSendLoading(false);
     setRouteReady(false);
+    setRouteSummary(null);
   };
 
   useEffect(() => {
@@ -80,11 +89,17 @@ export default function Dashboard() {
     }
 
     setSendLoading(true);
-    setTimeout(() => {
-      setSendLoading(false);
-      setRouteReady(true);
-      toast.info("Ruta encontrada. Ahora puedes enviar.");
-    }, 5000);
+    allocateAcrossNetworks(Number(sendAmount))
+      .then((summary) => {
+        setRouteSummary(summary);
+        setRouteReady(true);
+        toast.info("Ruta encontrada. Ahora puedes enviar.");
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("No se pudo calcular la ruta");
+      })
+      .finally(() => setSendLoading(false));
   };
 
   return (
@@ -161,6 +176,8 @@ export default function Dashboard() {
         routeReady={routeReady}
         recipient={toAddress}
         netAmount={(parseFloat(sendAmount || "0") * 0.99).toFixed(2)}
+        routeSummary={routeSummary}
+        walletNames={walletNamesMap}
         onToChange={setToAddress}
         onAmountChange={setSendAmount}
         onPasswordChange={setSendPassword}
