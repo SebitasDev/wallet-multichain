@@ -2,7 +2,7 @@
 
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { Box, Typography } from "@mui/material";
-import {useBalanceStore} from "@/app/dashboard/hooks/useBalanceStore";
+import {useBalanceStore} from "@/app/store/useBalanceStore";
 
 type Props = {
   background: string;
