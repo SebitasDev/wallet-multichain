@@ -3,7 +3,7 @@ import { useWalletsStore } from "@/app/store/useWalletsStore";
 export const useFindBestRoute = () => {
     const { wallets } = useWalletsStore();
 
-    async function allocateAcrossNetworks(targetAmount: number) {
+    function allocateAcrossNetworks(targetAmount: number) {
         const balances: Array<{ from: string; networkId: string; amount: number }> = [];
 
         console.log("wallets", wallets);
