@@ -17,6 +17,7 @@
     "@scure/bip39": "^1.4.0",
     "buffer": "^6.0.3",
     "ethereum-cryptography": "^2.2.0",
+    "framer-motion": "^12.23.24",
     "next": "16.0.3",
     "qrcode.react": "^3.1.0",
     "react": "19.2.0",

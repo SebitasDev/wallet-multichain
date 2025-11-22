@@ -16,13 +16,15 @@ export function TopBar({ onAdd, onSend, onReceive }: Props) {
     <Box
       sx={{
         display: "flex",
-        alignItems: { xs: "flex-start", sm: "center" },
-        justifyContent: { xs: "space-between", sm: "space-between" },
+        alignItems: { xs: "center", sm: "center" },
+        justifyContent: "space-between",
         gap: 2,
-        flexWrap: { xs: "wrap", sm: "nowrap" },
+        flexWrap: "wrap",
+        width: "100%",
         px: { xs: 2, md: 4 },
         py: { xs: 1.4, md: 1.6 },
         borderRadius: 20,
+        mb: { xs: 2.5, md: 3 },
         background: "linear-gradient(135deg, rgba(15,23,42,0.85) 0%, rgba(24,35,52,0.9) 100%)",
         border: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "0 20px 55px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
@@ -34,10 +36,11 @@ export function TopBar({ onAdd, onSend, onReceive }: Props) {
         alignItems="center"
         spacing={{ xs: 0.85, sm: 1.5 }}
         sx={{
-          flex: { xs: "0 0 100%", sm: 1 },
+          flex: { xs: "0 0 auto", sm: 1 },
           minWidth: 240,
-          justifyContent: { xs: "flex-start", sm: "flex-start" },
-          textAlign: { xs: "left", sm: "left" },
+          justifyContent: "flex-start",
+          textAlign: "left",
+          flexWrap: "nowrap",
         }}
       >
         <Box
@@ -78,7 +81,7 @@ export function TopBar({ onAdd, onSend, onReceive }: Props) {
           rowGap: 1,
         }}
       >
-        {[{ icon: <SendIcon />, label: "Send Money", action: onSend },
+        {[{ icon: <SendIcon />, label: "Enviar", action: onSend },
           { icon: <DownloadIcon />, label: "Recibir", action: onReceive },
           { icon: <AddIcon />, label: "Agregar Address", action: onAdd }].map((btn) => (
           <Button

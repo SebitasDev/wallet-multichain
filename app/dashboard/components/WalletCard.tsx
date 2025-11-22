@@ -54,6 +54,7 @@ type Props = { wallet: Wallet };
 
 export function WalletCard({ wallet }: Props) {
   const [expanded, setExpanded] = useState(wallet.defaultExpanded ?? false);
+  const [showNameExpanded, setShowNameExpanded] = useState(false);
   const visibleChains = useMemo(
     () => (expanded ? wallet.chains : wallet.chains.slice(0, 2)),
     [expanded, wallet.chains],
@@ -102,6 +103,12 @@ export function WalletCard({ wallet }: Props) {
     }
   };
 
+  const exceedsNameLimit = wallet.name.length > 12;
+  const displayName =
+    exceedsNameLimit && !showNameExpanded
+      ? `${wallet.name.slice(0, 12)}...`
+      : wallet.name;
+
   return (
     <Card
       sx={{
@@ -125,10 +132,44 @@ export function WalletCard({ wallet }: Props) {
             pb: 1.5,
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={1.25}>
-            <Typography fontWeight={700} fontSize={17} sx={{ color: "#0f172a" }}>
-              {wallet.name}
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1.25}
+            flexWrap="nowrap"
+            sx={{ minWidth: 0, overflow: "hidden" }}
+          >
+            <Typography
+              fontWeight={700}
+              fontSize={17}
+              sx={{
+                color: "#0f172a",
+                maxWidth: { xs: 150, sm: 200 },
+                minWidth: 0,
+                whiteSpace: showNameExpanded ? "normal" : "nowrap",
+                textOverflow: showNameExpanded ? "clip" : "ellipsis",
+                overflow: "hidden",
+              }}
+              title={wallet.name}
+            >
+              {displayName}
             </Typography>
+            {exceedsNameLimit && (
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowNameExpanded((prev) => !prev);
+                }}
+                sx={{ color: "#2563eb", p: 0.25 }}
+              >
+                {showNameExpanded ? (
+                  <ExpandLess sx={{ fontSize: 18 }} />
+                ) : (
+                  <ExpandMore sx={{ fontSize: 18 }} />
+                )}
+              </IconButton>
+            )}
             <Chip
               label={`${wallet.chains.length} chains`}
               size="small"

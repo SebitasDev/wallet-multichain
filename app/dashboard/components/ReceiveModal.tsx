@@ -15,7 +15,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import ContentCopyOutlined from "@mui/icons-material/ContentCopyOutlined";
 import { BaseIcon } from "@/app/components/atoms/BaseIcon";
 import { OPIcon } from "@/app/components/atoms/OPIcon";
-import { useMemo } from "react";
+import {useEffect, useMemo, useState} from "react";
 import { toast } from "react-toastify";
 import { WalletInfo } from "@/app/store/useWalletManager";
 import PolyIcon from "@/app/components/atoms/PolyIcon";
@@ -23,10 +23,6 @@ import PolyIcon from "@/app/components/atoms/PolyIcon";
 type Props = {
   open: boolean;
   wallets: WalletInfo[];
-  selectedWallet: string;
-  selectedChain: string;
-  onWalletChange: (v: string) => void;
-  onChainChange: (v: string) => void;
   onClose: () => void;
 };
 
@@ -39,12 +35,18 @@ const chains = [
 export function ReceiveModal({
   open,
   wallets,
-  selectedWallet,
-  selectedChain,
-  onWalletChange,
-  onChainChange,
   onClose,
 }: Props) {
+  const [selectedWallet, setSelectedWallet] = useState<string>("");
+  const [selectedChain, setSelectedChain] = useState<string>("celo");
+
+  useEffect(() => {
+    if (open && wallets.length) {
+      setSelectedWallet(wallets[0].address);
+      setSelectedChain("celo");
+    }
+  }, [open, wallets]);
+
   const currentAddress = useMemo(() => {
     const found = wallets.find((w) => w.address === selectedWallet) ?? wallets[0];
     return found?.address ?? "";
@@ -122,7 +124,7 @@ export function ReceiveModal({
               fullWidth
               size="small"
               value={selectedWallet}
-              onChange={(e) => onWalletChange(e.target.value)}
+              onChange={(e) => setSelectedWallet(e.target.value)}
             >
               {wallets.map((w) => (
                 <MenuItem key={w.address} value={w.address}>
@@ -136,7 +138,7 @@ export function ReceiveModal({
               fullWidth
               size="small"
               value={selectedChain}
-              onChange={(e) => onChainChange(e.target.value)}
+              onChange={(e) => setSelectedChain(e.target.value)}
             >
               {chains.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
