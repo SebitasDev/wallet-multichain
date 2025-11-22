@@ -209,7 +209,7 @@ export const AddressCard = ({
                     {/* Right */}
                     <Box textAlign="right">
                         <Typography variant="h5" fontWeight="bold">
-                            ${total}
+                            ${Number(total).toFixed(2)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                             Valor Total
