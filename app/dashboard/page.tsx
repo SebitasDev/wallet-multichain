@@ -3,15 +3,12 @@
 import { Box } from "@mui/material";
 import { useEffect, useState } from "react";
 import { AddressCard } from "./components/AddressCard";
-import { WalletCard } from "./components/WalletCard";
 import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
-import { Wallet } from "./types";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { WalletInfo } from "../state/useWalletManager";
-import { useWallet } from "./utils/wallet";
+import { useWallet } from "../hook/useWallet";
 
 export default function Dashboard() {
   const [heroBg, setHeroBg] = useState(
@@ -23,6 +20,11 @@ export default function Dashboard() {
   const [addressValue, setAddressValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
   const { addWallet, wallets } = useWallet();
+  const resetModalFields = () => {
+    setWalletName("");
+    setAddressValue("");
+    setPasswordValue("");
+  };
 
   useEffect(() => {
     const pastelOscuro = () =>
@@ -41,19 +43,23 @@ export default function Dashboard() {
     try {
       const updated = await addWallet(addressValue, passwordValue, walletName);
       setOpenModal(false);
-      setWalletName("");
-      setAddressValue("");
-      setPasswordValue("");
+      resetModalFields();
       toast.success(`Wallet "${walletName}" agregada y cifrada correctamente`);
     } catch (err) {
       console.error(err);
       toast.error((err as Error).message || "No se pudo agregar la wallet");
+      resetModalFields();
     }
   };
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f6fb" }}>
-      <TopBar onAdd={() => setOpenModal(true)} />
+      <TopBar
+        onAdd={() => {
+          resetModalFields();
+          setOpenModal(true);
+        }}
+      />
 
       <HeroBanner background={heroBg} total={heroTotal} />
 
@@ -95,7 +101,10 @@ export default function Dashboard() {
         onPhraseChange={setAddressValue}
         onPasswordChange={setPasswordValue}
         onConfirm={handleAddWallet}
-        onClose={() => setOpenModal(false)}
+        onClose={() => {
+          setOpenModal(false);
+          resetModalFields();
+        }}
       />
       <ToastContainer position="top-right" />
     </Box>

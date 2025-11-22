@@ -1,7 +1,7 @@
 "use client";
 
+import { formatCurrency } from "@/app/utils/formatCurrency";
 import { Box, Typography } from "@mui/material";
-import { formatCurrency } from "../utils/formatCurrency";
 
 type Props = {
   background: string;

@@ -1,4 +1,4 @@
-import { WalletInfo } from "./wallet";
+import { WalletInfo } from "../hook/wallet";
 
 const KEY = "wallets";
 
