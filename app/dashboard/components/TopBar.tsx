@@ -3,53 +3,65 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SendIcon from "@mui/icons-material/Send";
+import DownloadIcon from "@mui/icons-material/Download";
 
 type Props = {
   onAdd: () => void;
   onSend: () => void;
+  onReceive: () => void;
 };
 
-export function TopBar({ onAdd, onSend }: Props) {
+export function TopBar({ onAdd, onSend, onReceive }: Props) {
   return (
     <Box
       sx={{
         display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
+        alignItems: { xs: "flex-start", sm: "center" },
+        justifyContent: { xs: "space-between", sm: "space-between" },
         gap: 2,
-        flexWrap: "wrap",
-        px: { xs: 2.5, md: 5 },
-        py: 2.25,
+        flexWrap: { xs: "wrap", sm: "nowrap" },
+        px: { xs: 2, md: 4 },
+        py: { xs: 1.4, md: 1.6 },
+        borderRadius: 20,
+        background: "linear-gradient(135deg, rgba(15,23,42,0.85) 0%, rgba(24,35,52,0.9) 100%)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "0 20px 55px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
+        color: "#fff",
       }}
     >
       <Stack
         direction="row"
         alignItems="center"
-        spacing={1.5}
-        sx={{ flex: 1, minWidth: 240 }}
+        spacing={{ xs: 0.85, sm: 1.5 }}
+        sx={{
+          flex: { xs: "0 0 100%", sm: 1 },
+          minWidth: 240,
+          justifyContent: { xs: "flex-start", sm: "flex-start" },
+          textAlign: { xs: "left", sm: "left" },
+        }}
       >
         <Box
           sx={{
-            width: 42,
-            height: 42,
-            borderRadius: 12,
-            background: "linear-gradient(160deg, #1f50ff 0%, #1db4c3 100%)",
+            width: 48,
+            height: 48,
+            borderRadius: 16,
+            background: "linear-gradient(145deg, #0ea5e9 0%, #6366f1 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             color: "#fff",
             fontWeight: 800,
-            boxShadow: "0 8px 25px rgba(59,130,246,0.35)",
-            fontSize: 18,
-          }}
+            boxShadow: "0 10px 22px rgba(0,0,0,0.25)",
+            fontSize: 17,
+            }}
         >
           M
         </Box>
-        <Box>
-          <Typography fontWeight={800} fontSize={18}>
+        <Box sx={{ ml: { xs: 0.5, sm: 0.75 } }}>
+          <Typography fontWeight={900} fontSize={18} sx={{ color: "#fff" }}>
             MultiChain Wallet
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12.5 }}>
+          <Typography variant="body2" sx={{ fontSize: 12.5, color: "rgba(255,255,255,0.8)" }}>
             Gestiona todas tus addresses en un solo lugar
           </Typography>
         </Box>
@@ -60,49 +72,36 @@ export function TopBar({ onAdd, onSend }: Props) {
         spacing={1.5}
         sx={{
           width: { xs: "100%", sm: "auto" },
-          justifyContent: { xs: "flex-start", sm: "flex-end" },
-          flexWrap: "wrap",
+          justifyContent: { xs: "center", sm: "flex-end" },
+          alignItems: "center",
+          flexWrap: { xs: "wrap", sm: "nowrap" },
           rowGap: 1,
         }}
       >
-        <Button
-          startIcon={<SendIcon />}
-          sx={{
-            textTransform: "none",
-            px: 2.2,
-            py: 1,
-            borderRadius: 2,
-            fontWeight: 700,
-            color: "#0f172a",
-            backgroundColor: "#e0f2fe",
-            boxShadow: "0 4px 12px rgba(59,130,246,0.25)",
-            "&:hover": {
-              backgroundColor: "#cfe7fb",
-            },
-          }}
-          onClick={onSend}
-        >
-          Send Money
-        </Button>
-        <Button
-          startIcon={<AddIcon />}
-          sx={{
-            textTransform: "none",
-            px: 2.8,
-            py: 1,
-            borderRadius: 2,
-            fontWeight: 700,
-            color: "#fff",
-            background: "linear-gradient(120deg, #1e62ff 0%, #1a9cff 100%)",
-            boxShadow: "0 8px 20px rgba(32,114,255,0.35)",
-            "&:hover": {
-              background: "linear-gradient(120deg, #1b57e6 0%, #188bdf 100%)",
-            },
-          }}
-          onClick={onAdd}
-        >
-          Agregar Address
-        </Button>
+        {[{ icon: <SendIcon />, label: "Send Money", action: onSend },
+          { icon: <DownloadIcon />, label: "Recibir", action: onReceive },
+          { icon: <AddIcon />, label: "Agregar Address", action: onAdd }].map((btn) => (
+          <Button
+            key={btn.label}
+            startIcon={btn.icon}
+            onClick={btn.action}
+            sx={{
+              textTransform: "none",
+              px: 2.6,
+              py: 1,
+              borderRadius: 2,
+              fontWeight: 800,
+              color: "#0b172d",
+              background: "linear-gradient(135deg, #fefefe 0%, #e5ecff 100%)",
+              boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #ffffff 0%, #d9e4ff 100%)",
+              },
+            }}
+          >
+            {btn.label}
+          </Button>
+        ))}
       </Stack>
     </Box>
   );

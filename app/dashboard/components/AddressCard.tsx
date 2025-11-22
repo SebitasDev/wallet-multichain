@@ -95,10 +95,14 @@ export const AddressCard = ({
         <Card
             elevation={3}
             sx={{
-                borderRadius: 3,
+                borderRadius: 12,
                 overflow: "hidden",
                 transition: "0.2s",
-                "&:hover": { boxShadow: 8 },
+                background: "#ffffff",
+                color: "#0f172a",
+                boxShadow:
+                    "0 0 0 1.5px rgba(255,255,255,0.1), 0 0 10px rgba(200,200,200,0.6), 0 10px 24px rgba(15,23,42,0.18), inset 0 0 0 1.5px rgba(210,210,210,0.7)",
+                border: "1.25px solid rgba(215,215,215,0.85)",
             }}
         >
             {/* HEADER */}
@@ -115,14 +119,14 @@ export const AddressCard = ({
                     <Box flex={1}>
                         <Box display="flex" alignItems="center" gap={1}>
                             {/* Wallet name */}
-                            <Typography variant="h6" fontWeight="bold">
+                            <Typography variant="h6" fontWeight="bold" sx={{ color: "#0f172a" }}>
                                 {walletName}
                             </Typography>
 
                             {/* numero de chains disponibles */}
                             <Chip label="3 chains" size="small" sx={{
-                                    backgroundColor: "#009460",
-                                    color: "#fff",
+                                    backgroundColor: "rgba(16,185,129,0.15)",
+                                    color: "#0f5132",
                                 }}
                             />
                         </Box>
@@ -131,11 +135,12 @@ export const AddressCard = ({
                             <Typography
                                 component="code"
                                 sx={{
-                                    backgroundColor: "action.hover",
+                                    backgroundColor: "rgba(248,250,252,0.8)",
                                     px: 1,
                                     py: 0.5,
                                     borderRadius: 1,
                                     fontSize: "12px",
+                                    color: "#0f172a",
                                 }}
                             >
                                 {truncated}
@@ -197,8 +202,8 @@ export const AddressCard = ({
             </CardContent>
 
             {/* FOOTER */}
-            <Divider />
-            <CardActions sx={{ p: 2 }}>
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
+            <CardActions sx={{ p: 2, color: "#475569" }}>
                 <Button
                     fullWidth
                     variant="text"
@@ -207,10 +212,16 @@ export const AddressCard = ({
                             sx={{
                                 transform: showMore ? "rotate(180deg)" : "rotate(0deg)",
                                 transition: "0.2s",
+                                color: "#475569",
                             }}
                         />
                     }
-                    sx={{ textTransform: "none" }}
+                    sx={{
+                        textTransform: "none",
+                        color: "#475569",
+                        fontWeight: 700,
+                        "&:hover": { backgroundColor: "rgba(148,163,184,0.08)" },
+                    }}
                     onClick={() => setShowMore(!showMore)}
                 >
                     {showMore ? "Ocultar chains" : "Ver 1 chain más"}

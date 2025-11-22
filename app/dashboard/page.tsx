@@ -7,6 +7,7 @@ import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
 import { SendMoneyModal } from "./components/SendMoneyModal";
+import { ReceiveModal } from "./components/ReceiveModal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useWallet } from "../hook/useWallet";
@@ -14,9 +15,6 @@ import { useFindBestRoute } from "./hooks/useFindBestRoute";
 import { AllocationSummary } from "./types";
 
 export default function Dashboard() {
-  const [heroBg, setHeroBg] = useState(
-    "linear-gradient(110deg, #1f3fb8 0%, #0086b7 50%, #1aa167 100%)",
-  );
   const [openModal, setOpenModal] = useState(false);
   const [walletName, setWalletName] = useState("");
   const [addressValue, setAddressValue] = useState("");
@@ -30,12 +28,16 @@ export default function Dashboard() {
   const [sendLoading, setSendLoading] = useState(false);
   const [routeReady, setRouteReady] = useState(false);
   const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
+  const [openReceiveModal, setOpenReceiveModal] = useState(false);
+  const [receiveWallet, setReceiveWallet] = useState("");
+  const [receiveChain, setReceiveChain] = useState("base");
   const { addWallet, wallets } = useWallet();
   const { allocateAcrossNetworks } = useFindBestRoute();
   const walletNamesMap = wallets.reduce<Record<string, string>>((acc, w) => {
     acc[w.address.toLowerCase()] = w.name;
     return acc;
   }, {});
+  const heroBg = "var(--gradient-hero)";
   const resetModalFields = () => {
     setWalletName("");
     setAddressValue("");
@@ -52,13 +54,6 @@ export default function Dashboard() {
     setRouteSummary(null);
   };
 
-  useEffect(() => {
-    const pastelOscuro = () =>
-      `hsl(${Math.floor(Math.random() * 360)}, 80%, 65%)`;
-    const c1 = pastelOscuro();
-    const c2 = pastelOscuro();
-    setHeroBg(`linear-gradient(135deg, ${c1}, ${c2})`);
-  }, []);
   const words = addressValue.trim() ? addressValue.trim().split(/\s+/).filter(Boolean) : [];
 
   const handleAddWallet = async () => {
@@ -102,8 +97,18 @@ export default function Dashboard() {
       .finally(() => setSendLoading(false));
   };
 
+  const openReceive = () => {
+    if (!wallets.length) {
+      toast.error("Primero agrega una wallet.");
+      return;
+    }
+    setReceiveWallet(wallets[0]?.address || "");
+    setReceiveChain("base");
+    setOpenReceiveModal(true);
+  };
+
   return (
-    <Box sx={{ minHeight: "100vh", backgroundColor: "#f5f6fb" }}>
+    <Box sx={{ minHeight: "100vh", backgroundColor: "#141516ff" }}>
       <TopBar
         onAdd={() => {
           resetModalFields();
@@ -118,6 +123,7 @@ export default function Dashboard() {
           }
           setOpenSendModal(true);
         }}
+        onReceive={openReceive}
       />
 
       <HeroBanner background={heroBg}/>
@@ -187,6 +193,15 @@ export default function Dashboard() {
           resetSendFields();
         }}
         onSend={handleSend}
+      />
+      <ReceiveModal
+        open={openReceiveModal}
+        wallets={wallets as any}
+        selectedWallet={receiveWallet}
+        selectedChain={receiveChain}
+        onWalletChange={setReceiveWallet}
+        onChainChange={setReceiveChain}
+        onClose={() => setOpenReceiveModal(false)}
       />
       <ToastContainer position="top-right" />
     </Box>
