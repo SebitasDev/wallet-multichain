@@ -10,21 +10,34 @@ import { SendMoneyModal } from "./components/SendMoneyModal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useWallet } from "../hook/useWallet";
-import {useBalanceStore} from "@/app/dashboard/hooks/useBalanceStore";
 
 export default function Dashboard() {
   const [heroBg, setHeroBg] = useState(
     "linear-gradient(110deg, #1f3fb8 0%, #0086b7 50%, #1aa167 100%)",
   );
+  const [heroTotal, setHeroTotal] = useState<number | null>(null);
   const [openModal, setOpenModal] = useState(false);
   const [walletName, setWalletName] = useState("");
   const [addressValue, setAddressValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
+  const [openSendModal, setOpenSendModal] = useState(false);
+  const [fromAddress, setFromAddress] = useState("");
+  const [toAddress, setToAddress] = useState("");
+  const [sendAmount, setSendAmount] = useState("");
+  const [sendPassword, setSendPassword] = useState("");
+  const [sendChain, setSendChain] = useState("base");
   const { addWallet, wallets } = useWallet();
   const resetModalFields = () => {
     setWalletName("");
     setAddressValue("");
     setPasswordValue("");
+  };
+  const resetSendFields = () => {
+    setFromAddress("");
+    setToAddress("");
+    setSendAmount("");
+    setSendPassword("");
+    setSendChain("base");
   };
 
   useEffect(() => {
@@ -33,6 +46,9 @@ export default function Dashboard() {
     const c1 = pastelOscuro();
     const c2 = pastelOscuro();
     setHeroBg(`linear-gradient(135deg, ${c1}, ${c2})`);
+
+    const randomTotal = Math.random() * 15000 + 12000;
+    setHeroTotal(Number(randomTotal.toFixed(2)));
   }, []);
   const words = addressValue.trim() ? addressValue.trim().split(/\s+/).filter(Boolean) : [];
 
@@ -78,7 +94,7 @@ export default function Dashboard() {
         }}
       />
 
-      <HeroBanner background={heroBg} total={value} />
+      <HeroBanner background={heroBg} total={heroTotal} />
 
       <Box
         sx={{
