@@ -16,9 +16,10 @@ import {
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLess from "@mui/icons-material/ExpandLess";
 import BaseChainItem from "@/app/components/molecules/BaseChainItem";
 import OptimismChainItem from "@/app/components/molecules/OptimismChainItem";
-import {useEffect, useMemo, useState} from "react";
+import {useMemo, useState} from "react";
 import CeloChainItem from "@/app/components/molecules/CeloChainItem";
 import {Address} from "abitype";
 import {useAddressInfo} from "@/app/dashboard/hooks/useAddressInfo";
@@ -35,16 +36,15 @@ export const AddressCard = ({
     }: IAddressCardProps) => {
     const [showMore, setShowMore] = useState(false);
     const {total} = useAddressInfo(address);
+    const [showNameExpanded, setShowNameExpanded] = useState(false);
 
-    const [bgGradient, setBgGradient] = useState("linear-gradient(135deg, #f1f5ff, #e8f5f1)");
-
-    useEffect(() => {
-        const pastelClaro = () =>
-            `hsl(${Math.floor(Math.random() * 360)}, 90%, 95%)`;
-        const c1 = pastelClaro();
-        const c2 = pastelClaro();
-        setBgGradient(`linear-gradient(135deg, ${c1}, ${c2})`);
-    }, []);
+    const bgGradient = useMemo(() => {
+        const seed = address
+            .split("")
+            .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const pastel = (h: number) => `hsl(${h % 360}, 80%, 92%)`;
+        return `linear-gradient(135deg, ${pastel(seed)}, ${pastel(seed * 7)})`;
+    }, [address]);
 
     const copyToClipboard = async (value: string, label: string) => {
         const text = value ?? "";
@@ -90,6 +90,8 @@ export const AddressCard = ({
     };
 
     const truncated = `${address.slice(0, 6)}...${address.slice(-4)}`;
+    const exceedsNameLimit = walletName.length > 12;
+    const displayName = exceedsNameLimit && !showNameExpanded ? `${walletName.slice(0, 12)}...` : walletName;
 
     return (
         <Card
@@ -116,12 +118,47 @@ export const AddressCard = ({
             >
                 <Box display="flex" justifyContent="space-between">
                     {/* Left */}
-                    <Box flex={1}>
-                        <Box display="flex" alignItems="center" gap={1}>
+                    <Box flex={1} minWidth={0}>
+                        <Box
+                            display="flex"
+                            alignItems="center"
+                            gap={1}
+                            flexWrap="nowrap"
+                            sx={{ minWidth: 0, overflow: "hidden" }}
+                        >
                             {/* Wallet name */}
-                            <Typography variant="h6" fontWeight="bold" sx={{ color: "#0f172a" }}>
-                                {walletName}
+                            <Typography
+                                variant="h6"
+                                fontWeight="bold"
+                                sx={{
+                                    color: "#0f172a",
+                                    maxWidth: { xs: 150, sm: 200 },
+                                    minWidth: 0,
+                                    whiteSpace: showNameExpanded ? "normal" : "nowrap",
+                                    textOverflow: showNameExpanded ? "clip" : "ellipsis",
+                                    overflow: "hidden",
+                                }}
+                                title={walletName}
+                            >
+                                {displayName}
                             </Typography>
+                            {exceedsNameLimit && (
+                                <IconButton
+                                    size="small"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowNameExpanded((prev) => !prev);
+                                    }}
+                                    sx={{ color: "#2563eb", p: 0.25 }}
+                                >
+                                    {showNameExpanded ? (
+                                        <ExpandLess fontSize="small" />
+                                    ) : (
+                                        <ExpandMoreIcon fontSize="small" />
+                                    )}
+                                </IconButton>
+                            )}
+                            {/* full name se muestra inline al abrir la flechita */}
 
                             {/* numero de chains disponibles */}
                             <Chip label="3 chains" size="small" sx={{

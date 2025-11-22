@@ -13,34 +13,56 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AccountBalanceWalletOutlined from "@mui/icons-material/AccountBalanceWalletOutlined";
+import { useState, useMemo, useEffect } from "react";
+import { toast } from "react-toastify";
+import { useWallet } from "@/app/hook/useWallet";
 
 type Props = {
   open: boolean;
-  walletName: string;
-  phrase: string;
-  wordsCount: number;
-  password: string;
-  onWalletNameChange: (value: string) => void;
-  onPhraseChange: (value: string) => void;
-  onPasswordChange: (value: string) => void;
-  onConfirm: () => void;
   onClose: () => void;
 };
 
 export function AddSecretModal({
   open,
-  walletName,
-  phrase,
-  wordsCount,
-  password,
-  onWalletNameChange,
-  onPhraseChange,
-  onPasswordChange,
-  onConfirm,
   onClose,
 }: Props) {
-  const has12Words = wordsCount === 12;
+  const { addWallet } = useWallet();
+  const [walletName, setWalletName] = useState("");
+  const [phrase, setPhrase] = useState("");
+  const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      setWalletName("");
+      setPhrase("");
+      setPassword("");
+    }
+  }, [open]);
+
+  const words = useMemo(
+    () => (phrase.trim() ? phrase.trim().split(/\s+/).filter(Boolean) : []),
+    [phrase],
+  );
+  const has12Words = words.length === 12;
   const canConfirm = walletName.trim().length > 0 && password.trim().length > 0 && has12Words;
+
+  const handleAdd = async () => {
+    if (!canConfirm) {
+      toast.error("Completa nombre, password y 12 palabras");
+      return;
+    }
+    try {
+      await addWallet(phrase, password, walletName);
+      toast.success(`Wallet "${walletName}" agregada y cifrada correctamente`);
+      onClose();
+      setWalletName("");
+      setPhrase("");
+      setPassword("");
+    } catch (err) {
+      console.error(err);
+      toast.error((err as Error).message || "No se pudo agregar la wallet");
+    }
+  };
 
   return (
     <Dialog
@@ -105,7 +127,7 @@ export function AddSecretModal({
               fullWidth
               size="medium"
               value={walletName}
-              onChange={(e) => onWalletNameChange(e.target.value)}
+              onChange={(e) => setWalletName(e.target.value)}
               placeholder="Ej: Mi Wallet Principal"
               InputProps={{ sx: { borderRadius: 2, background: "#f8fafc" } }}
             />
@@ -118,12 +140,12 @@ export function AddSecretModal({
               fullWidth
               size="medium"
               value={phrase}
-              onChange={(e) => onPhraseChange(e.target.value)}
+              onChange={(e) => setPhrase(e.target.value)}
               placeholder="palabra1 palabra2 ... palabra12"
               InputProps={{ sx: { borderRadius: 2, background: "#f8fafc" } }}
               helperText={
                 phrase
-                  ? `${wordsCount}/12 palabras`
+                  ? `${words.length}/12 palabras`
                   : "Separa cada palabra con espacio y respeta el orden exacto."
               }
               multiline
@@ -139,7 +161,7 @@ export function AddSecretModal({
               size="medium"
               type="password"
               value={password}
-              onChange={(e) => onPasswordChange(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               InputProps={{ sx: { borderRadius: 2, background: "#f8fafc" } }}
             />
@@ -177,7 +199,7 @@ export function AddSecretModal({
         <Button
           fullWidth
           variant="contained"
-          onClick={onConfirm}
+          onClick={handleAdd}
           disabled={!canConfirm}
           sx={{
             textTransform: "none",

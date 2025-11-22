@@ -22,6 +22,7 @@ import { OPIcon } from "@/app/components/atoms/OPIcon";
 import CeloIcon from "@/app/components/atoms/CeloIcon";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { AllocationSummary } from "../types";
+import { useState } from "react";
 
 type Props = {
   open: boolean;
@@ -64,6 +65,7 @@ export function SendMoneyModal({
   onClose,
   onSend,
 }: Props) {
+  const [showFullAddresses, setShowFullAddresses] = useState<Record<string, boolean>>({});
   const canSend =
     !!fromAddress && !!toAddress.trim() && !!amount.trim() && !!password.trim();
   const chains = [
@@ -150,7 +152,14 @@ export function SendMoneyModal({
         </Box>
       </Box>
 
-      <DialogContent sx={{ px: 3, pb: 1.5, pt: 2.5 }}>
+      <DialogContent
+        sx={{
+          px: { xs: 2, sm: 3 },
+          pb: 1.5,
+          pt: 2.5,
+          overflowX: "hidden",
+        }}
+      >
         {loading && (
           <Box
             sx={{
@@ -249,22 +258,63 @@ export function SendMoneyModal({
                     backgroundColor: "#fff",
                     borderRadius: 1.5,
                     boxShadow: "0 8px 20px rgba(15,23,42,0.05)",
+                    width: "100%",
                     "&::before": { display: "none" },
                   }}
                 >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    sx={{
+                      "& .MuiAccordionSummary-content": {
+                        width: "100%",
+                        minWidth: 0,
+                        margin: 0,
+                      },
+                    }}
+                  >
                     <Stack
                       direction="row"
                       alignItems="center"
                       justifyContent="space-between"
-                      sx={{ width: "100%" }}
+                      sx={{ width: "100%", minWidth: 0 }}
                       spacing={2}
                     >
-                      <Box>
+                      <Box sx={{ minWidth: 0 }}>
                         <Typography fontWeight={800}>{wallet.walletName}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {wallet.wallet}
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            maxWidth: { xs: 240, sm: "100%" },
+                            wordBreak: "break-all",
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {showFullAddresses[wallet.wallet]
+                            ? wallet.wallet
+                            : `${wallet.wallet.slice(0, 4)}...`}
                         </Typography>
+                        <Button
+                          size="small"
+                          variant="text"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowFullAddresses((prev) => ({
+                              ...prev,
+                              [wallet.wallet]: !prev[wallet.wallet],
+                            }));
+                          }}
+                          sx={{
+                            textTransform: "none",
+                            minWidth: "auto",
+                            paddingX: 0,
+                            color: "#2563eb",
+                            fontSize: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {showFullAddresses[wallet.wallet] ? "Ver menos" : "Ver más"}
+                        </Button>
                       </Box>
                       <Box textAlign="right">
                         <Typography fontSize={12} color="text.secondary">

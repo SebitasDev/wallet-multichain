@@ -1,7 +1,7 @@
 "use client";
 
-import { Box, Button } from "@mui/material";
-import { useEffect, useState } from "react";
+import { Box } from "@mui/material";
+import { useState } from "react";
 import { AddressCard } from "./components/AddressCard";
 import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
@@ -13,12 +13,10 @@ import "react-toastify/dist/ReactToastify.css";
 import { useWallet } from "../hook/useWallet";
 import { useFindBestRoute } from "./hooks/useFindBestRoute";
 import { AllocationSummary } from "./types";
+import { useModalStore } from "../store/useModalStore";
 
 export default function Dashboard() {
-  const [openModal, setOpenModal] = useState(false);
-  const [walletName, setWalletName] = useState("");
-  const [addressValue, setAddressValue] = useState("");
-  const [passwordValue, setPasswordValue] = useState("");
+  const { addOpen, receiveOpen, openAdd, closeAdd, openReceive, closeReceive } = useModalStore();
   const [openSendModal, setOpenSendModal] = useState(false);
   const [fromAddress, setFromAddress] = useState("");
   const [toAddress, setToAddress] = useState("");
@@ -28,21 +26,13 @@ export default function Dashboard() {
   const [sendLoading, setSendLoading] = useState(false);
   const [routeReady, setRouteReady] = useState(false);
   const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
-  const [openReceiveModal, setOpenReceiveModal] = useState(false);
-  const [receiveWallet, setReceiveWallet] = useState("");
-  const [receiveChain, setReceiveChain] = useState("base");
-  const { addWallet, wallets } = useWallet();
+  const { wallets } = useWallet();
   const { allocateAcrossNetworks } = useFindBestRoute();
   const walletNamesMap = wallets.reduce<Record<string, string>>((acc, w) => {
     acc[w.address.toLowerCase()] = w.name;
     return acc;
   }, {});
   const heroBg = "var(--gradient-hero)";
-  const resetModalFields = () => {
-    setWalletName("");
-    setAddressValue("");
-    setPasswordValue("");
-  };
   const resetSendFields = () => {
     setFromAddress("");
     setToAddress("");
@@ -52,22 +42,6 @@ export default function Dashboard() {
     setSendLoading(false);
     setRouteReady(false);
     setRouteSummary(null);
-  };
-
-  const words = addressValue.trim() ? addressValue.trim().split(/\s+/).filter(Boolean) : [];
-
-  const handleAddWallet = async () => {
-    if (!walletName.trim() || !passwordValue.trim() || words.length !== 12) return;
-    try {
-      const updated = await addWallet(addressValue, passwordValue, walletName);
-      setOpenModal(false);
-      resetModalFields();
-      toast.success(`Wallet "${walletName}" agregada y cifrada correctamente`);
-    } catch (err) {
-      console.error(err);
-      toast.error((err as Error).message || "No se pudo agregar la wallet");
-      resetModalFields();
-    }
   };
 
   const handleSend = () => {
@@ -97,22 +71,14 @@ export default function Dashboard() {
       .finally(() => setSendLoading(false));
   };
 
-  const openReceive = () => {
-    if (!wallets.length) {
-      toast.error("Primero agrega una wallet.");
-      return;
-    }
-    setReceiveWallet(wallets[0]?.address || "");
-    setReceiveChain("base");
-    setOpenReceiveModal(true);
-  };
-
   return (
-    <Box sx={{ minHeight: "100vh", backgroundColor: "#141516ff" }}>
+    <Box
+      suppressHydrationWarning
+      sx={{ minHeight: "100vh", backgroundColor: "#141516" }}
+    >
       <TopBar
         onAdd={() => {
-          resetModalFields();
-          setOpenModal(true);
+          openAdd();
         }}
         onSend={() => {
           resetSendFields();
@@ -123,10 +89,12 @@ export default function Dashboard() {
           }
           setOpenSendModal(true);
         }}
-        onReceive={openReceive}
+        onReceive={() => openReceive()}
       />
 
-      <HeroBanner background={heroBg}/>
+      <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2.5, md: 4 } }}>
+        <HeroBanner background={heroBg}/>
+      </Box>
 
       <Box
         sx={{
@@ -138,6 +106,7 @@ export default function Dashboard() {
         }}
       >
         <Box
+          suppressHydrationWarning
           sx={{
             display: "grid",
             gridTemplateColumns: {
@@ -157,18 +126,9 @@ export default function Dashboard() {
       </Box>
 
       <AddSecretModal
-        open={openModal}
-        walletName={walletName}
-        phrase={addressValue}
-        wordsCount={words.length}
-        password={passwordValue}
-        onWalletNameChange={setWalletName}
-        onPhraseChange={setAddressValue}
-        onPasswordChange={setPasswordValue}
-        onConfirm={handleAddWallet}
+        open={addOpen}
         onClose={() => {
-          setOpenModal(false);
-          resetModalFields();
+          closeAdd();
         }}
       />
       <SendMoneyModal
@@ -195,13 +155,9 @@ export default function Dashboard() {
         onSend={handleSend}
       />
       <ReceiveModal
-        open={openReceiveModal}
+        open={receiveOpen}
         wallets={wallets as any}
-        selectedWallet={receiveWallet}
-        selectedChain={receiveChain}
-        onWalletChange={setReceiveWallet}
-        onChainChange={setReceiveChain}
-        onClose={() => setOpenReceiveModal(false)}
+        onClose={() => closeReceive()}
       />
       <ToastContainer position="top-right" />
     </Box>
