@@ -60,14 +60,17 @@ export function WalletCard({ wallet }: Props) {
   );
 
   const copyToClipboard = async (value: string, label: string) => {
-    const text = value ?? "";
+    const text = value ? String(value) : "";
     if (!text) {
       toast.error("No hay nada para copiar");
       return;
     }
-
     const onSuccess = () => toast.success(`${label} copiado`);
     const onError = () => toast.error("No se pudo copiar");
+    const promptFallback = () => {
+      const manual = window.prompt("Copia y pega:", text);
+      if (manual !== null) onSuccess();
+    };
     const fallbackCopy = () => {
       const textarea = document.createElement("textarea");
       textarea.value = text;
@@ -81,6 +84,7 @@ export function WalletCard({ wallet }: Props) {
         ok ? onSuccess() : onError();
       } catch {
         onError();
+        promptFallback();
       } finally {
         document.body.removeChild(textarea);
       }
@@ -101,11 +105,13 @@ export function WalletCard({ wallet }: Props) {
   return (
     <Card
       sx={{
-        borderRadius: 3,
+        borderRadius: 12,
         overflow: "hidden",
-        boxShadow: "0 10px 35px rgba(15,23,42,0.08)",
-        border: "1px solid #e5e7eb",
-        backgroundColor: "#fff",
+        boxShadow:
+          "0 0 0 1.5px rgba(255,255,255,0.1), 0 0 10px rgba(200,200,200,0.6), 0 10px 24px rgba(15,23,42,0.18), inset 0 0 0 1.5px rgba(210,210,210,0.7)",
+        border: "1.25px solid rgba(215,215,215,0.85)",
+        background: "#ffffff",
+        color: "#0f172a",
       }}
     >
       <CardContent sx={{ p: 0 }}>
@@ -120,7 +126,7 @@ export function WalletCard({ wallet }: Props) {
           }}
         >
           <Stack direction="row" alignItems="center" spacing={1.25}>
-            <Typography fontWeight={700} fontSize={17} color="#0f172a">
+            <Typography fontWeight={700} fontSize={17} sx={{ color: "#0f172a" }}>
               {wallet.name}
             </Typography>
             <Chip
@@ -137,14 +143,10 @@ export function WalletCard({ wallet }: Props) {
             />
           </Stack>
           <Box sx={{ textAlign: "right" }}>
-            <Typography fontWeight={800} fontSize={20} color="#0f172a" lineHeight={1}>
+            <Typography fontWeight={800} fontSize={20} sx={{ color: "#0f172a" }} lineHeight={1}>
               {formatCurrency(wallet.total)}
             </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: 12, mt: 0.4 }}
-            >
+            <Typography variant="body2" sx={{ fontSize: 12, mt: 0.4, color: "#cbd5e1" }}>
               Valor Total
             </Typography>
           </Box>
@@ -163,7 +165,7 @@ export function WalletCard({ wallet }: Props) {
             gap: 1.5,
           }}
         >
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 13 }}>
+          <Typography variant="body2" sx={{ fontSize: 13, color: "#4b5563" }}>
             {wallet.address}
           </Typography>
           <Stack direction="row" spacing={1}>
@@ -202,13 +204,12 @@ export function WalletCard({ wallet }: Props) {
             <Stack direction="row" alignItems="center" spacing={1.5}>
               <Dot color={chain.color} />
               <Box>
-                <Typography fontWeight={600} fontSize={14} color="#0f172a">
+                <Typography fontWeight={600} fontSize={14} sx={{ color: "#0f172a" }}>
                   {chain.name}
                 </Typography>
                 <Typography
                   variant="body2"
-                  color="text.secondary"
-                  sx={{ fontSize: 12, mt: 0.4 }}
+                  sx={{ fontSize: 12, mt: 0.4, color: "#6b7280" }}
                 >
                   {chain.tokens} tokens
                 </Typography>

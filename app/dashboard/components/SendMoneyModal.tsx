@@ -21,6 +21,7 @@ import { BaseIcon } from "@/app/components/atoms/BaseIcon";
 import { OPIcon } from "@/app/components/atoms/OPIcon";
 import CeloIcon from "@/app/components/atoms/CeloIcon";
 import { formatCurrency } from "@/app/utils/formatCurrency";
+import { AllocationSummary } from "../types";
 
 type Props = {
   open: boolean;
@@ -33,6 +34,8 @@ type Props = {
   routeReady: boolean;
   recipient: string;
   netAmount: string;
+  routeSummary?: AllocationSummary | null;
+  walletNames?: Record<string, string>;
   onToChange: (v: string) => void;
   onAmountChange: (v: string) => void;
   onPasswordChange: (v: string) => void;
@@ -52,6 +55,8 @@ export function SendMoneyModal({
   routeReady,
   recipient,
   netAmount,
+  routeSummary,
+  walletNames,
   onToChange,
   onAmountChange,
   onPasswordChange,
@@ -66,19 +71,35 @@ export function SendMoneyModal({
     { id: "optimism", label: "Optimism", icon: <OPIcon /> },
     { id: "celo", label: "Celo", icon: <CeloIcon /> },
   ];
-  const routeDetails = [
-    {
-      wallet: "Tobias Wallet",
-      chains: [
-        { id: "base", label: "Base", icon: <BaseIcon />, amount: 4 },
-        { id: "optimism", label: "Optimism", icon: <OPIcon />, amount: 3 },
-      ],
-    },
-    {
-      wallet: "Sebas Wallet",
-      chains: [{ id: "celo", label: "Celo", icon: <CeloIcon />, amount: 2 }],
-    },
-  ];
+
+  const resolveChain = (chainId: string | number) => {
+    const idStr = String(chainId).toLowerCase();
+    if (idStr === "base" || idStr === "8453" || idStr === "84532") {
+      return { label: "Base", icon: <BaseIcon /> };
+    }
+    if (idStr === "optimism" || idStr === "10" || idStr === "11155420") {
+      return { label: "Optimism", icon: <OPIcon /> };
+    }
+    if (idStr === "celo" || idStr === "42220" || idStr === "44787") {
+      return { label: "Celo", icon: <CeloIcon /> };
+    }
+    return { label: idStr.toUpperCase(), icon: null };
+  };
+
+  const routeDetails =
+    routeSummary?.allocations?.map((a) => ({
+      wallet: a.from,
+      walletName: walletNames?.[a.from.toLowerCase()] || a.from,
+      chains: a.chains.map((c) => {
+        const chainDef = resolveChain(c.chainId);
+        return {
+          id: c.chainId,
+          label: chainDef.label,
+          icon: chainDef.icon,
+          amount: c.amount,
+        };
+      }),
+    })) ?? [];
 
   return (
     <Dialog
@@ -239,7 +260,12 @@ export function SendMoneyModal({
                       sx={{ width: "100%" }}
                       spacing={2}
                     >
-                      <Typography fontWeight={800}>{wallet.wallet}</Typography>
+                      <Box>
+                        <Typography fontWeight={800}>{wallet.walletName}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {wallet.wallet}
+                        </Typography>
+                      </Box>
                       <Box textAlign="right">
                         <Typography fontSize={12} color="text.secondary">
                           Total
