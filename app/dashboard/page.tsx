@@ -19,7 +19,6 @@ export default function Dashboard() {
   const [walletName, setWalletName] = useState("");
   const [addressValue, setAddressValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
-  const { chainIncrement } = useBalanceStore();
   const { addWallet, wallets } = useWallet();
   const resetModalFields = () => {
     setWalletName("");
