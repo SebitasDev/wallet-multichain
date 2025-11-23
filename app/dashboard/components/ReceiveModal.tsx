@@ -11,7 +11,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { QRCodeCanvas } from "qrcode.react";
+import QRCode from "react-qr-code";
 import ContentCopyOutlined from "@mui/icons-material/ContentCopyOutlined";
 import { BaseIcon } from "@/app/components/atoms/BaseIcon";
 import { OPIcon } from "@/app/components/atoms/OPIcon";
@@ -179,7 +179,16 @@ export function ReceiveModal({
                 boxShadow: "0 10px 30px rgba(59,130,246,0.25)",
               }}
             >
-              <QRCodeCanvas value={qrValue} size={130} />
+              <Box
+                sx={{
+                  p: 1.25,
+                  borderRadius: 2,
+                  background: "#fff",
+                  display: "inline-flex",
+                }}
+              >
+                <QRCode value={qrValue} size={120} fgColor="#0f172a" />
+              </Box>
             </Box>
           </Box>
 

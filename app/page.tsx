@@ -21,7 +21,7 @@ import Link from "next/link";
 
 const features = [
   {
-    title: "Multi-chain sin fricción",
+    title: "múlti-chain sin fricción",
     desc: "Gestiona direcciones, tokens y balances en múltiples chains desde un solo panel.",
     icon: <RocketLaunchIcon />,
   },
@@ -40,7 +40,7 @@ const features = [
 const steps = [
   {
     title: "1. Conecta tus wallets",
-    desc: "Agrega tu seed o pega tus addresses para ver balances multi-chain al instante.",
+    desc: "Agrega tu seed o pega tus addresses para ver balances múlti-chain al instante.",
   },
   {
     title: "2. Visualiza y organiza",
@@ -83,7 +83,7 @@ export default function Home() {
           />
           <Grid container spacing={2.5} sx={{ mt: 2 }} justifyContent="center">
             {features.map((f) => (
-              <Grid item xs={12} md={6} lg={5} key={f.title}>
+              <Grid size={{ xs: 12, md: 6, lg: 5 }} key={f.title}>
                 <Card
                   sx={{
                     height: "100%",
@@ -130,7 +130,7 @@ export default function Home() {
       >
         <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 }, scrollMarginTop: 96 }}>
           <Grid container spacing={1.5} alignItems="flex-start">
-            <Grid item xs={12} md={6} sx={{ maxWidth: { md: 760 }, ml: { md: 0 } }}>
+            <Grid size={{ xs: 12, md: 6 }} sx={{ maxWidth: { md: 760 }, ml: { md: 0 } }}>
               <Card
                 sx={{
                   height: "100%",
@@ -169,9 +169,7 @@ export default function Home() {
               </Card>
             </Grid>
             <Grid
-              item
-              xs={12}
-              md={6}
+              size={{ xs: 12, md: 6 }}
               sx={{
                 maxWidth: { md: 760 },
                 ml: { md: "auto" },
@@ -261,10 +259,10 @@ function Hero() {
     >
       <Container maxWidth="lg">
         <Grid container spacing={4} alignItems="center">
-          <Grid item xs={12} md={7}>
+          <Grid size={{ xs: 12, md: 7 }}>
             <Stack spacing={2.5}>
               <Chip
-                label="MultiChain Wallet Â· ETHGlobal"
+                label="múltiChain Wallet Â· ETHGlobal"
                 sx={{
                   alignSelf: "flex-start",
                   background: "rgba(255,255,255,0.1)",
@@ -280,7 +278,7 @@ function Hero() {
                   color: "#f9fafb",
                 }}
               >
-                Gestiona todas tus wallets multichain en un solo lugar, con flujos claros y seguros.
+                Gestiona todas tus wallets múltichain en un solo lugar, con flujos claros y seguros.
               </Typography>
               <Typography sx={{ color: "rgba(233,236,242,0.9)", maxWidth: 620 }}>
                 Conecta, organiza y opera en múltiples chains con una interfaz enfocada en claridad,
@@ -324,7 +322,7 @@ function Hero() {
               <Stack direction="row" spacing={2} sx={{ color: "rgba(233,236,242,0.8)", flexWrap: "wrap" }}>
                 <Stack spacing={0.2}>
                   <Typography fontWeight={900} color="#8bd0ff">
-                    + Múltiples tokens y wallets
+                    + múltiples tokens y wallets
                   </Typography>
                   <Typography variant="body2">Conecta y opera sin fricción</Typography>
                 </Stack>
@@ -337,7 +335,7 @@ function Hero() {
               </Stack>
             </Stack>
           </Grid>
-          <Grid item xs={12} md={5}>
+          <Grid size={{ xs: 12, md: 5 }}>
             <Card
               sx={{
                 background: "rgba(255,255,255,0.05)",
@@ -439,7 +437,7 @@ function CTA() {
         >
           <Stack spacing={1}>
             <Typography sx={{ color: "#fff", fontWeight: 900, fontSize: { xs: 24, md: 28 } }}>
-              Listo para ver tu wallet multichain en acción
+              Listo para ver tu wallet múltichain en acción
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.92)" }}>
               Entra al dashboard, agrega tus addresses y empieza a operar en segundos.
@@ -464,7 +462,7 @@ function CTA() {
             </Button>
             <Button
               component="a"
-              href="mailto:hola@multichainwallet.dev"
+              href="mailto:hola@múltichainwallet.dev"
               variant="outlined"
               sx={{
                 textTransform: "none",
