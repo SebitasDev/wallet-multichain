@@ -13,7 +13,7 @@ export const useFindBestRoute = () => {
 
         for (const wallet of filteredWallets) {
             for (const chain of wallet.chains) {
-                if (chain.chainAmount <= 0.015) {
+                if (chain.chainAmount <= 0.01) {
                     continue;
                 }
 

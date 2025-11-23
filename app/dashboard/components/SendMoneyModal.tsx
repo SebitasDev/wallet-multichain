@@ -126,7 +126,7 @@ export function SendMoneyModal({walletNames}: Props) {
 
             console.log(`➡️ Transferring ${amount} on ${chainName} to ${to} using ${optionalPrivateKey ? "custom key" : "main account"}`);
 
-            return client.writeContract({
+            const tx = await client.writeContract({
                 address: token as Address,
                 abi: [
                     {
@@ -144,6 +144,10 @@ export function SendMoneyModal({walletNames}: Props) {
                 args: [to as Address, amount],
                 chain: CHAIN_CONFIG[chainName],
             });
+
+            console.log(tx)
+
+            return tx;
         };
 
 
