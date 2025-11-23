@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { BridgeKit, TransferSpeed } from "@circle-fin/bridge-kit";
 import { createAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
-import { inspect } from "util";
 import { Address } from "abitype";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia, optimismSepolia, polygonAmoy } from "viem/chains";
@@ -101,7 +100,7 @@ export const bridgeUSDC = async (
 
         return result;
     } catch (err) {
-        console.log("ERROR", inspect(err, false, null, true));
+        console.error("ERROR", JSON.stringify(err, null, 2));
         return null;
     }
 };
