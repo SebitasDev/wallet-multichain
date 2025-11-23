@@ -166,7 +166,7 @@ export function SendMoneyModal({walletNames}: Props) {
                             ? "Polygon_Amoy_Testnet"
                             : "Base_Sepolia";
 
-                const amount = parseUnits((chain.amount - 0.01).toFixed(6), 6);
+                const amount = parseUnits((chain.amount - 0.02).toFixed(6), 6);
                 console.log(`Processing chain ${fromValidChain} with amount ${chain.amount} (parsed: ${amount})`);
 
                 if (fromValidChain === toValidChain) {
@@ -181,7 +181,7 @@ export function SendMoneyModal({walletNames}: Props) {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            amount: chain.amount - 0.01,
+                            amount: chain.amount,
                             fromChain: fromValidChain,
                             toChain: toValidChain,
                             recipient: account.address,
@@ -196,7 +196,7 @@ export function SendMoneyModal({walletNames}: Props) {
 
         const totalAmount = routeSummary!.allocations
             .flatMap(a => a.chains.map(c => {
-                const adjustedAmount = Math.max(c.amount - 0.01, 0); // restamos 0.01 y evitamos negativos
+                const adjustedAmount = Math.max(c.amount - 0.02, 0); // restamos 0.01 y evitamos negativos
                 console.log(`Original: ${c.amount}, Ajustado: ${adjustedAmount}`);
                 return parseUnits(adjustedAmount.toFixed(6), 6); // parseUnits retorna bigint
             }))
