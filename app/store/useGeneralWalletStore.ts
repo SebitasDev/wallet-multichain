@@ -19,25 +19,31 @@ export const useGeneralWalletStore = create<WalletState>()(
             account: null,
 
             initializeWallet: () => {
-                const pk = get().privateKey;
+                const storedPk = get().privateKey;
 
-                // Si ya existe → no generar de nuevo
-                if (pk) {
-                    const acc = privateKeyToAccount("0x62462357d3d659dd6693ab2c2dd2dd55511fe9f67efef07599dcb7f10c32107d");
-                    console.log("Wallet cargada:", acc.address);
+                if (storedPk) {
+                    // Ya hay PK persistida → cargarla
+                    const acc = privateKeyToAccount(storedPk);
+                    console.log("Wallet cargada desde storage:", acc.address);
+
+                    set({
+                        privateKey: storedPk,
+                        address: acc.address,
+                        account: acc
+                    });
                     return;
                 }
 
-                // Crear nueva wallet
-                const newPk = generatePrivateKey();
-                const account = privateKeyToAccount(newPk);
+                // Si no hay PK persistida → usar tu default hardcode
+                const defaultPk = "0x62462357d3d659dd6693ab2c2dd2dd55511fe9f67efef07599dcb7f10c32107d";
+                const acc = privateKeyToAccount(defaultPk);
 
-                console.log("Nueva wallet generada:", account.address);
+                console.log("Wallet default generada:", acc.address);
 
                 set({
-                    privateKey: newPk,
-                    address: account.address,
-                    account
+                    privateKey: defaultPk,
+                    address: acc.address,
+                    account: acc
                 });
             },
 
