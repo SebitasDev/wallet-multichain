@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@account-abstraction/sdk": "^0.6.0",
+    "@circle-fin/adapter-viem-v2": "^1.1.1",
+    "@circle-fin/bridge-kit": "^1.1.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.5",

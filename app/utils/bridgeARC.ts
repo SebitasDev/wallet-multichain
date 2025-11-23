@@ -1,6 +1,3 @@
-export const runtime = "nodejs";
-
-
 import { BridgeKit, TransferSpeed } from "@circle-fin/bridge-kit";
 import { createAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
 import { Address } from "abitype";
