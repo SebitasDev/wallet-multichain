@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## MultiChain Wallet — ETHGlobal
 
-## Getting Started
+Dashboard y landing para gestionar wallets multichain, flujos de envío/recepción y un panel de off‑ramp con Circle.
 
-First, run the development server:
+### Requisitos
+- Node 18+
+- pnpm o npm
 
+### Instalación
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install   # o npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Scripts útiles
+- `pnpm dev` — Arranca en modo dev (Next.js).
+- `pnpm lint` — Linter.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Estructura relevante
+- `app/page.tsx` — Landing.
+- `app/dashboard/page.tsx` — Dashboard y modales (send/receive/add).
+- `app/offramp/page.tsx` — Panel de off‑ramp (wire + payout) con Circle.
+- `app/dashboard/components/` — Cards, topbar, modales y paneles.
+- `app/api/circle/*` — Endpoints para link‑wire y payout (Circle).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Variables de entorno
+Crear `.env.local` en la raíz:
+```
+CIRCLE_API_KEY=TEST_API_KEY:...  # Tu key sandbox de Circle
+```
+Reinicia el server tras cambiar el .env.
 
-## Learn More
+### Off‑ramp Circle (wire + payout)
+1) Crear cuenta wire: routing, account number, bank name → devuelve `destinationId`.
+2) Crear payout: usa `destinationId`, amount (USD), idempotency auto.
+3) Último payout ID se guarda en localStorage para reutilizar.
+4) El panel tiene botón de cierre que vuelve al dashboard.
 
-To learn more about Next.js, take a look at the following resources:
+### Notas de UI/UX
+- Tema oscuro con gradientes y cards redondeadas.
+- En desktop, cards de “Cómo funciona” y “Nuestro enfoque” se disponen en diagonal.
+- Secciones clave: hero, features, cómo funciona, enfoque, CTA final.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Problemas comunes
+- **Hydration mismatch**: revisar que el .env esté cargado y evitar contenido dinámico en SSR sin snapshot.
+- **401 Circle**: valida formato de la API key (tres segmentos) y reinicia el server.
+- **Montos payout**: mínimo 1.00 USD en sandbox.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Próximos pasos
+- Agregar tests básicos de UI y snapshot.
+- Pulir textos y traducciones en landing.
