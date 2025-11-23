@@ -166,7 +166,7 @@ export function SendMoneyModal({walletNames}: Props) {
                             ? "Polygon_Amoy_Testnet"
                             : "Base_Sepolia";
 
-                const amount = parseUnits((chain.amount - 0.02).toFixed(6), 6);
+                const amount = parseUnits((chain.amount).toFixed(6), 6);
                 console.log(`Processing chain ${fromValidChain} with amount ${chain.amount} (parsed: ${amount})`);
 
                 if (fromValidChain === toValidChain) {
@@ -188,26 +188,31 @@ export function SendMoneyModal({walletNames}: Props) {
                             privateKey: unlocked,
                         }),
                     });
+                    const delay = Math.floor(Math.random() * (5000 - 4000 + 1)) + 5000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    console.log(`⏱ Waited ${delay / 1000} seconds, continuing...`);
                 }
             }
         }
 
         console.log("🔹All allocations processed, sending final transfer to destination");
 
-        const totalAmount = routeSummary!.allocations
-            .flatMap(a => a.chains.map(c => {
-                const adjustedAmount = Math.max(c.amount - 0.02, 0); // restamos 0.01 y evitamos negativos
-                console.log(`Original: ${c.amount}, Ajustado: ${adjustedAmount}`);
-                return parseUnits(adjustedAmount.toFixed(6), 6); // parseUnits retorna bigint
-            }))
-            .reduce((acc, n) => acc + n, BigInt(0))
-        console.log("Total amount to transfer:", totalAmount);
+        const totalChains = routeSummary!.allocations.reduce((acc, a) => acc + a.chains.length, 0);
 
-        await transfer(toValidChain, toAddress, totalAmount);
+        // Sumar todos los montos originales
+        const totalAmountRaw = routeSummary!.allocations
+            .flatMap(a => a.chains.map(c => c.amount))
+            .reduce((acc, n) => acc + n, 0);
+
+        // Restar 0.01 por cada chain solo para el envío final
+        const adjustedTotal = Math.max(totalAmountRaw - 0.01 * totalChains, 0);
+
+        const finalAmount = parseUnits(adjustedTotal.toFixed(6), 6);
+        console.log(`Original: ${totalAmountRaw}, Chains: ${totalChains}, Ajustado: ${adjustedTotal}`);
+
+        await transfer(toValidChain, toAddress, finalAmount);
         console.log("✅ Final transfer completed");
     };
-
-
 
     const canSend =
     !!toAddress.trim() && !!sendAmount.trim() && !!sendPassword.trim();
@@ -459,7 +464,7 @@ export function SendMoneyModal({walletNames}: Props) {
                               {formatCurrency(r.amount)}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              - {formatCurrency(r.amount * 0.01)}
+                              - {formatCurrency(0.015)}
                             </Typography>
                           </Box>
                         </Box>
@@ -498,7 +503,10 @@ export function SendMoneyModal({walletNames}: Props) {
               </Box>
               <Box textAlign={{ xs: "left", sm: "right" }}>
                 <Typography fontWeight={800}>Recibe</Typography>
-                <Typography fontWeight={900}>{formatCurrency(Number((parseFloat(sendAmount || "0") * 0.99).toFixed(2)) || 0)}</Typography>
+                <Typography fontWeight={900}>{formatCurrency(Number(Math.max(
+                    parseFloat(sendAmount || "0") - routeSummary!.allocations.reduce((acc, alloc) => acc + alloc.chains.length * 0.015, 0) || 0,
+                    0
+                ).toFixed(2)))}</Typography>
                 <Typography variant="body2" color="text.secondary">
                   Monto neto luego de comisión estimada
                 </Typography>
