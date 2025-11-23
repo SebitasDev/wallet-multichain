@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Box,
@@ -22,12 +22,12 @@ import Link from "next/link";
 const features = [
   {
     title: "Multi-chain sin fricción",
-    desc: "Gestiona direcciones, tokens y balances en múltiples chains desde un solo panel.",
+    desc: "Gestiona direcciones, tokens y balances en mÃºltiples chains desde un solo panel.",
     icon: <RocketLaunchIcon />,
   },
   {
     title: "Onboarding en segundos",
-    desc: "Importa tu seed de forma segura o agrega addresses watch-only sin fricciones.",
+    desc: "Importa tu seed de forma segura o agrega addresses watch-only sin fricciónes.",
     icon: <SpeedIcon />,
   },
   {
@@ -48,7 +48,7 @@ const steps = [
   },
   {
     title: "3. Envía y recibe seguro",
-    desc: "Flujos guiados para enviar/recibir con QR, selección de chain y feedback en tiempo real.",
+    desc: "Flujos guiados para Envíar/recibir con QR, selección de chain y feedback en tiempo real.",
   },
 ];
 
@@ -65,7 +65,7 @@ const values = [
   },
   {
     title: "Eficiencia",
-    desc: "Accesos rápidos, copiado ágil y acciones directas para ahorrar clics.",
+    desc: "Accesos rápidos, copiado Ã¡gil y acciones directas para ahorrar clics.",
     icon: <TrendingUpIcon />,
   },
 ];
@@ -78,12 +78,12 @@ export default function Home() {
       <Box id="features" component="section">
         <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
           <SectionTitle
-            label="Por qué MultiChain Wallet"
+            label="Por quÃ© MultiChain Wallet"
             title="Unifica tu stack cripto en una sola experiencia"
           />
-          <Grid container spacing={2.5} sx={{ mt: 2 }}>
+          <Grid container spacing={2.5} sx={{ mt: 2 }} justifyContent="center">
             {features.map((f) => (
-              <Grid item xs={12} md={4} key={f.title}>
+              <Grid item xs={12} md={6} lg={5} key={f.title}>
                 <Card
                   sx={{
                     height: "100%",
@@ -129,8 +129,8 @@ export default function Home() {
         sx={{ background: "#0e131d", borderTop: "1px solid rgba(255,255,255,0.05)" }}
       >
         <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 }, scrollMarginTop: 96 }}>
-          <Grid container spacing={2.5}>
-            <Grid item xs={12} md={6}>
+          <Grid container spacing={1.5} alignItems="flex-start">
+            <Grid item xs={12} md={6} sx={{ maxWidth: { md: 760 }, ml: { md: 0 } }}>
               <Card
                 sx={{
                   height: "100%",
@@ -168,7 +168,17 @@ export default function Home() {
                 </Stack>
               </Card>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid
+              item
+              xs={12}
+              md={6}
+              sx={{
+                maxWidth: { md: 760 },
+                ml: { md: "auto" },
+                mt: { xs: 2.5, md: 6 },
+                display: "flex",
+              }}
+            >
               <Card
                 sx={{
                   height: "100%",
@@ -177,6 +187,7 @@ export default function Home() {
                   borderRadius: 3,
                   boxShadow: "0 16px 40px rgba(0,0,0,0.35)",
                   p: 3,
+                  width: "100%",
                 }}
               >
                 <SectionTitle
@@ -253,7 +264,7 @@ function Hero() {
           <Grid item xs={12} md={7}>
             <Stack spacing={2.5}>
               <Chip
-                label="MultiChain Wallet · ETHGlobal"
+                label="MultiChain Wallet Â· ETHGlobal"
                 sx={{
                   alignSelf: "flex-start",
                   background: "rgba(255,255,255,0.1)",
@@ -272,8 +283,8 @@ function Hero() {
                 Gestiona todas tus wallets multichain en un solo lugar, con flujos claros y seguros.
               </Typography>
               <Typography sx={{ color: "rgba(233,236,242,0.9)", maxWidth: 620 }}>
-                Conecta, organiza y opera en múltiples chains con una interfaz enfocada en claridad,
-                seguridad y velocidad para demos y producción.
+                Conecta, organiza y opera en mÃºltiples chains con una interfaz enfocada en claridad,
+                seguridad y velocidad para demos y producciÃ³n.
               </Typography>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="flex-start">
                 <Button
@@ -313,7 +324,7 @@ function Hero() {
               <Stack direction="row" spacing={2} sx={{ color: "rgba(233,236,242,0.8)", flexWrap: "wrap" }}>
                 <Stack spacing={0.2}>
                   <Typography fontWeight={900} color="#8bd0ff">
-                    + múltiples chains
+                    + Múltiples tokens y wallets
                   </Typography>
                   <Typography variant="body2">Conecta y opera sin fricción</Typography>
                 </Stack>
@@ -364,9 +375,7 @@ function Hero() {
                   color: "#fff",
                 }}
               >
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  Listo para demos y hackathons
-                </Typography>
+
                 <Typography fontWeight={900} sx={{ fontSize: 24, lineHeight: 1.1 }}>
                   Simplificamos lo complejo de las chains
                 </Typography>
@@ -467,7 +476,7 @@ function CTA() {
                 borderColor: "rgba(255,255,255,0.65)",
               }}
             >
-              Contáctanos
+              ContÃ¡ctanos
             </Button>
           </Stack>
         </Stack>

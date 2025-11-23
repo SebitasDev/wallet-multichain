@@ -1,0 +1,40 @@
+"use client";
+
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Container,
+  Grid,
+  Stack,
+  Typography,
+} from "@mui/material";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import ShieldIcon from "@mui/icons-material/Shield";
+import SpeedIcon from "@mui/icons-material/Speed";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import GroupsIcon from "@mui/icons-material/Groups";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import Link from "next/link";
+
+const features = [
+  {
+    title: "Multi-chain sin fricción",
+    desc: "Gestiona direcciones, tokens y balances en múltiples chains desde un solo panel.",
+    icon: <RocketLaunchIcon />,
+  },
+  {
+    title: "Onboarding en segundos",
+    desc: "Importa tu seed de forma segura o agrega addresses watch-only sin fricciones.",
+    icon: <SpeedIcon />,
+  },
+  {
+    title: "Seguridad por diseño",
+    desc: "Cifrado local de seeds, sin exponer llaves. Copias rápidas y QR listos para recibir fondos.",
+    icon: <ShieldIcon />,
+  },
+];
+
+const steps = [
