@@ -1,7 +1,8 @@
 
 "use client";
 
-import { Box } from "@mui/material";
+import { Box, Button, Stack } from "@mui/material";
+import Link from "next/link";
 import { AddressCard } from "./components/AddressCard";
 import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
@@ -49,6 +50,27 @@ export default function Dashboard() {
             />
 
             <HeroBanner background={heroBg}/>
+
+            <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2.5, md: 4 }, mt: 2 }}>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="flex-start">
+                    <Button
+                        component={Link}
+                        href="/offramp"
+                        variant="contained"
+                        sx={{
+                            textTransform: "none",
+                            fontWeight: 800,
+                            borderRadius: 2,
+                            background: "linear-gradient(135deg, #0f7bff, #0ac5a8)",
+                            boxShadow: "0 10px 24px rgba(15,123,255,0.3)",
+                            px: 3,
+                            py: 1.1,
+                        }}
+                    >
+                        Ir a Offramp 
+                    </Button>
+                </Stack>
+            </Box>
 
             <Box
                 sx={{
