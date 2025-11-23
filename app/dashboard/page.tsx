@@ -10,19 +10,21 @@ import { SendMoneyModal } from "./components/SendMoneyModal";
 import { ReceiveModal } from "./components/ReceiveModal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useWallet } from "../hook/useWallet";
 import {useSendModalState} from "@/app/dashboard/store/useSendModalState";
 import {useModalStore} from "@/app/store/useModalStore";
+import {useWalletStore} from "@/app/store/useWalletsStore";
+import {useGeneralWallet} from "@/app/dashboard/hooks/useGeneralWallet";
 
 export default function Dashboard() {
     const { addOpen, receiveOpen, openAdd, openReceive, closeAdd, closeReceive } = useModalStore();
     const { setSendModal } = useSendModalState();
-    const { wallets } = useWallet();
+    const { wallets } = useWalletStore();
     const walletNamesMap = wallets.reduce<Record<string, string>>((acc, w) => {
         acc[w.address.toLowerCase()] = w.name;
         return acc;
     }, {});
     const heroBg = "var(--gradient-hero)";
+    useGeneralWallet();
 
     return (
         <Box sx={{ minHeight: "100vh", backgroundColor: "#141516ff" }}>

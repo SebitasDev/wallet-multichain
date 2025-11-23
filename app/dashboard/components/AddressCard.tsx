@@ -12,7 +12,7 @@ import {
     Divider,
     List,
 } from "@mui/material";
-
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -24,6 +24,7 @@ import PolyChainItem from "@/app/components/molecules/PolyChainItem";
 import {Address} from "abitype";
 import {useAddressInfo} from "@/app/dashboard/hooks/useAddressInfo";
 import { toast } from "react-toastify";
+import {useWalletStore} from "@/app/store/useWalletsStore";
 
 interface IAddressCardProps {
     address: Address
@@ -88,6 +89,7 @@ export const AddressCard = ({
             fallbackCopy();
         }
     };
+    const { removeWallet } = useWalletStore();
 
     const truncated = `${address.slice(0, 6)}...${address.slice(-4)}`;
     const exceedsNameLimit = walletName.length > 12;
@@ -116,7 +118,8 @@ export const AddressCard = ({
                     borderColor: "divider",
                 }}
             >
-                <Box display="flex" justifyContent="space-between">
+                <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+
                     {/* Left */}
                     <Box flex={1} minWidth={0}>
                         <Box
@@ -142,6 +145,7 @@ export const AddressCard = ({
                             >
                                 {displayName}
                             </Typography>
+
                             {exceedsNameLimit && (
                                 <IconButton
                                     size="small"
@@ -158,10 +162,12 @@ export const AddressCard = ({
                                     )}
                                 </IconButton>
                             )}
-                            {/* full name se muestra inline al abrir la flechita */}
 
                             {/* numero de chains disponibles */}
-                            <Chip label="3 chains" size="small" sx={{
+                            <Chip
+                                label="3 chains"
+                                size="small"
+                                sx={{
                                     backgroundColor: "rgba(16,185,129,0.15)",
                                     color: "#0f5132",
                                 }}
@@ -207,7 +213,23 @@ export const AddressCard = ({
                     </Box>
 
                     {/* Right */}
-                    <Box textAlign="right">
+                    <Box textAlign="right" display="flex" flexDirection="column" alignItems="flex-end">
+
+                        {/* Delete button */}
+                        <IconButton
+                            size="small"
+                            sx={{
+                                color: "#b91c1c",
+                                mb: 1,
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                removeWallet(address);
+                            }}
+                        >
+                            <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+
                         <Typography variant="h5" fontWeight="bold">
                             ${Number(total).toFixed(2)}
                         </Typography>

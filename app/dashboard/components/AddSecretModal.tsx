@@ -15,7 +15,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import AccountBalanceWalletOutlined from "@mui/icons-material/AccountBalanceWalletOutlined";
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "react-toastify";
-import { useWallet } from "@/app/hook/useWallet";
+import {useWalletStore} from "@/app/store/useWalletsStore";
 
 type Props = {
   open: boolean;
@@ -26,7 +26,7 @@ export function AddSecretModal({
   open,
   onClose,
 }: Props) {
-  const { addWallet } = useWallet();
+  const { addWallet } = useWalletStore();
   const [walletName, setWalletName] = useState("");
   const [phrase, setPhrase] = useState("");
   const [password, setPassword] = useState("");

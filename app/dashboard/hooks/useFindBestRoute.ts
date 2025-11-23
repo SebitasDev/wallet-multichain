@@ -1,8 +1,8 @@
-import { useWalletsStore } from "@/app/store/useWalletsStore";
 import {Address} from "abitype";
+import {useWalletsInfoStore} from "@/app/store/useWalletsInfoStore";
 
 export const useFindBestRoute = () => {
-    const { wallets } = useWalletsStore();
+    const { wallets } = useWalletsInfoStore();
 
     async function allocateAcrossNetworks(targetAmount: number, toAddress: Address) {
         const balances: Array<{ from: string; networkId: string; amount: number }> = [];

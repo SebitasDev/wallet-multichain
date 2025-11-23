@@ -22,13 +22,14 @@ import { OPIcon } from "@/app/components/atoms/OPIcon";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { AllocationSummary } from "../types";
 import PolyIcon from "@/app/components/atoms/PolyIcon";
-import {optimismSepolia, polygonAmoy} from "viem/chains";
+import {baseSepolia, optimismSepolia, polygonAmoy} from "viem/chains";
 import {useState} from "react";
 import {toast} from "react-toastify";
 import {useFindBestRoute} from "@/app/dashboard/hooks/useFindBestRoute";
-import {useWallet} from "@/app/hook/useWallet";
 import {useSendModalState} from "@/app/dashboard/store/useSendModalState";
 import {Address} from "abitype";
+import {useWalletStore} from "@/app/store/useWalletsStore";
+import {useGeneralWalletStore} from "@/app/store/useGeneralWalletStore";
 
 type Props = {
     walletNames?: Record<string, string>;
@@ -44,7 +45,8 @@ export function SendMoneyModal({walletNames}: Props) {
     const [routeReady, setRouteReady] = useState(false);
     const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
     const { allocateAcrossNetworks } = useFindBestRoute();
-    const { unlockWallet } = useWallet();
+    const { unlockWallet } = useWalletStore();
+    const { address, account } = useGeneralWalletStore();
     const { setSendModal, isOpen } = useSendModalState();
 
     const handleSend = () => {
@@ -75,8 +77,6 @@ export function SendMoneyModal({walletNames}: Props) {
     };
 
     const handleOnTest = async () => {
-        const privateKey =  await unlockWallet(routeSummary!.allocations[0].from, "1")
-
         //const client = getPrivateClientByNetworkName(routeSummary!.allocations[0].chains[0].chainId, account)
 
         let toValidChain: string;
@@ -97,23 +97,192 @@ export function SendMoneyModal({walletNames}: Props) {
 
                 if(chain.chainId === optimismSepolia.id.toString()){
                     fromValidChain = "Optimism_Sepolia"
+
+                    if(fromValidChain === toValidChain){
+                        const usdc = "0x5fd84259d66Cd46123540766Be93DFE6D43130D7";
+                        const transferTx = await account.writeContract({
+                            address: usdc,
+                            abi: [
+                                {
+                                    name: "transfer",
+                                    type: "function",
+                                    stateMutability: "nonpayable",
+                                    inputs: [
+                                        { name: "to", type: "address" },
+                                        { name: "value", type: "uint256" },
+                                    ],
+                                    outputs: [{ name: "", type: "bool" }],
+                                },
+                            ],
+                            functionName: "transfer",
+                            args: [
+                                toAddress,
+                                BigInt(routeSummary?.allocations
+                                    .flatMap(a => a.chains.map(c => c.amount))
+                                    .reduce((acc, n) => acc + n, 0))
+                            ],
+                            chain: optimismSepolia,
+                        });
+                    }
                 } else if (chain.chainId === polygonAmoy.id.toString()){
                     fromValidChain = "Polygon_Amoy_Testnet"
+
+                    if(fromValidChain === toValidChain){
+                        const usdc = "0x5fd84259d66Cd46123540766Be93DFE6D43130D7";
+                        const transferTx = await account.writeContract({
+                            address: usdc,
+                            abi: [
+                                {
+                                    name: "transfer",
+                                    type: "function",
+                                    stateMutability: "nonpayable",
+                                    inputs: [
+                                        { name: "to", type: "address" },
+                                        { name: "value", type: "uint256" },
+                                    ],
+                                    outputs: [{ name: "", type: "bool" }],
+                                },
+                            ],
+                            functionName: "transfer",
+                            args: [
+                                toAddress,
+                                BigInt(routeSummary?.allocations
+                                    .flatMap(a => a.chains.map(c => c.amount))
+                                    .reduce((acc, n) => acc + n, 0))
+                            ],
+                            chain: polygonAmoy,
+                        });
+                    }
                 } else {
                     fromValidChain = "Base_Sepolia"
+
+                    if(fromValidChain === toValidChain){
+                        const usdc = "0x5fd84259d66Cd46123540766Be93DFE6D43130D7";
+                        const transferTx = await account.writeContract({
+                            address: usdc,
+                            abi: [
+                                {
+                                    name: "transfer",
+                                    type: "function",
+                                    stateMutability: "nonpayable",
+                                    inputs: [
+                                        { name: "to", type: "address" },
+                                        { name: "value", type: "uint256" },
+                                    ],
+                                    outputs: [{ name: "", type: "bool" }],
+                                },
+                            ],
+                            functionName: "transfer",
+                            args: [
+                                toAddress,
+                                BigInt(routeSummary?.allocations
+                                    .flatMap(a => a.chains.map(c => c.amount))
+                                    .reduce((acc, n) => acc + n, 0))
+                            ],
+                            chain: baseSepolia,
+                        });
+                    }
                 }
 
-                await fetch("/api/bridge-usdc", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        amount: chain.amount,
-                        fromChain: fromValidChain,
-                        toChain: toValidChain,
-                        recipient: toAddress,
-                        privateKey: privateKey
-                    }),
-                })
+                if(fromValidChain !== toValidChain) {
+                    await fetch("/api/bridge-usdc", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            amount: chain.amount,
+                            fromChain: fromValidChain,
+                            toChain: toValidChain,
+                            recipient: address,
+                            privateKey: privateKey
+                        }),
+                    })
+                }
+            }
+
+            if (sendChain === "optimism") {
+                const usdc = "0x5fd84259d66Cd46123540766Be93DFE6D43130D7";
+
+                const transferTx = await account.writeContract({
+                    address: usdc,
+                    abi: [
+                        {
+                            name: "transfer",
+                            type: "function",
+                            stateMutability: "nonpayable",
+                            inputs: [
+                                { name: "to", type: "address" },
+                                { name: "value", type: "uint256" },
+                            ],
+                            outputs: [{ name: "", type: "bool" }],
+                        },
+                    ],
+                    functionName: "transfer",
+                    args: [
+                        toAddress,
+                        BigInt(routeSummary?.allocations
+                            .flatMap(a => a.chains.map(c => c.amount))
+                            .reduce((acc, n) => acc + n, 0))
+                    ],
+                    chain: optimismSepolia,
+                });
+
+                console.log("Transfer TX:", transferTx);
+            } else if (sendChain === "pol") {
+                const usdc = "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582";
+
+                const transferTx = await account.writeContract({
+                    address: usdc,
+                    abi: [
+                        {
+                            name: "transfer",
+                            type: "function",
+                            stateMutability: "nonpayable",
+                            inputs: [
+                                { name: "to", type: "address" },
+                                { name: "value", type: "uint256" },
+                            ],
+                            outputs: [{ name: "", type: "bool" }],
+                        },
+                    ],
+                    functionName: "transfer",
+                    args: [
+                        toAddress,
+                        BigInt(routeSummary?.allocations
+                            .flatMap(a => a.chains.map(c => c.amount))
+                            .reduce((acc, n) => acc + n, 0))
+                    ],
+                    chain: baseSepolia,
+                });
+
+                console.log("Transfer TX:", transferTx);
+            } else {
+                const usdc = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+
+                const transferTx = await account.writeContract({
+                    address: usdc,
+                    abi: [
+                        {
+                            name: "transfer",
+                            type: "function",
+                            stateMutability: "nonpayable",
+                            inputs: [
+                                { name: "to", type: "address" },
+                                { name: "value", type: "uint256" },
+                            ],
+                            outputs: [{ name: "", type: "bool" }],
+                        },
+                    ],
+                    functionName: "transfer",
+                    args: [
+                        toAddress,
+                        BigInt(routeSummary?.allocations
+                            .flatMap(a => a.chains.map(c => c.amount))
+                            .reduce((acc, n) => acc + n, 0))
+                    ],
+                    chain: polygonAmoy,
+                });
+
+                console.log("Transfer TX:", transferTx);
             }
         })
 
