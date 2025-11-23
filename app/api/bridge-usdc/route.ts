@@ -14,12 +14,6 @@ export async function POST(req: NextRequest) {
         );
         return NextResponse.json(result);
     } catch (err: any) {
-        // Fallback when bridge kit is not available
-        return NextResponse.json(
-            {
-                error: err.message || "Bridge no disponible en este despliegue",
-            },
-            { status: 501 },
-        );
+        return NextResponse.json({ error: err.message || "Unknown error" }, { status: 500 });
     }
 }
