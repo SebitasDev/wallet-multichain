@@ -172,6 +172,9 @@ export function SendMoneyModal({walletNames}: Props) {
                 if (fromValidChain === toValidChain) {
                     console.log("🟢 Same chain, transferring directly");
                     await transfer(fromValidChain, account.address, amount, unlocked);
+                    const delay = Math.floor(Math.random() * (7000 - 5000 + 1)) + 5000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    console.log(`⏱ Waited ${delay / 1000} seconds, continuing...`);
                 } else {
                     console.log("🔵 Different chain, bridging via API");
                     await fetch("/api/bridge-usdc", {
