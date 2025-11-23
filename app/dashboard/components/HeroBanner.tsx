@@ -18,8 +18,6 @@ export function HeroBanner({ background }: Props) {
       sx={{
         position: "relative",
         overflow: "hidden",
-        position: "relative",
-        overflow: "hidden",
         background,
         color: "#fff",
         textAlign: "center",
