@@ -41,8 +41,6 @@ export const useGetBalanceFromChain = (
                     args: [address],
                 });
 
-                console.log("USDC balance:", raw);
-
                 setBalance(formatUnits(raw, decimals));
             } catch (err: any) {
                 setError(err.message);

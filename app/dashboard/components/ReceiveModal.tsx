@@ -53,7 +53,7 @@ export function ReceiveModal({
   }, [selectedWallet, wallets]);
 
   const currentChain =
-    chains.find((c) => c.id === selectedChain) || chains.find((c) => c.id === "arc");
+    chains.find((c) => c.id === selectedChain) || chains.find((c) => c.id === "celo");
   // Usamos esquema ethereum:<address> para compatibilidad con wallets (EIP-681 básico).
   const qrValue = currentAddress
     ? `ethereum:${currentAddress}`

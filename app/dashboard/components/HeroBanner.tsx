@@ -3,13 +3,15 @@
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { Box, Typography } from "@mui/material";
 import {useBalanceStore} from "@/app/store/useBalanceStore";
+import {useWalletStore} from "@/app/store/useWalletsStore";
 
 type Props = {
   background: string;
 };
 
 export function HeroBanner({ background }: Props) {
-  const { totalChains, value } = useBalanceStore();
+  const {value } = useBalanceStore();
+  const { wallets } = useWalletStore();
 
   return (
     <Box
@@ -60,7 +62,7 @@ export function HeroBanner({ background }: Props) {
           {value !== null ? formatCurrency(value) : "--"}
         </Typography>
         <Typography variant="body2" sx={{ mt: 1, fontSize: 13, position: "relative" }}>
-          {totalChains} wallets conectadas
+          {wallets.length} wallets conectadas
       </Typography>
     </Box>
   );

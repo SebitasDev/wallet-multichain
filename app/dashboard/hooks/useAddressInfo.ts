@@ -3,7 +3,7 @@ import {baseSepolia, optimismSepolia, polygonAmoy} from "viem/chains";
 import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
 import {useEffect, useState} from "react";
 import {useBalanceStore} from "@/app/store/useBalanceStore";
-import {useWalletsStore} from "@/app/store/useWalletsStore";
+import {useWalletsInfoStore} from "@/app/store/useWalletsInfoStore";
 
 export const useAddressInfo = (address: Address) => {
     const { balance: baseBalance, loading: baseLoading } =
@@ -18,7 +18,7 @@ export const useAddressInfo = (address: Address) => {
     const [total, setTotal] = useState("0");
 
     const { increment } = useBalanceStore();
-    const { addWalletInfo } = useWalletsStore();
+    const { addWalletInfo } = useWalletsInfoStore();
 
     useEffect(() => {
         // Ejecutar solo cuando TODOS terminaron de cargar
