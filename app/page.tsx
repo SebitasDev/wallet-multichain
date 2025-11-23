@@ -22,7 +22,7 @@ import Link from "next/link";
 const features = [
   {
     title: "Multi-chain sin fricción",
-    desc: "Gestiona direcciones, tokens y balances en mÃºltiples chains desde un solo panel.",
+    desc: "Gestiona direcciones, tokens y balances en múltiples chains desde un solo panel.",
     icon: <RocketLaunchIcon />,
   },
   {
@@ -65,7 +65,7 @@ const values = [
   },
   {
     title: "Eficiencia",
-    desc: "Accesos rápidos, copiado Ã¡gil y acciones directas para ahorrar clics.",
+    desc: "Accesos rápidos, copiado ágil y acciones directas para ahorrar clics.",
     icon: <TrendingUpIcon />,
   },
 ];
@@ -78,7 +78,7 @@ export default function Home() {
       <Box id="features" component="section">
         <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
           <SectionTitle
-            label="Por quÃ© MultiChain Wallet"
+            label="Por qué MultiChain Wallet"
             title="Unifica tu stack cripto en una sola experiencia"
           />
           <Grid container spacing={2.5} sx={{ mt: 2 }} justifyContent="center">
@@ -283,8 +283,8 @@ function Hero() {
                 Gestiona todas tus wallets multichain en un solo lugar, con flujos claros y seguros.
               </Typography>
               <Typography sx={{ color: "rgba(233,236,242,0.9)", maxWidth: 620 }}>
-                Conecta, organiza y opera en mÃºltiples chains con una interfaz enfocada en claridad,
-                seguridad y velocidad para demos y producciÃ³n.
+                Conecta, organiza y opera en múltiples chains con una interfaz enfocada en claridad,
+                seguridad y velocidad para demos y producción.
               </Typography>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="flex-start">
                 <Button
@@ -476,7 +476,7 @@ function CTA() {
                 borderColor: "rgba(255,255,255,0.65)",
               }}
             >
-              ContÃ¡ctanos
+              Contáctanos
             </Button>
           </Stack>
         </Stack>
