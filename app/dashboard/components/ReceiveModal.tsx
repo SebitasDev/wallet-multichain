@@ -18,7 +18,7 @@ import { OPIcon } from "@/app/components/atoms/OPIcon";
 import {useEffect, useMemo, useState} from "react";
 import { toast } from "react-toastify";
 import { WalletInfo } from "@/app/store/useWalletManager";
-import PolyIcon from "@/app/components/atoms/PolyIcon";
+import ArbIcon from "@/app/components/atoms/ArbIcon";
 
 type Props = {
   open: boolean;
@@ -29,7 +29,7 @@ type Props = {
 const chains = [
   { id: "base", label: "Base", icon: <BaseIcon /> },
   { id: "optimism", label: "Optimism", icon: <OPIcon /> },
-  { id: "pol", label: "Polygon", icon: <PolyIcon /> },
+  { id: "arb", label: "Arbitrum", icon: <ArbIcon /> },
 ];
 
 export function ReceiveModal({

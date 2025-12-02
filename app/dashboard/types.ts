@@ -28,4 +28,6 @@ export type AllocationSummary = {
     from: string;
     chains: Array<{ chainId: string; amount: number }>;
   }>;
+  totalFees: number;
+  commission: number;
 };

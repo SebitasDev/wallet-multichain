@@ -21,8 +21,8 @@ import { BaseIcon } from "@/app/components/atoms/BaseIcon";
 import { OPIcon } from "@/app/components/atoms/OPIcon";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { AllocationSummary } from "../types";
-import PolyIcon from "@/app/components/atoms/PolyIcon";
-import {baseSepolia, optimismSepolia, polygonAmoy} from "viem/chains";
+import ArbIcon from "@/app/components/atoms/ArbIcon";
+import {arbitrumSepolia, baseSepolia, optimismSepolia} from "viem/chains";
 import {useState} from "react";
 import {toast} from "react-toastify";
 import {useFindBestRoute} from "@/app/dashboard/hooks/useFindBestRoute";
@@ -32,7 +32,13 @@ import {useWalletStore} from "@/app/store/useWalletsStore";
 import {useGeneralWalletStore} from "@/app/store/useGeneralWalletStore";
 import {getPrivateClientByNetworkName} from "@/app/utils/getClientByNetworkName";
 import {privateKeyToAccount} from "viem/accounts";
-import {parseUnits} from "viem";
+import {createPublicClient, http, parseUnits} from "viem";
+import {createAccount} from "@/app/circle-test/clientFactory";
+import {createPaymaster} from "@/app/circle-test/paymasterFactory";
+import {bundlerClientFactory} from "@/app/circle-test/bundlerClientFactory";
+import {usdcAbi} from "@/app/circle-test/usdcAbi";
+import {createAuthorization} from "@/app/circle-test/autorizationFactory";
+import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
 
 type Props = {
     walletNames?: Record<string, string>;
@@ -43,7 +49,7 @@ export function SendMoneyModal({walletNames}: Props) {
     const [toAddress, setToAddress] = useState("");
     const [sendAmount, setSendAmount] = useState("");
     const [sendPassword, setSendPassword] = useState("");
-    const [sendChain, setSendChain] = useState("base");
+    const [sendChain, setSendChain] = useState("Base_Sepolia");
     const [sendLoading, setSendLoading] = useState(false);
     const [routeReady, setRouteReady] = useState(false);
     const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
@@ -66,7 +72,7 @@ export function SendMoneyModal({walletNames}: Props) {
         }
 
         setSendLoading(true);
-        allocateAcrossNetworks(Number(sendAmount), toAddress as Address)
+        allocateAcrossNetworks(Number(sendAmount), toAddress as Address, sendChain)
             .then((summary) => {
                 setRouteSummary(summary);
                 setRouteReady(true);
@@ -86,20 +92,20 @@ export function SendMoneyModal({walletNames}: Props) {
         console.log("Account:", account.address);
 
         const CHAIN_MAP: Record<string, string> = {
-            optimism: "Optimism_Sepolia",
-            pol: "Polygon_Amoy_Testnet",
-            base: "Base_Sepolia",
+            Optimism_Sepolia: "Optimism_Sepolia",
+            Arbitrum_Sepolia: "Arbitrum_Sepolia",
+            Base_Sepolia: "Base_Sepolia",
         };
 
         const TOKEN_MAP: Record<string, string> = {
             Optimism_Sepolia: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
-            Polygon_Amoy_Testnet: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
+            Arbitrum_Sepolia: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
             Base_Sepolia: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
         };
 
         const CHAIN_CONFIG: Record<string, any> = {
             Optimism_Sepolia: optimismSepolia,
-            Polygon_Amoy_Testnet: polygonAmoy,
+            Arbitrum_Sepolia: arbitrumSepolia,
             Base_Sepolia: baseSepolia,
         };
 
@@ -119,35 +125,62 @@ export function SendMoneyModal({walletNames}: Props) {
         ) => {
             const token = TOKEN_MAP[chainName];
 
-            // Si hay privateKey opcional, usamos ese, si no, usamos el account principal
             const client = optionalPrivateKey
                 ? getPrivateClientByNetworkName(CHAIN_CONFIG[chainName].id.toString(), privateKeyToAccount(optionalPrivateKey as Address))
                 : getWriter(chainName);
 
             console.log(`➡️ Transferring ${amount} on ${chainName} to ${to} using ${optionalPrivateKey ? "custom key" : "main account"}`);
 
-            const tx = await client.writeContract({
-                address: token as Address,
-                abi: [
-                    {
-                        name: "transfer",
-                        type: "function",
-                        stateMutability: "nonpayable",
-                        inputs: [
-                            { name: "to", type: "address" },
-                            { name: "value", type: "uint256" },
-                        ],
-                        outputs: [{ name: "", type: "bool" }],
-                    },
-                ],
-                functionName: "transfer",
-                args: [to as Address, amount],
-                chain: CHAIN_CONFIG[chainName],
+            const toClient = createPublicClient({
+                chain: client.chain,
+                transport: http()
             });
 
-            console.log(tx)
+            const toAccount = await createAccount(toClient, optionalPrivateKey as Address)
 
-            return tx;
+            const paymasterTo =
+                await createPaymaster.getPaymasterData(token as Address, toAccount.account, toClient)
+
+            const bundlerClientTo = bundlerClientFactory({
+                account: toAccount.account,
+                client: toClient,
+                paymaster: {
+                    getPaymasterData: async () => paymasterTo,
+                },
+            });
+
+            const aproxToFee = chainName === "Arbitrum_Sepolia" ? 0.04 :
+                chainName === "Optimism_Sepolia" ? 0.0025 : 0.003
+
+            const authorization = await createAuthorization(toAccount.owner, toClient, toAccount.account)
+
+            console.log("Lo q mandaria", amount)
+
+            const hash = await bundlerClientTo.sendUserOperation({
+                account: toAccount.account,
+                calls: [
+                    {
+                        to: token as Address,
+                        abi: usdcAbi,
+                        functionName: "approve",
+                        args: ["0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA", toUSDCBigInt(10000),],
+                    },
+                    {
+                        to: token as Address,
+                        abi: usdcAbi,
+                        functionName: "transfer",
+                        args: [to, amount - toUSDCBigInt(aproxToFee)],
+                    }
+                ],
+                authorization: authorization,
+            });
+
+            console.log("UserOperation hash para supplier", hash);
+
+            const receiptSuply = await bundlerClientTo.waitForUserOperationReceipt({ hash: hash });
+            console.log("Transaction realizada", receiptSuply.receipt.transactionHash);
+
+            return hash;
         };
 
 
@@ -159,19 +192,21 @@ export function SendMoneyModal({walletNames}: Props) {
             console.log("Wallet unlocked:", unlocked ? "✅" : "❌");
 
             for (const chain of allocation.chains) {
+                console.log(chain)
                 const fromValidChain =
                     chain.chainId === optimismSepolia.id.toString()
                         ? "Optimism_Sepolia"
-                        : chain.chainId === polygonAmoy.id.toString()
-                            ? "Polygon_Amoy_Testnet"
+                        : chain.chainId === arbitrumSepolia.id.toString()
+                            ? "Arbitrum_Sepolia"
                             : "Base_Sepolia";
 
                 const amount = parseUnits((chain.amount).toFixed(6), 6);
                 console.log(`Processing chain ${fromValidChain} with amount ${chain.amount} (parsed: ${amount})`);
 
                 if (fromValidChain === toValidChain) {
+                    console.log(fromValidChain, toValidChain)
                     console.log("🟢 Same chain, transferring directly");
-                    await transfer(fromValidChain, account.address, amount, unlocked);
+                    await transfer(fromValidChain, toAddress, amount, unlocked);
                     const delay = Math.floor(Math.random() * (7000 - 5000 + 1)) + 5000;
                     await new Promise(resolve => setTimeout(resolve, delay));
                     console.log(`⏱ Waited ${delay / 1000} seconds, continuing...`);
@@ -184,7 +219,7 @@ export function SendMoneyModal({walletNames}: Props) {
                             amount: chain.amount,
                             fromChain: fromValidChain,
                             toChain: toValidChain,
-                            recipient: account.address,
+                            recipient: toAddress, //account.address,
                             privateKey: unlocked,
                         }),
                     });
@@ -195,7 +230,7 @@ export function SendMoneyModal({walletNames}: Props) {
             }
         }
 
-        console.log("🔹All allocations processed, sending final transfer to destination");
+        /*console.log("🔹All allocations processed, sending final transfer to destination");
 
         const totalChains = routeSummary!.allocations.reduce((acc, a) => acc + a.chains.length, 0);
 
@@ -210,28 +245,28 @@ export function SendMoneyModal({walletNames}: Props) {
         const finalAmount = parseUnits(adjustedTotal.toFixed(6), 6);
         console.log(`Original: ${totalAmountRaw}, Chains: ${totalChains}, Ajustado: ${adjustedTotal}`);
 
-        await transfer(toValidChain, toAddress, finalAmount);
+        await transfer(toValidChain, toAddress, finalAmount);*/
         console.log("✅ Final transfer completed");
     };
 
     const canSend =
     !!toAddress.trim() && !!sendAmount.trim() && !!sendPassword.trim();
   const chains = [
-    { id: "base", label: "Base", icon: <BaseIcon /> },
-    { id: "optimism", label: "Optimism", icon: <OPIcon /> },
-    { id: "pol", label: "Polygon", icon: <PolyIcon /> },
+    { id: "Base_Sepolia", label: "Base", icon: <BaseIcon /> },
+    { id: "Optimism_Sepolia", label: "Optimism", icon: <OPIcon /> },
+    { id: "Arbitrum_Sepolia", label: "Arbitrum", icon: <ArbIcon /> },
   ];
 
   const resolveChain = (chainId: string | number) => {
     const idStr = String(chainId).toLowerCase();
-    if (idStr === "base" || idStr === "8453" || idStr === "84532") {
+    if (idStr === "Base_Sepolia" || idStr === "8453" || idStr === "84532") {
       return { label: "Base", icon: <BaseIcon /> };
     }
-    if (idStr === "optimism" || idStr === "10" || idStr === "11155420") {
+    if (idStr === "Optimism_Sepolia" || idStr === "10" || idStr === "11155420") {
       return { label: "Optimism", icon: <OPIcon /> };
     }
-    if (idStr === "pol" || idStr === polygonAmoy.id.toString()) {
-      return { label: "Polygon", icon: <PolyIcon /> };
+    if (idStr === "Arbitrum_Sepolia" || idStr === arbitrumSepolia.id.toString()) {
+      return { label: "Arbitrum", icon: <ArbIcon /> };
     }
     return { label: idStr.toUpperCase(), icon: null };
   };
@@ -255,7 +290,7 @@ export function SendMoneyModal({walletNames}: Props) {
         setToAddress("");
         setSendAmount("");
         setSendPassword("");
-        setSendChain("base");
+        setSendChain("Base_Sepolia");
         setSendLoading(false);
         setRouteReady(false);
         setRouteSummary(null);
@@ -460,12 +495,21 @@ export function SendMoneyModal({walletNames}: Props) {
                             <Typography fontWeight={700}>{r.label}</Typography>
                           </Stack>
                           <Box textAlign="right">
-                            <Typography fontWeight={800}>
-                              {formatCurrency(r.amount)}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              - {formatCurrency(0.015)}
-                            </Typography>
+                              <Typography fontWeight={800}>
+                                  {formatCurrency(
+                                      r.amount
+                                  )}
+                              </Typography>
+
+                              <Typography variant="body2" color="text.secondary">
+                                  - {formatCurrency(
+                                  r.id === arbitrumSepolia.id.toString()
+                                      ? 0.032
+                                      : r.id === optimismSepolia.id.toString()
+                                          ? 0.0025
+                                          : 0.003
+                              )}
+                              </Typography>
                           </Box>
                         </Box>
                       ))}
@@ -504,8 +548,7 @@ export function SendMoneyModal({walletNames}: Props) {
               <Box textAlign={{ xs: "left", sm: "right" }}>
                 <Typography fontWeight={800}>Recibe</Typography>
                 <Typography fontWeight={900}>{formatCurrency(Number(Math.max(
-                    parseFloat(sendAmount || "0") - routeSummary!.allocations.reduce((acc, alloc) => acc + alloc.chains.length * 0.015, 0) || 0,
-                    0
+                    parseFloat(sendAmount || "0") - routeSummary!.totalFees - routeSummary?.commission! || 0
                 ).toFixed(2)))}</Typography>
                 <Typography variant="body2" color="text.secondary">
                   Monto neto luego de comisión estimada

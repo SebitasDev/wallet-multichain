@@ -17,36 +17,36 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 import {Address} from "abitype";
 import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
-import PolyIcon from "@/app/components/atoms/PolyIcon";
-import {polygonAmoy} from "viem/chains";
+import ArbIcon from "@/app/components/atoms/ArbIcon";
+import {arbitrumSepolia, polygonAmoy} from "viem/chains";
 
 interface IPolChainItemProps {
     address: Address;
 }
 
-export default function PolyChainItem({ address } : IPolChainItemProps) {
+export default function ArbitrumChainItem({ address } : IPolChainItemProps) {
     const [open, setOpen] = useState(false);
 
-    const { balance } = useGetBalanceFromChain(polygonAmoy, address, "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582")
+    const { balance } = useGetBalanceFromChain(arbitrumSepolia, address, "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
 
     return (
         <>
-            {/* POL */}
+            {/* Arbitrum */}
             <Divider />
 
             <ListItemButton sx={{ py: 2 }} onClick={() => setOpen(!open)}>
                 <Box display="flex" alignItems="center" gap={2}>
-                    <PolyIcon />
+                    <ArbIcon />
 
                     <Box>
-                        <Typography fontWeight="600">Polygon</Typography>
+                        <Typography fontWeight="600">Arbitrum</Typography>
                         <Typography variant="caption" color="text.secondary">
                             1 token
                         </Typography>
                     </Box>
 
                     <Chip
-                        label="POLYGON"
+                        label="ARBITRUM"
                         size="small"
                         sx={{ ml: 1, backgroundColor: "#facc1533" }} // amarillo suave
                     />

@@ -26,6 +26,7 @@ export default function Dashboard() {
     }, {});
     const heroBg = "var(--gradient-hero)";
     useGeneralWallet();
+    
 
     return (
         <Box sx={{ minHeight: "100vh", backgroundColor: "#141516ff" }}>
