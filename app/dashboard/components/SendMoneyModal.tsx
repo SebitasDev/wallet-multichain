@@ -39,6 +39,7 @@ import {bundlerClientFactory} from "@/app/cross-chain-core/bundlerClientFactory"
 import {usdcAbi} from "@/app/cross-chain-core/usdcAbi";
 import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
 import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
+import {ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
 
 type Props = {
     walletNames?: Record<string, string>;
@@ -49,7 +50,7 @@ export function SendMoneyModal({walletNames}: Props) {
     const [toAddress, setToAddress] = useState("");
     const [sendAmount, setSendAmount] = useState("");
     const [sendPassword, setSendPassword] = useState("");
-    const [sendChain, setSendChain] = useState("Base_Sepolia");
+    const [sendChain, setSendChain] = useState<ChainKey>("Base_Sepolia");
     const [sendLoading, setSendLoading] = useState(false);
     const [routeReady, setRouteReady] = useState(false);
     const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
@@ -91,42 +92,24 @@ export function SendMoneyModal({walletNames}: Props) {
         const account = privateKeyToAccount(privateKey!);
         console.log("Account:", account.address);
 
-        const CHAIN_MAP: Record<string, string> = {
-            Optimism_Sepolia: "Optimism_Sepolia",
-            Arbitrum_Sepolia: "Arbitrum_Sepolia",
-            Base_Sepolia: "Base_Sepolia",
-        };
-
-        const TOKEN_MAP: Record<string, string> = {
-            Optimism_Sepolia: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
-            Arbitrum_Sepolia: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
-            Base_Sepolia: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-        };
-
-        const CHAIN_CONFIG: Record<string, any> = {
-            Optimism_Sepolia: optimismSepolia,
-            Arbitrum_Sepolia: arbitrumSepolia,
-            Base_Sepolia: baseSepolia,
-        };
-
-        const toValidChain = CHAIN_MAP[sendChain] ?? "Base_Sepolia";
+        const toValidChain = (sendChain in NETWORKS ? sendChain : "Base_Sepolia") as ChainKey;
         console.log("Destination chain:", toValidChain);
 
-        const getWriter = (chainName: string) => {
+        const getWriter = (chainName: ChainKey) => {
             console.log("Getting client for chain:", chainName);
-            return getPrivateClientByNetworkName(CHAIN_CONFIG[chainName].id.toString(), account);
+            return getPrivateClientByNetworkName(NETWORKS[chainName].chain.id, account);
         };
 
         const transfer = async (
-            chainName: string,
+            chainName: ChainKey,
             to: string,
             amount: bigint,
             optionalPrivateKey?: string
         ) => {
-            const token = TOKEN_MAP[chainName];
+            const token = NETWORKS[chainName].usdc;
 
             const client = optionalPrivateKey
-                ? getPrivateClientByNetworkName(CHAIN_CONFIG[chainName].id.toString(), privateKeyToAccount(optionalPrivateKey as Address))
+                ? getPrivateClientByNetworkName(NETWORKS[chainName].chain.id, privateKeyToAccount(optionalPrivateKey as Address))
                 : getWriter(chainName);
 
             console.log(`➡️ Transferring ${amount} on ${chainName} to ${to} using ${optionalPrivateKey ? "custom key" : "main account"}`);
@@ -380,7 +363,7 @@ export function SendMoneyModal({walletNames}: Props) {
               fullWidth
               size="medium"
               value={sendChain}
-              onChange={(e) => setSendChain(e.target.value)}
+              onChange={(e) => setSendChain(e.target.value as ChainKey)}
               disabled={sendLoading}
             >
               {chains.map((c) => (
