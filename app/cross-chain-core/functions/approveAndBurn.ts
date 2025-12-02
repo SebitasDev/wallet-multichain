@@ -1,11 +1,11 @@
 import {Address} from "abitype";
-import {usdcAbi} from "@/app/circle-test/usdcAbi";
+import {usdcAbi} from "@/app/cross-chain-core/usdcAbi";
 import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
-import {createAuthorization} from "@/app/circle-test/autorizationFactory";
-import {createAccount} from "@/app/circle-test/clientFactory";
-import {createPaymaster} from "@/app/circle-test/paymasterFactory";
-import {bundlerClientFactory} from "@/app/circle-test/bundlerClientFactory";
-import {createRetrieveAttestation} from "@/app/circle-test/retrieveAttestationFactory";
+import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
+import {createAccount} from "@/app/cross-chain-core/clientFactory";
+import {createPaymaster} from "@/app/cross-chain-core/paymasterFactory";
+import {bundlerClientFactory} from "@/app/cross-chain-core/bundlerClientFactory";
+import {createRetrieveAttestation} from "@/app/cross-chain-core/retrieveAttestationFactory";
 import {ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
 import {createPublicClient, http} from "viem";
 

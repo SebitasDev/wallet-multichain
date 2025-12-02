@@ -33,11 +33,11 @@ import {useGeneralWalletStore} from "@/app/store/useGeneralWalletStore";
 import {getPrivateClientByNetworkName} from "@/app/utils/getClientByNetworkName";
 import {privateKeyToAccount} from "viem/accounts";
 import {createPublicClient, http, parseUnits} from "viem";
-import {createAccount} from "@/app/circle-test/clientFactory";
-import {createPaymaster} from "@/app/circle-test/paymasterFactory";
-import {bundlerClientFactory} from "@/app/circle-test/bundlerClientFactory";
-import {usdcAbi} from "@/app/circle-test/usdcAbi";
-import {createAuthorization} from "@/app/circle-test/autorizationFactory";
+import {createAccount} from "@/app/cross-chain-core/clientFactory";
+import {createPaymaster} from "@/app/cross-chain-core/paymasterFactory";
+import {bundlerClientFactory} from "@/app/cross-chain-core/bundlerClientFactory";
+import {usdcAbi} from "@/app/cross-chain-core/usdcAbi";
+import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
 import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
 
 type Props = {

@@ -1,13 +1,13 @@
-import {createAccount} from "@/app/circle-test/clientFactory";
+import {createAccount} from "@/app/cross-chain-core/clientFactory";
 import {Address} from "abitype";
-import {createPaymaster} from "@/app/circle-test/paymasterFactory";
-import {bundlerClientFactory} from "@/app/circle-test/bundlerClientFactory";
-import {usdcAbi} from "@/app/circle-test/usdcAbi";
+import {createPaymaster} from "@/app/cross-chain-core/paymasterFactory";
+import {bundlerClientFactory} from "@/app/cross-chain-core/bundlerClientFactory";
+import {usdcAbi} from "@/app/cross-chain-core/usdcAbi";
 import {createPublicClient, http} from "viem";
-import {createAuthorization} from "@/app/circle-test/autorizationFactory";
+import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
 import {ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
 import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
-import {approveAndBurn} from "@/app/circle-test/functions/approveAndBurn";
+import {approveAndBurn} from "@/app/cross-chain-core/functions/approveAndBurn";
 
 export const crossChainTransfer = async (
     privateKey: Address,
