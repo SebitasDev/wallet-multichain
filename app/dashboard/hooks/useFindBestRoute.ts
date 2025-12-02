@@ -1,92 +1,189 @@
-import {Address} from "abitype";
-import {useWalletsInfoStore} from "@/app/store/useWalletsInfoStore";
+import { Address } from "abitype";
+import { useWalletsInfoStore } from "@/app/store/useWalletsInfoStore";
+import { arbitrumSepolia, baseSepolia, optimismSepolia } from "viem/chains";
 
 export const useFindBestRoute = () => {
     const { wallets } = useWalletsInfoStore();
 
-    async function allocateAcrossNetworks(targetAmount: number, toAddress: Address) {
-        const balances: Array<{ from: string; networkId: string; amount: number }> = [];
+    async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string) {
+        const balances: Array<{ from: string; networkId: string; amount: number; rawChainAmount: number }> = [];
 
-        console.log("wallets", wallets);
+        const chainId = sendChain === "Base_Sepolia"
+            ? baseSepolia.id
+            : sendChain === "Arbitrum_Sepolia"
+                ? arbitrumSepolia.id
+                : optimismSepolia.id;
 
-        const filteredWallets = wallets.filter(wallet => wallet.address.toLowerCase() !== toAddress.toLowerCase());
+        // Fee por chain (ORIGEN o DESTINO)
+        const getFee = (id: string) => {
+            if (id === optimismSepolia.id.toString()) return 0.0025;
+            if (id === arbitrumSepolia.id.toString()) return 0.04;
+            return 0.003; // Base
+        };
 
+        // Fee DESTINO (solo 1 vez si son chains distintas)
+        const destinationFee = getFee(chainId.toString());
+
+        // 1. Filtrar wallets evitando la del destino
+        const filteredWallets = wallets
+            .map(wallet => {
+                if (wallet.address.toLowerCase() === toAddress.toLowerCase()) {
+                    return {
+                        ...wallet,
+                        chains: wallet.chains.filter(chain => chain.chainId !== chainId.toString())
+                    };
+                }
+                return wallet;
+            })
+            .filter(wallet => wallet.chains.length > 0);
+
+        // 2. Recolectar balances restando FEE DE ORIGEN
         for (const wallet of filteredWallets) {
             for (const chain of wallet.chains) {
-                if (chain.chainAmount <= 0.02) {
-                    continue;
-                }
+
+                const chainAmount = Number(chain.chainAmount);
+                const originFee = Number(getFee(chain.chainId.toString()));
+
+                const availableAmount = chainAmount - originFee - 0.01;
+
+                // filtros a prueba de NaN, negativos y valores inservibles
+                if (!Number.isFinite(availableAmount)) continue;
+                if (availableAmount <= 0) continue;
 
                 balances.push({
                     from: wallet.address,
                     networkId: chain.chainId,
-                    amount: chain.chainAmount
+                    amount: availableAmount,
+                    rawChainAmount: chain.chainAmount
                 });
             }
         }
 
-        balances.sort((a, b) => a.amount - b.amount);
-
-        // 3️⃣ Selección de fondos
-        const rawAllocations: Array<{
-            from: string;
-            networkId: string;
-            amount: number;
-        }> = [];
-
-        let totalTaken = 0;
-
-        for (const b of balances) {
-            if (totalTaken >= targetAmount) break;
-
-            const remaining = targetAmount - totalTaken;
-            const take = Math.min(b.amount, remaining);
-
-            rawAllocations.push({
-                from: b.from,
-                networkId: b.networkId,
-                amount: take,
-            });
-
-            totalTaken += take;
+        if (balances.length === 0) {
+            return {
+                desiredAmount,
+                targetAmount: 0,
+                commission: 0,
+                totalFees: 0,
+                totalAmountTaken: 0,
+                remainingToCover: desiredAmount,
+                allocations: []
+            };
         }
 
-        const grouped: Record<string, { from: string; chains: Array<{ chainId: string; amount: number }> }> = {};
+        let targetEstimate = desiredAmount;
+        let lastSummary: any = null;
 
-        for (const item of rawAllocations) {
-            if (!grouped[item.from]) {
-                grouped[item.from] = { from: item.from, chains: [] };
+        for (let iter = 0; iter < 3; iter++) {
+
+            balances.sort((a, b) => a.amount - b.amount);
+
+            const rawAllocTemp: Array<{ from: string; networkId: string; amount: number }> = [];
+            let takenTemp = 0;
+
+            for (const b of balances) {
+                if (takenTemp >= targetEstimate) break;
+
+                const remaining = targetEstimate - takenTemp;
+                if (remaining < 0.01) break;
+
+                const take = Math.min(b.amount, remaining);
+                rawAllocTemp.push({ from: b.from, networkId: b.networkId, amount: take });
+                takenTemp += take;
             }
 
-            grouped[item.from].chains.push({
-                chainId: item.networkId,
-                amount: item.amount,
-            });
+            const participants = rawAllocTemp.length;
+            const uniqueOrigins = Array.from(new Set(rawAllocTemp.map(r => r.networkId)));
+
+            if (participants === 0) {
+                lastSummary = {
+                    desiredAmount,
+                    targetAmount: 0,
+                    commission: 0,
+                    totalFees: 0,
+                    totalAmountTaken: 0,
+                    remainingToCover: desiredAmount,
+                    allocations: []
+                };
+                break;
+            }
+
+            const allSameChainAsSend =
+                uniqueOrigins.length === 1 &&
+                uniqueOrigins[0] === chainId.toString();
+
+            const commission = allSameChainAsSend ? 0.01 : 0.01 * participants;
+
+            let totalFees = 0;
+
+            if (allSameChainAsSend) {
+                totalFees = getFee(chainId.toString());
+            } else {
+                totalFees = destinationFee;
+
+                for (const origin of uniqueOrigins) {
+                    totalFees += getFee(origin.toString());
+                }
+            }
+
+            const newTarget = desiredAmount - commission - totalFees;
+
+            const eps = 1e-9;
+
+            if (Math.abs(newTarget - targetEstimate) < eps) {
+                const grouped: Record<string, { from: string; chains: any[] }> = {};
+                for (const item of rawAllocTemp) {
+                    if (!grouped[item.from]) grouped[item.from] = { from: item.from, chains: [] };
+                    grouped[item.from].chains.push({ chainId: item.networkId, amount: item.amount });
+                }
+
+                const final = {
+                    desiredAmount,
+                    targetAmount: newTarget,
+                    commission,
+                    totalFees,
+                    totalAmountTaken: takenTemp,
+                    remainingToCover: Math.max(0, newTarget - takenTemp),
+                    allocations: Object.values(grouped)
+                };
+
+                console.log("📦 Final Allocations:", final);
+                return final;
+            }
+
+            targetEstimate = Math.max(0, newTarget);
+            lastSummary = { newTarget, rawAllocTemp, takenTemp, commission, totalFees };
         }
 
-        const allocations = Object.values(grouped);
-
-        const summary = {
-            targetAmount,
-            totalAmountTaken: totalTaken,
-            remainingToCover: Math.max(0, targetAmount - totalTaken),
-            allocations,
+        if (!lastSummary) return {
+            desiredAmount,
+            targetAmount: 0,
+            commission: 0,
+            totalFees: 0,
+            totalAmountTaken: 0,
+            remainingToCover: desiredAmount,
+            allocations: []
         };
 
-        console.log("🔹 Distribución final por wallet y chain:");
-        console.table(
-            allocations.flatMap(a =>
-                a.chains.map(c => ({
-                    Wallet: a.from,
-                    Chain: c.chainId,
-                    Monto: c.amount
-                }))
-            )
-        );
+        // build final output when not converged
+        const grouped: Record<string, { from: string; chains: any[] }> = {};
+        for (const item of lastSummary.rawAllocTemp) {
+            if (!grouped[item.from]) grouped[item.from] = { from: item.from, chains: [] };
+            grouped[item.from].chains.push({ chainId: item.networkId, amount: item.amount });
+        }
 
-        console.log("📊 Resumen general:", summary);
+        const final = {
+            desiredAmount,
+            targetAmount: lastSummary.newTarget,
+            commission: lastSummary.commission,
+            totalFees: lastSummary.totalFees,
+            totalAmountTaken: lastSummary.takenTemp,
+            remainingToCover: Math.max(0, lastSummary.newTarget - lastSummary.takenTemp),
+            allocations: Object.values(grouped)
+        };
 
-        return summary;
+        console.log("📦 Final Allocations (fallback):", final);
+        return final;
     }
 
     return { allocateAcrossNetworks };

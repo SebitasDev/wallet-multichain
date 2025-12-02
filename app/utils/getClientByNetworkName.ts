@@ -1,12 +1,12 @@
 import {Account, createPublicClient, createWalletClient, http} from "viem";
-import {polygonAmoy, baseSepolia, optimismSepolia} from "viem/chains";
+import {polygonAmoy, baseSepolia, optimismSepolia, arbitrumSepolia} from "viem/chains";
 
 export function getClientByNetworkName(name: string) {
     switch (name.toLowerCase()) {
         case baseSepolia.id.toString():
             return createPublicClient({ chain: baseSepolia, transport: http() });
-        case polygonAmoy.id.toString():
-            return createPublicClient({ chain: polygonAmoy, transport: http() });
+        case arbitrumSepolia.id.toString():
+            return createPublicClient({ chain: arbitrumSepolia, transport: http() });
         case optimismSepolia.id.toString():
             return createPublicClient({ chain: optimismSepolia, transport: http() });
         default:
@@ -22,11 +22,11 @@ export function getPrivateClientByNetworkName(name: string, account: Account) {
                 chain: baseSepolia,
                 transport: http(baseSepolia.rpcUrls.default.http[0]),
             });
-        case polygonAmoy.id.toString():
+        case arbitrumSepolia.id.toString():
             return createWalletClient({
                 account,
-                chain: polygonAmoy,
-                transport: http(polygonAmoy.rpcUrls.default.http[0]),
+                chain: arbitrumSepolia,
+                transport: http(arbitrumSepolia.rpcUrls.default.http[0]),
             });
         case optimismSepolia.id.toString():
             return createWalletClient({
