@@ -63,7 +63,9 @@ export async function eip2612Permit({
         },
         primaryType: "Permit",
         domain: {
+            // @ts-ignore
             name: await token.read.name(),
+            // @ts-ignore
             version: await token.read.version(),
             chainId: chain.id,
             verifyingContract: token.address,
@@ -72,6 +74,7 @@ export async function eip2612Permit({
             owner: ownerAddress,
             spender: spenderAddress,
             value: value.toString(),
+            // @ts-ignore
             nonce: (await token.read.nonces([ownerAddress])).toString(),
             deadline: maxUint256.toString(),
         },
