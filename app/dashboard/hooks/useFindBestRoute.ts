@@ -1,6 +1,6 @@
 import { Address } from "abitype";
 import { useWalletsInfoStore } from "@/app/store/useWalletsInfoStore";
-import { arbitrumSepolia, baseSepolia, optimismSepolia } from "viem/chains";
+import {CHAIN_ID_TO_KEY, ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
 
 export const useFindBestRoute = () => {
     const { wallets } = useWalletsInfoStore();
@@ -8,25 +8,19 @@ export const useFindBestRoute = () => {
     async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string) {
         const balances: Array<{ from: string; networkId: string; amount: number; rawChainAmount: number }> = [];
 
-        const chainId = sendChain === "Base_Sepolia"
-            ? baseSepolia.id
-            : sendChain === "Arbitrum_Sepolia"
-                ? arbitrumSepolia.id
-                : optimismSepolia.id;
+        const chainId = NETWORKS[sendChain as ChainKey].chain.id;
 
-        // Fee por chain (ORIGEN o DESTINO)
         const getFee = (id: string) => {
-            if (id === optimismSepolia.id.toString()) return 0.0025;
-            if (id === arbitrumSepolia.id.toString()) return 0.04;
-            return 0.003; // Base
+            const key = CHAIN_ID_TO_KEY[id];
+            if (!key) return 0.003;
+            return NETWORKS[key].aproxFromFee;
         };
 
-        // Fee DESTINO (solo 1 vez si son chains distintas)
         const destinationFee = getFee(chainId.toString());
 
-        // 1. Filtrar wallets evitando la del destino
         const filteredWallets = wallets
             .map(wallet => {
+                console.log(wallet)
                 if (wallet.address.toLowerCase() === toAddress.toLowerCase()) {
                     return {
                         ...wallet,

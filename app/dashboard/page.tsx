@@ -1,22 +1,30 @@
-
 "use client";
 
+import { useEffect, useState } from "react";
 import { Box, Button, Stack } from "@mui/material";
 import Link from "next/link";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 import { AddressCard } from "./components/AddressCard";
 import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
 import { SendMoneyModal } from "./components/SendMoneyModal";
 import { ReceiveModal } from "./components/ReceiveModal";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import {useSendModalState} from "@/app/dashboard/store/useSendModalState";
-import {useModalStore} from "@/app/store/useModalStore";
-import {useWalletStore} from "@/app/store/useWalletsStore";
-import {useGeneralWallet} from "@/app/dashboard/hooks/useGeneralWallet";
+
+import { useSendModalState } from "@/app/dashboard/store/useSendModalState";
+import { useModalStore } from "@/app/store/useModalStore";
+import { useWalletStore } from "@/app/store/useWalletsStore";
+import { useGeneralWallet } from "@/app/dashboard/hooks/useGeneralWallet";
 
 export default function Dashboard() {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const { addOpen, receiveOpen, openAdd, openReceive, closeAdd, closeReceive } = useModalStore();
     const { setSendModal } = useSendModalState();
     const { wallets } = useWalletStore();
@@ -24,19 +32,17 @@ export default function Dashboard() {
         acc[w.address.toLowerCase()] = w.name;
         return acc;
     }, {});
+
     const heroBg = "var(--gradient-hero)";
     useGeneralWallet();
-    
+
+    if (!mounted) return null;
 
     return (
         <Box sx={{ minHeight: "100vh", backgroundColor: "#141516ff" }}>
             <TopBar
-                onAdd={() => {
-                    openAdd();
-                }}
+                onAdd={() => openAdd()}
                 onSend={() => {
-                    //resetSendFields();
-                    //setFromAddress(wallets[0]?.address ?? "");
                     if (!wallets[0]) {
                         toast.error("Primero agrega una wallet de origen.");
                         return;
@@ -52,7 +58,7 @@ export default function Dashboard() {
                 }}
             />
 
-            <HeroBanner background={heroBg}/>
+            <HeroBanner background={heroBg} />
 
             <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2.5, md: 4 }, mt: 2 }}>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="flex-start">
@@ -70,20 +76,12 @@ export default function Dashboard() {
                             py: 1.1,
                         }}
                     >
-                        Ir a Offramp 
+                        Ir a Offramp
                     </Button>
                 </Stack>
             </Box>
 
-            <Box
-                sx={{
-                    maxWidth: 1200,
-                    mx: "auto",
-                    px: { xs: 2.5, md: 4 },
-                    pb: 6,
-                    mt: 4,
-                }}
-            >
+            <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2.5, md: 4 }, pb: 6, mt: 4 }}>
                 <Box
                     sx={{
                         display: "grid",
@@ -95,9 +93,9 @@ export default function Dashboard() {
                         alignItems: "start",
                     }}
                 >
-                    {wallets.map((wallet) => (
+                    {wallets.map(wallet => (
                         <Box key={wallet.address} sx={{ minWidth: 0 }}>
-                            <AddressCard address={wallet.address} walletName={wallet.name}/>
+                            <AddressCard address={wallet.address} walletName={wallet.name} />
                         </Box>
                     ))}
                 </Box>
@@ -105,9 +103,7 @@ export default function Dashboard() {
 
             <AddSecretModal
                 open={addOpen}
-                onClose={() => {
-                    closeAdd();
-                }}
+                onClose={() => closeAdd()}
             />
             <SendMoneyModal
                 walletNames={walletNamesMap}
@@ -117,6 +113,7 @@ export default function Dashboard() {
                 wallets={wallets as any}
                 onClose={() => closeReceive()}
             />
+
             <ToastContainer position="top-right" />
         </Box>
     );

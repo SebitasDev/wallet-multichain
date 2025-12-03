@@ -1,4 +1,5 @@
 import { encodePacked, Address, Hex } from "viem";
+import "dotenv/config";
 import {signPermit} from "@/app/utils/permit";
 import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
 

@@ -15,7 +15,6 @@ export interface BundlerClientFactoryParams {
     account: SmartAccount;
     client: Client & { chain: Chain };
 
-    // 👇 Paymaster debe ser funciones, NO un resultado
     paymaster?: true | {
         getPaymasterData?: PaymasterActions["getPaymasterData"];
         getPaymasterStubData?: PaymasterActions["getPaymasterStubData"];
