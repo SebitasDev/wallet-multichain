@@ -19,12 +19,13 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import BaseChainItem from "@/app/components/molecules/BaseChainItem";
 import OptimismChainItem from "@/app/components/molecules/OptimismChainItem";
-import {useEffect, useMemo, useState} from "react";
+import {useMemo, useState} from "react";
 import ArbitrumChainItem from "@/app/components/molecules/ArbitrumChainItem";
 import {Address} from "abitype";
 import {useAddressInfo} from "@/app/dashboard/hooks/useAddressInfo";
 import { toast } from "react-toastify";
 import {useWalletStore} from "@/app/store/useWalletsStore";
+import UnichainChainItem from "@/app/components/molecules/UnichainChainItem";
 
 interface IAddressCardProps {
     address: Address
@@ -255,6 +256,7 @@ export const AddressCard = ({
                         <>
                             <Divider />
                             <ArbitrumChainItem address={address}/>
+                            <UnichainChainItem address={address}/>
                         </>
                     )}
                 </List>

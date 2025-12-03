@@ -14,6 +14,7 @@
     "@circle-fin/bridge-kit": "^1.1.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@hookform/resolvers": "^5.2.2",
     "@mui/icons-material": "^7.3.5",
     "@mui/material": "^7.3.5",
     "@scure/bip39": "^1.4.0",
@@ -24,9 +25,11 @@
     "next": "16.0.3",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "react-hook-form": "^7.67.0",
     "react-qr-code": "^2.0.14",
     "react-toastify": "^11.0.5",
     "viem": "^2.39.3",
+    "zod": "^4.1.13",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import {Address} from "abitype";
-import {arbitrumSepolia, baseSepolia, optimismSepolia} from "viem/chains";
+import {arbitrumSepolia, baseSepolia, optimismSepolia, unichainSepolia} from "viem/chains";
 import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
 import {useEffect, useState} from "react";
 import {useBalanceStore} from "@/app/store/useBalanceStore";
@@ -15,6 +15,10 @@ export const useAddressInfo = (address: Address) => {
     const { balance: optimismBalance, loading: optimismLoading } =
         useGetBalanceFromChain(optimismSepolia, address, "0x5fd84259d66Cd46123540766Be93DFE6D43130D7");
 
+    const { balance: unichainBalance, loading: unichainLoading } =
+        useGetBalanceFromChain(unichainSepolia, address, "0x31d0220469e10c4E71834a79b1f276d740d3768F");
+
+
     const [total, setTotal] = useState("0");
 
     const { increment } = useBalanceStore();
@@ -25,14 +29,16 @@ export const useAddressInfo = (address: Address) => {
         const allLoaded =
             !baseLoading &&
             !arbitrumLoading &&
-            !optimismLoading;
+            !optimismLoading &&
+            !unichainLoading ;
 
         if (!allLoaded) return;
 
         const sum =
             Number(baseBalance) +
             Number(arbitrumBalance) +
-            Number(optimismBalance);
+            Number(optimismBalance) +
+            Number(unichainBalance);
 
         setTotal(sum.toString());
         increment(sum);
@@ -44,15 +50,17 @@ export const useAddressInfo = (address: Address) => {
                 { chainId: baseSepolia.id.toString(), chainAmount: Number(baseBalance) },
                 { chainId: arbitrumSepolia.id.toString(), chainAmount: Number(arbitrumBalance) },
                 { chainId: optimismSepolia.id.toString(), chainAmount: Number(optimismBalance) },
+                { chainId: unichainSepolia.id.toString(), chainAmount: Number(unichainBalance) },
             ]
         });
 
-    }, [baseLoading, arbitrumLoading, optimismLoading]);
+    }, [baseLoading, arbitrumLoading, optimismLoading, unichainLoading]);
 
     return {
         baseBalance,
         arbitrumBalance,
         optimismBalance,
+        unichainBalance,
         total,
     };
 }
