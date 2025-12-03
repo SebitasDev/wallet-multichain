@@ -1,6 +1,6 @@
 import {SendForm, sendSchema } from "@/app/lib/zod/sendSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import {JSX, useEffect, useState} from "react";
 import { useForm } from "react-hook-form";
 import { AllocationSummary } from "../types";
 import { useFindBestRoute } from "./useFindBestRoute";
@@ -18,6 +18,31 @@ import {bundlerClientFactory} from "@/app/cross-chain-core/bundlerClientFactory"
 import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
 import {usdcAbi} from "@/app/cross-chain-core/usdcAbi";
 import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
+import {useBridgeUsdcStream} from "@/app/dashboard/hooks/useBridgeUsdcStream";
+
+export type RouteStatus =
+    | "idle"
+    | "starting"
+    | "approving"
+    | "burning"
+    | "waiting"
+    | "minting"
+    | "done"
+    | "error";
+
+type RouteDetail = {
+    wallet: string;
+    walletName: string;
+    chains: {
+        id: string;
+        label: string;
+        icon: JSX.Element | null;
+        amount: number;
+        status: RouteStatus;
+        message: string;
+    }[];
+};
+
 
 export const useSendMoney = (walletNames?: Record<string, string>) => {
     const [sendLoading, setSendLoading] = useState(false);
@@ -27,6 +52,62 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
     const { unlockWallet } = useWalletStore();
     const { privateKey } = useGeneralWalletStore();
     const { setSendModal, isOpen } = useSendModalState();
+    const [routeDetails, setRouteDetails] = useState<RouteDetail[]>([]);
+
+    useEffect(() => {
+        if (!routeSummary) return;
+
+        const details = routeSummary.allocations.map((a) => ({
+            wallet: a.from,
+            walletName: walletNames?.[a.from.toLowerCase()] || a.from,
+            chains: a.chains.map((c) => {
+                const chainDef = resolveChain(c.chainId);
+                return {
+                    id: c.chainId,
+                    label: chainDef.label,
+                    icon: chainDef.icon,
+                    amount: c.amount,
+                    status: "idle" as RouteStatus,
+                    message: "",
+                };
+            }),
+        }));
+
+        setRouteDetails(details);
+    }, [routeSummary]);
+
+    useBridgeUsdcStream((e) => {
+        console.log("📩 Evento recibido en useBridgeUsdcStream:", e);
+
+        if (!e) return;
+
+        if (e.type === "chain-step") {
+            const chainId = NETWORKS[e.payload.chain as ChainKey].chain.id.toString();
+
+            setRouteDetails(prev =>
+                prev.map(wallet =>
+                    wallet.wallet.toLowerCase() === e.payload.wallet.toLowerCase()
+                        ? {
+                            ...wallet,
+                            chains: wallet.chains.map(c =>
+                                c.id.toString() === chainId
+                                    ? {
+                                        ...c,
+                                        status: e.payload.step as RouteStatus,
+                                        message: e.payload.message,
+                                    }
+                                    : c
+                            )
+                        }
+                        : wallet
+                )
+            );
+        }
+        else {
+            console.log("ℹ️ Evento con otro type:", e.type);
+        }
+    });
+
 
     const { control, handleSubmit, formState: { errors }, reset, watch } = useForm<SendForm>({
         resolver: zodResolver(sendSchema),
@@ -50,8 +131,9 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             setSendLoading(false);
             setRouteReady(false);
             setRouteSummary(null);
+            setRouteDetails([]);
         }
-    }, [isOpen]);
+    }, [isOpen, reset]);
 
     const handleOnSend = async (data: SendForm) => {
         const { sendChain, sendAmount, toAddress } = data;
@@ -196,9 +278,6 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
                     console.log(fromValidChain, toValidChain)
                     console.log("🟢 Same chain, transferring directly");
                     await transfer(fromValidChain, watch("toAddress"), amount, unlocked);
-                    const delay = Math.floor(Math.random() * (7000 - 5000 + 1)) + 5000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    console.log(`⏱ Waited ${delay / 1000} seconds, continuing...`);
                 } else {
                     console.log("🔵 Different chain, bridging via API");
                     await fetch("/api/bridge-usdc", {
@@ -212,9 +291,6 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
                             privateKey: unlocked,
                         }),
                     });
-                    const delay = Math.floor(Math.random() * (5000 - 4000 + 1)) + 5000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    console.log(`⏱ Waited ${delay / 1000} seconds, continuing...`);
                 }
             }
         }
@@ -252,21 +328,6 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
         return found ?? { label: id.toUpperCase(), icon: null };
     };
 
-    const routeDetails =
-        routeSummary?.allocations?.map((a) => ({
-            wallet: a.from,
-            walletName: walletNames?.[a.from.toLowerCase()] || a.from,
-            chains: a.chains.map((c) => {
-                const chainDef = resolveChain(c.chainId);
-                return {
-                    id: c.chainId,
-                    label: chainDef.label,
-                    icon: chainDef.icon,
-                    amount: c.amount,
-                };
-            }),
-        })) ?? [];
-
     const selected = NETWORKS[watch("sendChain") as ChainKey];
 
 
@@ -283,7 +344,8 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
         isOpen,
         setSendModal,
         routeReady,
-        routeSummary
+        routeSummary,
+        setRouteSummary
     }
 
 }

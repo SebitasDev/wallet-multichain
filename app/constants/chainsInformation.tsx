@@ -16,7 +16,7 @@ export const ChainKeyEnum = z.enum([
 
 export type ChainKey = z.infer<typeof ChainKeyEnum>;
 
-interface ChainConfig {
+export interface ChainConfig {
     usdc: Address;
     chain: any;
     domain: number;

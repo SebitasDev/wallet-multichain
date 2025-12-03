@@ -8,6 +8,7 @@ import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
 import {ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
 import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
 import {approveAndBurn} from "@/app/cross-chain-core/functions/approveAndBurn";
+import bridgeEmitter from "@/app/lib/bridgeEmitter";
 
 export const crossChainTransfer = async (
     privateKey: Address,
@@ -39,6 +40,13 @@ export const crossChainTransfer = async (
             },
         });
 
+        bridgeEmitter.emit("chain-step", {
+            chain: fromChain,
+            step: "burning",
+            message: "Quemando USDC...",
+            wallet: toAccount.owner.address,
+        });
+
         const attestation = await approveAndBurn(
             privateKey,
             amount,
@@ -46,6 +54,13 @@ export const crossChainTransfer = async (
             recipient,
             fromChain
         )
+
+        bridgeEmitter.emit("chain-step", {
+            chain: fromChain,
+            step: "minting",
+            message: "Ejecutando mint en chain destino...",
+            wallet: toAccount.owner.address,
+        });
 
         async function safeMint() {
             const transmitter = "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275";
@@ -162,6 +177,14 @@ export const crossChainTransfer = async (
             try {
                 const receiptMint = await bundlerClientTo.waitForUserOperationReceipt({ hash: hashMint });
                 console.log("Transaction hash en la blockchain:", receiptMint.receipt.transactionHash);
+
+                bridgeEmitter.emit("chain-step", {
+                    chain: fromChain,
+                    step: "done",
+                    message: "Transferencia finalizada",
+                    wallet: toAccount.owner.address,
+                });
+
                 return receiptMint;
             } catch (err) {
                 // @ts-ignore

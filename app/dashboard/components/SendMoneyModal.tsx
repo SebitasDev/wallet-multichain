@@ -6,21 +6,12 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  MenuItem,
-  Stack,
-  TextField,
   Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-import CircularProgress from "@mui/material/CircularProgress";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { formatCurrency } from "@/app/utils/formatCurrency";
-import {NETWORKS} from "@/app/constants/chainsInformation";
-import {Controller} from "react-hook-form";
 import {useSendMoney} from "@/app/dashboard/hooks/useSendMoney";
+import {FormSendMoney} from "@/app/dashboard/components/sendMoney/FormSendMoney";
+import {FinishRoute} from "@/app/dashboard/components/sendMoney/FinishRoute";
 
 type Props = {
     walletNames?: Record<string, string>;
@@ -29,11 +20,11 @@ type Props = {
 export function SendMoneyModal({walletNames}: Props) {
 
     const { sendLoading, control, handleSubmit, errors, handleOnSend, handleOnConfirm,
-        canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary
+        canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary,
     } = useSendMoney(walletNames);
 
 
-  return (
+    return (
     <Dialog
       open={isOpen}
       onClose={() => setSendModal(false)}
@@ -83,249 +74,8 @@ export function SendMoneyModal({walletNames}: Props) {
       </Box>
 
       <DialogContent sx={{ px: 3, pb: 1.5, pt: 2.5 }}>
-        {sendLoading && (
-          <Box
-            sx={{
-              mb: 2,
-              p: 1.5,
-              borderRadius: 2,
-              backgroundColor: "#f1f5f9",
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              flexDirection: "column",
-              textAlign: "center",
-            }}
-          >
-            <CircularProgress size={22} thickness={5} />
-            <Typography fontWeight={800} fontSize={14}>
-              Buscando la mejor ruta...
-            </Typography>
-            <Typography fontWeight={600} fontSize={13} color="text.secondary">
-              Enviando transaccion...
-            </Typography>
-          </Box>
-        )}
-        {!routeReady ? (
-          <Stack spacing={2.2}>
-              <Controller
-                  control={control}
-                  name="sendChain"
-                  render={({ field }) => (
-                      <TextField
-                          select
-                          label="Chain destino"
-                          fullWidth
-                          size="medium"
-                          disabled={sendLoading}
-                          {...field}
-                          error={!!errors.sendChain}
-                          helperText={errors.sendChain?.message}
-                      >
-                          {Object.entries(NETWORKS).map(([key, cfg]) => (
-                              <MenuItem key={key} value={key}>
-                                  <Stack direction="row" alignItems="center" spacing={1.2}>
-                                      {cfg.icon}
-                                      <Typography>{cfg.label}</Typography>
-                                  </Stack>
-                              </MenuItem>
-                          ))}
-                      </TextField>
-                  )}
-              />
-
-              <Controller
-                  control={control}
-                  name="toAddress"
-                  render={({ field }) => (
-                      <TextField
-                          label="Address destino"
-                          fullWidth
-                          size="medium"
-                          placeholder="0x..."
-                          disabled={sendLoading}
-                          {...field}
-                          error={!!errors.toAddress}
-                          helperText={errors.toAddress?.message}
-                      />
-                  )}
-              />
-
-
-              <Controller
-                  control={control}
-                  name="sendAmount"
-                  render={({ field }) => (
-                      <TextField
-                          label="Monto"
-                          fullWidth
-                          size="medium"
-                          placeholder="0.00"
-                          type="number"
-                          inputProps={{ min: 0, step: "0.0001" }}
-                          disabled={sendLoading}
-                          {...field}
-                          error={!!errors.sendAmount}
-                          helperText={errors.sendAmount?.message}
-                      />
-                  )}
-              />
-
-
-              <Controller
-                  control={control}
-                  name="sendPassword"
-                  render={({ field }) => (
-                      <TextField
-                          label="Password de la wallet"
-                          fullWidth
-                          size="medium"
-                          type="password"
-                          placeholder="********"
-                          disabled={sendLoading}
-                          {...field}
-                          error={!!errors.sendPassword}
-                          helperText={errors.sendPassword?.message}
-                      />
-                  )}
-              />
-
-
-          </Stack>
-        ) : (
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              backgroundColor: "#f8fafc",
-              display: "flex",
-              flexDirection: "column",
-              gap: 1.5,
-            }}
-          >
-            <Typography fontWeight={800} fontSize={15}>
-              Ruta encontrada
-            </Typography>
-            <Stack spacing={1}>
-              {routeDetails.map((wallet) => (
-                <Accordion
-                  key={wallet.wallet}
-                  disableGutters
-                  elevation={0}
-                  sx={{
-                    backgroundColor: "#fff",
-                    borderRadius: 1.5,
-                    boxShadow: "0 8px 20px rgba(15,23,42,0.05)",
-                    "&::before": { display: "none" },
-                  }}
-                >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      justifyContent="space-between"
-                      sx={{ width: "100%" }}
-                      spacing={2}
-                    >
-                      <Box>
-                        <Typography fontWeight={800}>{wallet.walletName}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {wallet.wallet}
-                        </Typography>
-                      </Box>
-                      <Box textAlign="right">
-                        <Typography fontSize={12} color="text.secondary">
-                          Total
-                        </Typography>
-                        <Typography fontWeight={800}>
-                          {formatCurrency(
-                            wallet.chains.reduce((acc, c) => acc + c.amount, 0),
-                          )}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Stack spacing={1}>
-                      {wallet.chains.map((r) => (
-                        <Box
-                          key={r.id}
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            p: 1,
-                            borderRadius: 1,
-                            backgroundColor: "#f8fafc",
-                          }}
-                        >
-                          <Stack direction="row" alignItems="center" spacing={1}>
-                            {r.icon}
-                            <Typography fontWeight={700}>{r.label}</Typography>
-                          </Stack>
-                          <Box textAlign="right">
-                              <Typography fontWeight={800}>
-                                  {formatCurrency(
-                                      r.amount
-                                  )}
-                              </Typography>
-
-                              <Typography variant="body2" color="text.secondary">
-                                  - {formatCurrency(
-                                        (Object.values(NETWORKS).find(n => n.chain.id.toString() === r.id)?.aproxFromFee ?? 0) + 0.01
-                                    )}
-                              </Typography>
-                          </Box>
-                        </Box>
-                      ))}
-                    </Stack>
-                  </AccordionDetails>
-                </Accordion>
-              ))}
-            </Stack>
-            <Box
-              sx={{
-                mt: 1.5,
-                p: 1.5,
-                borderRadius: 1.5,
-                backgroundColor: "#fff",
-                boxShadow: "0 8px 20px rgba(15,23,42,0.05)",
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                justifyContent: "space-between",
-                gap: 1,
-              }}
-            >
-                <Box>
-                    <Typography fontWeight={800}>Destinatario</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        {routeReady || "N/D"}
-                    </Typography>
-
-                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
-                        {selected?.icon}
-                        <Box>
-                            <Typography variant="body2" color="text.secondary">
-                                Llega en {selected?.label || "Chain destino"}
-                            </Typography>
-                        </Box>
-                    </Stack>
-                </Box>
-
-                <Box textAlign={{ xs: "left", sm: "right" }}>
-                    <Typography fontWeight={800}>Recibe</Typography>
-
-                    <Typography fontWeight={900}>
-                        {formatCurrency(routeSummary?.targetAmount ?? 0)}
-                    </Typography>
-
-                    <Typography variant="body2" color="text.secondary">
-                        Monto neto luego de comisión estimada
-                    </Typography>
-                </Box>
-
-            </Box>
-          </Box>
+        {!routeReady ? ( <FormSendMoney control={control} sendLoading={sendLoading} errors={errors} />) : (
+          <FinishRoute routeSummary={routeSummary} routeDetails={routeDetails} routeReady={routeReady} selected={selected} />
         )}
       </DialogContent>
 
