@@ -11,22 +11,10 @@ import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
-
-type routeDetail = {
-    wallet: string
-    walletName: string
-    chains: {
-        id: string
-        label: string
-        icon: JSX.Element | null
-        amount: number,
-        status: "idle" | "starting" | "approving" | "burning" | "waiting" | "minting" | "done" | "error",
-        message: string,
-    }[]
-}[]
+import {RouteDetail} from "@/app/dashboard/hooks/useSendMoney";
 
 type Props = {
-    routeDetails: routeDetail,
+    routeDetails: RouteDetail[],
     routeReady: boolean,
     routeSummary: AllocationSummary | null,
     selected: ChainConfig
@@ -101,67 +89,76 @@ export const FinishRoute = (
                             </Stack>
                         </AccordionSummary>
                         <AccordionDetails>
-                            <Stack spacing={1}>
-                                {wallet.chains.map((r) => (
-                                    <Box
-                                        key={r.id}
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            p: 1,
-                                            borderRadius: 1,
-                                            backgroundColor: "#f8fafc",
-                                        }}
-                                    >
-                                        <Stack direction="row" alignItems="center" spacing={1}>
-                                            {r.icon}
-                                            <Typography fontWeight={700}>{r.label}</Typography>
-                                        </Stack>
-                                        <Box textAlign="right">
-                                            <Box
-                                                key={r.id}
-                                                sx={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "space-between",
-                                                    p: 1,
-                                                    borderRadius: 1,
-                                                    backgroundColor:
-                                                        r.status === "done"
-                                                            ? "#d1fae5"   // verde
-                                                            : r.status === "error"
-                                                                ? "#fee2e2"   // rojo
-                                                                : "#f8fafc",
-                                                }}
-                                            >
-                                                <Stack direction="row" alignItems="center" spacing={1}>
-                                                    {STATUS_META[r.status]?.icon}
-                                                    <Box>
-                                                        <Typography fontWeight={700}>{r.label}</Typography>
-                                                        <Typography fontSize={12} color="text.secondary">
-                                                            {STATUS_META[r.status]?.label} — {r.message}
-                                                        </Typography>
-                                                    </Box>
+                            <Stack spacing={1.5}>
+                                {wallet.chains.map((r) => {
+                                    const network = Object.values(NETWORKS).find(n => n.chain.id.toString() === r.id);
+                                    const fee = (network?.aproxFromFee ?? 0) + 0.01;
+
+                                    return (
+                                        <Box
+                                            key={r.id}
+                                            sx={{
+                                                p: 1.5,
+                                                borderRadius: 2,
+                                                backgroundColor: "#f8fafc",
+                                                border: "1px solid #e5e7eb",
+                                            }}
+                                        >
+                                            {/* Row principal: icono + nombre + monto */}
+                                            <Stack direction="row" alignItems="center" justifyContent="space-between">
+                                                <Stack direction="row" alignItems="center" spacing={1.2}>
+                                                    {r.icon}
+                                                    <Typography fontWeight={700}>{r.label}</Typography>
                                                 </Stack>
 
-                                                <Box textAlign="right">
-                                                    <Typography fontWeight={800}>
-                                                        {formatCurrency(r.amount)}
-                                                    </Typography>
+                                                <Typography fontWeight={800}>{formatCurrency(r.amount)}</Typography>
+                                            </Stack>
+
+                                            {/* Status */}
+                                            <Stack direction="row" alignItems="center" spacing={1} mt={1}>
+                                                <Box
+                                                    sx={{
+                                                        px: 1,
+                                                        py: 0.3,
+                                                        borderRadius: 2,
+                                                        fontSize: "12px",
+                                                        fontWeight: 700,
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "6px",
+                                                        backgroundColor:
+                                                            r.status === "done"
+                                                                ? "#d1fae5"
+                                                                : r.status === "error"
+                                                                    ? "#fee2e2"
+                                                                    : "#e2e8f0",
+                                                    }}
+                                                >
+                                                    {STATUS_META[r.status]?.icon}
+                                                    {STATUS_META[r.status]?.label}
                                                 </Box>
-                                            </Box>
 
+                                                {r.message && (
+                                                    <Typography fontSize={12} color="text.secondary">
+                                                        {r.message}
+                                                    </Typography>
+                                                )}
+                                            </Stack>
 
-                                            <Typography variant="body2" color="text.secondary">
-                                                - {formatCurrency(
-                                                (Object.values(NETWORKS).find(n => n.chain.id.toString() === r.id)?.aproxFromFee ?? 0) + 0.01
-                                            )}
+                                            {/* Fee info */}
+                                            <Typography
+                                                mt={0.8}
+                                                variant="body2"
+                                                fontSize={12}
+                                                color="text.secondary"
+                                            >
+                                                Fee estimada: {formatCurrency(fee)}
                                             </Typography>
                                         </Box>
-                                    </Box>
-                                ))}
+                                    );
+                                })}
                             </Stack>
+
                         </AccordionDetails>
                     </Accordion>
                 ))}

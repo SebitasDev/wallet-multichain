@@ -30,7 +30,7 @@ export type RouteStatus =
     | "done"
     | "error";
 
-type RouteDetail = {
+export type RouteDetail = {
     wallet: string;
     walletName: string;
     chains: {
