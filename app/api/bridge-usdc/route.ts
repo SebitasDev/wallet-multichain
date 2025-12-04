@@ -19,8 +19,10 @@ export async function POST(req: NextRequest) {
             amount
         );
 
+        const safe = sanitizeTransferResult(result);
+
         console.log("✅ crossChainTransfer SUCCESS:", result);
-        return NextResponse.json(result);
+        return NextResponse.json(safe);
     } catch (err: any) {
         console.error("❌ ERROR in /api/bridge-usdc");
         console.error("RAW ERROR:", err);
@@ -35,4 +37,20 @@ export async function POST(req: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+function sanitizeTransferResult(result: any) {
+    return JSON.parse(JSON.stringify(result, (_key, value) => {
+        // Convertir BigInt → string
+        if (typeof value === "bigint") return value.toString();
+
+        // Eliminar providers u objetos circulares
+        if (typeof value === "object" && value !== null) {
+            if ("account" in value || "transport" in value) {
+                return undefined; // viem client / provider
+            }
+        }
+
+        return value;
+    }));
 }
