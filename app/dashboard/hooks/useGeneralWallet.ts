@@ -22,12 +22,10 @@ export const useGeneralWalletStore = create<WalletState>((set) => ({
         try {
             if (typeof window === "undefined") return;
 
-            // Import dinámico
             const xo = await import("xo-connect");
             const XOConnect = xo.XOConnect;
             const XOConnectProvider = xo.XOConnectProvider;
 
-            // 1. Conectar a XO Wallet
             const session = await XOConnect.connect({
                 dappName: "My Dapp",
             });
@@ -41,25 +39,34 @@ export const useGeneralWalletStore = create<WalletState>((set) => ({
 
             const chainHex = `0x${baseSepolia.id.toString(16)}`;
 
-            // 2. Provider EIP1193 (XO Wallet)
             const xoProvider = new XOConnectProvider({
                 defaultChainId: chainHex,
                 rpcs: { [chainHex]: "https://sepolia.base.org" },
                 wallet: session,
             });
 
-            // 3. Convertir provider XO → Ethers (v5)
+            // 🔥 NECESARIO PARA QUE EXISTA UNA CUENTA
+            const accounts = await xoProvider.request({
+                method: "eth_requestAccounts",
+                params: [],
+            });
+
+            if (!accounts || accounts.length === 0) {
+                console.error("XO Wallet did not provide accounts");
+                return;
+            }
+
             const provider = new ethers.providers.Web3Provider(xoProvider as any);
 
-            // 4. Obtener signer
-            const signer = provider.getSigner();
-            const address = await signer.getAddress();
+            // 🔥 IMPORTANTE: pasar el address explícito
+            const signer = provider.getSigner(accounts[0]);
 
-            set({ address, signer, provider });
-            toast.success(`Se pudo conectar con xo ${address}`);
+            set({ address: accounts[0], signer, provider });
+
+            toast.success(`Se pudo conectar con xo ${accounts[0]}`);
         } catch (err) {
             console.error("Error initializing wallet:", err);
-            toast.success(`Error con xo ${err}`);
+            toast.error(`Error con xo ${err}`);
         }
     },
 }));
