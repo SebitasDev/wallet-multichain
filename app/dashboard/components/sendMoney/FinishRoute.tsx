@@ -51,117 +51,121 @@ export const FinishRoute = (
                 Ruta encontrada
             </Typography>
             <Stack spacing={1}>
-                {routeDetails.map((wallet) => (
-                    <Accordion
-                        key={wallet.wallet}
-                        disableGutters
-                        elevation={0}
-                        sx={{
-                            backgroundColor: "#fff",
-                            borderRadius: 1.5,
-                            boxShadow: "0 8px 20px rgba(15,23,42,0.05)",
-                            "&::before": { display: "none" },
-                        }}
-                    >
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Stack
-                                direction="row"
-                                alignItems="center"
-                                justifyContent="space-between"
-                                sx={{ width: "100%" }}
-                                spacing={2}
-                            >
-                                <Box>
-                                    <Typography fontWeight={800}>{wallet.walletName}</Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {wallet.wallet}
-                                    </Typography>
-                                </Box>
-                                <Box textAlign="right">
-                                    <Typography fontSize={12} color="text.secondary">
-                                        Total
-                                    </Typography>
-                                    <Typography fontWeight={800}>
-                                        {formatCurrency(
-                                            wallet.chains.reduce((acc, c) => acc + c.amount, 0),
-                                        )}
-                                    </Typography>
-                                </Box>
-                            </Stack>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <Stack spacing={1.5}>
-                                {wallet.chains.map((r) => {
-                                    const network = Object.values(NETWORKS).find(n => n.chain.id.toString() === r.id);
-                                    const fee = (network?.aproxFromFee ?? 0) + 0.01;
+                {routeDetails.map((wallet) => {
+                    const shortAddress = `${wallet.wallet.slice(0, 6)}...`;
 
-                                    return (
-                                        <Box
-                                            key={r.id}
-                                            sx={{
-                                                p: 1.5,
-                                                borderRadius: 2,
-                                                backgroundColor: "#f8fafc",
-                                                border: "1px solid #e5e7eb",
-                                            }}
-                                        >
-                                            <Stack direction="row" alignItems="center" justifyContent="space-between">
-                                                <Stack direction="row" alignItems="center" spacing={1.2}>
-                                                    {r.icon}
-                                                    <Typography fontWeight={700}>{r.label}</Typography>
+                    return (
+                        <Accordion
+                            key={wallet.wallet}
+                            disableGutters
+                            elevation={0}
+                            sx={{
+                                backgroundColor: "#fff",
+                                borderRadius: 1.5,
+                                boxShadow: "0 8px 20px rgba(15,23,42,0.05)",
+                                "&::before": { display: "none" },
+                            }}
+                        >
+                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                <Stack
+                                    direction="row"
+                                    alignItems="center"
+                                    justifyContent="space-between"
+                                    sx={{ width: "100%" }}
+                                    spacing={2}
+                                >
+                                    <Box>
+                                        <Typography fontWeight={800}>{wallet.walletName}</Typography>
+                                        <Typography variant="body2" color="text.secondary" title={wallet.wallet}>
+                                            {shortAddress}
+                                        </Typography>
+                                    </Box>
+                                    <Box textAlign="right">
+                                        <Typography fontSize={12} color="text.secondary">
+                                            Total
+                                        </Typography>
+                                        <Typography fontWeight={800}>
+                                            {formatCurrency(
+                                                wallet.chains.reduce((acc, c) => acc + c.amount, 0),
+                                            )}
+                                        </Typography>
+                                    </Box>
+                                </Stack>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                                <Stack spacing={1.5}>
+                                    {wallet.chains.map((r) => {
+                                        const network = Object.values(NETWORKS).find(n => n.chain.id.toString() === r.id);
+                                        const fee = (network?.aproxFromFee ?? 0) + 0.01;
+
+                                        return (
+                                            <Box
+                                                key={r.id}
+                                                sx={{
+                                                    p: 1.5,
+                                                    borderRadius: 2,
+                                                    backgroundColor: "#f8fafc",
+                                                    border: "1px solid #e5e7eb",
+                                                }}
+                                            >
+                                                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                                                    <Stack direction="row" alignItems="center" spacing={1.2}>
+                                                        {r.icon}
+                                                        <Typography fontWeight={700}>{r.label}</Typography>
+                                                    </Stack>
+
+                                                    <Typography fontWeight={800}>{formatCurrency(r.amount)}</Typography>
                                                 </Stack>
 
-                                                <Typography fontWeight={800}>{formatCurrency(r.amount)}</Typography>
-                                            </Stack>
+                                                {/* Status */}
+                                                <Stack direction="row" alignItems="center" spacing={1} mt={1}>
+                                                    <Box
+                                                        sx={{
+                                                            px: 1,
+                                                            py: 0.3,
+                                                            borderRadius: 2,
+                                                            fontSize: "12px",
+                                                            fontWeight: 700,
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "6px",
+                                                            backgroundColor:
+                                                                r.status === "done"
+                                                                    ? "#d1fae5"
+                                                                    : r.status === "error"
+                                                                        ? "#fee2e2"
+                                                                        : "#e2e8f0",
+                                                        }}
+                                                    >
+                                                        {STATUS_META[r.status]?.icon}
+                                                        {STATUS_META[r.status]?.label}
+                                                    </Box>
 
-                                            {/* Status */}
-                                            <Stack direction="row" alignItems="center" spacing={1} mt={1}>
-                                                <Box
-                                                    sx={{
-                                                        px: 1,
-                                                        py: 0.3,
-                                                        borderRadius: 2,
-                                                        fontSize: "12px",
-                                                        fontWeight: 700,
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        gap: "6px",
-                                                        backgroundColor:
-                                                            r.status === "done"
-                                                                ? "#d1fae5"
-                                                                : r.status === "error"
-                                                                    ? "#fee2e2"
-                                                                    : "#e2e8f0",
-                                                    }}
+                                                    {r.message && (
+                                                        <Typography fontSize={12} color="text.secondary">
+                                                            {r.message}
+                                                        </Typography>
+                                                    )}
+                                                </Stack>
+
+                                                {/* Fee info */}
+                                                <Typography
+                                                    mt={0.8}
+                                                    variant="body2"
+                                                    fontSize={12}
+                                                    color="text.secondary"
                                                 >
-                                                    {STATUS_META[r.status]?.icon}
-                                                    {STATUS_META[r.status]?.label}
-                                                </Box>
+                                                    Fee estimada: {formatCurrency(fee)}
+                                                </Typography>
+                                            </Box>
+                                        );
+                                    })}
+                                </Stack>
 
-                                                {r.message && (
-                                                    <Typography fontSize={12} color="text.secondary">
-                                                        {r.message}
-                                                    </Typography>
-                                                )}
-                                            </Stack>
-
-                                            {/* Fee info */}
-                                            <Typography
-                                                mt={0.8}
-                                                variant="body2"
-                                                fontSize={12}
-                                                color="text.secondary"
-                                            >
-                                                Fee estimada: {formatCurrency(fee)}
-                                            </Typography>
-                                        </Box>
-                                    );
-                                })}
-                            </Stack>
-
-                        </AccordionDetails>
-                    </Accordion>
-                ))}
+                            </AccordionDetails>
+                        </Accordion>
+                    );
+                })}
             </Stack>
             <Box
                 sx={{
