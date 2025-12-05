@@ -6,6 +6,7 @@ import type { WalletClient } from "viem";
 import { useEmbedded } from "@/app/dashboard/hooks/embebed";
 import { useDisconnect, useWalletClient } from "wagmi";
 import { BrowserProvider, Eip1193Provider } from "ethers";
+import {toast} from "react-toastify";
 
 interface XOContractsContextType {
     connect: () => Promise<void>;
@@ -19,18 +20,24 @@ function walletClientToEip1193Provider(walletClient: WalletClient): Eip1193Provi
 }
 
 export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
+    console.log("p")
+
     const [address, setAddress] = useState<string | null>(null);
 
-    const { data: walletClient } = useWalletClient();
-    const { disconnect: wagmiDisconnect } = useDisconnect();
     const { isEmbedded } = useEmbedded();
+
+    console.log(isEmbedded)
 
     // 🔥 POLYGON MAINNET
     const chainId = "0x89";
     const rpcUrl = "https://polygon-rpc.com";
 
+    console.log("ultimo antes conextar")
+
     const connect = async () => {
+        console.log("test connect");
         try {
+            toast.info("Comenzando");
             let provider: any;
 
             if (isEmbedded) {
@@ -40,13 +47,13 @@ export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
                     defaultChainId: chainId,
                 });
 
+                toast.success("es embs");
+
                 await provider.request({ method: "eth_requestAccounts" });
 
-            } else {
-                // Normal (wagmi)
-                if (!walletClient) throw new Error("Wallet client not found");
-                provider = walletClientToEip1193Provider(walletClient);
             }
+
+            toast.success("Xd");
 
             // Ethers
             const ethersProvider = new BrowserProvider(provider);
@@ -54,9 +61,11 @@ export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
             const addr = await signer.getAddress();
 
             setAddress(addr);
+            toast.success(`Todo se nos dios ${addr}`);
 
         } catch (err) {
             console.log("ERROR CONNECT:", err);
+            toast.info(`Error ${err}`);
         }
     };
 
