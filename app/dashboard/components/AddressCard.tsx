@@ -26,6 +26,7 @@ import {useAddressInfo} from "@/app/dashboard/hooks/useAddressInfo";
 import { toast } from "react-toastify";
 import {useWalletStore} from "@/app/store/useWalletsStore";
 import UnichainChainItem from "@/app/components/molecules/UnichainChainItem";
+import PolygonChainItem from "@/app/components/molecules/PolygonChainItem";
 
 interface IAddressCardProps {
     address: Address
@@ -257,6 +258,7 @@ export const AddressCard = ({
                             <Divider />
                             <ArbitrumChainItem address={address}/>
                             <UnichainChainItem address={address}/>
+                            <PolygonChainItem address={address}/>
                         </>
                     )}
                 </List>

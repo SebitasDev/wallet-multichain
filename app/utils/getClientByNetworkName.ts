@@ -1,5 +1,5 @@
 import {Account, createWalletClient, http} from "viem";
-import {baseSepolia, optimismSepolia, arbitrumSepolia, unichainSepolia} from "viem/chains";
+import {baseSepolia, optimismSepolia, arbitrumSepolia, unichainSepolia, polygonAmoy} from "viem/chains";
 
 export function getPrivateClientByNetworkName(id: number, account: Account) {
     switch (id) {
@@ -26,6 +26,12 @@ export function getPrivateClientByNetworkName(id: number, account: Account) {
                 account,
                 chain: unichainSepolia,
                 transport: http(unichainSepolia.rpcUrls.default.http[0]),
+            });
+        case polygonAmoy.id:
+            return createWalletClient({
+                account,
+                chain: polygonAmoy,
+                transport: http(polygonAmoy.rpcUrls.default.http[0]),
             });
         default:
             throw new Error(`Unsupported network: ${id}`);

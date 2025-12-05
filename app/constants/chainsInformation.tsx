@@ -1,17 +1,19 @@
 import {Address} from "abitype";
-import {arbitrumSepolia, baseSepolia, optimismSepolia, unichainSepolia} from "viem/chains";
+import {arbitrumSepolia, baseSepolia, optimismSepolia, polygonAmoy, unichainSepolia} from "viem/chains";
 import {JSX} from "react";
 import {OPIcon} from "@/app/components/atoms/OPIcon";
 import ArbIcon from "@/app/components/atoms/ArbIcon";
 import {BaseIcon} from "@/app/components/atoms/BaseIcon";
 import z from "zod";
 import {UnichainIcon} from "@/app/components/atoms/UnichainIcon";
+import PolygonIcon from "@/app/components/atoms/PolygonIcon";
 
 export const ChainKeyEnum = z.enum([
     "Optimism_Sepolia",
     "Arbitrum_Sepolia",
     "Base_Sepolia",
     "Unichain_Sepolia",
+    "Polygon_Amoy_Sepolia",
 ]);
 
 export type ChainKey = z.infer<typeof ChainKeyEnum>;
@@ -61,6 +63,15 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         label: "Unichain",
         icon: <UnichainIcon />
     },
+
+    Polygon_Amoy_Sepolia: {
+        usdc: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
+        chain: polygonAmoy,
+        domain: 7,
+        aproxFromFee: 0.03,
+        label: "Polygon",
+        icon: <PolygonIcon />
+    },
 };
 
 export const CHAIN_ID_TO_KEY: Record<string, ChainKey> = {
@@ -68,4 +79,5 @@ export const CHAIN_ID_TO_KEY: Record<string, ChainKey> = {
     [arbitrumSepolia.id.toString()]: "Arbitrum_Sepolia",
     [baseSepolia.id.toString()]: "Base_Sepolia",
     [unichainSepolia.id.toString()]: "Unichain_Sepolia",
+    [polygonAmoy.id.toString()]: "Polygon_Amoy_Sepolia",
 };
