@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import { ethers } from "ethers";
 import { toast } from "react-toastify";
+import {polygon} from "viem/chains";
 
 interface WalletState {
     address: string | null;
@@ -25,14 +26,12 @@ export const useGeneralWalletStore = create<WalletState>((set) => ({
 
             const { XOConnectProvider } = await import("xo-connect");
 
-            // ⚠️ XO OBLIGA a pasar rpcs
-            // Base Sepolia → chainId: 0x14a34 (84532)
-            const chainHex = "0x14a34";
+            const chainHex = "0x89";
 
             const xoProvider = new XOConnectProvider({
                 defaultChainId: chainHex,
                 rpcs: {
-                    [chainHex]: "https://sepolia.base.org", // ⭐ RPC válido
+                    [chainHex]: polygon.rpcUrls.default.http[0],
                 },
             });
 
