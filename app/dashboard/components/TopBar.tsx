@@ -18,17 +18,20 @@ export function TopBar({ onAdd, onSend, onReceive }: Props) {
         display: "flex",
         alignItems: { xs: "center", sm: "center" },
         justifyContent: "space-between",
-        gap: 2,
+        gap: 2.5,
         flexWrap: "wrap",
-        width: "100%",
-        px: { xs: 2, md: 4 },
-        py: { xs: 1.4, md: 1.6 },
-        borderRadius: 20,
+        width: "100vw",
+        mx: "calc(50% - 50vw)",
+        px: { xs: 2.4, md: 4 },
+        py: { xs: 1.8, md: 2 },
+        borderRadius: 0,
         mb: { xs: 2.5, md: 3 },
-        background: "linear-gradient(135deg, rgba(15,23,42,0.85) 0%, rgba(24,35,52,0.9) 100%)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        boxShadow: "0 20px 55px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
+        background:
+          "radial-gradient(circle at 12% 20%, rgba(59,130,246,0.22), transparent 32%), radial-gradient(circle at 82% 16%, rgba(14,165,233,0.18), transparent 30%), linear-gradient(120deg, #0b1220, #10192f)",
+        border: "none",
+        boxShadow: "none",
         color: "#fff",
+        overflow: "hidden",
       }}
     >
       <Stack
@@ -47,16 +50,16 @@ export function TopBar({ onAdd, onSend, onReceive }: Props) {
           sx={{
             width: 48,
             height: 48,
-            borderRadius: 16,
+          borderRadius: 16,
             background: "linear-gradient(145deg, #0ea5e9 0%, #6366f1 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontWeight: 800,
-            boxShadow: "0 10px 22px rgba(0,0,0,0.25)",
-            fontSize: 17,
-            }}
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#fff",
+          fontWeight: 800,
+          boxShadow: "0 12px 26px rgba(0,0,0,0.28)",
+          fontSize: 17,
+          }}
         >
           M
         </Box>
@@ -91,14 +94,32 @@ export function TopBar({ onAdd, onSend, onReceive }: Props) {
             sx={{
               textTransform: "none",
               px: 2.6,
-              py: 1,
-              borderRadius: 2,
+              py: 1.05,
+              borderRadius: 1.75,
               fontWeight: 800,
-              color: "#0b172d",
-              background: "linear-gradient(135deg, #fefefe 0%, #e5ecff 100%)",
-              boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
+              letterSpacing: 0.1,
+              border: btn.label === "Enviar" ? "none" : "1px solid rgba(255,255,255,0.14)",
+              color: btn.label === "Enviar" ? "#0b1224" : "#e2e8f0",
+              background:
+                btn.label === "Enviar"
+                  ? "linear-gradient(135deg, #38bdf8 0%, #60a5fa 50%, #7c3aed 100%)"
+                  : "rgba(255,255,255,0.07)",
+              boxShadow:
+                btn.label === "Enviar"
+                  ? "0 14px 28px rgba(96,165,250,0.30)"
+                  : "0 10px 22px rgba(0,0,0,0.22)",
+              "& .MuiButton-startIcon": {
+                color: btn.label === "Enviar" ? "#0b1224" : "#e2e8f0",
+              },
               "&:hover": {
-                background: "linear-gradient(135deg, #ffffff 0%, #d9e4ff 100%)",
+                background:
+                  btn.label === "Enviar"
+                    ? "linear-gradient(135deg, #60a5fa 0%, #7c3aed 60%, #a855f7 100%)"
+                    : "rgba(255,255,255,0.12)",
+                boxShadow:
+                  btn.label === "Enviar"
+                    ? "0 16px 32px rgba(96,165,250,0.35)"
+                    : "0 12px 24px rgba(0,0,0,0.24)",
               },
             }}
           >

@@ -262,7 +262,7 @@ function Hero() {
           <Grid size={{ xs: 12, md: 7 }}>
             <Stack spacing={2.5}>
               <Chip
-                label="múltiChain Wallet Â· ETHGlobal"
+                label="Multichain Wallet"
                 sx={{
                   alignSelf: "flex-start",
                   background: "rgba(255,255,255,0.1)",
@@ -364,18 +364,20 @@ function Hero() {
                   ),
                 )}
               </Stack>
-              <Box
-                sx={{
-                  mt: 2,
-                  borderRadius: 2,
-                  background: "linear-gradient(135deg, #0f7bff 0%, #7c3aed 100%)",
-                  p: 2,
-                  color: "#fff",
-                }}
-              >
+                <Box
+                  sx={{
+                    mt: 2,
+                    borderRadius: 2,
+                    background: "linear-gradient(135deg, #0f7bff 0%, #7c3aed 100%)",
+                    p: 2,
+                    color: "#fff",
+                    textAlign: "center",
+                  }}
+                >
 
                 <Typography fontWeight={900} sx={{ fontSize: 24, lineHeight: 1.1 }}>
-                  Simplificamos lo complejo de las chains
+                  Simplificamos lo complejo 
+                                de las chains
                 </Typography>
               </Box>
             </Card>
