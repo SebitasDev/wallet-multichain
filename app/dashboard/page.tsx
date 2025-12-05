@@ -16,7 +16,7 @@ import { ReceiveModal } from "./components/ReceiveModal";
 import { useSendModalState } from "@/app/dashboard/store/useSendModalState";
 import { useModalStore } from "@/app/store/useModalStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
-import {useGeneralWallet, useGeneralWalletStore} from "@/app/dashboard/hooks/useGeneralWallet";
+import {useXOContracts} from "@/app/dashboard/hooks/useGeneralWallet";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -34,9 +34,8 @@ export default function Dashboard() {
     }, {});
 
     const heroBg = "var(--gradient-hero)";
-    useGeneralWallet();
 
-    const address = useGeneralWalletStore((s) => s.address);
+    const { connect, address } = useXOContracts();
 
     if (!mounted) return null;
 
