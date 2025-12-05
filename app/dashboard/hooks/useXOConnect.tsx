@@ -20,12 +20,11 @@ export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
 
     const connect = async () => {
         try {
-            console.log("⚡ connect() ejecutado automáticamente");
-            toast.info("Conectando wallet…");
+            toast.info("Conectando con Beexo");
 
-            // IMPORT DINÁMICO PARA EVITAR SSR
             const { XOConnectProvider } = await import("xo-connect");
             const { BrowserProvider } = await import("ethers");
+            const { XOConnect } = await import("xo-connect");
 
             let provider: any;
 
@@ -43,7 +42,10 @@ export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
             const addr = await signer.getAddress();
 
             setAddress(addr);
-            toast.success(`Conectado: ${addr}`);
+            toast.success(`Wallet de Beexo Conectada: ${addr}`);
+            const client = await XOConnect.getClient();
+            toast.success(`User alias: ${client?.alias}`);
+            toast.success(`Wallet de Beexo Conectada: ${client?.currencies}`);
 
         } catch (err) {
             console.log("ERROR CONNECT:", err);
