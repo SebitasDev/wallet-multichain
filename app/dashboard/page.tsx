@@ -41,6 +41,9 @@ export default function Dashboard() {
 
     return (
         <Box sx={{ minHeight: "100vh", backgroundColor: "#141516ff" }}>
+            <button onClick={connect}>
+                conectar
+            </button>
             <div>
                 <h1>XOConnect + viem</h1>
                 {address ? (
