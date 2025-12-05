@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
 
 const XOContractsProvider = dynamic(
     () =>
@@ -11,5 +12,9 @@ const XOContractsProvider = dynamic(
 );
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-    return <XOContractsProvider>{children}</XOContractsProvider>;
+    return <EmbeddedProvider>
+        <XOContractsProvider>
+            {children}
+        </XOContractsProvider>
+    </EmbeddedProvider>;
 }
