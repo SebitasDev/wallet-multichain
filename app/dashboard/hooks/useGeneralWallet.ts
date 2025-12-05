@@ -23,19 +23,23 @@ export const useGeneralWalletStore = create<WalletState>((set) => ({
 
             if (typeof window === "undefined") return;
 
-            // 1. Import dinámico recomendado
             const { XOConnectProvider } = await import("xo-connect");
 
-            // 2. Crear provider XO (NO necesita params)
-            const xoProvider = new XOConnectProvider();
+            // ⚠️ XO OBLIGA a pasar rpcs
+            // Base Sepolia → chainId: 0x14a34 (84532)
+            const chainHex = "0x14a34";
 
-            // 3. Crear provider ethers v5
+            const xoProvider = new XOConnectProvider({
+                defaultChainId: chainHex,
+                rpcs: {
+                    [chainHex]: "https://sepolia.base.org", // ⭐ RPC válido
+                },
+            });
+
             const provider = new ethers.providers.Web3Provider(xoProvider, "any");
 
-            // 4. Solicitar cuentas
             await provider.send("eth_requestAccounts", []);
 
-            // 5. Obtener signer
             const signer = provider.getSigner();
             const address = await signer.getAddress();
 
