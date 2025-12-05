@@ -16,10 +16,10 @@ export function HeroBanner({ background }: Props) {
     const { wallets } = useWalletStore();
 
     // XO (embedded)
-    const { address: xoAddress, client } = useXOContracts();
+    const { address: xoAddress } = useXOContracts();
 
     // Local fallback main wallet
-    const { mainWallet} = useMainWalletStore();
+    const { mainWallet, xoClient} = useMainWalletStore();
 
     // Main wallet (XO si existe → sino local)
     const mainAddress = xoAddress ?? mainWallet.address ?? null;
@@ -63,7 +63,7 @@ export function HeroBanner({ background }: Props) {
                     color: "rgba(255,255,255,0.85)",
                 }}
             >
-                Main Wallet {client ? ` de ${client.alias}` : ""}
+                Main Wallet {xoClient ? ` de ${xoClient.alias}` : ""}
             </Typography>
 
             <Typography
