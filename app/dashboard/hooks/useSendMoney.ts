@@ -19,7 +19,6 @@ import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
 import {usdcAbi} from "@/app/cross-chain-core/usdcAbi";
 import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
 import {useBridgeUsdcStream} from "@/app/dashboard/hooks/useBridgeUsdcStream";
-import bridgeEmitter from "@/app/lib/bridgeEmitter";
 
 export type RouteStatus =
     | "idle"
@@ -351,6 +350,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
 
         await transfer(toValidChain, toAddress, finalAmount);*/
         console.log("✅ Final transfer completed");
+        toast.success("Transacciones completados");
     };
 
     const canSend = !!watch("toAddress") && !!watch("sendAmount") && !!watch("sendPassword");
