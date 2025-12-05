@@ -1,8 +1,8 @@
 "use client";
 
-import React, { ReactNode, createContext, useContext, useState } from "react";
+import React, { ReactNode, createContext, useContext, useState, useEffect } from "react";
 import { useEmbedded } from "@/app/dashboard/hooks/embebed";
-import {toast} from "react-toastify";
+import { toast } from "react-toastify";
 
 interface XOContractsContextType {
     connect: () => Promise<void>;
@@ -20,12 +20,14 @@ export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
 
     const connect = async () => {
         try {
-            toast.info("Comenzando");
-            let provider: any;
+            console.log("⚡ connect() ejecutado automáticamente");
+            toast.info("Conectando wallet…");
 
-            // ⬇️ IMPORTS QUE ROMPEN SSR → SE MUEVEN AQUÍ
+            // IMPORT DINÁMICO PARA EVITAR SSR
             const { XOConnectProvider } = await import("xo-connect");
             const { BrowserProvider } = await import("ethers");
+
+            let provider: any;
 
             if (isEmbedded) {
                 provider = new XOConnectProvider({
@@ -33,25 +35,28 @@ export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
                     defaultChainId: chainId,
                 });
 
-                toast.success("es embs");
-
                 await provider.request({ method: "eth_requestAccounts" });
             }
-
-            toast.success("Xd");
 
             const ethersProvider = new BrowserProvider(provider);
             const signer = await ethersProvider.getSigner();
             const addr = await signer.getAddress();
 
             setAddress(addr);
-            toast.success(`Todo se nos dio ${addr}`);
+            toast.success(`Conectado: ${addr}`);
 
         } catch (err) {
             console.log("ERROR CONNECT:", err);
-            toast.info(`Error ${err}`);
+            toast.error(`Error: ${err}`);
         }
     };
+
+    // ⭐ AUTOMÁTICO: se ejecuta apenas exista isEmbedded
+    useEffect(() => {
+        if (isEmbedded) {
+            connect();
+        }
+    }, [isEmbedded]);
 
     return (
         <XOContractsContext.Provider value={{ connect, address }}>
