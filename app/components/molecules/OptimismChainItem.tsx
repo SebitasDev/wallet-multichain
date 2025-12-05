@@ -45,8 +45,16 @@ export default function OptimismChainItem({ address } : IOptimismChainItemProps)
                     <Chip
                         label="OP"
                         size="small"
-                        sx={{ ml: 1, backgroundColor: "#ef444433" }}
+                        sx={{
+                            ml: 1,
+                            backgroundColor: "#ef444433",
+                            border: "1px solid #FF4747",
+                            boxShadow: "0 0 6px #FF4747",
+                            color: "#FF4747",
+                            fontWeight: 600
+                        }}
                     />
+
                 </Box>
 
                 <ListItemSecondaryAction

@@ -1,5 +1,5 @@
 import {Address} from "abitype";
-import {arbitrumSepolia, baseSepolia, optimismSepolia, unichainSepolia} from "viem/chains";
+import {arbitrumSepolia, baseSepolia, optimismSepolia, polygonAmoy, unichainSepolia} from "viem/chains";
 import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
 import {useEffect, useState} from "react";
 import {useBalanceStore} from "@/app/store/useBalanceStore";
@@ -18,6 +18,10 @@ export const useAddressInfo = (address: Address) => {
     const { balance: unichainBalance, loading: unichainLoading } =
         useGetBalanceFromChain(unichainSepolia, address, "0x31d0220469e10c4E71834a79b1f276d740d3768F");
 
+    const { balance: polygonBalance, loading: polygonLoading } =
+        useGetBalanceFromChain(polygonAmoy, address, "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582");
+
+
 
     const [total, setTotal] = useState("0");
 
@@ -30,7 +34,8 @@ export const useAddressInfo = (address: Address) => {
             !baseLoading &&
             !arbitrumLoading &&
             !optimismLoading &&
-            !unichainLoading ;
+            !unichainLoading &&
+            !polygonLoading ;
 
         if (!allLoaded) return;
 
@@ -38,7 +43,8 @@ export const useAddressInfo = (address: Address) => {
             Number(baseBalance) +
             Number(arbitrumBalance) +
             Number(optimismBalance) +
-            Number(unichainBalance);
+            Number(unichainBalance) +
+            Number(polygonBalance) ;
 
         setTotal(sum.toString());
         increment(sum);
@@ -51,16 +57,18 @@ export const useAddressInfo = (address: Address) => {
                 { chainId: arbitrumSepolia.id.toString(), chainAmount: Number(arbitrumBalance) },
                 { chainId: optimismSepolia.id.toString(), chainAmount: Number(optimismBalance) },
                 { chainId: unichainSepolia.id.toString(), chainAmount: Number(unichainBalance) },
+                { chainId: polygonAmoy.id.toString(), chainAmount: Number(polygonBalance) },
             ]
         });
 
-    }, [baseLoading, arbitrumLoading, optimismLoading, unichainLoading]);
+    }, [baseLoading, arbitrumLoading, optimismLoading, unichainLoading, polygonLoading]);
 
     return {
         baseBalance,
         arbitrumBalance,
         optimismBalance,
         unichainBalance,
+        polygonBalance,
         total,
     };
 }

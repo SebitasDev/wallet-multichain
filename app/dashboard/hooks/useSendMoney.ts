@@ -183,7 +183,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             chainName: ChainKey,
             to: string,
             amount: bigint,
-            optionalPrivateKey?: string
+            optionalPrivateKey?: string,
         ) => {
             const token = NETWORKS[chainName].usdc;
 
@@ -199,6 +199,25 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             });
 
             const toAccount = await createAccount(toClient, optionalPrivateKey as Address)
+
+            setRouteDetails?.((prev: any) =>
+                prev.map((wallet: any) =>
+                    wallet.wallet.toLowerCase() === toAccount.owner.address.toLowerCase()
+                        ? {
+                            ...wallet,
+                            chains: wallet.chains.map((c: any) =>
+                                c.id.toString() === client.chain.id.toString()
+                                    ? {
+                                        ...c,
+                                        status: "transfer",
+                                        message: "Transfiriendo...",
+                                    }
+                                    : c
+                            ),
+                        }
+                        : wallet
+                )
+            );
 
             const paymasterTo =
                 await createPaymaster.getPaymasterData(token as Address, toAccount.account, toClient)
@@ -238,6 +257,25 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
 
             const receiptSuply = await bundlerClientTo.waitForUserOperationReceipt({ hash: hash });
             console.log("Transaction realizada", receiptSuply.receipt.transactionHash);
+
+            setRouteDetails?.((prev: any) =>
+                prev.map((wallet: any) =>
+                    wallet.wallet.toLowerCase() === toAccount.owner.address.toLowerCase()
+                        ? {
+                            ...wallet,
+                            chains: wallet.chains.map((c: any) =>
+                                c.id.toString() === client.chain.id.toString()
+                                    ? {
+                                        ...c,
+                                        status: "done",
+                                        message: "Transferencia finalizada",
+                                    }
+                                    : c
+                            ),
+                        }
+                        : wallet
+                )
+            );
 
             return hash;
         };
@@ -312,6 +350,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
 
         await transfer(toValidChain, toAddress, finalAmount);*/
         console.log("✅ Final transfer completed");
+        toast.success("Transacciones completados");
     };
 
     const canSend = !!watch("toAddress") && !!watch("sendAmount") && !!watch("sendPassword");

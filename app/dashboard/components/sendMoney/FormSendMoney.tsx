@@ -1,12 +1,12 @@
 import {Control, Controller, FieldErrors} from "react-hook-form";
 import {MenuItem, Stack, TextField, Typography} from "@mui/material";
-import {NETWORKS} from "@/app/constants/chainsInformation";
+import {ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
 
 type FormValues = {
     toAddress: string
     sendAmount: string
     sendPassword: string
-    sendChain: "Optimism_Sepolia" | "Arbitrum_Sepolia" | "Base_Sepolia" | "Unichain_Sepolia"
+    sendChain: ChainKey
 };
 
 type Props = {

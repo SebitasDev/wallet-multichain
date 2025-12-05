@@ -10,47 +10,50 @@ import {
     List,
     ListItem
 } from "@mui/material";
+
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
-import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
-import {unichainSepolia} from "viem/chains";
-import {Address} from "abitype";
-import {UnichainIcon} from "@/app/components/atoms/UnichainIcon";
 
-interface IBaseChainItemProps {
+import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
+import {Address} from "abitype";
+import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
+import {polygonAmoy} from "viem/chains";
+import PolygonIcon from "@/app/components/atoms/PolygonIcon";
+
+interface IPolChainItemProps {
     address: Address;
 }
 
-export default function UnichainChainItem({ address } : IBaseChainItemProps) {
+export default function PolygonChainItem({ address } : IPolChainItemProps) {
     const [open, setOpen] = useState(false);
-    const { balance } = useGetBalanceFromChain(unichainSepolia, address, "0x31d0220469e10c4E71834a79b1f276d740d3768F")
+
+    const { balance } = useGetBalanceFromChain(polygonAmoy, address, "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582")
 
     return (
         <>
-            {/* Unichain */}
+            {/* Polygon */}
             <Divider />
 
             <ListItemButton sx={{ py: 2 }} onClick={() => setOpen(!open)}>
                 <Box display="flex" alignItems="center" gap={2}>
-                    <UnichainIcon />
+                    <PolygonIcon />
 
                     <Box>
-                        <Typography fontWeight="600">Unichain</Typography>
+                        <Typography fontWeight="600">Polygon</Typography>
                         <Typography variant="caption" color="text.secondary">
                             1 token
                         </Typography>
                     </Box>
 
                     <Chip
-                        label="UNI"
+                        label="POL"
                         size="small"
                         sx={{
                             ml: 1,
-                            backgroundColor: "rgba(221,59,246,0.2)",
-                            border: "1px solid #FF4BFF",
-                            boxShadow: "0 0 6px #FF4BFF",
-                            color: "#FF4BFF",
+                            backgroundColor: "rgba(90,21,250,0.2)",
+                            border: "1px solid #A06BFF",
+                            boxShadow: "0 0 6px #A06BFF",
+                            color: "#A06BFF",
                             fontWeight: 600
                         }}
                     />
@@ -101,7 +104,6 @@ export default function UnichainChainItem({ address } : IBaseChainItemProps) {
                     </ListItem>
                 </List>
             </Collapse>
-
         </>
     );
 }

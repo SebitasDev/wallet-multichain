@@ -45,7 +45,14 @@ export default function BaseChainItem({ address } : IBaseChainItemProps) {
                     <Chip
                         label="BASE"
                         size="small"
-                        sx={{ ml: 1, backgroundColor: "#3b82f633" }}
+                        sx={{
+                            ml: 1,
+                            backgroundColor: "rgba(59,212,246,0.2)",
+                            border: "1px solid #5AF1FF",
+                            boxShadow: "0 0 6px #5AF1FF",
+                            color: "#5AF1FF",
+                            fontWeight: 600
+                        }}
                     />
                 </Box>
 

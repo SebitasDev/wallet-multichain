@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { crossChainTransfer } from "@/app/cross-chain-core/crossChainTransfer";
+import {crossChainTransfer} from "@/app/cross-chain-core/crossChainTransfer";
 
 export async function POST(req: NextRequest) {
     const { amount, fromChain, toChain, privateKey, recipient } = await req.json();
@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
             recipient,
             amount
         );
-
         return NextResponse.json(result);
     } catch (err: any) {
         return NextResponse.json({ error: err.message || "Unknown error" }, { status: 500 });
