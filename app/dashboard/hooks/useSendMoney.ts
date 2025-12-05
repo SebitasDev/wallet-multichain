@@ -19,6 +19,7 @@ import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
 import {usdcAbi} from "@/app/cross-chain-core/usdcAbi";
 import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
 import {useBridgeUsdcStream} from "@/app/dashboard/hooks/useBridgeUsdcStream";
+import bridgeEmitter from "@/app/lib/bridgeEmitter";
 
 export type RouteStatus =
     | "idle"
@@ -183,7 +184,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             chainName: ChainKey,
             to: string,
             amount: bigint,
-            optionalPrivateKey?: string
+            optionalPrivateKey?: string,
         ) => {
             const token = NETWORKS[chainName].usdc;
 
@@ -199,6 +200,25 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             });
 
             const toAccount = await createAccount(toClient, optionalPrivateKey as Address)
+
+            setRouteDetails?.((prev: any) =>
+                prev.map((wallet: any) =>
+                    wallet.wallet.toLowerCase() === toAccount.owner.address.toLowerCase()
+                        ? {
+                            ...wallet,
+                            chains: wallet.chains.map((c: any) =>
+                                c.id.toString() === client.chain.id.toString()
+                                    ? {
+                                        ...c,
+                                        status: "transfer",
+                                        message: "Transfiriendo...",
+                                    }
+                                    : c
+                            ),
+                        }
+                        : wallet
+                )
+            );
 
             const paymasterTo =
                 await createPaymaster.getPaymasterData(token as Address, toAccount.account, toClient)
@@ -238,6 +258,25 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
 
             const receiptSuply = await bundlerClientTo.waitForUserOperationReceipt({ hash: hash });
             console.log("Transaction realizada", receiptSuply.receipt.transactionHash);
+
+            setRouteDetails?.((prev: any) =>
+                prev.map((wallet: any) =>
+                    wallet.wallet.toLowerCase() === toAccount.owner.address.toLowerCase()
+                        ? {
+                            ...wallet,
+                            chains: wallet.chains.map((c: any) =>
+                                c.id.toString() === client.chain.id.toString()
+                                    ? {
+                                        ...c,
+                                        status: "done",
+                                        message: "Transferencia finalizada",
+                                    }
+                                    : c
+                            ),
+                        }
+                        : wallet
+                )
+            );
 
             return hash;
         };

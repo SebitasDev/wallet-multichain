@@ -48,7 +48,14 @@ export default function PolygonChainItem({ address } : IPolChainItemProps) {
                     <Chip
                         label="POL"
                         size="small"
-                        sx={{ ml: 1, backgroundColor: "rgba(90,21,250,0.2)" }} // amarillo suave
+                        sx={{
+                            ml: 1,
+                            backgroundColor: "rgba(90,21,250,0.2)",
+                            border: "1px solid #A06BFF",
+                            boxShadow: "0 0 6px #A06BFF",
+                            color: "#A06BFF",
+                            fontWeight: 600
+                        }}
                     />
                 </Box>
 

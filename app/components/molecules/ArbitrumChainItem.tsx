@@ -46,9 +46,16 @@ export default function ArbitrumChainItem({ address } : IPolChainItemProps) {
                     </Box>
 
                     <Chip
-                        label="ARBITRUM"
+                        label="ARB"
                         size="small"
-                        sx={{ ml: 1, backgroundColor: "#facc1533" }} // amarillo suave
+                        sx={{
+                            ml: 1,
+                            backgroundColor: "rgba(21,101,250,0.2)",
+                            border: "1px solid #3D8BFF",
+                            boxShadow: "0 0 6px #3D8BFF",
+                            color: "#3D8BFF",
+                            fontWeight: 600
+                        }}
                     />
                 </Box>
 

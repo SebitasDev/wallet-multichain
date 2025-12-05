@@ -43,9 +43,16 @@ export default function UnichainChainItem({ address } : IBaseChainItemProps) {
                     </Box>
 
                     <Chip
-                        label="UNICHAIN"
+                        label="UNI"
                         size="small"
-                        sx={{ ml: 1, backgroundColor: "#3b82f633" }}
+                        sx={{
+                            ml: 1,
+                            backgroundColor: "rgba(221,59,246,0.2)",
+                            border: "1px solid #FF4BFF",
+                            boxShadow: "0 0 6px #FF4BFF",
+                            color: "#FF4BFF",
+                            fontWeight: 600
+                        }}
                     />
                 </Box>
 

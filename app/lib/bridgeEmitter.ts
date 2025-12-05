@@ -1,19 +1,20 @@
 import { EventEmitter } from "events";
 
 declare global {
-    // Evita errores y duplicados en hot reload
     // @ts-ignore
     var __bridgeEmitter: EventEmitter | undefined;
 }
 
-const emitter = global.__bridgeEmitter ?? new EventEmitter();
+const emitter =
+    globalThis.__bridgeEmitter ??
+    new EventEmitter();
 
-// Evita warnings y desconexiones al tener muchos listeners
+// Evita warnings por listeners
 emitter.setMaxListeners(100);
 
-// Guardar el emitter global la primera vez
-if (!global.__bridgeEmitter) {
-    global.__bridgeEmitter = emitter;
+// Guardar solo si no existe
+if (!globalThis.__bridgeEmitter) {
+    globalThis.__bridgeEmitter = emitter;
 }
 
 export default emitter;

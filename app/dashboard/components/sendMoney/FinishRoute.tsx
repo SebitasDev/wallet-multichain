@@ -2,11 +2,11 @@ import {Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography} f
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {formatCurrency} from "@/app/utils/formatCurrency";
 import {ChainConfig, NETWORKS} from "@/app/constants/chainsInformation";
-import {JSX} from "react";
 import {AllocationSummary} from "@/app/dashboard/types";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
+import MoveUpIcon from '@mui/icons-material/MoveUp';
 import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
@@ -27,6 +27,7 @@ export const STATUS_META = {
     burning:   { label: "Quemando",       icon: <LocalFireDepartmentIcon color="error" /> },
     waiting:   { label: "Esperando",      icon: <HourglassBottomIcon /> },
     minting:   { label: "Minteando",      icon: <AutorenewIcon sx={{ animation: "spin 1.2s linear infinite" }} /> },
+    transfer:   { label: "Transfiriendo",       icon: <MoveUpIcon /> },
     done:      { label: "Completado",     icon: <CheckCircleIcon color="success" /> },
     error:     { label: "Error",          icon: <ErrorIcon color="error" /> },
 } as const;
@@ -104,7 +105,6 @@ export const FinishRoute = (
                                                 border: "1px solid #e5e7eb",
                                             }}
                                         >
-                                            {/* Row principal: icono + nombre + monto */}
                                             <Stack direction="row" alignItems="center" justifyContent="space-between">
                                                 <Stack direction="row" alignItems="center" spacing={1.2}>
                                                     {r.icon}
