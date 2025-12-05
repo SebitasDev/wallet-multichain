@@ -1,11 +1,7 @@
 "use client";
 
 import React, { ReactNode, createContext, useContext, useState } from "react";
-import { XOConnectProvider } from "xo-connect";
-import type { WalletClient } from "viem";
 import { useEmbedded } from "@/app/dashboard/hooks/embebed";
-import { useDisconnect, useWalletClient } from "wagmi";
-import { BrowserProvider, Eip1193Provider } from "ethers";
 import {toast} from "react-toastify";
 
 interface XOContractsContextType {
@@ -15,33 +11,23 @@ interface XOContractsContextType {
 
 const XOContractsContext = createContext<XOContractsContextType | null>(null);
 
-function walletClientToEip1193Provider(walletClient: WalletClient): Eip1193Provider {
-    return walletClient.transport as Eip1193Provider;
-}
-
 export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
-    console.log("p")
-
     const [address, setAddress] = useState<string | null>(null);
-
     const { isEmbedded } = useEmbedded();
 
-    console.log(isEmbedded)
-
-    // 🔥 POLYGON MAINNET
     const chainId = "0x89";
     const rpcUrl = "https://polygon-rpc.com";
 
-    console.log("ultimo antes conextar")
-
     const connect = async () => {
-        console.log("test connect");
         try {
             toast.info("Comenzando");
             let provider: any;
 
+            // ⬇️ IMPORTS QUE ROMPEN SSR → SE MUEVEN AQUÍ
+            const { XOConnectProvider } = await import("xo-connect");
+            const { BrowserProvider } = await import("ethers");
+
             if (isEmbedded) {
-                // XO Wallet embebido
                 provider = new XOConnectProvider({
                     rpcs: { [chainId]: rpcUrl },
                     defaultChainId: chainId,
@@ -50,18 +36,16 @@ export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
                 toast.success("es embs");
 
                 await provider.request({ method: "eth_requestAccounts" });
-
             }
 
             toast.success("Xd");
 
-            // Ethers
             const ethersProvider = new BrowserProvider(provider);
             const signer = await ethersProvider.getSigner();
             const addr = await signer.getAddress();
 
             setAddress(addr);
-            toast.success(`Todo se nos dios ${addr}`);
+            toast.success(`Todo se nos dio ${addr}`);
 
         } catch (err) {
             console.log("ERROR CONNECT:", err);
