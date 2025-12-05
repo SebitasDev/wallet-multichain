@@ -20,6 +20,7 @@ export const useGeneralWalletStore = create<WalletState>((set) => ({
 
     initializeWallet: async () => {
         try {
+            toast.success(`inicio de conexion`);
             if (typeof window === "undefined") return;
 
             const xo = await import("xo-connect");
@@ -64,9 +65,11 @@ export const useGeneralWalletStore = create<WalletState>((set) => ({
             set({ address: accounts[0], signer, provider });
 
             toast.success(`Se pudo conectar con xo ${accounts[0]}`);
+            console.error(`Se pudo conectar con xo ${accounts[0]}`)
         } catch (err) {
             console.error("Error initializing wallet:", err);
             toast.error(`Error con xo ${err}`);
+            console.error(`Error con xo ${err}`)
         }
     },
 }));
