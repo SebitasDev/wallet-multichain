@@ -57,7 +57,8 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         chain: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
             ? arbitrumSepolia : arbitrum,
         domain: 3,
-        aproxFromFee: 0.04,
+        aproxFromFee: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? 0.04 : 0.03,
         label: "Arbitrum",
         icon: <ArbIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
@@ -70,7 +71,8 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         chain: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
             ? baseSepolia : base,
         domain: 6,
-        aproxFromFee: 0.003,
+        aproxFromFee: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? 0.003 : 0.004,
         label: "Base",
         icon: <BaseIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
@@ -83,7 +85,8 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         chain: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
             ? unichainSepolia : unichain,
         domain: 10,
-        aproxFromFee: 0.003,
+        aproxFromFee: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? 0.003 : 0.0028,
         label: "Unichain",
         icon: <UnichainIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
@@ -96,7 +99,8 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         chain: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
             ? polygonAmoy : polygon,
         domain: 7,
-        aproxFromFee: 0.03,
+        aproxFromFee: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? 0.03 : 0.0035,
         label: "Polygon",
         icon: <PolygonIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
