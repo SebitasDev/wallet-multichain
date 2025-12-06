@@ -241,7 +241,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
                         to: token as Address,
                         abi: usdcAbi,
                         functionName: "approve",
-                        args: [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0xec546b6B005471ECf012e5aF77FBeC07e0FD8f78", toUSDCBigInt(10000),],
+                        args: [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d", toUSDCBigInt(10000),],
                     },
                     {
                         to: token as Address,
