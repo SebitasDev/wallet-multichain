@@ -39,15 +39,15 @@ const features = [
 
 const steps = [
   {
-    title: "1. Conecta tus wallets",
+    title: " Conecta tus wallets",
     desc: "Agrega tu seed o pega tus addresses para ver balances múlti-chain al instante.",
   },
   {
-    title: "2. Visualiza y organiza",
+    title: " Visualiza y organiza",
     desc: "Resumen unificado de cadenas, tokens y valor total con cards claras y accesibles.",
   },
   {
-    title: "3. Envía y recibe seguro",
+    title: " Envía y recibe seguro",
     desc: "Flujos guiados para Envíar/recibir con QR, selección de chain y feedback en tiempo real.",
   },
 ];
@@ -284,12 +284,19 @@ function Hero() {
                 Conecta, organiza y opera en múltiples chains con una interfaz enfocada en claridad,
                 seguridad y velocidad para demos y producción.
               </Typography>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="flex-start">
+              <Stack
+                direction="row"
+                spacing={1.5}
+                alignItems="flex-start"
+                flexWrap="nowrap"
+                justifyContent="flex-start"
+              >
                 <Button
                   component={Link}
                   href="/dashboard"
                   variant="contained"
                   sx={{
+                    whiteSpace: "nowrap",
                     textTransform: "none",
                     px: 3,
                     py: 1.2,
@@ -306,6 +313,7 @@ function Hero() {
                   href="#como-funciona"
                   variant="outlined"
                   sx={{
+                    whiteSpace: "nowrap",
                     textTransform: "none",
                     px: 3,
                     py: 1.2,
