@@ -5,17 +5,19 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 export const useFindBestRoute = () => {
     const { wallets } = useWalletStore();
 
+    const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
+
     async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string) {
         const chainId = NETWORKS[sendChain as ChainKey].chain.id;
 
-        // 🔵 SOLO FEE DE ORIGEN
+        const MIN_USDC = 0.000001;
+
         const getOriginFee = (id: string) => {
             const key = CHAIN_ID_TO_KEY[id] as keyof typeof NETWORKS;
             if (!key) return 0.003;
             return NETWORKS[key].aproxFromFee;
         };
 
-        // 1️⃣ Filtrar wallet destino → no usar su misma chain
         const filteredWallets = wallets
             .map(wallet => {
                 if (wallet.address.toLowerCase() === toAddress.toLowerCase()) {
@@ -31,7 +33,6 @@ export const useFindBestRoute = () => {
         for (const wallet of filteredWallets) {
             for (const chain of wallet.chains) {
                 const chainAmount = Number(chain.amount);
-
                 if (chainAmount <= 0) continue;
 
                 balances.push({
@@ -58,24 +59,28 @@ export const useFindBestRoute = () => {
         let remainingToCover = desiredAmount;
         let totalFees = 0;
 
+        // Ordenar por quien tiene más
         balances.sort((a, b) => b.available - a.available);
+
+        // Ordenar por menor a mayor !
+        //balances.sort((a, b) => a.available - b.available);
 
         for (const b of balances) {
             if (remainingToCover <= 0) break;
 
             const originFee = getOriginFee(b.networkId);
 
-            // Tomamos como máximo lo que tiene + fee + comisión
-            const take = Math.min(b.available, remainingToCover + originFee + 0.01);
+            let take = Math.min(b.available, remainingToCover + originFee + 0.01);
+            take = round6(take);
+
             if (take <= 0) continue;
 
-            // Aplicamos fee y comisión SOLO AHORA
-            const netAmount = take - (originFee + 0.01);
+            let netAmount = take - (originFee + 0.01);
+            netAmount = round6(netAmount);
 
-            // Si después de restar fee+comisión no queda nada → no sirve esta chain
-            if (netAmount <= 0) continue;
+            if (netAmount < MIN_USDC) continue;
 
-            totalFees += originFee;
+            totalFees = round6(totalFees + originFee);
 
             allocations.push({
                 from: b.from,
@@ -83,19 +88,24 @@ export const useFindBestRoute = () => {
                 amount: netAmount
             });
 
-            remainingToCover -= netAmount;
+            remainingToCover = round6(remainingToCover - netAmount);
         }
 
-        // 5️⃣ Comisión total: 0.01 por wallet participante
+        // 5️⃣ Comisión
         const uniqueParticipants = Array.from(new Set(allocations.map(a => a.from)));
-        const commission = 0.01 * uniqueParticipants.length;
+        const commission = round6(0.01 * uniqueParticipants.length);
 
-        const totalTaken = allocations.reduce((sum, a) => sum + a.amount, 0);
+        // 6️⃣ Total tomado
+        const totalTaken = round6(
+            allocations.reduce((sum, a) => sum + a.amount, 0)
+        );
 
-        // 6️⃣ Agrupar por wallet
+        // 7️⃣ Agrupar por wallet
         const grouped: Record<string, { from: string; chains: any[] }> = {};
 
         for (const item of allocations) {
+            if (item.amount < MIN_USDC) continue;
+
             if (!grouped[item.from]) {
                 grouped[item.from] = {
                     from: item.from,
@@ -104,7 +114,7 @@ export const useFindBestRoute = () => {
             }
             grouped[item.from].chains.push({
                 chainId: item.networkId,
-                amount: item.amount
+                amount: round6(item.amount)
             });
         }
 

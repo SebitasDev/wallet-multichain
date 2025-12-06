@@ -115,6 +115,7 @@ export const crossChainTransfer = async (
         // Sign authorization sin nonce manual
         const auth = await toAccount.owner.signAuthorization({
             address: toAccount.owner.address,
+            // @ts-ignore
             chainId: BigInt(toClient.chain.id),
             contractAddress: toAccount.account.authorization!.address,
         });
