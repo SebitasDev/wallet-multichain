@@ -34,6 +34,7 @@ export interface ChainConfig {
     aproxFromFee: number;
     label: string;
     icon: JSX.Element;
+    rpcUrl: string;
 }
 
 export const NETWORKS: Record<ChainKey, ChainConfig> = {
@@ -45,7 +46,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         domain: 2,
         aproxFromFee: 0.0025,
         label: "Optimism",
-        icon: <OPIcon />
+        icon: <OPIcon />,
+        rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? "https://opt-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://opt-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
     },
 
     Arbitrum: {
@@ -56,7 +59,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         domain: 3,
         aproxFromFee: 0.04,
         label: "Arbitrum",
-        icon: <ArbIcon />
+        icon: <ArbIcon />,
+        rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? "https://arb-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://arb-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
     },
 
     Base: {
@@ -67,7 +72,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         domain: 6,
         aproxFromFee: 0.003,
         label: "Base",
-        icon: <BaseIcon />
+        icon: <BaseIcon />,
+        rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? "https://base-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://base-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
     },
 
     Unichain: {
@@ -78,7 +85,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         domain: 10,
         aproxFromFee: 0.003,
         label: "Unichain",
-        icon: <UnichainIcon />
+        icon: <UnichainIcon />,
+        rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? "https://unichain-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://unichain-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
     },
 
     Polygon: {
@@ -89,7 +98,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         domain: 7,
         aproxFromFee: 0.03,
         label: "Polygon",
-        icon: <PolygonIcon />
+        icon: <PolygonIcon />,
+        rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? "https://polygon-amoy.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://polygon-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
     },
 };
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import {
     Box,
     Chip,
@@ -13,10 +13,10 @@ import {
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
-import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
 import {unichain, unichainSepolia} from "viem/chains";
 import {Address} from "abitype";
 import {UnichainIcon} from "@/app/components/atoms/UnichainIcon";
+import {useWalletStore} from "@/app/store/useWalletsStore";
 
 interface IBaseChainItemProps {
     address: Address;
@@ -24,14 +24,28 @@ interface IBaseChainItemProps {
 
 export default function UnichainChainItem({ address } : IBaseChainItemProps) {
     const [open, setOpen] = useState(false);
+    const [balance, setBalance] = useState<number>(0);
+    const { getWalletBalanceByChain } = useWalletStore();
 
-    const { balance } = useGetBalanceFromChain(
-        process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? unichainSepolia : unichain,
-        address,
-        process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? "0x31d0220469e10c4E71834a79b1f276d740d3768F"
-            : "0x078D782b760474a361dDA0AF3839290b0EF57AD6"
-    );
+
+    useEffect(() => {
+        const fetchBalance = async () => {
+            try {
+                const chainId =
+                    (process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+                            ? unichainSepolia.id
+                            : unichain.id
+                    ).toString();
+
+                const bal = await getWalletBalanceByChain(address, chainId);
+                setBalance(Number(bal));
+            } catch (err) {
+                console.error("Error al obtener balance:", err);
+            }
+        };
+
+        fetchBalance();
+    }, [address, getWalletBalanceByChain]);
 
     return (
         <>

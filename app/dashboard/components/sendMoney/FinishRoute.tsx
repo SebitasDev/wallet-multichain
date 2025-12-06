@@ -1,7 +1,7 @@
 import {Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography} from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {formatCurrency} from "@/app/utils/formatCurrency";
-import {ChainConfig, NETWORKS} from "@/app/constants/chainsInformation";
+import {CHAIN_ID_TO_KEY, ChainConfig, ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
 import {AllocationSummary} from "@/app/dashboard/types";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
@@ -86,7 +86,11 @@ export const FinishRoute = (
                                         </Typography>
                                         <Typography fontWeight={800}>
                                             {formatCurrency(
-                                                wallet.chains.reduce((acc, c) => acc + c.amount, 0),
+                                                wallet.chains.reduce((acc, c) => {
+                                                    const chainKey = CHAIN_ID_TO_KEY[c.id];
+                                                    const fee = chainKey ? NETWORKS[chainKey as ChainKey].aproxFromFee : 0;
+                                                    return acc + c.amount + fee;
+                                                }, 0) + 0.01
                                             )}
                                         </Typography>
                                     </Box>
@@ -114,7 +118,14 @@ export const FinishRoute = (
                                                         <Typography fontWeight={700}>{r.label}</Typography>
                                                     </Stack>
 
-                                                    <Typography fontWeight={800}>{formatCurrency(r.amount)}</Typography>
+                                                    <Typography fontWeight={800}>
+                                                        {formatCurrency(
+                                                            r.amount +
+                                                            ((CHAIN_ID_TO_KEY[r.id]
+                                                                ? NETWORKS[CHAIN_ID_TO_KEY[r.id] as ChainKey].aproxFromFee
+                                                                : 0) || 0) + 0.01
+                                                        )}
+                                                    </Typography>
                                                 </Stack>
 
                                                 {/* Status */}

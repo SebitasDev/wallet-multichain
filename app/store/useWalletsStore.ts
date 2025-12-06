@@ -6,11 +6,20 @@ import { HDKey } from "ethereum-cryptography/hdkey";
 import { privateKeyToAccount } from "viem/accounts";
 import { Buffer } from "buffer";
 import { decryptSeed, encryptSeed } from "../utils/cripto";
+import {NETWORKS} from "@/app/constants/chainsInformation";
+import {Address} from "abitype";
+import {getBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
+
+interface ChainInfo {
+    chainId: string;
+    amount: number;
+}
 
 export interface WalletInfo {
     name: string;
     address: `0x${string}`;
     encryptedSeed: string;
+    chains: ChainInfo[];
 }
 
 interface WalletStore {
@@ -25,6 +34,14 @@ interface WalletStore {
     unlockWallet: (address: string, password: string) => Promise<`0x${string}`>;
 
     removeWallet: (address: string) => void;
+
+    updateWalletBalances: () => void;
+
+    getWalletBalanceByChain: (walletAddress: `0x${string}`, chainId: string) => Promise<Number>;
+
+    getWalletTotalBalance: (walletAddress: `0x${string}`) => number;
+
+    getAllWalletsTotalBalance: () => number;
 
     clearAll: () => void;
 }
@@ -62,10 +79,34 @@ export const useWalletStore = create<WalletStore>()(
                 );
                 if (exists) throw new Error("Esta wallet ya está agregada");
 
+                const chains: ChainInfo[] = await Promise.all(
+                    Object.values(NETWORKS).map(async (network) => {
+                        try {
+                            const getBalance = await getBalanceFromChain(
+                                network.chain,
+                                account.address as Address,
+                                network.usdc as Address
+                            );
+
+                            return {
+                                chainId: network.chain.id.toString(),
+                                amount: Number(getBalance.balance || 0),
+                            };
+                        } catch (err) {
+                            console.error("Error al obtener balance de", network.label, err);
+                            return {
+                                chainId: network.chain.id.toString(),
+                                amount: 0,
+                            };
+                        }
+                    })
+                );
+
                 const newWallet: WalletInfo = {
                     name: walletName,
                     address: account.address,
                     encryptedSeed,
+                    chains,
                 };
 
                 set({ wallets: [...get().wallets, newWallet] });
@@ -106,6 +147,126 @@ export const useWalletStore = create<WalletStore>()(
                         (w) => w.address.toLowerCase() !== address.toLowerCase()
                     ),
                 });
+            },
+
+            // -----------------------------
+            // UPDATE BALANCES
+            // -----------------------------
+            updateWalletBalances: async () => {
+                const wallets = get().wallets;
+
+                const updatedWallets = await Promise.all(
+                    wallets.map(async (wallet) => {
+                        const updatedChains: ChainInfo[] = await Promise.all(
+                            wallet.chains.map(async (chainInfo) => {
+                                try {
+                                    const networkKey = Object.values(NETWORKS).find(
+                                        (net) => net.chain.id.toString() === chainInfo.chainId
+                                    );
+                                    if (!networkKey) return { ...chainInfo, amount: chainInfo.amount };
+
+                                    const { balance } = await getBalanceFromChain(
+                                        networkKey.chain,
+                                        wallet.address as Address,
+                                        networkKey.usdc as Address
+                                    );
+
+                                    return {
+                                        ...chainInfo,
+                                        amount: Number(balance || 0),
+                                    };
+                                } catch (err) {
+                                    console.error(
+                                        `Error al actualizar balance de ${wallet.name} en chain ${chainInfo.chainId}`,
+                                        err
+                                    );
+                                    return { ...chainInfo, amount: chainInfo.amount };
+                                }
+                            })
+                        );
+
+                        return { ...wallet, chains: updatedChains };
+                    })
+                );
+
+                set({ wallets: updatedWallets });
+            },
+
+            // -----------------------------
+            // GET BALANCE DE UNA CADENA ESPECÍFICA
+            // -----------------------------
+            getWalletBalanceByChain: async (walletAddress: `0x${string}`, chainId: string) => {
+                const wallet = get().wallets.find(
+                    (w) => w.address.toLowerCase() === walletAddress.toLowerCase()
+                );
+                if (!wallet) throw new Error("Wallet no encontrada");
+
+                const chainInfo = wallet.chains.find((c) => c.chainId === chainId);
+                if (!chainInfo) throw new Error("Chain no encontrada en esta wallet", chainInfo);
+
+                try {
+                    const network = Object.values(NETWORKS).find(
+                        (net) => net.chain.id.toString() === chainId
+                    );
+                    if (!network) throw new Error("Network config no encontrada");
+
+                    const { balance } = await getBalanceFromChain(
+                        network.chain,
+                        wallet.address as Address,
+                        network.usdc as Address
+                    );
+
+                    // Actualizar el balance en el store
+                    const updatedChains = wallet.chains.map((c) =>
+                        c.chainId === chainId ? { ...c, amount: Number(balance || 0) } : c
+                    );
+
+                    set({
+                        wallets: get().wallets.map((w) =>
+                            w.address.toLowerCase() === walletAddress.toLowerCase()
+                                ? { ...w, chains: updatedChains }
+                                : w
+                        ),
+                    });
+
+                    return Number(balance || 0);
+                } catch (err) {
+                    console.error(
+                        `Error al obtener balance de wallet ${walletAddress} en chain ${chainId}`,
+                        err
+                    );
+                    return 0;
+                }
+            },
+
+            // -----------------------------
+            // GET BALANCE TOTAL DE UNA WALLET
+            // -----------------------------
+            getWalletTotalBalance: (walletAddress: `0x${string}`) => {
+                const wallet = get().wallets.find(
+                    (w) => w.address.toLowerCase() === walletAddress.toLowerCase()
+                );
+                if (!wallet) throw new Error("Wallet no encontrada");
+
+                // Sumar todos los amounts
+                const total = wallet.chains.reduce((acc, c) => acc + c.amount, 0);
+
+                return total;
+            },
+
+            // -----------------------------
+            // GET BALANCE TOTAL DE TODAS LAS WALLETS
+            // -----------------------------
+            getAllWalletsTotalBalance: () => {
+                const wallets = get().wallets;
+
+                // Sumar todos los amounts de todas las chains de todas las wallets
+                const total = wallets.reduce((walletAcc, wallet) => {
+                    const walletTotal = wallet.chains.reduce((chainAcc, c) => chainAcc + c.amount, 0);
+                    return walletAcc + walletTotal;
+                }, 0);
+
+                return total;
             },
 
             // ---------------------------------------------------------

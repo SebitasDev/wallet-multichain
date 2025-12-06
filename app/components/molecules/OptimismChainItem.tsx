@@ -1,4 +1,4 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import {
     Box,
     Chip,
@@ -15,8 +15,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {OPIcon} from "@/app/components/atoms/OPIcon";
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 import {Address} from "abitype";
-import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
 import {optimism, optimismSepolia} from "viem/chains";
+import {useWalletStore} from "@/app/store/useWalletsStore";
 
 interface IOptimismChainItemProps {
     address: Address;
@@ -24,14 +24,28 @@ interface IOptimismChainItemProps {
 
 export default function OptimismChainItem({ address } : IOptimismChainItemProps) {
     const [open, setOpen] = useState(false);
+    const [balance, setBalance] = useState<number>(0);
+    const { getWalletBalanceByChain } = useWalletStore();
 
-    const { balance } = useGetBalanceFromChain(
-        process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? optimismSepolia : optimism,
-        address,
-        process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? "0x5fd84259d66Cd46123540766Be93DFE6D43130D7"
-            : "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
-    );
+
+    useEffect(() => {
+        const fetchBalance = async () => {
+            try {
+                const chainId =
+                    (process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+                            ? optimismSepolia.id
+                            : optimism.id
+                    ).toString();
+
+                const bal = await getWalletBalanceByChain(address, chainId);
+                setBalance(Number(bal));
+            } catch (err) {
+                console.error("Error al obtener balance:", err);
+            }
+        };
+
+        fetchBalance();
+    }, [address, getWalletBalanceByChain]);
 
     return (
         <>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import {
     Box,
     Chip,
@@ -16,9 +16,9 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 import {Address} from "abitype";
-import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
 import {polygon, polygonAmoy} from "viem/chains";
 import PolygonIcon from "@/app/components/atoms/PolygonIcon";
+import {useWalletStore} from "@/app/store/useWalletsStore";
 
 interface IPolChainItemProps {
     address: Address;
@@ -26,14 +26,28 @@ interface IPolChainItemProps {
 
 export default function PolygonChainItem({ address } : IPolChainItemProps) {
     const [open, setOpen] = useState(false);
+    const [balance, setBalance] = useState<number>(0);
+    const { getWalletBalanceByChain } = useWalletStore();
 
-    const { balance } = useGetBalanceFromChain(
-        process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? polygonAmoy : polygon,
-        address,
-        process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582"
-            : "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
-    );
+
+    useEffect(() => {
+        const fetchBalance = async () => {
+            try {
+                const chainId =
+                    (process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+                            ? polygonAmoy.id
+                            : polygon.id
+                    ).toString();
+
+                const bal = await getWalletBalanceByChain(address, chainId);
+                setBalance(Number(bal));
+            } catch (err) {
+                console.error("Error al obtener balance:", err);
+            }
+        };
+
+        fetchBalance();
+    }, [address, getWalletBalanceByChain]);
 
     return (
         <>

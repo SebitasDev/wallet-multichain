@@ -1,4 +1,4 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import {
     Box,
     Chip,
@@ -16,9 +16,9 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 import {Address} from "abitype";
-import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
 import ArbIcon from "@/app/components/atoms/ArbIcon";
 import {arbitrum, arbitrumSepolia, polygonAmoy} from "viem/chains";
+import {useWalletStore} from "@/app/store/useWalletsStore";
 
 interface IPolChainItemProps {
     address: Address;
@@ -26,16 +26,27 @@ interface IPolChainItemProps {
 
 export default function ArbitrumChainItem({ address } : IPolChainItemProps) {
     const [open, setOpen] = useState(false);
+    const [balance, setBalance] = useState<number>(0);
+    const { getWalletBalanceByChain } = useWalletStore();
 
-    const { balance } = useGetBalanceFromChain(
-        process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? arbitrumSepolia : arbitrum,
-        address,
-        process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
-            : "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
-    );
+    useEffect(() => {
+        const fetchBalance = async () => {
+            try {
+                const chainId =
+                    (process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+                            ? arbitrumSepolia.id
+                            : arbitrum.id
+                    ).toString();
 
-    console.log("env",process.env.NODE_ENV)
+                const bal = await getWalletBalanceByChain(address, chainId);
+                setBalance(Number(bal));
+            } catch (err) {
+                console.error("Error al obtener balance:", err);
+            }
+        };
+
+        fetchBalance();
+    }, [address, getWalletBalanceByChain]);
 
     return (
         <>

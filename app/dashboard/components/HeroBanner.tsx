@@ -2,7 +2,6 @@
 
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { Box, Typography } from "@mui/material";
-import { useBalanceStore } from "@/app/store/useBalanceStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 import { useMainWalletStore } from "@/app/store/useMainWalletStore";
@@ -12,8 +11,7 @@ type Props = {
 };
 
 export function HeroBanner({ background }: Props) {
-    const { value } = useBalanceStore();
-    const { wallets } = useWalletStore();
+    const { wallets, getAllWalletsTotalBalance } = useWalletStore();
 
     // XO (embedded)
     const { address: xoAddress } = useXOContracts();
@@ -100,7 +98,7 @@ export function HeroBanner({ background }: Props) {
                         position: "relative",
                     }}
                 >
-                    {value !== null ? formatCurrency(value) : "--"}
+                    {getAllWalletsTotalBalance !== null ? formatCurrency(getAllWalletsTotalBalance()) : "--"}
                 </Typography>
 
                 <Typography variant="body2" sx={{ mt: 1, fontSize: 13, opacity: 0.85 }}>

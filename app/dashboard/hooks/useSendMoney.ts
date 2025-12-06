@@ -280,58 +280,83 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             return hash;
         };
 
+        const updateWalletBalanceAfterTransfer = (
+            walletAddress: `0x${string}`,
+            fromChainId: string,
+            toChainId: string,
+            amount: number
+        ) => {
+            const store = useWalletStore.getState();
+
+            const updatedWallets = store.wallets.map((wallet) => {
+                if (wallet.address.toLowerCase() !== walletAddress.toLowerCase()) return wallet;
+
+                const updatedChains = wallet.chains.map((chain) => {
+                    if (chain.chainId === fromChainId) {
+                        // restar dinero de la chain origen
+                        return { ...chain, amount: Math.max(chain.amount - amount, 0) };
+                    } else if (chain.chainId === toChainId) {
+                        // sumar dinero a la chain destino
+                        return { ...chain, amount: chain.amount + amount };
+                    } else {
+                        return chain;
+                    }
+                });
+
+                return { ...wallet, chains: updatedChains };
+            });
+
+            store.wallets = updatedWallets; // actualizar el store
+        };
+
 
         console.log("🔹 Starting main allocation loop");
 
         for (const allocation of routeSummary!.allocations) {
-            console.log("Unlocking wallet for:", allocation.from);
             const unlocked = await unlockWallet(allocation.from, watch("sendPassword"));
 
-            console.log(watch("sendPassword"))
-
-            if (!unlocked) {
-                throw new Error(`❌ Password incorrecta para wallet ${allocation.from}`);
-            }
-
-            console.log("Wallet unlocked:", unlocked ? "✅" : "❌");
-            console.log("Unlocked:", unlocked);
-
             for (const chain of allocation.chains) {
-                console.log(chain)
-
                 const fromValidChain = CHAIN_ID_TO_KEY[chain.chainId] ?? "Base";
-
-                const normalizedAmount = Math.max(Number(chain.amount), 0);
-
-                const amount = parseUnits(
-                    normalizedAmount.toFixed(6),
-                    6
-                );
-                console.log(`Processing chain ${fromValidChain} with amount ${chain.amount} (parsed: ${amount})`);
-
-                console.log("fromValidChain", fromValidChain);
-                console.log("ToValidChain", toValidChain);
+                const normalizedAmount = BigInt(Math.floor(Math.max(Number(chain.amount), 0) * 1e6)); // bigint
 
                 if (fromValidChain === toValidChain) {
-                    console.log(fromValidChain, toValidChain)
-                    console.log("🟢 Same chain, transferring directly");
-                    await transfer(fromValidChain, watch("toAddress"), amount, unlocked);
+                    await transfer(fromValidChain, watch("toAddress"), normalizedAmount, unlocked);
+
+                    const toChainKey = (Object.keys(NETWORKS) as (keyof typeof NETWORKS)[])
+                        .find(k => NETWORKS[k].label === toValidChain)!;
+
+                    updateWalletBalanceAfterTransfer(
+                        allocation.from as Address,
+                        chain.chainId,
+                        toChainKey,
+                        Number(normalizedAmount) / 1e6 // convertir de vuelta a número para el store
+                    );
                 } else {
-                    console.log("🔵 Different chain, bridging via API");
+                    const toChainKey = (Object.keys(NETWORKS) as (keyof typeof NETWORKS)[])
+                        .find(k => NETWORKS[k].label === toValidChain)!;
+
                     await fetch("/api/bridge-usdc", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            amount: Math.max(chain.amount, 0),
+                            amount: Number(normalizedAmount) / 1e6, // enviar como número al API
                             fromChain: fromValidChain,
                             toChain: toValidChain,
                             recipient: watch("toAddress"),
                             privateKey: unlocked,
                         }),
                     });
+
+                    updateWalletBalanceAfterTransfer(
+                        allocation.from as Address,
+                        chain.chainId,
+                        toChainKey,
+                        Number(normalizedAmount) / 1e6
+                    );
                 }
             }
         }
+
 
         /*console.log("🔹All allocations processed, sending final transfer to destination");
 

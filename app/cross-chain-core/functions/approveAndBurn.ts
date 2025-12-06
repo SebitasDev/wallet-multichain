@@ -19,7 +19,7 @@ export const approveAndBurn = async (
 
     const client = createPublicClient({
         chain: NETWORKS[fromChain].chain,
-        transport: http()
+        transport: http(NETWORKS[fromChain].rpcUrl)
     });
 
     const account = await createAccount(client, privateKey)
@@ -45,7 +45,7 @@ export const approveAndBurn = async (
                 to: usdcAddress,
                 abi: usdcAbi,
                 functionName: "approve",
-                args: [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d", toUSDCBigInt(10000),],
+                args: [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d", toUSDCBigInt(10),],
             },
             {
                 to: process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",

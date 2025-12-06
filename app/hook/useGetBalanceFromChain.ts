@@ -1,61 +1,34 @@
-import { useEffect, useState } from "react";
-import {
-    createPublicClient,
-    http,
-    formatUnits,
-    erc20Abi
-} from "viem";
+import { createPublicClient, http, formatUnits, erc20Abi } from "viem";
 import { Address } from "abitype";
+import {CHAIN_ID_TO_KEY, NETWORKS} from "@/app/constants/chainsInformation";
 
-export const useGetBalanceFromChain = (
+export async function getBalanceFromChain(
     chain: any,
     address: Address,
     tokenAddress: Address
-) => {
-    const [balance, setBalance] = useState<string>("0");
-    const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+): Promise<{ balance: string; error: string | null }> {
+    if (!address || !tokenAddress || !chain) {
+        return { balance: "0", error: "Missing parameters" };
+    }
 
-    useEffect(() => {
-        if (!address || !tokenAddress || !chain) return;
+    const key = CHAIN_ID_TO_KEY[chain.id] as keyof typeof NETWORKS;
 
-        const client = createPublicClient({
-            chain,
-            transport: http(),
+    const client = createPublicClient({
+        chain,
+        transport: http(NETWORKS[key].rpcUrl),
+    });
+
+    try {
+        const raw = await client.readContract({
+            address: tokenAddress,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [address],
         });
 
-        const fetchBalance = async () => {
-            try {
-                setLoading(true);
-
-                const decimals = await client.readContract({
-                    address: tokenAddress,
-                    abi: erc20Abi,
-                    functionName: "decimals",
-                });
-
-                const raw = await client.readContract({
-                    address: tokenAddress,
-                    abi: erc20Abi,
-                    functionName: "balanceOf",
-                    args: [address],
-                });
-
-                setBalance(formatUnits(raw, decimals));
-            } catch (err: any) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchBalance();
-    }, [chain, address, tokenAddress]);
-
-
-    return {
-        balance,
-        loading,
-        error,
-    };
-};
+        return { balance: formatUnits(raw, 6), error: null };
+    } catch (err: any) {
+        console.error(`Error al obtener balance de ${chain.name}:`, err);
+        return { balance: "0", error: err.message || "Unknown error" };
+    }
+}

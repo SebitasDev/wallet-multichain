@@ -22,7 +22,6 @@ import OptimismChainItem from "@/app/components/molecules/OptimismChainItem";
 import {useMemo, useState} from "react";
 import ArbitrumChainItem from "@/app/components/molecules/ArbitrumChainItem";
 import {Address} from "abitype";
-import {useAddressInfo} from "@/app/dashboard/hooks/useAddressInfo";
 import { toast } from "react-toastify";
 import {useWalletStore} from "@/app/store/useWalletsStore";
 import UnichainChainItem from "@/app/components/molecules/UnichainChainItem";
@@ -38,7 +37,7 @@ export const AddressCard = ({
         walletName
     }: IAddressCardProps) => {
     const [showMore, setShowMore] = useState(false);
-    const {total} = useAddressInfo(address);
+    const { getWalletTotalBalance } = useWalletStore();
     const [showNameExpanded, setShowNameExpanded] = useState(false);
 
     const bgGradient = useMemo(() => {
@@ -233,7 +232,7 @@ export const AddressCard = ({
                         </IconButton>
 
                         <Typography variant="h5" fontWeight="bold">
-                            ${Number(total).toFixed(2)}
+                            ${Number(getWalletTotalBalance(address)).toFixed(2)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                             Valor Total
