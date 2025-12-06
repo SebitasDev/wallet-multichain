@@ -115,7 +115,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             toAddress: "",
             sendAmount: "",
             sendPassword: "",
-            sendChain: "Base_Sepolia",
+            sendChain: "Base",
         },
     });
 
@@ -125,7 +125,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
                 toAddress: "",
                 sendAmount: "",
                 sendPassword: "",
-                sendChain: "Base_Sepolia",
+                sendChain: "Base",
             });
 
             setSendLoading(false);
@@ -171,7 +171,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
         const account = privateKeyToAccount(privateKey!);
         console.log("Account:", account.address);
 
-        const toValidChain = (watch("sendChain") in NETWORKS ? watch("sendChain") : "Base_Sepolia") as ChainKey;
+        const toValidChain = (watch("sendChain") in NETWORKS ? watch("sendChain") : "Base") as ChainKey;
         console.log("Destination chain:", toValidChain);
 
         const getWriter = (chainName: ChainKey) => {
@@ -241,7 +241,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
                         to: token as Address,
                         abi: usdcAbi,
                         functionName: "approve",
-                        args: ["0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA", toUSDCBigInt(10000),],
+                        args: [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0xec546b6B005471ECf012e5aF77FBeC07e0FD8f78", toUSDCBigInt(10000),],
                     },
                     {
                         to: token as Address,
@@ -299,7 +299,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             for (const chain of allocation.chains) {
                 console.log(chain)
 
-                const fromValidChain = CHAIN_ID_TO_KEY[chain.chainId] ?? "Base_Sepolia";
+                const fromValidChain = CHAIN_ID_TO_KEY[chain.chainId] ?? "Base";
 
                 const normalizedAmount = Math.max(Number(chain.amount), 0);
 

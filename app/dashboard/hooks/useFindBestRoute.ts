@@ -11,7 +11,7 @@ export const useFindBestRoute = () => {
         const chainId = NETWORKS[sendChain as ChainKey].chain.id;
 
         const getFee = (id: string) => {
-            const key = CHAIN_ID_TO_KEY[id];
+            const key = CHAIN_ID_TO_KEY[id] as keyof typeof NETWORKS;
             if (!key) return 0.003;
             return NETWORKS[key].aproxFromFee;
         };

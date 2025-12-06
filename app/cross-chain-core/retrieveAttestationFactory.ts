@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const createRetrieveAttestation = async (transactionHash: string, chainId: string, timeout = 60000) => {
-    const url = `https://iris-api-sandbox.circle.com/v2/messages/${chainId}?transactionHash=${transactionHash}`;
+    const url = `${process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "https://iris-api-sandbox.circle.com" : "https://iris-api.circle.com"}/v2/messages/${chainId}?transactionHash=${transactionHash}`;
     const start = Date.now();
 
     while (true) {

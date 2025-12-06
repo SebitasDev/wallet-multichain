@@ -17,7 +17,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 import {Address} from "abitype";
 import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
-import {polygonAmoy} from "viem/chains";
+import {polygon, polygonAmoy} from "viem/chains";
 import PolygonIcon from "@/app/components/atoms/PolygonIcon";
 
 interface IPolChainItemProps {
@@ -27,7 +27,13 @@ interface IPolChainItemProps {
 export default function PolygonChainItem({ address } : IPolChainItemProps) {
     const [open, setOpen] = useState(false);
 
-    const { balance } = useGetBalanceFromChain(polygonAmoy, address, "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582")
+    const { balance } = useGetBalanceFromChain(
+        process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? polygonAmoy : polygon,
+        address,
+        process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582"
+            : "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
+    );
 
     return (
         <>
