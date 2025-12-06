@@ -39,15 +39,15 @@ const features = [
 
 const steps = [
   {
-    title: " Conecta tus wallets",
+    title: "1. Conecta tus wallets",
     desc: "Agrega tu seed o pega tus addresses para ver balances múlti-chain al instante.",
   },
   {
-    title: " Visualiza y organiza",
+    title: "2. Visualiza y organiza",
     desc: "Resumen unificado de cadenas, tokens y valor total con cards claras y accesibles.",
   },
   {
-    title: " Envía y recibe seguro",
+    title: "3. Envía y recibe seguro",
     desc: "Flujos guiados para Envíar/recibir con QR, selección de chain y feedback en tiempo real.",
   },
 ];
@@ -143,10 +143,10 @@ export default function Home() {
               >
                 <SectionTitle label="Cómo funciona" title="De cero a productivo en minutos" compact />
                 <Stack spacing={2.25} sx={{ mt: 2 }}>
-                  {steps.map((s) => (
+                  {steps.map((s, idx) => (
                     <Box key={s.title} sx={{ display: "flex", gap: 1.5 }}>
                       <Chip
-                        label={s.title.split(".")[0]}
+                        label={idx + 1}
                         size="small"
                         sx={{
                           background: "rgba(124,195,255,0.18)",
@@ -157,7 +157,7 @@ export default function Home() {
                       />
                       <Box>
                         <Typography fontWeight={800} sx={{ color: "#f8fafc" }}>
-                          {s.title}
+                          {s.title.replace(/^[0-9]+\.?\s*/, "")}
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(233,236,242,0.85)" }}>
                           {s.desc}
@@ -284,19 +284,12 @@ function Hero() {
                 Conecta, organiza y opera en múltiples chains con una interfaz enfocada en claridad,
                 seguridad y velocidad para demos y producción.
               </Typography>
-              <Stack
-                direction="row"
-                spacing={1.5}
-                alignItems="flex-start"
-                flexWrap="nowrap"
-                justifyContent="flex-start"
-              >
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="flex-start">
                 <Button
                   component={Link}
                   href="/dashboard"
                   variant="contained"
                   sx={{
-                    whiteSpace: "nowrap",
                     textTransform: "none",
                     px: 3,
                     py: 1.2,
@@ -313,7 +306,6 @@ function Hero() {
                   href="#como-funciona"
                   variant="outlined"
                   sx={{
-                    whiteSpace: "nowrap",
                     textTransform: "none",
                     px: 3,
                     py: 1.2,
@@ -372,16 +364,15 @@ function Hero() {
                   ),
                 )}
               </Stack>
-                <Box
-                  sx={{
-                    mt: 2,
-                    borderRadius: 2,
-                    background: "linear-gradient(135deg, #0f7bff 0%, #7c3aed 100%)",
-                    p: 2,
-                    color: "#fff",
-                    textAlign: "center",
-                  }}
-                >
+              <Box
+                sx={{
+                  mt: 2,
+                  borderRadius: 2,
+                  background: "linear-gradient(135deg, #0f7bff 0%, #7c3aed 100%)",
+                  p: 2,
+                  color: "#fff",
+                }}
+              >
 
                 <Typography fontWeight={900} sx={{ fontSize: 24, lineHeight: 1.1 }}>
                   Simplificamos lo complejo 
