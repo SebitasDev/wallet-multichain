@@ -21,7 +21,7 @@ export const createPaymaster = {
             tokenAddress: usdcAddress,
             account,
             client,
-            spenderAddress: "0x3BA9A96eE3eFf3A69E2B18886AcF52027EFF8966",
+            spenderAddress: process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x3BA9A96eE3eFf3A69E2B18886AcF52027EFF8966" : "0x0578cFB241215b77442a541325d6A4E6dFE700Ec",
             permitAmount
         });
 
@@ -31,7 +31,7 @@ export const createPaymaster = {
         );
 
         return {
-            paymaster: "0x3BA9A96eE3eFf3A69E2B18886AcF52027EFF8966",
+            paymaster: process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x3BA9A96eE3eFf3A69E2B18886AcF52027EFF8966" : "0x0578cFB241215b77442a541325d6A4E6dFE700Ec",
             paymasterData,
             paymasterVerificationGasLimit: BigInt(200_000),
             paymasterPostOpGasLimit: BigInt(15_000),

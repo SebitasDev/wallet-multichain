@@ -63,7 +63,7 @@ export const crossChainTransfer = async (
         });
 
         async function safeMint() {
-            const transmitter = "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275";
+            const transmitter = process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275" : "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA";
 
             const authorizationSupplier = await createAuthorization(toAccountSupplier.owner, toClient, toAccountSupplier.account)
 

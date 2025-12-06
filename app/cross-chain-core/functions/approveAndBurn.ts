@@ -45,10 +45,10 @@ export const approveAndBurn = async (
                 to: usdcAddress,
                 abi: usdcAbi,
                 functionName: "approve",
-                args: ["0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA", toUSDCBigInt(10000),],
+                args: [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0xec546b6B005471ECf012e5aF77FBeC07e0FD8f78", toUSDCBigInt(10000),],
             },
             {
-                to: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+                to: process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0xec546b6B005471ECf012e5aF77FBeC07e0FD8f78",
                 abi: [
                     {
                         type: "function",

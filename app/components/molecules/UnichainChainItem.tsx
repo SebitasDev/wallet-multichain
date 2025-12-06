@@ -14,7 +14,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
-import {unichainSepolia} from "viem/chains";
+import {unichain, unichainSepolia} from "viem/chains";
 import {Address} from "abitype";
 import {UnichainIcon} from "@/app/components/atoms/UnichainIcon";
 
@@ -24,7 +24,14 @@ interface IBaseChainItemProps {
 
 export default function UnichainChainItem({ address } : IBaseChainItemProps) {
     const [open, setOpen] = useState(false);
-    const { balance } = useGetBalanceFromChain(unichainSepolia, address, "0x31d0220469e10c4E71834a79b1f276d740d3768F")
+
+    const { balance } = useGetBalanceFromChain(
+        process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? unichainSepolia : unichain,
+        address,
+        process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? "0x31d0220469e10c4E71834a79b1f276d740d3768F"
+            : "0x078D782b760474a361dDA0AF3839290b0EF57AD6"
+    );
 
     return (
         <>

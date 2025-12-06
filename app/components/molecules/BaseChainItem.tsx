@@ -15,7 +15,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {BaseIcon} from "@/app/components/atoms/BaseIcon";
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 import {useGetBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
-import {baseSepolia} from "viem/chains";
+import {base, baseSepolia} from "viem/chains";
 import {Address} from "abitype";
 
 interface IBaseChainItemProps {
@@ -24,7 +24,14 @@ interface IBaseChainItemProps {
 
 export default function BaseChainItem({ address } : IBaseChainItemProps) {
     const [open, setOpen] = useState(false);
-    const { balance } = useGetBalanceFromChain(baseSepolia, address, "0x036CbD53842c5426634e7929541eC2318f3dCF7e")
+
+    const { balance } = useGetBalanceFromChain(
+        process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? baseSepolia : base,
+        address,
+        process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+            : "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    );
 
     return (
         <>
