@@ -253,7 +253,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
                 authorization: authorization,
             });
 
-            console.log("UserOperation hash para supplier", hash);
+            console.log("operation transfer", hash);
 
             const receiptSuply = await bundlerClientTo.waitForUserOperationReceipt({ hash: hash });
             console.log("Transaction realizada", receiptSuply.receipt.transactionHash);
@@ -286,29 +286,26 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             toChainId: string,
             amount: number
         ) => {
-            const store = useWalletStore.getState();
+            useWalletStore.setState((state) => {
+                const updatedWallets = state.wallets.map((wallet) => {
+                    if (wallet.address.toLowerCase() !== walletAddress.toLowerCase()) return wallet;
 
-            const updatedWallets = store.wallets.map((wallet) => {
-                if (wallet.address.toLowerCase() !== walletAddress.toLowerCase()) return wallet;
+                    const updatedChains = wallet.chains.map((chain) => {
+                        if (chain.chainId === fromChainId) {
+                            return { ...chain, amount: Math.max(chain.amount - amount, 0) };
+                        } else if (chain.chainId === toChainId) {
+                            return { ...chain, amount: chain.amount + amount };
+                        } else {
+                            return chain;
+                        }
+                    });
 
-                const updatedChains = wallet.chains.map((chain) => {
-                    if (chain.chainId === fromChainId) {
-                        // restar dinero de la chain origen
-                        return { ...chain, amount: Math.max(chain.amount - amount, 0) };
-                    } else if (chain.chainId === toChainId) {
-                        // sumar dinero a la chain destino
-                        return { ...chain, amount: chain.amount + amount };
-                    } else {
-                        return chain;
-                    }
+                    return { ...wallet, chains: updatedChains };
                 });
 
-                return { ...wallet, chains: updatedChains };
+                return { wallets: updatedWallets };
             });
-
-            store.wallets = updatedWallets; // actualizar el store
         };
-
 
         console.log("🔹 Starting main allocation loop");
 

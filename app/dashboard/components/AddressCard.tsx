@@ -37,8 +37,11 @@ export const AddressCard = ({
         walletName
     }: IAddressCardProps) => {
     const [showMore, setShowMore] = useState(false);
-    const { getWalletTotalBalance } = useWalletStore();
     const [showNameExpanded, setShowNameExpanded] = useState(false);
+
+    const totalBalance = useWalletStore(
+        (state) => state.getWalletTotalBalance(address)
+    );
 
     const bgGradient = useMemo(() => {
         const seed = address
@@ -232,7 +235,7 @@ export const AddressCard = ({
                         </IconButton>
 
                         <Typography variant="h5" fontWeight="bold">
-                            ${Number(getWalletTotalBalance(address)).toFixed(2)}
+                            ${totalBalance.toFixed(2)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                             Valor Total

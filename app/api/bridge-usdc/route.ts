@@ -16,14 +16,15 @@ export async function POST(req: NextRequest) {
             );
             return NextResponse.json(result);
         } else {
-            const result = await crossChainTransfer(
+            await crossChainTransfer(
                 privateKey as `0x${string}`,
                 fromChain,
                 toChain,
                 recipient,
                 amount
             );
-            return NextResponse.json(result);
+
+            return NextResponse.json("success");
         }
     } catch (err: any) {
         return NextResponse.json({ error: err.message || "Unknown error" }, { status: 500 });
