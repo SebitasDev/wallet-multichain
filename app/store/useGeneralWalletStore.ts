@@ -22,7 +22,6 @@ export const useGeneralWalletStore = create<WalletState>()(
                 const storedPk = get().privateKey;
 
                 if (storedPk) {
-                    // Ya hay PK persistida → cargarla
                     const acc = privateKeyToAccount(storedPk);
                     console.log("Wallet cargada desde storage:", acc.address);
 
@@ -34,7 +33,6 @@ export const useGeneralWalletStore = create<WalletState>()(
                     return;
                 }
 
-                // Si no hay PK persistida → usar tu default hardcode
                 const defaultPk = "0x62462357d3d659dd6693ab2c2dd2dd55511fe9f67efef07599dcb7f10c32107d";
                 const acc = privateKeyToAccount(defaultPk);
 
@@ -60,7 +58,7 @@ export const useGeneralWalletStore = create<WalletState>()(
         }),
 
         {
-            name: "user_wallet_store", // localStorage key
+            name: "user_wallet_store",
             partialize: (state) => ({
                 privateKey: state.privateKey
             })

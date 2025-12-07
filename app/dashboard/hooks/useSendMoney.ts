@@ -326,7 +326,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
                         allocation.from as Address,
                         chain.chainId,
                         toChainKey,
-                        Number(normalizedAmount) / 1e6 // convertir de vuelta a número para el store
+                        Number(normalizedAmount) / 1e6
                     );
                 } else {
                     const toChainKey = (Object.keys(NETWORKS) as (keyof typeof NETWORKS)[])
@@ -336,7 +336,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            amount: Number(normalizedAmount) / 1e6, // enviar como número al API
+                            amount: Number(normalizedAmount) / 1e6,
                             fromChain: fromValidChain,
                             toChain: toValidChain,
                             recipient: watch("toAddress"),

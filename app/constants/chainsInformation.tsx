@@ -1,7 +1,7 @@
 import {Address} from "abitype";
 import {
     arbitrum,
-    arbitrumSepolia, base,
+    arbitrumSepolia, avalanche, avalancheFuji, base,
     baseSepolia,
     optimism,
     optimismSepolia,
@@ -16,6 +16,7 @@ import z from "zod";
 import {UnichainIcon} from "@/app/components/atoms/UnichainIcon";
 import PolygonIcon from "@/app/components/atoms/PolygonIcon";
 import {polygon} from "wagmi/chains";
+import {AvalancheIcon} from "@/app/components/atoms/AvalancheIcon";
 
 export const ChainKeyEnum = z.enum([
     "Optimism",
@@ -23,6 +24,7 @@ export const ChainKeyEnum = z.enum([
     "Base",
     "Unichain",
     "Polygon",
+    "Avalanche"
 ]);
 
 export type ChainKey = z.infer<typeof ChainKeyEnum>;
@@ -72,7 +74,7 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
             ? baseSepolia : base,
         domain: 6,
         aproxFromFee: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? 0.003 : 0.004,
+            ? 0.003 : 0.036,
         label: "Base",
         icon: <BaseIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
@@ -106,6 +108,20 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
             ? "https://polygon-amoy.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://polygon-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
     },
+
+    Avalanche: {
+        usdc: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
+        chain: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? avalancheFuji : avalanche,
+        domain: 1,
+        aproxFromFee: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? 0.03 : 1,
+        label: "Avalanche",
+        icon: <AvalancheIcon />,
+        rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+            ? avalancheFuji.rpcUrls.default.http[0] : avalanche.rpcUrls.default.http[0]
+    },
 };
 
 export const CHAIN_ID_TO_KEY: Record<string, string> = {
@@ -114,4 +130,5 @@ export const CHAIN_ID_TO_KEY: Record<string, string> = {
     [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? baseSepolia.id.toString() : base.id.toString()]: "Base",
     [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? unichainSepolia.id.toString() : unichain.id.toString()]: "Unichain",
     [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? polygonAmoy.id.toString() : polygon.id.toString()]: "Polygon",
+    [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? avalancheFuji.id.toString() : avalanche.id.toString()]: "Avalanche",
 };

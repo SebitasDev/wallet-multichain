@@ -36,6 +36,56 @@ export const approveAndBurn = async (
         },
     });
 
+    const simulation = await bundlerClient.estimateUserOperationGas({
+        account: account.account,
+        calls: [
+            {
+                to: usdcAddress,
+                abi: usdcAbi,
+                functionName: "approve",
+                args: [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d", toUSDCBigInt(10),],
+            },
+            {
+                to: process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
+                abi: [
+                    {
+                        type: "function",
+                        name: "depositForBurn",
+                        stateMutability: "nonpayable",
+                        inputs: [
+                            { name: "amount", type: "uint256" },
+                            { name: "destinationDomain", type: "uint32" },
+                            { name: "mintRecipient", type: "bytes32" },
+                            { name: "burnToken", type: "address" },
+                            { name: "destinationCaller", type: "bytes32" },
+                            { name: "maxFee", type: "uint256" },
+                            { name: "minFinalityThreshold", type: "uint32" },
+                        ],
+                        outputs: [],
+                    },
+                ],
+                functionName: "depositForBurn",
+                args: [
+                    toUSDCBigInt(Number(amount)),
+                    domain,
+                    `0x000000000000000000000000${recipient.slice(2)}`,
+                    usdcAddress,
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    BigInt(500),
+                    1000,
+                ],
+            },
+            {
+                to: usdcAddress,
+                abi: usdcAbi,
+                functionName: "transfer",
+                args: [process.env.ADDRESS_ACCOUNT_WIN_COMISION, toUSDCBigInt(0.01)],
+            }
+        ],
+    });
+
+    console.log(simulation)
+
     const authorization = await createAuthorization(account.owner, client, account.account)
 
     const hash = await bundlerClient.sendUserOperation({

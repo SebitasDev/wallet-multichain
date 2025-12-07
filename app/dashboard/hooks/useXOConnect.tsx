@@ -15,7 +15,7 @@ interface XOContractsContextType {
 
 const XOContractsContext = createContext<XOContractsContextType | null>(null);
 
-export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
+export const XOContractsProvider = ({ children, password }: { children: ReactNode, password: string }) => {
     const [address, setAddress] = useState<string | null>(null);
     const { isEmbedded } = useEmbedded();
     const mainWallet = useMainWalletStore((s) => s.mainWallet);
@@ -30,7 +30,6 @@ export const XOContractsProvider = ({ children }: { children: ReactNode }) => {
     const generateLocalWallet = async () => {
         const wallet = Wallet.createRandom();
         const salt = generateSalt();
-        const password = "1";
         const { encrypted, iv } = await encryptPrivateKey(wallet.privateKey, password, salt);
 
         setMainWallet({

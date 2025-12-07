@@ -1,118 +1,125 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, Button, Stack } from "@mui/material";
-import Link from "next/link";
+import { Box } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
+
 import "react-toastify/dist/ReactToastify.css";
 
-import { AddressCard } from "./components/AddressCard";
 import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
 import { SendMoneyModal } from "./components/SendMoneyModal";
 import { ReceiveModal } from "./components/ReceiveModal";
 
+import { AddressCard } from "./components/AddressCard";
 import { useSendModalState } from "@/app/dashboard/store/useSendModalState";
 import { useModalStore } from "@/app/store/useModalStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 
+import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+import { PasswordModal } from "./components/PasswordModal";
+import {XOContractsProvider} from "@/app/dashboard/hooks/useXOConnect";
+import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
+
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
+    const [askPassword, setAskPassword] = useState(true);
+    const [mode, setMode] = useState<"create" | "unlock">("unlock");
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const encrypted = useWalletPasswordStore(s => s.encryptedPassword);
+    const currentPassword = useWalletPasswordStore(s => s.currentPassword);
 
     const { addOpen, receiveOpen, openAdd, openReceive, closeAdd, closeReceive } = useModalStore();
     const { setSendModal } = useSendModalState();
     const { wallets } = useWalletStore();
-    const walletNamesMap = wallets.reduce<Record<string, string>>((acc, w) => {
-        acc[w.address.toLowerCase()] = w.name;
-        return acc;
-    }, {});
 
-    const heroBg = "var(--gradient-hero)";
+    useEffect(() => {
+        setMounted(true);
+        if (!encrypted) {
+            setMode("create");
+            setAskPassword(true);
+        } else {
+            setMode("unlock");
+            setAskPassword(true);
+        }
+    }, [encrypted]);
 
     if (!mounted) return null;
 
     return (
         <Box sx={{ minHeight: "100vh", backgroundColor: "#141516ff" }}>
-            <TopBar
-                onAdd={() => openAdd()}
-                onSend={() => {
-                    if (!wallets[0]) {
-                        toast.error("Primero agrega una wallet de origen.");
-                        return;
-                    }
-                    setSendModal(true);
-                }}
-                onReceive={() => {
-                    if (!wallets.length) {
-                        toast.error("Primero agrega una wallet.");
-                        return;
-                    }
-                    openReceive();
-                }}
+            {/* MODAL DE PASSWORD */}
+            <PasswordModal
+                open={askPassword}
+                mode={mode}
+                onSuccess={() => setAskPassword(false)}
             />
 
-            <HeroBanner background={heroBg} />
+            {/* 🔒 Bloquea el dashboard si no validó contraseña */}
+            {!askPassword && (
+                <EmbeddedProvider>
+                    <XOContractsProvider password={currentPassword!}>
+                        <>
+                            <TopBar
+                                onAdd={() => openAdd()}
+                                onSend={() => {
+                                    if (!wallets[0]) {
+                                        toast.error("Primero agrega una wallet de origen.");
+                                        return;
+                                    }
+                                    setSendModal(true);
+                                }}
+                                onReceive={() => {
+                                    if (!wallets.length) {
+                                        toast.error("Primero agrega una wallet.");
+                                        return;
+                                    }
+                                    openReceive();
+                                }}
+                            />
 
-            <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2.5, md: 4 }, mt: 2 }}>
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="flex-start">
-                    <Button
-                        component={Link}
-                        href="/offramp"
-                        variant="contained"
-                        sx={{
-                            textTransform: "none",
-                            fontWeight: 800,
-                            borderRadius: 2,
-                            background: "linear-gradient(135deg, #0f7bff, #0ac5a8)",
-                            boxShadow: "0 10px 24px rgba(15,123,255,0.3)",
-                            px: 3,
-                            py: 1.1,
-                        }}
-                    >
-                        Ir a Offramp
-                    </Button>
-                </Stack>
-            </Box>
+                            <HeroBanner background={"var(--gradient-hero)"} />
 
-            <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2.5, md: 4 }, pb: 6, mt: 4 }}>
-                <Box
-                    sx={{
-                        display: "grid",
-                        gridTemplateColumns: {
-                            xs: "1fr",
-                            md: "repeat(auto-fit, minmax(340px, 1fr))",
-                        },
-                        gap: { xs: 2.5, md: 3 },
-                        alignItems: "start",
-                    }}
-                >
-                    {wallets.map(wallet => (
-                        <Box key={wallet.address} sx={{ minWidth: 0 }}>
-                            <AddressCard address={wallet.address} walletName={wallet.name} />
-                        </Box>
-                    ))}
-                </Box>
-            </Box>
+                            <Box
+                                sx={{
+                                    maxWidth: 1200,
+                                    mx: "auto",
+                                    px: { xs: 2, md: 4 },
+                                    mt: 4,
 
-            <AddSecretModal
-                open={addOpen}
-                onClose={() => closeAdd()}
-            />
-            <SendMoneyModal
-                walletNames={walletNamesMap}
-            />
-            <ReceiveModal
-                open={receiveOpen}
-                wallets={wallets as any}
-                onClose={() => closeReceive()}
-            />
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: { xs: 2, md: 3 },
+                                    justifyContent: { xs: "center", md: "flex-start" },
+                                }}
+                            >
+                                {wallets.map(w => (
+                                    <Box
+                                        key={w.address}
+                                        sx={{
+                                            flex: {
+                                                xs: "1 1 100%",
+                                                sm: "1 1 calc(50% - 16px)",
+                                                md: "1 1 calc(33.33% - 16px)",
+                                            },
+                                            minWidth: 0,
+                                        }}
+                                    >
+                                        <AddressCard address={w.address} walletName={w.name} />
+                                    </Box>
+                                ))}
+                            </Box>
 
-            <ToastContainer position="top-right" />
+                            <AddSecretModal open={addOpen} onClose={closeAdd} />
+                            <SendMoneyModal walletNames={{}} />
+                            <ReceiveModal open={receiveOpen} wallets={wallets} onClose={closeReceive} />
+
+                            <ToastContainer position="top-right" />
+                        </>
+                    </XOContractsProvider>
+                </EmbeddedProvider>
+            )}
         </Box>
     );
 }

@@ -37,6 +37,14 @@ export function SendMoneyModal({walletNames}: Props) {
           boxShadow: "0 30px 80px rgba(15,23,42,0.25)",
         },
       }}
+      slotProps={{
+          backdrop: {
+              sx: {
+                  backdropFilter: "blur(25px) brightness(0.7)",
+                  backgroundColor: "rgba(255,255,255,0.05)", // glass suave
+              },
+          },
+      }}
     >
       <Box
         sx={{
