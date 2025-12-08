@@ -75,7 +75,8 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
           alignItems: "center",
           justifyContent: "center",
           p: 2,
-          backdropFilter: "blur(2px)",
+          backdropFilter: "blur(3px)",
+          background: "rgba(0,0,0,0.5)",
         }}
       >
         <Box
@@ -84,11 +85,11 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
           sx={{
             width: "100%",
             maxWidth: 460,
-            background: "linear-gradient(135deg, #111827, #0f172a)",
-            border: "1px solid rgba(255,255,255,0.06)",
-            boxShadow: "0 30px 70px rgba(0,0,0,0.55)",
-            borderRadius: 16,
-            p: { xs: 3, md: 3.5 },
+            background: "linear-gradient(145deg, #0c1220, #0f1c33)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 28px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)",
+            borderRadius: 22,
+            p: { xs: 3.2, md: 3.8 },
             color: "#e5e7eb",
           }}
         >
@@ -96,17 +97,17 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
             <Box>
               <Typography
                 component="h2"
-                sx={{ fontWeight: 800, fontSize: 22, color: "#f9fafb", mb: 0.5 }}
+                sx={{ fontWeight: 900, fontSize: 24, color: "#f9fafb", mb: 0.5 }}
               >
                 {mode === "create" ? "Crea tu contraseña" : "Ingresa tu contraseña"}
               </Typography>
-              <Typography variant="body2" sx={{ color: "rgba(229,231,235,0.78)" }}>
+              <Typography variant="body2" sx={{ color: "rgba(229,231,235,0.76)" }}>
                 Desbloquea tu sesión para continuar operando con tus wallets.
               </Typography>
             </Box>
 
             <Stack spacing={1}>
-              <Typography component="label" htmlFor="password-input" sx={{ fontWeight: 700 }}>
+              <Typography component="label" htmlFor="password-input" sx={{ fontWeight: 800 }}>
                 Contraseña
               </Typography>
               <TextField
@@ -125,6 +126,12 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
                   "aria-describedby": error ? errorId : undefined,
                 }}
                 InputProps={{
+                  sx: {
+                    color: "#e5e7eb",
+                    "& .MuiInputBase-input::placeholder": {
+                      color: "rgba(229,231,235,0.7)",
+                    },
+                  },
                   startAdornment: (
                     <InputAdornment position="start">
                       <LockOutlinedIcon sx={{ color: "rgba(229,231,235,0.7)" }} />
@@ -161,14 +168,14 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
               disabled={isEmpty || isSubmitting}
               sx={{
                 textTransform: "uppercase",
-                fontWeight: 800,
-                letterSpacing: 0.6,
-                py: 1.2,
-                borderRadius: 2,
-                background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
-                boxShadow: "0 16px 32px rgba(37,99,235,0.35)",
+                fontWeight: 900,
+                letterSpacing: 0.8,
+                py: 1.25,
+                borderRadius: 14,
+                background: "linear-gradient(135deg, #2563eb 0%, #6366f1 50%, #8b5cf6 100%)",
+                boxShadow: "0 18px 34px rgba(99,102,241,0.4)",
                 "&:hover": {
-                  background: "linear-gradient(135deg, #1d4ed8 0%, #6d28d9 100%)",
+                  background: "linear-gradient(135deg, #1e40af 0%, #5b21b6 100%)",
                 },
                 "&:disabled": {
                   background: "rgba(255,255,255,0.14)",
