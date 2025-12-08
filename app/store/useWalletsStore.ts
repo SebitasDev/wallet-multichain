@@ -1,11 +1,11 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { validateMnemonic, mnemonicToSeedSync } from "@scure/bip39";
-import { wordlist } from "@scure/bip39/wordlists/english";
-import { HDKey } from "ethereum-cryptography/hdkey";
-import { privateKeyToAccount } from "viem/accounts";
-import { Buffer } from "buffer";
-import { decryptSeed, encryptSeed } from "../utils/cripto";
+import {create} from "zustand";
+import {persist} from "zustand/middleware";
+import {mnemonicToSeedSync, validateMnemonic} from "@scure/bip39";
+import {wordlist} from "@scure/bip39/wordlists/english";
+import {HDKey} from "ethereum-cryptography/hdkey";
+import {privateKeyToAccount} from "viem/accounts";
+import {Buffer} from "buffer";
+import {decryptSeed, encryptSeed} from "../utils/cripto";
 import {NETWORKS} from "@/app/constants/chainsInformation";
 import {Address} from "abitype";
 import {getBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
@@ -42,6 +42,8 @@ interface WalletStore {
     getWalletTotalBalance: (walletAddress: `0x${string}`) => number;
 
     getAllWalletsTotalBalance: () => number;
+
+    transferBalance: (originAddress: Address, destinationAddress: Address, originChainId: string, destinationChainId: string, amount: number) => void;
 
     clearAll: () => void;
 }
@@ -195,7 +197,7 @@ export const useWalletStore = create<WalletStore>()(
             // -----------------------------
             // GET BALANCE DE UNA CADENA ESPECÍFICA
             // -----------------------------
-            getWalletBalanceByChain: async (walletAddress: `0x${string}`, chainId: string) => {
+            getWalletBalanceByChain: async (walletAddress: Address, chainId: string) => {
                 const wallet = get().wallets.find(
                     (w) => w.address.toLowerCase() === walletAddress.toLowerCase()
                 );
@@ -242,7 +244,7 @@ export const useWalletStore = create<WalletStore>()(
             // -----------------------------
             // GET BALANCE TOTAL DE UNA WALLET
             // -----------------------------
-            getWalletTotalBalance: (walletAddress: `0x${string}`) => {
+            getWalletTotalBalance: (walletAddress: Address) => {
                 const wallet = get().wallets.find(
                     (w) => w.address.toLowerCase() === walletAddress.toLowerCase()
                 );
@@ -261,13 +263,53 @@ export const useWalletStore = create<WalletStore>()(
                 const wallets = get().wallets;
 
                 // Sumar todos los amounts de todas las chains de todas las wallets
-                const total = wallets.reduce((walletAcc, wallet) => {
+                return wallets.reduce((walletAcc, wallet) => {
                     const walletTotal = wallet.chains.reduce((chainAcc, c) => chainAcc + c.amount, 0);
                     return walletAcc + walletTotal;
                 }, 0);
-
-                return total;
             },
+
+
+            transferBalance: (
+                originAddress: Address,
+                destinationAddress: Address,
+                originChainId: string,
+                destinationChainId: string,
+                amount: number
+            ) => {
+                set((state) => ({
+                    wallets: state.wallets.map((wallet) => {
+                        const lowerAddr = wallet.address.toLowerCase();
+
+                        if (lowerAddr === originAddress.toLowerCase()) {
+                            console.log("inicio",lowerAddr)
+                            return {
+                                ...wallet,
+                                chains: wallet.chains.map((chain) =>
+                                    chain.chainId === originChainId
+                                        ? { ...chain, amount: chain.amount - amount }
+                                        : chain
+                                ),
+                            };
+                        }
+
+                        if (lowerAddr === destinationAddress.toLowerCase()) {
+                            console.log("destino",lowerAddr)
+                            return {
+                                ...wallet,
+                                chains: wallet.chains.map((chain) =>
+                                    chain.chainId === destinationChainId
+                                        ? { ...chain, amount: chain.amount + amount }
+                                        : chain
+                                ),
+                            };
+                        }
+
+                        return wallet;
+                    }),
+                }));
+            },
+
 
             // ---------------------------------------------------------
             // CLEAR ALL

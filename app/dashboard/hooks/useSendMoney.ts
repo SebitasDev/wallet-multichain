@@ -49,7 +49,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
     const [routeReady, setRouteReady] = useState(false);
     const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
     const { allocateAcrossNetworks } = useFindBestRoute();
-    const { unlockWallet } = useWalletStore();
+    const { unlockWallet, transferBalance } = useWalletStore();
     const { privateKey } = useGeneralWalletStore();
     const { setSendModal, isOpen } = useSendModalState();
     const [routeDetails, setRouteDetails] = useState<RouteDetail[]>([]);
@@ -282,33 +282,6 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             return hash;
         };
 
-        const updateWalletBalanceAfterTransfer = (
-            walletAddress: `0x${string}`,
-            fromChainId: string,
-            toChainId: string,
-            amount: number
-        ) => {
-            useWalletStore.setState((state) => {
-                const updatedWallets = state.wallets.map((wallet) => {
-                    if (wallet.address.toLowerCase() !== walletAddress.toLowerCase()) return wallet;
-
-                    const updatedChains = wallet.chains.map((chain) => {
-                        if (chain.chainId === fromChainId) {
-                            return { ...chain, amount: Math.max(chain.amount - amount, 0) };
-                        } else if (chain.chainId === toChainId) {
-                            return { ...chain, amount: chain.amount + amount };
-                        } else {
-                            return chain;
-                        }
-                    });
-
-                    return { ...wallet, chains: updatedChains };
-                });
-
-                return { wallets: updatedWallets };
-            });
-        };
-
         console.log("🔹 Starting main allocation loop");
 
         for (const allocation of routeSummary!.allocations) {
@@ -316,24 +289,19 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
 
             for (const chain of allocation.chains) {
                 const fromValidChain = CHAIN_ID_TO_KEY[chain.chainId] ?? "Base";
-                const normalizedAmount = BigInt(Math.floor(Math.max(Number(chain.amount), 0) * 1e6)); // bigint
+                const normalizedAmount = BigInt(Math.floor(Math.max(Number(chain.amount), 0) * 1e6));
 
                 if (fromValidChain === toValidChain) {
                     await transfer(fromValidChain, watch("toAddress"), normalizedAmount, unlocked);
 
-                    const toChainKey = (Object.keys(NETWORKS) as (keyof typeof NETWORKS)[])
-                        .find(k => NETWORKS[k].label === toValidChain)!;
-
-                    updateWalletBalanceAfterTransfer(
+                    transferBalance(
                         allocation.from as Address,
-                        chain.chainId,
-                        toChainKey,
+                        watch("toAddress") as Address,
+                        NETWORKS[fromValidChain].chain.id.toString(),
+                        NETWORKS[toValidChain].chain.id.toString(),
                         Number(normalizedAmount) / 1e6
                     );
                 } else {
-                    const toChainKey = (Object.keys(NETWORKS) as (keyof typeof NETWORKS)[])
-                        .find(k => NETWORKS[k].label === toValidChain)!;
-
                     await fetch("/api/bridge-usdc", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -346,10 +314,11 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
                         }),
                     });
 
-                    updateWalletBalanceAfterTransfer(
+                    transferBalance(
                         allocation.from as Address,
-                        chain.chainId,
-                        toChainKey,
+                        watch("toAddress") as Address,
+                        NETWORKS[fromValidChain as ChainKey].chain.id.toString(),
+                        NETWORKS[toValidChain].chain.id.toString(),
                         Number(normalizedAmount) / 1e6
                     );
                 }

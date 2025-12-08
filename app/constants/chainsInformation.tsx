@@ -116,7 +116,7 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
             ? avalancheFuji : avalanche,
         domain: 1,
         aproxFromFee: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? 0.03 : 1,
+            ? 10000 : 10000,
         label: "Avalanche",
         icon: <AvalancheIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"

@@ -17,7 +17,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 import {Address} from "abitype";
 import ArbIcon from "@/app/components/atoms/ArbIcon";
-import {arbitrum, arbitrumSepolia, polygonAmoy} from "viem/chains";
+import {arbitrum, arbitrumSepolia} from "viem/chains";
 import {useWalletStore} from "@/app/store/useWalletsStore";
 
 interface IPolChainItemProps {

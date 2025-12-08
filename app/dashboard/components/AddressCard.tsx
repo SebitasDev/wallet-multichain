@@ -170,7 +170,7 @@ export const AddressCard = ({
 
                             {/* numero de chains disponibles */}
                             <Chip
-                                label="3 chains"
+                                label="6 chains"
                                 size="small"
                                 sx={{
                                     backgroundColor: "rgba(16,185,129,0.15)",
