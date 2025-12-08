@@ -38,6 +38,7 @@ export default function Dashboard() {
     useEffect(() => {
         setMounted(true);
         if (!encrypted) {
+            localStorage.removeItem("wallets");
             setMode("create");
             setAskPassword(true);
         } else {
