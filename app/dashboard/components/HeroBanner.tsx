@@ -23,7 +23,7 @@ export function HeroBanner({ background }: Props) {
     const mainAddress = xoAddress ?? mainWallet.address ?? null;
 
     // Balance quemado exclusivo para Main
-    const burnedMainBalance = 12345.67;
+    const burnedMainBalance = 0;
 
     return (
         <Box
