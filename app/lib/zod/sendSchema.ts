@@ -6,6 +6,8 @@ export const sendSchema = z.object({
     sendAmount: z.string().min(1, "Monto requerido"),
     sendPassword: z.string().min(1, "Password muy corta"),
     sendChain: ChainKeyEnum,
+    optimize: z.boolean(),
+
 });
 
 export type SendForm = z.infer<typeof sendSchema>;

@@ -8,7 +8,7 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import {useGeneralWalletStore} from "@/app/store/useGeneralWalletStore";
 import {useSendModalState} from "@/app/dashboard/store/useSendModalState";
 import {toast} from "react-toastify";
-import {Address, createPublicClient, http, parseUnits} from "viem";
+import {Address, createPublicClient, http} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {CHAIN_ID_TO_KEY, ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
 import { getPrivateClientByNetworkName } from "@/app/utils/getClientByNetworkName";
@@ -116,6 +116,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             sendAmount: "",
             sendPassword: "",
             sendChain: "Base",
+            optimize: false
         },
     });
 
@@ -151,7 +152,8 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
             const summary = await allocateAcrossNetworks(
                 Number(sendAmount),
                 toAddress as Address,
-                sendChain
+                sendChain,
+                watch("optimize")
             );
 
             setRouteSummary(summary);

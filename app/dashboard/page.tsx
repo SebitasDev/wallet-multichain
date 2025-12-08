@@ -21,6 +21,7 @@ import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { PasswordModal } from "./components/PasswordModal";
 import {XOContractsProvider} from "@/app/dashboard/hooks/useXOConnect";
 import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
+import {GenerateWalletButton} from "@/app/dashboard/components/GenerateWalletButton";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -80,6 +81,10 @@ export default function Dashboard() {
                             />
 
                             <HeroBanner background={"var(--gradient-hero)"} />
+
+                            <Box sx={{ textAlign: "center", mt: 3 }}>
+                                <GenerateWalletButton />
+                            </Box>
 
                             <Box
                                 sx={{

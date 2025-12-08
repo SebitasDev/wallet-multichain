@@ -211,7 +211,7 @@ export const FinishRoute = (
                     <Typography fontWeight={800}>Recibe</Typography>
 
                     <Typography fontWeight={900}>
-                        {formatCurrency(routeSummary?.targetAmount ?? 0)}
+                        {formatCurrency((routeSummary?.targetAmount) ?? 0)}
                     </Typography>
 
                     <Typography variant="body2" color="text.secondary">

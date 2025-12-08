@@ -1,12 +1,20 @@
 import {Control, Controller, FieldErrors} from "react-hook-form";
-import {MenuItem, Stack, TextField, Typography} from "@mui/material";
+import {
+    MenuItem,
+    Stack,
+    TextField,
+    Typography,
+    Switch,
+    FormControlLabel
+} from "@mui/material";
 import {ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
 
 type FormValues = {
-    toAddress: string
-    sendAmount: string
-    sendPassword: string
-    sendChain: ChainKey
+    toAddress: string;
+    sendAmount: string;
+    sendPassword: string;
+    sendChain: ChainKey;
+    optimize: boolean;
 };
 
 type Props = {
@@ -94,6 +102,25 @@ export const FormSendMoney = ({ control, errors, sendLoading }: Props) => {
                         {...field}
                         error={!!errors.sendPassword}
                         helperText={errors.sendPassword?.message}
+                    />
+                )}
+            />
+
+            <Controller
+                control={control}
+                name="optimize"
+                defaultValue={false}
+                render={({ field }) => (
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                {...field}
+                                checked={!!field.value}
+                                onChange={(e) => field.onChange(e.target.checked)}
+                                disabled={sendLoading}
+                            />
+                        }
+                        label="Optimizar ruta"
                     />
                 )}
             />
