@@ -103,6 +103,9 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
 
     useEffect(() => {
         if (!hydrated) return;
+
+        if (isEmbedded === undefined || isEmbedded === null) return;
+
         connect();
     }, [hydrated, isEmbedded]);
 
