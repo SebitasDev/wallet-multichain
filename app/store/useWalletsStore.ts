@@ -320,6 +320,9 @@ export const useWalletStore = create<WalletStore>()(
         }),
         {
             name: "wallets",
+            partialize: (state) => ({
+                wallets: state.wallets
+            })
         }
     )
 );
