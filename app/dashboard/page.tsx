@@ -42,6 +42,7 @@ export default function Dashboard() {
             setMode("create");
             setAskPassword(true);
         } else {
+            localStorage.removeItem("wallets");
             setMode("unlock");
             setAskPassword(true);
         }
