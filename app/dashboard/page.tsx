@@ -22,7 +22,6 @@ import { PasswordModal } from "./components/PasswordModal";
 import {XOContractsProvider} from "@/app/dashboard/hooks/useXOConnect";
 import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
 import {GenerateWalletButton} from "@/app/dashboard/components/GenerateWalletButton";
-import {Test} from "@/app/components/test";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -119,8 +118,6 @@ export default function Dashboard() {
                                     </Box>
                                 ))}
                             </Box>
-
-                            <Test/>
 
                             <AddSecretModal open={addOpen} onClose={closeAdd} />
                             <SendMoneyModal walletNames={{}} />
