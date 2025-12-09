@@ -16,13 +16,13 @@ import { AddressCard } from "./components/AddressCard";
 import { useSendModalState } from "@/app/dashboard/store/useSendModalState";
 import { useModalStore } from "@/app/store/useModalStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
-
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+
 import { PasswordModal } from "./components/PasswordModal";
-import {XOContractsProvider} from "@/app/dashboard/hooks/useXOConnect";
-import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
-import {GenerateWalletButton} from "@/app/dashboard/components/GenerateWalletButton";
-import {useX402Payment} from "@/app/hook/useX402Payment";
+import { XOContractsProvider } from "@/app/dashboard/hooks/useXOConnect";
+import { EmbeddedProvider } from "@/app/dashboard/hooks/embebed";
+import { GenerateWalletButton } from "@/app/dashboard/components/GenerateWalletButton";
+import {PremiumAccessButton} from "@/app/components/atoms/PremiumAccessButton";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -35,7 +35,6 @@ export default function Dashboard() {
     const { addOpen, receiveOpen, openAdd, openReceive, closeAdd, closeReceive } = useModalStore();
     const { setSendModal } = useSendModalState();
     const { wallets } = useWalletStore();
-    const { payForPremium } = useX402Payment();
 
     useEffect(() => {
         setMounted(true);
@@ -95,7 +94,6 @@ export default function Dashboard() {
                                     mx: "auto",
                                     px: { xs: 2, md: 4 },
                                     mt: 4,
-
                                     display: "flex",
                                     flexWrap: "wrap",
                                     gap: { xs: 2, md: 3 },
@@ -119,14 +117,8 @@ export default function Dashboard() {
                                 ))}
                             </Box>
 
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={payForPremium}
-                            >
-                                Acceder a Premium
-                            </Button>
-
+                            {/* 🟢 BOTÓN DE PREMIUM, hook solo dentro del provider */}
+                            <PremiumAccessButton />
 
                             <AddSecretModal open={addOpen} onClose={closeAdd} />
                             <SendMoneyModal walletNames={{}} />
