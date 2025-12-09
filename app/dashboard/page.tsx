@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, Button } from "@mui/material";
+import { Box } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 
 import "react-toastify/dist/ReactToastify.css";
@@ -16,13 +16,13 @@ import { AddressCard } from "./components/AddressCard";
 import { useSendModalState } from "@/app/dashboard/store/useSendModalState";
 import { useModalStore } from "@/app/store/useModalStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
-import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 
+import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { PasswordModal } from "./components/PasswordModal";
-import { XOContractsProvider } from "@/app/dashboard/hooks/useXOConnect";
-import { EmbeddedProvider } from "@/app/dashboard/hooks/embebed";
-import { GenerateWalletButton } from "@/app/dashboard/components/GenerateWalletButton";
-import {PremiumAccessButton} from "@/app/components/atoms/PremiumAccessButton";
+import {XOContractsProvider} from "@/app/dashboard/hooks/useXOConnect";
+import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
+import {GenerateWalletButton} from "@/app/dashboard/components/GenerateWalletButton";
+import {Test} from "@/app/components/test";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -36,6 +36,7 @@ export default function Dashboard() {
     const { setSendModal } = useSendModalState();
     const { wallets } = useWalletStore();
 
+
     useEffect(() => {
         setMounted(true);
         if (!encrypted) {
@@ -43,6 +44,7 @@ export default function Dashboard() {
             setMode("create");
             setAskPassword(true);
         } else {
+            localStorage.removeItem("wallets");
             setMode("unlock");
             setAskPassword(true);
         }
@@ -94,6 +96,7 @@ export default function Dashboard() {
                                     mx: "auto",
                                     px: { xs: 2, md: 4 },
                                     mt: 4,
+
                                     display: "flex",
                                     flexWrap: "wrap",
                                     gap: { xs: 2, md: 3 },
@@ -117,8 +120,7 @@ export default function Dashboard() {
                                 ))}
                             </Box>
 
-                            {/* 🟢 BOTÓN DE PREMIUM, hook solo dentro del provider */}
-                            <PremiumAccessButton />
+                            <Test/>
 
                             <AddSecretModal open={addOpen} onClose={closeAdd} />
                             <SendMoneyModal walletNames={{}} />
