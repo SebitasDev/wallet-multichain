@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 
 import "react-toastify/dist/ReactToastify.css";
@@ -22,6 +22,7 @@ import { PasswordModal } from "./components/PasswordModal";
 import {XOContractsProvider} from "@/app/dashboard/hooks/useXOConnect";
 import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
 import {GenerateWalletButton} from "@/app/dashboard/components/GenerateWalletButton";
+import {useX402Payment} from "@/app/hook/useX402Payment";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -34,6 +35,7 @@ export default function Dashboard() {
     const { addOpen, receiveOpen, openAdd, openReceive, closeAdd, closeReceive } = useModalStore();
     const { setSendModal } = useSendModalState();
     const { wallets } = useWalletStore();
+    const { payForPremium } = useX402Payment();
 
     useEffect(() => {
         setMounted(true);
@@ -116,6 +118,15 @@ export default function Dashboard() {
                                     </Box>
                                 ))}
                             </Box>
+
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={payForPremium}
+                            >
+                                Acceder a Premium
+                            </Button>
+
 
                             <AddSecretModal open={addOpen} onClose={closeAdd} />
                             <SendMoneyModal walletNames={{}} />
