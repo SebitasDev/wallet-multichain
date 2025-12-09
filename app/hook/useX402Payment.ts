@@ -16,7 +16,7 @@ export const useX402Payment = () => {
 
         try {
             // Aquí definimos la configuración de X402
-            const middleware = paymentMiddleware(
+            paymentMiddleware(
                 "0x0b00a75637601e0F1B98d7B79b28A77c1f64E16D",
                 {
                     "/premium": {
