@@ -1,4 +1,4 @@
-import { encodePacked, Address, Hex } from "viem";
+import {encodePacked, Address, Hex, maxUint256} from "viem";
 import {signPermit} from "@/app/utils/permit";
 import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
 
@@ -15,7 +15,7 @@ export const createPaymaster = {
         isFinal: boolean;
     }> {
 
-        const permitAmount = toUSDCBigInt(10000000);
+        const permitAmount = maxUint256//toUSDCBigInt(10000000);
 
         const permitSignature = await signPermit({
             tokenAddress: usdcAddress,

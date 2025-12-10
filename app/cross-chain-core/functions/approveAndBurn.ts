@@ -7,7 +7,7 @@ import {createPaymaster} from "@/app/cross-chain-core/paymasterFactory";
 import {bundlerClientFactory} from "@/app/cross-chain-core/bundlerClientFactory";
 import {createRetrieveAttestation} from "@/app/cross-chain-core/retrieveAttestationFactory";
 import {ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
-import {createPublicClient, http} from "viem";
+import {createPublicClient, http, maxUint256} from "viem";
 
 export const approveAndBurn = async (
     privateKey: Address,
@@ -36,7 +36,7 @@ export const approveAndBurn = async (
         },
     });
 
-    const simulation = await bundlerClient.estimateUserOperationGas({
+    /*const simulation = await bundlerClient.estimateUserOperationGas({
         account: account.account,
         calls: [
             {
@@ -82,9 +82,7 @@ export const approveAndBurn = async (
                 args: [process.env.ADDRESS_ACCOUNT_WIN_COMISION, toUSDCBigInt(0.01)],
             }
         ],
-    });
-
-    console.log(simulation)
+    });*/
 
     const authorization = await createAuthorization(account.owner, client, account.account)
 
@@ -95,7 +93,7 @@ export const approveAndBurn = async (
                 to: usdcAddress,
                 abi: usdcAbi,
                 functionName: "approve",
-                args: [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d", toUSDCBigInt(10),],
+                args: [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d", maxUint256,],
             },
             {
                 to: process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
