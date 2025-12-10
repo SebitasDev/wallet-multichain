@@ -171,7 +171,6 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
         console.log("🔹 Starting handleOnTest");
 
         //change this
-        console.log("PRIVATE KEY =>", privateKey);
         const account = privateKeyToAccount("0x2817cf84953d5d6283c479ce478bb91c50e21eb7fef347b25a60e7b7708a71dc" as Address);
         console.log("Account:", account.address);
 

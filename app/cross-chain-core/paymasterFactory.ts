@@ -15,7 +15,7 @@ export const createPaymaster = {
         isFinal: boolean;
     }> {
 
-        const permitAmount = toUSDCBigInt(10);
+        const permitAmount = toUSDCBigInt(10000000);
 
         const permitSignature = await signPermit({
             tokenAddress: usdcAddress,
