@@ -6,11 +6,14 @@ import { toast } from "react-toastify";
 import { Wallet } from "ethers";
 import { useMainWalletStore } from "@/app/store/useMainWalletStore";
 import { decryptPrivateKey, encryptPrivateKey, generateSalt } from "@/app/utils/cripto";
+import { createPaymentHeader } from "x402/client";
+import { privateKeyToAccount } from "viem/accounts";
 
 interface XOContractsContextType {
     connect: () => Promise<void>;
     address: string | null;
     client: any;
+    payX402: (amount: string, recipientAddress: string) => Promise<{ success: boolean; txHash?: string; error?: string }>;
 }
 
 const XOContractsContext = createContext<XOContractsContextType | null>(null);
@@ -101,6 +104,84 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
         }
     };
 
+    const payX402 = async (amount: string, recipientAddress: string): Promise<{ success: boolean; txHash?: string; error?: string }> => {
+        try {
+            if (!mainWallet.encryptedPrivateKey || !mainWallet.salt || !mainWallet.iv) {
+                throw new Error("No hay wallet disponible");
+            }
+
+            // Desencriptar la private key
+            const privateKey = await decryptPrivateKey(
+                mainWallet.encryptedPrivateKey,
+                password,
+                mainWallet.salt,
+                mainWallet.iv
+            );
+
+            // Crear account de viem con la private key
+            const account = privateKeyToAccount(privateKey as `0x${string}`);
+
+            console.log(account.address)
+
+            // Convertir amount a unidades atómicas de USDC (6 decimales)
+            const amountInAtomicUnits = (parseFloat(amount) * 1_000_000).toString();
+
+            // USDC en Base
+            const USDC_BASE = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+
+            // Crear el payment header con x402 usando el account directamente
+            const paymentHeader = await createPaymentHeader(
+                account,
+                1, // x402 version
+                {
+                    scheme: "exact",
+                    network: "base-sepolia",
+                    maxAmountRequired: amountInAtomicUnits,
+                    resource: "https://x402-payment.local",
+                    description: "x402 Payment",
+                    mimeType: "application/json",
+                    payTo: recipientAddress as `0x${string}`,
+                    maxTimeoutSeconds: 300,
+                    asset: USDC_BASE,
+                    extra: {
+                        name: "USDC",
+                        version: "2"
+                    }
+                }
+            );
+
+            // Enviar al servidor para facilitar el pago
+            const response = await fetch("/api/x402-pay", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    paymentHeader,
+                    recipientAddress,
+                    amount: amountInAtomicUnits,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || "Error al procesar el pago");
+            }
+
+            return {
+                success: true,
+                txHash: result.transaction,
+            };
+        } catch (error) {
+            console.error("Error en payX402:", error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : "Error desconocido",
+            };
+        }
+    };
+
     useEffect(() => {
         if (!hydrated) return;
 
@@ -115,6 +196,7 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
                 connect,
                 address,
                 client: useMainWalletStore.getState().xoClient,
+                payX402,
             }}
         >
             {children}
