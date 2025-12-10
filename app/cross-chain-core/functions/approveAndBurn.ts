@@ -121,7 +121,7 @@ export const approveAndBurn = async (
                     `0x000000000000000000000000${recipient.slice(2)}`,
                     usdcAddress,
                     "0x0000000000000000000000000000000000000000000000000000000000000000",
-                    BigInt(500),
+                    BigInt(2_000_000),
                     1000,
                 ],
             },
