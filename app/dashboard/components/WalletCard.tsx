@@ -28,7 +28,7 @@ const Dot = ({ color }: { color: string }) => (
       height: 14,
       borderRadius: "50%",
       background: color,
-      boxShadow: "0 0 0 3px rgba(17,24,39,0.05)",
+      boxShadow: "0 0 0 4px rgba(255,255,255,0.06), 0 8px 18px rgba(0,0,0,0.35)",
       flexShrink: 0,
     }}
   />
@@ -42,10 +42,14 @@ const TagChip = ({ label }: { label: string }) => (
       fontSize: 11,
       height: 24,
       borderRadius: "999px",
-      backgroundColor: "rgba(16,185,129,0.12)",
-      color: "#16a34a",
+      background: "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05))",
+      color: "#f3f4f6",
       fontWeight: 700,
       textTransform: "uppercase",
+      border: "1px solid rgba(255,255,255,0.16)",
+      letterSpacing: "0.4px",
+      backdropFilter: "blur(10px)",
+      boxShadow: "0 14px 34px rgba(0,0,0,0.4)",
     }}
   />
 );
@@ -112,24 +116,48 @@ export function WalletCard({ wallet }: Props) {
   return (
     <Card
       sx={{
-        borderRadius: 12,
+        minWidth: { xs: "92vw", sm: 360 },
+        maxWidth: 420,
+        flex: "0 0 auto",
+        display: "inline-flex",
+        mr: { xs: 2, sm: 2.5 },
+        mb: { xs: 2, sm: 2.5 },
+        scrollSnapAlign: "start",
+        scrollSnapStop: "always",
+        position: "relative",
+        isolation: "isolate",
+        borderRadius: 22,
         overflow: "hidden",
         boxShadow:
-          "0 0 0 1.5px rgba(255,255,255,0.1), 0 0 10px rgba(200,200,200,0.6), 0 10px 24px rgba(15,23,42,0.18), inset 0 0 0 1.5px rgba(210,210,210,0.7)",
-        border: "1.25px solid rgba(215,215,215,0.85)",
-        background: "#ffffff",
-        color: "#0f172a",
+          "0 25px 70px rgba(0,0,0,0.78), 0 12px 28px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)",
+        border: "1px solid rgba(126,87,255,0.22)",
+        backgroundColor: "#0a0818",
+        backgroundImage:
+          "radial-gradient(circle at 18% 12%, rgba(118,87,255,0.24) 0%, transparent 26%), radial-gradient(circle at 82% 0%, rgba(255,72,160,0.22) 0%, transparent 22%), linear-gradient(185deg, #0f0a1f 0%, #0c0a1a 45%, #060510 100%)",
+        color: "#f9fafb",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          inset: -6,
+          borderRadius: "inherit",
+          background: "linear-gradient(135deg, rgba(126,87,255,0.38), rgba(255,72,160,0.32))",
+          filter: "blur(20px)",
+          opacity: 0.4,
+          zIndex: 0,
+        },
       }}
     >
-      <CardContent sx={{ p: 0 }}>
+      <CardContent sx={{ p: 0, position: "relative", zIndex: 1 }}>
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             px: 3,
-            pt: 2.75,
-            pb: 1.5,
+            pt: 2.4,
+            pb: 1.25,
+            backgroundColor: "transparent",
+            boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.08)",
           }}
         >
           <Stack
@@ -143,12 +171,13 @@ export function WalletCard({ wallet }: Props) {
               fontWeight={700}
               fontSize={17}
               sx={{
-                color: "#0f172a",
-                maxWidth: { xs: 150, sm: 200 },
+                color: "#f9fafb",
+                maxWidth: { xs: 160, sm: 220 },
                 minWidth: 0,
                 whiteSpace: showNameExpanded ? "normal" : "nowrap",
                 textOverflow: showNameExpanded ? "clip" : "ellipsis",
                 overflow: "hidden",
+                letterSpacing: "0.35px",
               }}
               title={wallet.name}
             >
@@ -161,7 +190,13 @@ export function WalletCard({ wallet }: Props) {
                   e.stopPropagation();
                   setShowNameExpanded((prev) => !prev);
                 }}
-                sx={{ color: "#2563eb", p: 0.25 }}
+                sx={{
+                  color: "rgba(255,255,255,0.85)",
+                  p: 0.25,
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                  "&:hover": { backgroundColor: "rgba(255,255,255,0.14)" },
+                  border: "1px solid rgba(255,255,255,0.12)",
+                }}
               >
                 {showNameExpanded ? (
                   <ExpandLess sx={{ fontSize: 18 }} />
@@ -176,18 +211,22 @@ export function WalletCard({ wallet }: Props) {
               sx={{
                 fontSize: 11,
                 height: 24,
-                color: "#0f5132",
-                backgroundColor: "rgba(16,185,129,0.15)",
+                color: "#f3f4f6",
+                background: "linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.07))",
                 borderRadius: "999px",
                 fontWeight: 700,
+                border: "1px solid rgba(255,255,255,0.2)",
+                letterSpacing: "0.3px",
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 14px 36px rgba(0,0,0,0.48)",
               }}
             />
           </Stack>
           <Box sx={{ textAlign: "right" }}>
-            <Typography fontWeight={800} fontSize={20} sx={{ color: "#0f172a" }} lineHeight={1}>
+            <Typography fontWeight={800} fontSize={21} sx={{ color: "#f9fafb" }} lineHeight={1}>
               {formatCurrency(wallet.total)}
             </Typography>
-            <Typography variant="body2" sx={{ fontSize: 12, mt: 0.4, color: "#cbd5e1" }}>
+            <Typography variant="body2" sx={{ fontSize: 12, mt: 0.4, color: "rgba(249,250,251,0.6)" }}>
               Valor Total
             </Typography>
           </Box>
@@ -196,23 +235,33 @@ export function WalletCard({ wallet }: Props) {
         <Box
           sx={{
             px: 3,
-            py: 1.25,
-            background: "linear-gradient(120deg, #f1f7ff 0%, #e8f5f1 100%)",
-            borderTop: "1px solid #e5e7eb",
-            borderBottom: "1px solid #e5e7eb",
+            py: 1,
+            background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
+            borderTop: "1px solid rgba(255,255,255,0.1)",
+            borderBottom: "1px solid rgba(255,255,255,0.1)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             gap: 1.5,
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+            backdropFilter: "blur(12px)",
           }}
         >
-          <Typography variant="body2" sx={{ fontSize: 13, color: "#4b5563" }}>
+          <Typography variant="body2" sx={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
             {wallet.address}
           </Typography>
           <Stack direction="row" spacing={1}>
             <IconButton
               size="small"
-              sx={{ color: "#6b7280" }}
+              sx={{
+                color: "rgba(255,255,255,0.85)",
+                backgroundColor: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  color: "#ffffff",
+                },
+              }}
               onClick={(e) => {
                 e.stopPropagation();
                 copyToClipboard(wallet.address, "Address");
@@ -220,10 +269,32 @@ export function WalletCard({ wallet }: Props) {
             >
               <ContentCopyOutlined fontSize="small" />
             </IconButton>
-            <IconButton size="small" sx={{ color: "#6b7280" }}>
+            <IconButton
+              size="small"
+              sx={{
+                color: "rgba(255,255,255,0.85)",
+                backgroundColor: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  color: "#ffffff",
+                },
+              }}
+            >
               <LinkOutlined fontSize="small" />
             </IconButton>
-            <IconButton size="small" sx={{ color: "#6b7280" }}>
+            <IconButton
+              size="small"
+              sx={{
+                color: "rgba(255,255,255,0.85)",
+                backgroundColor: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  color: "#ffffff",
+                },
+              }}
+            >
               <OpenInNewOutlined fontSize="small" />
             </IconButton>
           </Stack>
@@ -237,20 +308,26 @@ export function WalletCard({ wallet }: Props) {
               alignItems: "center",
               justifyContent: "space-between",
               px: 3,
-              py: 1.25,
+              py: 1.05,
               borderBottom:
-                index === visibleChains.length - 1 ? "none" : "1px solid #f1f5f9",
+                index === visibleChains.length - 1 ? "none" : "1px solid rgba(255,255,255,0.06)",
+              transition: "background-color 0.2s ease, border-color 0.2s ease",
+              backgroundColor: "rgba(8,8,18,0.9)",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.05)",
+                borderColor: "rgba(255,255,255,0.1)",
+              },
             }}
           >
             <Stack direction="row" alignItems="center" spacing={1.5}>
               <Dot color={chain.color} />
               <Box>
-                <Typography fontWeight={600} fontSize={14} sx={{ color: "#0f172a" }}>
+                <Typography fontWeight={600} fontSize={14} sx={{ color: "#f9fafb" }}>
                   {chain.name}
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ fontSize: 12, mt: 0.4, color: "#6b7280" }}
+                  sx={{ fontSize: 12, mt: 0.4, color: "rgba(249,250,251,0.6)" }}
                 >
                   {chain.tokens} tokens
                 </Typography>
@@ -259,15 +336,15 @@ export function WalletCard({ wallet }: Props) {
             </Stack>
 
             <Stack direction="row" alignItems="center" spacing={1.25}>
-              <Typography fontWeight={700} fontSize={14}>
+              <Typography fontWeight={700} fontSize={14} sx={{ color: "#f9fafb" }}>
                 {formatCurrency(chain.value)}
               </Typography>
-              <ArrowForwardIos sx={{ fontSize: 14, color: "#9ca3af" }} />
+              <ArrowForwardIos sx={{ fontSize: 14, color: "rgba(249,250,251,0.55)" }} />
             </Stack>
           </Box>
         ))}
 
-        <Divider sx={{ mx: 3, backgroundColor: "#f1f5f9" }} />
+        <Divider sx={{ mx: 3, backgroundColor: "rgba(255,255,255,0.07)" }} />
 
         {wallet.chains.length > 2 && (
           <Box
@@ -276,10 +353,15 @@ export function WalletCard({ wallet }: Props) {
               alignItems: "center",
               gap: 1,
               px: 3,
-              py: 1.25,
-              color: "#4b5563",
+              py: 1.05,
+              color: "rgba(249,250,251,0.75)",
               cursor: "pointer",
               userSelect: "none",
+              transition: "color 0.2s ease, background-color 0.2s ease",
+              "&:hover": {
+                color: "#ffffff",
+                backgroundColor: "rgba(255,255,255,0.04)",
+              },
             }}
             onClick={() => setExpanded((prev) => !prev)}
           >

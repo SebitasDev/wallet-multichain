@@ -104,23 +104,40 @@ export const AddressCard = ({
         <Card
             elevation={3}
             sx={{
-                borderRadius: 12,
+                position: "relative",
+                isolation: "isolate",
+                borderRadius: 18,
                 overflow: "hidden",
-                transition: "0.2s",
-                background: "#ffffff",
-                color: "#0f172a",
+                transition: "0.25s",
+                background:
+                    "radial-gradient(circle at 18% 12%, rgba(126,87,255,0.2) 0%, transparent 30%), radial-gradient(circle at 85% 5%, rgba(255,72,160,0.18) 0%, transparent 25%), linear-gradient(185deg, #0d0a1f 0%, #0b081a 45%, #05040f 100%)",
+                color: "#f9fafb",
                 boxShadow:
-                    "0 0 0 1.5px rgba(255,255,255,0.1), 0 0 10px rgba(200,200,200,0.6), 0 10px 24px rgba(15,23,42,0.18), inset 0 0 0 1.5px rgba(210,210,210,0.7)",
-                border: "1.25px solid rgba(215,215,215,0.85)",
+                    "0 24px 68px rgba(0,0,0,0.78), 0 12px 28px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)",
+                border: "1px solid rgba(126,87,255,0.18)",
+                "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    inset: -6,
+                    borderRadius: "inherit",
+                    background: "linear-gradient(135deg, rgba(126,87,255,0.35), rgba(255,72,160,0.3))",
+                    filter: "blur(16px)",
+                    opacity: 0.32,
+                    zIndex: 0,
+                },
             }}
         >
             {/* HEADER */}
             <Box
                 sx={{
                     p: 3,
-                    background: bgGradient,
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
+                    background: `linear-gradient(135deg, rgba(24,18,46,0.92) 0%, rgba(14,10,32,0.95) 100%), ${bgGradient}`,
+                    borderBottom: "1px solid rgba(255,255,255,0.08)",
+                    color: "#f9fafb",
+                    boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.05)",
+                    position: "relative",
+                    zIndex: 1,
+                    backdropFilter: "blur(4px)",
                 }}
             >
                 <Box display="flex" justifyContent="space-between" alignItems="flex-start">
@@ -139,12 +156,13 @@ export const AddressCard = ({
                                 variant="h6"
                                 fontWeight="bold"
                                 sx={{
-                                    color: "#0f172a",
+                                    color: "#f9fafb",
                                     maxWidth: { xs: 150, sm: 200 },
                                     minWidth: 0,
                                     whiteSpace: showNameExpanded ? "normal" : "nowrap",
                                     textOverflow: showNameExpanded ? "clip" : "ellipsis",
                                     overflow: "hidden",
+                                    letterSpacing: "0.3px",
                                 }}
                                 title={walletName}
                             >
@@ -158,7 +176,13 @@ export const AddressCard = ({
                                         e.stopPropagation();
                                         setShowNameExpanded((prev) => !prev);
                                     }}
-                                    sx={{ color: "#2563eb", p: 0.25 }}
+                                    sx={{
+                                        color: "rgba(255,255,255,0.85)",
+                                        p: 0.25,
+                                        backgroundColor: "rgba(255,255,255,0.08)",
+                                        border: "1px solid rgba(255,255,255,0.12)",
+                                        "&:hover": { backgroundColor: "rgba(255,255,255,0.14)" },
+                                    }}
                                 >
                                     {showNameExpanded ? (
                                         <ExpandLess fontSize="small" />
@@ -173,8 +197,13 @@ export const AddressCard = ({
                                 label="6 chains"
                                 size="small"
                                 sx={{
-                                    backgroundColor: "rgba(16,185,129,0.15)",
-                                    color: "#0f5132",
+                                    background: "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05))",
+                                    color: "#f3f4f6",
+                                    border: "1px solid rgba(255,255,255,0.18)",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.35px",
+                                    backdropFilter: "blur(10px)",
+                                    boxShadow: "0 14px 32px rgba(0,0,0,0.45)",
                                 }}
                             />
                         </Box>
@@ -183,12 +212,13 @@ export const AddressCard = ({
                             <Typography
                                 component="code"
                                 sx={{
-                                    backgroundColor: "rgba(248,250,252,0.8)",
+                                    backgroundColor: "rgba(255,255,255,0.08)",
                                     px: 1,
                                     py: 0.5,
                                     borderRadius: 1,
                                     fontSize: "12px",
-                                    color: "#0f172a",
+                                    color: "#f9fafb",
+                                    border: "1px solid rgba(255,255,255,0.12)",
                                 }}
                             >
                                 {truncated}
@@ -201,6 +231,12 @@ export const AddressCard = ({
                                     e.stopPropagation();
                                     copyToClipboard(address, "Address");
                                 }}
+                                sx={{
+                                    color: "rgba(255,255,255,0.85)",
+                                    backgroundColor: "rgba(255,255,255,0.06)",
+                                    border: "1px solid rgba(255,255,255,0.12)",
+                                    "&:hover": { backgroundColor: "rgba(255,255,255,0.12)" },
+                                }}
                             >
                                 <ContentCopyIcon fontSize="inherit" />
                             </IconButton>
@@ -211,6 +247,12 @@ export const AddressCard = ({
                                 href={`https://etherscan.io/address/${address}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                sx={{
+                                    color: "rgba(255,255,255,0.85)",
+                                    backgroundColor: "rgba(255,255,255,0.06)",
+                                    border: "1px solid rgba(255,255,255,0.12)",
+                                    "&:hover": { backgroundColor: "rgba(255,255,255,0.12)" },
+                                }}
                             >
                                 <OpenInNewIcon fontSize="inherit" />
                             </IconButton>
@@ -224,8 +266,11 @@ export const AddressCard = ({
                         <IconButton
                             size="small"
                             sx={{
-                                color: "#b91c1c",
+                                color: "#f87171",
                                 mb: 1,
+                                backgroundColor: "rgba(248,113,113,0.1)",
+                                border: "1px solid rgba(248,113,113,0.35)",
+                                "&:hover": { backgroundColor: "rgba(248,113,113,0.18)" },
                             }}
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -236,9 +281,11 @@ export const AddressCard = ({
                         </IconButton>
 
                         <Typography variant="h5" fontWeight="bold">
-                            ${totalBalance.toFixed(2)}
+                            <Box component="span" sx={{ color: "#f9fafb" }}>
+                                ${totalBalance.toFixed(2)}
+                            </Box>
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{ color: "rgba(226,232,240,0.7)" }}>
                             Valor Total
                         </Typography>
                     </Box>
@@ -246,8 +293,24 @@ export const AddressCard = ({
             </Box>
 
             {/* LISTA DE CHAINS */}
-            <CardContent sx={{ p: 0 }}>
-                <List disablePadding>
+            <CardContent
+                sx={{
+                    p: 0,
+                    background: "rgba(8,8,18,0.9)",
+                    color: "#e5e7eb",
+                    backdropFilter: "blur(6px)",
+                    "& .MuiDivider-root": { borderColor: "rgba(255,255,255,0.08)" },
+                    "& .MuiTypography-root": { color: "#e5e7eb" },
+                    "& .MuiTypography-root.MuiTypography-caption": { color: "rgba(229,231,235,0.7)" },
+                    "& .MuiListItemButton-root": {
+                        "&:hover": { backgroundColor: "rgba(255,255,255,0.05)" },
+                    },
+                    "& .MuiListItem-root": {
+                        color: "#e5e7eb",
+                    },
+                }}
+            >
+                <List disablePadding sx={{ backgroundColor: "transparent" }}>
                     {/* Base */}
                     <Divider />
                     <BaseChainItem address={address}/>
@@ -269,8 +332,15 @@ export const AddressCard = ({
             </CardContent>
 
             {/* FOOTER */}
-            <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
-            <CardActions sx={{ p: 2, color: "#475569" }}>
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
+            <CardActions
+                sx={{
+                    p: 2,
+                    color: "#e5e7eb",
+                    backgroundColor: "rgba(8,8,18,0.9)",
+                    backdropFilter: "blur(6px)",
+                }}
+            >
                 <Button
                     fullWidth
                     variant="text"
@@ -279,15 +349,15 @@ export const AddressCard = ({
                             sx={{
                                 transform: showMore ? "rotate(180deg)" : "rotate(0deg)",
                                 transition: "0.2s",
-                                color: "#475569",
+                                color: "#cbd5e1",
                             }}
                         />
                     }
                     sx={{
                         textTransform: "none",
-                        color: "#475569",
+                        color: "#e5e7eb",
                         fontWeight: 700,
-                        "&:hover": { backgroundColor: "rgba(148,163,184,0.08)" },
+                        "&:hover": { backgroundColor: "rgba(255,255,255,0.06)" },
                     }}
                     onClick={() => setShowMore(!showMore)}
                 >

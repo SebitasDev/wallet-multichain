@@ -97,11 +97,15 @@ export default function Dashboard() {
                                     mx: "auto",
                                     px: { xs: 2, md: 4 },
                                     mt: 4,
-
                                     display: "flex",
-                                    flexWrap: "wrap",
+                                    flexWrap: { xs: "nowrap", md: "wrap" },
                                     gap: { xs: 2, md: 3 },
-                                    justifyContent: { xs: "center", md: "flex-start" },
+                                    justifyContent: { xs: "flex-start", md: "flex-start" },
+                                    overflowX: { xs: "auto", md: "visible" },
+                                    scrollSnapType: { xs: "x mandatory", md: "none" },
+                                    scrollPadding: { xs: 16, md: 0 },
+                                    WebkitOverflowScrolling: "touch",
+                                    pb: { xs: 2, md: 0 },
                                 }}
                             >
                                 {wallets.map(w => (
@@ -109,11 +113,13 @@ export default function Dashboard() {
                                         key={w.address}
                                         sx={{
                                             flex: {
-                                                xs: "1 1 100%",
-                                                sm: "1 1 calc(50% - 16px)",
+                                                xs: "0 0 82%",
+                                                sm: "0 0 68%",
                                                 md: "1 1 calc(33.33% - 16px)",
                                             },
                                             minWidth: 0,
+                                            scrollSnapAlign: { xs: "start", md: "unset" },
+                                            scrollSnapStop: { xs: "always", md: "unset" },
                                         }}
                                     >
                                         <AddressCard address={w.address} walletName={w.name} />
