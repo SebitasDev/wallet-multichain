@@ -6,12 +6,12 @@ const FACILITATOR_URL = "https://facilitator.ultravioletadao.xyz";
 const NETWORK_CONFIG: Record<string, { usdc: string; usdcName: string; usdcVersion: string }> = {
     "base": {
         usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-        usdcName: "USDC",
+        usdcName: "USD Coin",  // Nombre correcto del dominio EIP-712
         usdcVersion: "2"
     },
     "base-sepolia": {
         usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-        usdcName: "USDC",
+        usdcName: "USDC",  // Base Sepolia usa "USDC"
         usdcVersion: "2"
     }
 };
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         // Payment requirements que coinciden con lo que el cliente firmó
         const paymentRequirements = {
             scheme: "exact",
-            network: paymentNetwork,
+            network: "base",//paymentNetwork,
             maxAmountRequired: amount,
             resource: "https://facilitator.ultravioletadao.xyz",
             description: "x402 Payment",
