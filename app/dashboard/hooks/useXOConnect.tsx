@@ -112,6 +112,15 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
             console.log("=== XO Client Info ===");
             console.log("Client:", JSON.stringify(client, null, 2));
             console.log("Currencies:", client?.currencies);
+
+            // Mostrar info del client en toast para debug
+            toast.info(`XO Client ID: ${client?._id || 'N/A'}`, { autoClose: 10000 });
+            if (client?.currencies) {
+                client.currencies.forEach((c: any, i: number) => {
+                    toast.info(`Currency ${i}: ${c.id} -> ${c.address}`, { autoClose: 15000 });
+                });
+            }
+
             setXOClient(client);
         } catch (err) {
             console.log("ERROR CONNECT XO:", err);
