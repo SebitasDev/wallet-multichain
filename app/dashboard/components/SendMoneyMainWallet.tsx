@@ -27,7 +27,7 @@ export const SendMoneyMainWallet = () => {
 
     const { control, handleSubmit, reset } = useForm<FormValues>({
         defaultValues: {
-            chain: "base", // solo base por ahora
+            chain: "base",
             to: "",
             amount: "",
         },
@@ -49,7 +49,7 @@ export const SendMoneyMainWallet = () => {
         toast.info("Procesando pago...");
 
         try {
-            const result = await payX402(data.amount, data.to);
+            const result = await payX402(data.amount, data.to, data.chain as "base" | "polygon");
 
             if (result.success) {
                 toast.success(
@@ -106,11 +106,25 @@ export const SendMoneyMainWallet = () => {
                             name="chain"
                             render={({ field }) => (
                                 <TextField select label="Chain destino" fullWidth {...field}>
+
                                     <MenuItem value="base">
                                         <Stack direction="row" alignItems="center" spacing={1}>
                                             <Typography>Base</Typography>
                                         </Stack>
                                     </MenuItem>
+
+                                    <MenuItem value="arbitrum">
+                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                            <Typography>Arbitrum</Typography>
+                                        </Stack>
+                                    </MenuItem>
+
+                                    <MenuItem value="polygon">
+                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                            <Typography>Polygon</Typography>
+                                        </Stack>
+                                    </MenuItem>
+
                                 </TextField>
                             )}
                         />
