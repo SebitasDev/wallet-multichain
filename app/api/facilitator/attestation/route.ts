@@ -14,6 +14,12 @@ interface AttestationResponse {
     error?: string;
 }
 
+/**
+ * POST /api/facilitator/attestation
+ *
+ * Polls Circle's attestation service for CCTP cross-chain transfers.
+ * Returns attestation data when available, or "pending" status if not ready.
+ */
 export async function POST(request: NextRequest) {
     try {
         const body: AttestationRequest = await request.json();
@@ -27,13 +33,11 @@ export async function POST(request: NextRequest) {
             }, { status: 400 });
         }
 
-        console.log("Fetching attestation for:", transactionHash, "on domain:", networkConfig.domain);
-
         try {
             const result = await createRetrieveAttestation(
                 transactionHash,
                 networkConfig.domain.toString(),
-                30000 // 30 segundos timeout para polling
+                30000 // 30 second timeout
             );
 
             return NextResponse.json<AttestationResponse>({
@@ -42,15 +46,15 @@ export async function POST(request: NextRequest) {
                 attestation: result.attestation
             });
 
-        } catch (timeoutError) {
-            // Si hace timeout, significa que aún no está listo
+        } catch {
+            // Timeout means attestation not ready yet
             return NextResponse.json<AttestationResponse>({
                 status: "pending"
             });
         }
 
     } catch (error) {
-        console.error("Error fetching attestation:", error);
+        console.error("Attestation error:", error);
         return NextResponse.json<AttestationResponse>({
             status: "error",
             error: error instanceof Error ? error.message : "Unknown error"
