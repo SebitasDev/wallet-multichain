@@ -171,7 +171,7 @@ export const CrossChainTransferModal = () => {
     };
 
     const isCrossChain = watchSourceChain !== watchDestChain;
-    const fee = watchAmount ? getFee(watchAmount) : "0.00";
+    const fee = watchAmount ? getFee() : "0.00";
     const total = watchAmount ? getTotalWithFee(watchAmount) : "0.00";
 
     return (
