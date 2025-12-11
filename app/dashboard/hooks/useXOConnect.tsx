@@ -166,40 +166,105 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
 
             if (isUsingXO && xoProviderRef.current) {
                 // === CASO XO CONNECT ===
-                console.log("Firmando con XOConnect en Base Mainnet...");
-                console.log("XO Address:", address);
-                console.log("Network config:", networkConfig);
+                toast.info("Firmando con XOConnect en Base Mainnet...");
 
                 // Crear wallet client de viem usando el provider de XO
-                // Extender con publicActions para cumplir con el tipo SignerWallet de x402
                 const walletClient = createWalletClient({
                     chain: networkConfig.chain,
                     transport: custom(xoProviderRef.current),
                     account: address as `0x${string}`
                 }).extend(publicActions);
 
-                console.log("WalletClient account:", walletClient.account);
+                // Test: Firmar manualmente para verificar
+                const nonce = `0x${[...Array(64)].map(() => Math.floor(Math.random() * 16).toString(16)).join('')}` as `0x${string}`;
+                const validAfter = BigInt(Math.floor(Date.now() / 1000) - 600);
+                const validBefore = BigInt(Math.floor(Date.now() / 1000) + 300);
 
-                // Crear el payment header con x402 usando el wallet client de XO
-                paymentHeader = await createPaymentHeader(
-                    walletClient as any,
-                    1, // x402 version
-                    {
+                const testTypedData = {
+                    types: {
+                        TransferWithAuthorization: [
+                            { name: "from", type: "address" },
+                            { name: "to", type: "address" },
+                            { name: "value", type: "uint256" },
+                            { name: "validAfter", type: "uint256" },
+                            { name: "validBefore", type: "uint256" },
+                            { name: "nonce", type: "bytes32" },
+                        ],
+                    },
+                    primaryType: "TransferWithAuthorization" as const,
+                    domain: {
+                        name: networkConfig.usdcName,
+                        version: networkConfig.usdcVersion,
+                        chainId: networkConfig.chain.id,
+                        verifyingContract: networkConfig.usdc as `0x${string}`,
+                    },
+                    message: {
+                        from: address as `0x${string}`,
+                        to: recipientAddress as `0x${string}`,
+                        value: BigInt(amountInAtomicUnits),
+                        validAfter: validAfter,
+                        validBefore: validBefore,
+                        nonce: nonce,
+                    },
+                };
+
+                toast.info(`Firmando EIP-712... chainId: ${networkConfig.chain.id}`);
+
+                try {
+                    const signature = await walletClient.signTypedData(testTypedData);
+                    toast.success(`Firma obtenida: ${signature.slice(0, 20)}...`);
+
+                    // Verificar la firma localmente
+                    const { verifyTypedData } = await import("viem");
+                    const { createPublicClient, http } = await import("viem");
+                    const publicClient = createPublicClient({
+                        chain: networkConfig.chain,
+                        transport: http()
+                    });
+
+                    const isValidSig = await publicClient.verifyTypedData({
+                        address: address as `0x${string}`,
+                        ...testTypedData,
+                        signature,
+                    });
+
+                    toast.info(`Firma válida localmente: ${isValidSig ? "SÍ" : "NO"}`, { autoClose: 10000 });
+
+                    if (!isValidSig) {
+                        // Intentar recuperar el address de la firma
+                        const { recoverTypedDataAddress } = await import("viem");
+                        const recoveredAddress = await recoverTypedDataAddress({
+                            ...testTypedData,
+                            signature,
+                        });
+                        toast.error(`Recovered address: ${recoveredAddress}`, { autoClose: 15000 });
+                        toast.error(`Expected address: ${address}`, { autoClose: 15000 });
+                    }
+
+                    // Construir el payment header manualmente
+                    const paymentPayload = {
+                        x402Version: 1,
                         scheme: "exact",
                         network: networkConfig.network,
-                        maxAmountRequired: amountInAtomicUnits,
-                        resource: "https://facilitator.ultravioletadao.xyz",
-                        description: "x402 Payment",
-                        mimeType: "application/json",
-                        payTo: recipientAddress as `0x${string}`,
-                        maxTimeoutSeconds: 300,
-                        asset: networkConfig.usdc,
-                        extra: {
-                            name: networkConfig.usdcName,
-                            version: networkConfig.usdcVersion
-                        }
-                    }
-                );
+                        payload: {
+                            signature: signature,
+                            authorization: {
+                                from: address,
+                                to: recipientAddress,
+                                value: amountInAtomicUnits,
+                                validAfter: validAfter.toString(),
+                                validBefore: validBefore.toString(),
+                                nonce: nonce,
+                            },
+                        },
+                    };
+
+                    paymentHeader = btoa(JSON.stringify(paymentPayload));
+
+                } catch (signError: any) {
+                    toast.error(`Error firmando: ${signError.message}`);
+                    throw signError;
+                }
             } else {
                 // === CASO WALLET LOCAL ===
                 console.log("Firmando con wallet local en Base Sepolia...");
