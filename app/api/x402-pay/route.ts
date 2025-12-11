@@ -6,7 +6,7 @@ const FACILITATOR_URL = "https://facilitator.ultravioletadao.xyz";
 const NETWORK_CONFIG: Record<string, { usdc: string; usdcName: string; usdcVersion: string }> = {
     "base": {
         usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-        usdcName: "USD Coin",
+        usdcName: "USDC",
         usdcVersion: "2"
     },
     "base-sepolia": {
