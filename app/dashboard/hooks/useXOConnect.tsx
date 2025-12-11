@@ -113,13 +113,15 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
             console.log("Client:", JSON.stringify(client, null, 2));
             console.log("Currencies:", client?.currencies);
 
-            // Mostrar info del client en toast para debug
-            toast.info(`XO Client ID: ${client?._id || 'N/A'}`, { autoClose: 10000 });
-            if (client?.currencies) {
-                client.currencies.forEach((c: any, i: number) => {
-                    toast.info(`Currency ${i}: ${c.id} -> ${c.address}`, { autoClose: 15000 });
-                });
-            }
+            // Verificar si el address es un contrato o EOA
+            const { createPublicClient, http } = await import("viem");
+            const publicClient = createPublicClient({
+                chain: networkConfig.chain,
+                transport: http()
+            });
+            const bytecode = await publicClient.getCode({ address: addr as `0x${string}` });
+            const isContract = bytecode && bytecode !== "0x";
+            toast.info(`Address ${addr.slice(0, 10)}... es ${isContract ? "CONTRATO" : "EOA"}`, { autoClose: 10000 });
 
             setXOClient(client);
         } catch (err) {
