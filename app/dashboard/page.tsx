@@ -272,10 +272,26 @@ export default function Dashboard() {
 
                             <HeroBanner background={"var(--gradient-hero)"} />
 
-                            <Box sx={{ textAlign: "center", mt: 3, display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
-                                <GenerateWalletButton />
-                                <SendMoneyMainWallet />
-                                <CrossChainTransferModal />
+                            <Box
+                                sx={{
+                                    mt: 3,
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: 2,
+                                    flexWrap: "wrap",
+                                }}
+                            >
+                                <Box sx={{ flex: "0 0 auto" }}>
+                                    <GenerateWalletButton />
+                                </Box>
+                                <Box sx={{ flex: "0 0 auto" }}>
+                                    <SendMoneyMainWallet />
+                                </Box>
+                                <Box sx={{ flex: "0 0 auto" }}>
+                                    <CrossChainTransferModal />
+                                </Box>
                             </Box>
 
                             <Box
