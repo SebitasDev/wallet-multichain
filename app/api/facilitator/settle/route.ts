@@ -11,36 +11,37 @@ import { privateKeyToAccount } from "viem/accounts";
 import {
     FACILITATOR_NETWORKS,
     FacilitatorChainKey,
-    calculateFee,
-    FEE_RECIPIENT
+    calculateFee
 } from "@/app/facilitator/config";
 import { usdcErc3009Abi } from "@/app/facilitator/usdcErc3009Abi";
 import { tokenMessengerAbi } from "@/app/facilitator/cctpAbi";
-import { SettleCrossChainRequest, SettleDirectRequest, SettleResponse } from "@/app/facilitator/types";
+import { SettleResponse } from "@/app/facilitator/types";
 import { createRetrieveAttestation } from "@/app/cross-chain-core/retrieveAttestationFactory";
 import { Address } from "abitype";
 
-// Private key del facilitador (debe estar en .env)
 const FACILITATOR_PRIVATE_KEY = process.env.FACILITATOR_PRIVATE_KEY as `0x${string}`;
 
 if (!FACILITATOR_PRIVATE_KEY) {
     console.warn("WARNING: FACILITATOR_PRIVATE_KEY not set in environment");
 }
 
-// Helper para convertir address a bytes32 (para CCTP mintRecipient)
+/** Converts an address to bytes32 format for CCTP mintRecipient */
 const addressToBytes32 = (address: Address): `0x${string}` => {
     return padHex(address, { size: 32 });
 };
 
+/**
+ * POST /api/facilitator/settle
+ *
+ * Executes the payment settlement:
+ * 1. Calls transferWithAuthorization to move USDC from user to facilitator
+ * 2. For cross-chain: executes CCTP depositForBurn and waits for attestation
+ * 3. For same-chain: transfers USDC to final recipient
+ */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const { paymentPayload, sourceChain, crossChainConfig, amount, recipient } = body;
-
-        console.log("=== Facilitator Settle Request ===");
-        console.log("sourceChain:", sourceChain);
-        console.log("amount:", amount);
-        console.log("crossChainConfig:", crossChainConfig);
 
         if (!FACILITATOR_PRIVATE_KEY) {
             return NextResponse.json<SettleResponse>({
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
             }, { status: 500 });
         }
 
-        // Validar chain
+        // Validate source chain
         const networkConfig = FACILITATOR_NETWORKS[sourceChain as FacilitatorChainKey];
         if (!networkConfig) {
             return NextResponse.json<SettleResponse>({
@@ -60,10 +61,9 @@ export async function POST(request: NextRequest) {
 
         const { authorization, signature } = paymentPayload;
 
-        // Crear cuenta del facilitador
+        // Setup facilitator account and clients
         const facilitatorAccount = privateKeyToAccount(FACILITATOR_PRIVATE_KEY);
 
-        // Crear clientes
         const publicClient = createPublicClient({
             chain: networkConfig.chain,
             transport: http(networkConfig.rpcUrl)
@@ -75,16 +75,10 @@ export async function POST(request: NextRequest) {
             transport: http(networkConfig.rpcUrl)
         });
 
-        // Parsear la firma a v, r, s
+        // Parse signature to v, r, s components
         const { v, r, s } = parseSignature(signature);
 
-        console.log("Executing transferWithAuthorization...");
-        console.log("From:", authorization.from);
-        console.log("To:", authorization.to);
-        console.log("Value:", authorization.value);
-
-        // 1. Ejecutar transferWithAuthorization
-        // Esto mueve los USDC del usuario al facilitador
+        // Step 1: Execute transferWithAuthorization (user -> facilitator)
         const transferHash = await walletClient.writeContract({
             chain: networkConfig.chain,
             address: networkConfig.usdc,
@@ -92,7 +86,7 @@ export async function POST(request: NextRequest) {
             functionName: "transferWithAuthorization",
             args: [
                 authorization.from,
-                authorization.to, // Debe ser la dirección del facilitador
+                authorization.to,
                 BigInt(authorization.value),
                 BigInt(authorization.validAfter),
                 BigInt(authorization.validBefore),
@@ -103,9 +97,6 @@ export async function POST(request: NextRequest) {
             ]
         });
 
-        console.log("TransferWithAuthorization hash:", transferHash);
-
-        // Esperar confirmación
         const transferReceipt = await publicClient.waitForTransactionReceipt({
             hash: transferHash
         });
@@ -120,10 +111,8 @@ export async function POST(request: NextRequest) {
         const amountBigInt = BigInt(amount);
         const fee = calculateFee();
 
-        // Si es cross-chain, ejecutar CCTP
+        // Handle cross-chain transfer via CCTP
         if (crossChainConfig) {
-            console.log("Executing cross-chain transfer via CCTP...");
-
             const destNetworkConfig = FACILITATOR_NETWORKS[crossChainConfig.destinationChain as FacilitatorChainKey];
             if (!destNetworkConfig) {
                 return NextResponse.json<SettleResponse>({
@@ -132,7 +121,7 @@ export async function POST(request: NextRequest) {
                 }, { status: 400 });
             }
 
-            // 2. Aprobar USDC al TokenMessenger
+            // Step 2: Approve USDC to TokenMessenger
             const approveHash = await walletClient.writeContract({
                 chain: networkConfig.chain,
                 address: networkConfig.usdc,
@@ -142,18 +131,14 @@ export async function POST(request: NextRequest) {
             });
 
             await publicClient.waitForTransactionReceipt({ hash: approveHash });
-            console.log("Approve hash:", approveHash);
 
-            // 3. Ejecutar depositForBurn (CCTP)
+            // Step 3: Execute CCTP depositForBurn
             const mintRecipient = addressToBytes32(crossChainConfig.mintRecipient);
 
-            // maxFee debe ser menor que el amount - usar 1% del monto, máximo 0.005 USDC
+            // Calculate maxFee (1% of amount, max 0.005 USDC)
             const maxFee = amountBigInt > BigInt(100)
                 ? BigInt(Math.min(Number(amountBigInt) / 100, 5000))
                 : BigInt(0);
-
-            console.log("Amount for burn:", amountBigInt.toString());
-            console.log("Max fee:", maxFee.toString());
 
             const burnHash = await walletClient.writeContract({
                 chain: networkConfig.chain,
@@ -161,17 +146,15 @@ export async function POST(request: NextRequest) {
                 abi: tokenMessengerAbi,
                 functionName: "depositForBurn",
                 args: [
-                    amountBigInt, // Solo el monto neto, sin fee
+                    amountBigInt,
                     crossChainConfig.destinationDomain,
                     mintRecipient,
                     networkConfig.usdc,
-                    "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`, // destinationCaller (anyone can call)
-                    maxFee, // maxFee calculado dinámicamente
+                    "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`,
+                    maxFee,
                     1000 // minFinalityThreshold
                 ]
             });
-
-            console.log("DepositForBurn hash:", burnHash);
 
             const burnReceipt = await publicClient.waitForTransactionReceipt({
                 hash: burnHash
@@ -185,18 +168,16 @@ export async function POST(request: NextRequest) {
                 }, { status: 500 });
             }
 
-            // 4. Esperar attestation de Circle
-            console.log("Waiting for Circle attestation...");
+            // Step 4: Wait for Circle attestation
             let attestation;
             try {
                 attestation = await createRetrieveAttestation(
                     burnHash,
                     networkConfig.domain.toString(),
-                    120000 // 2 minutos timeout
+                    120000 // 2 min timeout
                 );
-            } catch (attestError) {
-                console.log("Attestation not ready yet, returning burn hash for polling");
-                // Devolver el hash del burn para que el cliente pueda hacer polling
+            } catch {
+                // Return burn hash for client polling if attestation not ready
                 return NextResponse.json<SettleResponse>({
                     success: true,
                     transactionHash: transferHash,
@@ -221,8 +202,7 @@ export async function POST(request: NextRequest) {
             });
 
         } else {
-            // Transfer directo (sin cross-chain)
-            // El dinero ya está en el facilitador, ahora transferir al destinatario final
+            // Same-chain transfer: send to final recipient
             if (recipient) {
                 const finalTransferHash = await walletClient.writeContract({
                     chain: networkConfig.chain,
@@ -233,7 +213,6 @@ export async function POST(request: NextRequest) {
                 });
 
                 await publicClient.waitForTransactionReceipt({ hash: finalTransferHash });
-                console.log("Final transfer hash:", finalTransferHash);
             }
 
             return NextResponse.json<SettleResponse>({
@@ -246,7 +225,7 @@ export async function POST(request: NextRequest) {
         }
 
     } catch (error) {
-        console.error("Error in settle:", error);
+        console.error("Settle error:", error);
         return NextResponse.json<SettleResponse>({
             success: false,
             errorReason: error instanceof Error ? error.message : "Unknown error"
