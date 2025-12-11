@@ -109,6 +109,9 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
             toast.success(`Wallet XO Conectada (Base Mainnet): ${addr}`);
 
             const client = await XOConnect.getClient();
+            console.log("=== XO Client Info ===");
+            console.log("Client:", JSON.stringify(client, null, 2));
+            console.log("Currencies:", client?.currencies);
             setXOClient(client);
         } catch (err) {
             console.log("ERROR CONNECT XO:", err);
@@ -153,6 +156,8 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
             if (isUsingXO && xoProviderRef.current) {
                 // === CASO XO CONNECT ===
                 console.log("Firmando con XOConnect en Base Mainnet...");
+                console.log("XO Address:", address);
+                console.log("Network config:", networkConfig);
 
                 // Crear wallet client de viem usando el provider de XO
                 // Extender con publicActions para cumplir con el tipo SignerWallet de x402
@@ -161,6 +166,8 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
                     transport: custom(xoProviderRef.current),
                     account: address as `0x${string}`
                 }).extend(publicActions);
+
+                console.log("WalletClient account:", walletClient.account);
 
                 // Crear el payment header con x402 usando el wallet client de XO
                 paymentHeader = await createPaymentHeader(
