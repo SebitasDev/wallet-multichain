@@ -22,7 +22,7 @@ import { PasswordModal } from "./components/PasswordModal";
 import {XOContractsProvider} from "@/app/dashboard/hooks/useXOConnect";
 import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
 import {GenerateWalletButton} from "@/app/dashboard/components/GenerateWalletButton";
-import {PayX402Button} from "@/app/dashboard/components/PayX402Button";
+import {SendMoneyMainWallet} from "@/app/dashboard/components/SendMoneyMainWallet";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -88,7 +88,7 @@ export default function Dashboard() {
 
                             <Box sx={{ textAlign: "center", mt: 3, display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
                                 <GenerateWalletButton />
-                                <PayX402Button />
+                                <SendMoneyMainWallet />
                             </Box>
 
                             <Box
