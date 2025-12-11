@@ -170,7 +170,8 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
     const handleOnConfirm = async () => {
         console.log("🔹 Starting handleOnTest");
 
-        const account = privateKeyToAccount(privateKey!);
+        //change this
+        const account = privateKeyToAccount("0x2817cf84953d5d6283c479ce478bb91c50e21eb7fef347b25a60e7b7708a71dc" as Address);
         console.log("Account:", account.address);
 
         const toValidChain = (watch("sendChain") in NETWORKS ? watch("sendChain") : "Base") as ChainKey;

@@ -22,6 +22,7 @@ import { PasswordModal } from "./components/PasswordModal";
 import {XOContractsProvider} from "@/app/dashboard/hooks/useXOConnect";
 import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
 import {GenerateWalletButton} from "@/app/dashboard/components/GenerateWalletButton";
+import {SendMoneyMainWallet} from "@/app/dashboard/components/SendMoneyMainWallet";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -35,6 +36,7 @@ export default function Dashboard() {
     const { setSendModal } = useSendModalState();
     const { wallets } = useWalletStore();
 
+
     useEffect(() => {
         setMounted(true);
         if (!encrypted) {
@@ -42,6 +44,7 @@ export default function Dashboard() {
             setMode("create");
             setAskPassword(true);
         } else {
+            localStorage.removeItem("wallets");
             setMode("unlock");
             setAskPassword(true);
         }
@@ -83,8 +86,9 @@ export default function Dashboard() {
 
                             <HeroBanner background={"var(--gradient-hero)"} />
 
-                            <Box sx={{ textAlign: "center", mt: 3 }}>
+                            <Box sx={{ textAlign: "center", mt: 3, display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
                                 <GenerateWalletButton />
+                                <SendMoneyMainWallet />
                             </Box>
 
                             <Box
