@@ -1,12 +1,11 @@
 import {encodePacked, Address, Hex, maxUint256} from "viem";
 import {signPermit} from "@/app/utils/permit";
-import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
 
 export const createPaymaster = {
     async getPaymasterData(
         usdcAddress: Address,
         account: any,
-        client: any
+        client: any,
     ): Promise<{
         paymaster: Address;
         paymasterData: Hex;
@@ -15,7 +14,7 @@ export const createPaymaster = {
         isFinal: boolean;
     }> {
 
-        const permitAmount = maxUint256//toUSDCBigInt(10000000);
+        const permitAmount = maxUint256;
 
         const permitSignature = await signPermit({
             tokenAddress: usdcAddress,

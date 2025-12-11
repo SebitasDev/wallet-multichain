@@ -25,5 +25,15 @@ export const usdcAbi = [
         name: "approve",
         outputs: [{ type: "bool" }],
         type: "function"
+    },
+    {
+        constant: true,
+        inputs: [
+            { name: "owner", type: "address" },
+            { name: "spender", type: "address" }
+        ],
+        name: "allowance",
+        outputs: [{ type: "uint256" }],
+        type: "function"
     }
 ];

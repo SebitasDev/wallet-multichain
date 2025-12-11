@@ -23,6 +23,7 @@ import {XOContractsProvider} from "@/app/dashboard/hooks/useXOConnect";
 import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
 import {GenerateWalletButton} from "@/app/dashboard/components/GenerateWalletButton";
 import {SendMoneyMainWallet} from "@/app/dashboard/components/SendMoneyMainWallet";
+import {CrossChainTransferModal} from "@/app/dashboard/components/CrossChainTransferModal";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -89,6 +90,7 @@ export default function Dashboard() {
                             <Box sx={{ textAlign: "center", mt: 3, display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
                                 <GenerateWalletButton />
                                 <SendMoneyMainWallet />
+                                <CrossChainTransferModal />
                             </Box>
 
                             <Box
