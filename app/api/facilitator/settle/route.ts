@@ -147,6 +147,14 @@ export async function POST(request: NextRequest) {
             // 3. Ejecutar depositForBurn (CCTP)
             const mintRecipient = addressToBytes32(crossChainConfig.mintRecipient);
 
+            // maxFee debe ser menor que el amount - usar 1% del monto, máximo 0.005 USDC
+            const maxFee = amountBigInt > BigInt(100)
+                ? BigInt(Math.min(Number(amountBigInt) / 100, 5000))
+                : BigInt(0);
+
+            console.log("Amount for burn:", amountBigInt.toString());
+            console.log("Max fee:", maxFee.toString());
+
             const burnHash = await walletClient.writeContract({
                 chain: networkConfig.chain,
                 address: networkConfig.tokenMessenger,
@@ -158,7 +166,7 @@ export async function POST(request: NextRequest) {
                     mintRecipient,
                     networkConfig.usdc,
                     "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`, // destinationCaller (anyone can call)
-                    BigInt(5000), // maxFee
+                    maxFee, // maxFee calculado dinámicamente
                     1000 // minFinalityThreshold
                 ]
             });

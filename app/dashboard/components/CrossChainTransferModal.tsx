@@ -58,7 +58,7 @@ export const CrossChainTransferModal = () => {
                     const { XOConnectProvider } = await import("xo-connect");
                     const xoProvider = new XOConnectProvider({
                         rpcs: { ["0x14a34"]: "https://base-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" },
-                        defaultChainId: "0x14a34" // Base Sepolia
+                        defaultChainId: "0x14a34"
                     });
                     await xoProvider.request({ method: "eth_requestAccounts" });
                     setProvider(xoProvider);
