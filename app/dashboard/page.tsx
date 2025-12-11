@@ -86,9 +86,39 @@ export default function Dashboard() {
 
                             <HeroBanner background={"var(--gradient-hero)"} />
 
-                            <Box sx={{ textAlign: "center", mt: 3, display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
-                                <GenerateWalletButton />
-                                <SendMoneyMainWallet />
+                            <Box
+                                sx={{
+                                    mt: 3,
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    flexWrap: "wrap",
+                                    gap: { xs: 1, sm: 1.25, md: 2 },
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    overflowX: "visible",
+                                    px: { xs: 2, md: 0 },
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        flex: { xs: "1 1 calc(50% - 12px)", sm: "0 0 auto" },
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        minWidth: 0,
+                                    }}
+                                >
+                                    <GenerateWalletButton />
+                                </Box>
+                                <Box
+                                    sx={{
+                                        flex: { xs: "1 1 calc(50% - 12px)", sm: "0 0 auto" },
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        minWidth: 0,
+                                    }}
+                                >
+                                    <SendMoneyMainWallet />
+                                </Box>
                             </Box>
 
                             <Box

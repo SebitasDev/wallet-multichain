@@ -116,12 +116,12 @@ export function WalletCard({ wallet }: Props) {
   return (
     <Card
       sx={{
-        minWidth: { xs: "92vw", sm: 360 },
-        maxWidth: 420,
+        minWidth: { xs: "78vw", sm: 320 },
+        maxWidth: 360,
         flex: "0 0 auto",
         display: "inline-flex",
-        mr: { xs: 2, sm: 2.5 },
-        mb: { xs: 2, sm: 2.5 },
+        mr: { xs: 1, sm: 1.75 },
+        mb: { xs: 1.8, sm: 2.5 },
         scrollSnapAlign: "start",
         scrollSnapStop: "always",
         position: "relative",

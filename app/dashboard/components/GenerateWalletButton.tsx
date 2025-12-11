@@ -73,15 +73,25 @@ export function GenerateWalletButton() {
                 onClick={openModal}
                 sx={{
                     textTransform: "none",
-                    borderRadius: 2,
-                    px: 3,
+                    borderRadius: 999,
+                    px: 3.4,
                     py: 1.5,
-                    fontWeight: 700,
-                    background: "linear-gradient(135deg, #0f7bff 0%, #0ac5a8 100%)",
-                    boxShadow: "0 10px 25px rgba(0,0,0,0.18)",
+                    minHeight: 50,
+                    fontWeight: 800,
+                    letterSpacing: "0.1px",
+                    background: "linear-gradient(135deg, #ff38d1 0%, #4f46ff 100%)",
+                    boxShadow: "0 10px 24px rgba(79,70,255,0.35)",
+                    whiteSpace: "nowrap",
+                    width: "100%",
+                    minWidth: 0,
+                    maxWidth: 240,
+                    "&:hover": {
+                        background: "linear-gradient(135deg, #ff4fe0 0%, #5b55ff 100%)",
+                        boxShadow: "0 12px 26px rgba(79,70,255,0.42)",
+                    },
                 }}
             >
-                Generar nueva address
+                Generar address
             </Button>
 
             {/* MODAL */}
@@ -172,11 +182,14 @@ export function GenerateWalletButton() {
                         onClick={handleCreate}
                         sx={{
                             textTransform: "none",
-                            borderRadius: 2,
-                            py: 1.4,
+                            borderRadius: 999,
+                            py: 1.2,
                             fontWeight: 800,
-                            background: "linear-gradient(135deg, #0f7bff 0%, #0ac5a8 100%)",
+                            background: "linear-gradient(135deg, #ff38d1 0%, #4f46ff 100%)",
                             "&:disabled": { opacity: 0.4 },
+                            "&:hover": {
+                                background: "linear-gradient(135deg, #ff4fe0 0%, #5b55ff 100%)",
+                            },
                         }}
                         disabled={!walletName || !password}
                     >
