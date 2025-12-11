@@ -201,6 +201,9 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
                 // Crear account de viem con la private key
                 const account = privateKeyToAccount(privateKey as `0x${string}`);
                 console.log("Wallet local address:", account.address);
+                console.log("mainWallet.address:", mainWallet.address);
+                console.log("¿Coinciden las direcciones?:", account.address.toLowerCase() === mainWallet.address?.toLowerCase());
+                console.log("Password usado para desencriptar:", password);
 
                 // Crear el payment header con x402 usando el account local
                 paymentHeader = await createPaymentHeader(
@@ -222,6 +225,16 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
                         }
                     }
                 );
+            }
+
+            // Decodificar y loggear el payment header para debug
+            try {
+                const decodedPayload = JSON.parse(atob(paymentHeader));
+                console.log("=== Payment Header Generado (Cliente) ===");
+                console.log("Decoded payload:", JSON.stringify(decodedPayload, null, 2));
+                console.log("From en la autorización:", decodedPayload.payload?.authorization?.from);
+            } catch (e) {
+                console.log("Error decodificando payment header:", e);
             }
 
             // Enviar al servidor para facilitar el pago
