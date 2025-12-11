@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode, createContext, useContext, useState, useEffect } from "react";
+import React, { ReactNode, createContext, useContext, useState, useEffect, useRef } from "react";
 import { useEmbedded } from "@/app/dashboard/hooks/embebed";
 import { toast } from "react-toastify";
 import { Wallet } from "ethers";
@@ -8,11 +8,37 @@ import { useMainWalletStore } from "@/app/store/useMainWalletStore";
 import { decryptPrivateKey, encryptPrivateKey, generateSalt } from "@/app/utils/cripto";
 import { createPaymentHeader } from "x402/client";
 import { privateKeyToAccount } from "viem/accounts";
+import { createWalletClient, custom } from "viem";
+import { base, baseSepolia } from "viem/chains";
+
+// Configuración de red y USDC
+const NETWORK_CONFIG = {
+    xo: {
+        network: "base" as const,
+        chain: base,
+        chainId: "0x2105", // 8453 en hex
+        rpcUrl: "https://mainnet.base.org",
+        usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        usdcName: "USD Coin",
+        usdcVersion: "2"
+    },
+    local: {
+        network: "base-sepolia" as const,
+        chain: baseSepolia,
+        chainId: "0x14a34", // 84532 en hex
+        rpcUrl: "https://sepolia.base.org",
+        usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        usdcName: "USDC",
+        usdcVersion: "2"
+    }
+};
 
 interface XOContractsContextType {
     connect: () => Promise<void>;
     address: string | null;
     client: any;
+    isUsingXO: boolean;
+    currentNetwork: typeof NETWORK_CONFIG.xo | typeof NETWORK_CONFIG.local;
     payX402: (amount: string, recipientAddress: string) => Promise<{ success: boolean; txHash?: string; error?: string }>;
 }
 
@@ -20,6 +46,8 @@ const XOContractsContext = createContext<XOContractsContextType | null>(null);
 
 export const XOContractsProvider = ({ children, password }: { children: ReactNode, password: string }) => {
     const [address, setAddress] = useState<string | null>(null);
+    const [isUsingXO, setIsUsingXO] = useState<boolean>(false);
+    const xoProviderRef = useRef<any>(null);
     const { isEmbedded } = useEmbedded();
     const mainWallet = useMainWalletStore((s) => s.mainWallet);
     const hydrated = useMainWalletStore((s) => s.hydrated);
@@ -58,12 +86,18 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
 
             if (!isEmbedded) throw new Error("No XO Embedded");
 
+            // Usar Base mainnet para XOConnect
+            const networkConfig = NETWORK_CONFIG.xo;
+
             const provider = new XOConnectProvider({
-                rpcs: { [chainId]: rpcUrl },
-                defaultChainId: chainId
+                rpcs: { [networkConfig.chainId]: networkConfig.rpcUrl },
+                defaultChainId: networkConfig.chainId
             });
 
             await provider.request({ method: "eth_requestAccounts" });
+
+            // Guardar el provider para usarlo después
+            xoProviderRef.current = provider;
 
             const ethersProvider = new BrowserProvider(provider);
             const signer = await ethersProvider.getSigner();
@@ -71,13 +105,15 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
 
             setAddress(addr);
             setXOWallet({ address: addr });
-            toast.success(`Wallet XO Conectada: ${addr}`);
+            setIsUsingXO(true);
+            toast.success(`Wallet XO Conectada (Base Mainnet): ${addr}`);
 
             const client = await XOConnect.getClient();
             setXOClient(client);
         } catch (err) {
             console.log("ERROR CONNECT XO:", err);
             toast.warning("No se pudo conectar a XO. Verificando wallet local...");
+            setIsUsingXO(false);
             await useLocalOrGenerate();
         }
     };
@@ -106,49 +142,86 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
 
     const payX402 = async (amount: string, recipientAddress: string): Promise<{ success: boolean; txHash?: string; error?: string }> => {
         try {
-            if (!mainWallet.encryptedPrivateKey || !mainWallet.salt || !mainWallet.iv) {
-                throw new Error("No hay wallet disponible");
-            }
-
-            // Desencriptar la private key
-            const privateKey = await decryptPrivateKey(
-                mainWallet.encryptedPrivateKey,
-                password,
-                mainWallet.salt,
-                mainWallet.iv
-            );
-
-            // Crear account de viem con la private key
-            const account = privateKeyToAccount(privateKey as `0x${string}`);
-
-            console.log(account.address)
+            // Seleccionar configuración de red según el tipo de wallet
+            const networkConfig = isUsingXO ? NETWORK_CONFIG.xo : NETWORK_CONFIG.local;
 
             // Convertir amount a unidades atómicas de USDC (6 decimales)
             const amountInAtomicUnits = (parseFloat(amount) * 1_000_000).toString();
 
-            // USDC en Base
-            const USDC_BASE = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+            let paymentHeader: string;
 
-            // Crear el payment header con x402 usando el account directamente
-            const paymentHeader = await createPaymentHeader(
-                account,
-                1, // x402 version
-                {
-                    scheme: "exact",
-                    network: "base-sepolia",
-                    maxAmountRequired: amountInAtomicUnits,
-                    resource: "https://x402-payment.local",
-                    description: "x402 Payment",
-                    mimeType: "application/json",
-                    payTo: recipientAddress as `0x${string}`,
-                    maxTimeoutSeconds: 300,
-                    asset: USDC_BASE,
-                    extra: {
-                        name: "USDC",
-                        version: "2"
+            if (isUsingXO && xoProviderRef.current) {
+                // === CASO XO CONNECT ===
+                console.log("Firmando con XOConnect en Base Mainnet...");
+
+                // Crear wallet client de viem usando el provider de XO
+                const walletClient = createWalletClient({
+                    chain: networkConfig.chain,
+                    transport: custom(xoProviderRef.current),
+                    account: address as `0x${string}`
+                });
+
+                // Crear el payment header con x402 usando el wallet client de XO
+                paymentHeader = await createPaymentHeader(
+                    walletClient,
+                    1, // x402 version
+                    {
+                        scheme: "exact",
+                        network: networkConfig.network,
+                        maxAmountRequired: amountInAtomicUnits,
+                        resource: "https://x402-payment.local",
+                        description: "x402 Payment",
+                        mimeType: "application/json",
+                        payTo: recipientAddress as `0x${string}`,
+                        maxTimeoutSeconds: 300,
+                        asset: networkConfig.usdc,
+                        extra: {
+                            name: networkConfig.usdcName,
+                            version: networkConfig.usdcVersion
+                        }
                     }
+                );
+            } else {
+                // === CASO WALLET LOCAL ===
+                console.log("Firmando con wallet local en Base Sepolia...");
+
+                if (!mainWallet.encryptedPrivateKey || !mainWallet.salt || !mainWallet.iv) {
+                    throw new Error("No hay wallet disponible");
                 }
-            );
+
+                // Desencriptar la private key
+                const privateKey = await decryptPrivateKey(
+                    mainWallet.encryptedPrivateKey,
+                    password,
+                    mainWallet.salt,
+                    mainWallet.iv
+                );
+
+                // Crear account de viem con la private key
+                const account = privateKeyToAccount(privateKey as `0x${string}`);
+                console.log("Wallet local address:", account.address);
+
+                // Crear el payment header con x402 usando el account local
+                paymentHeader = await createPaymentHeader(
+                    account,
+                    1, // x402 version
+                    {
+                        scheme: "exact",
+                        network: networkConfig.network,
+                        maxAmountRequired: amountInAtomicUnits,
+                        resource: "https://x402-payment.local",
+                        description: "x402 Payment",
+                        mimeType: "application/json",
+                        payTo: recipientAddress as `0x${string}`,
+                        maxTimeoutSeconds: 300,
+                        asset: networkConfig.usdc,
+                        extra: {
+                            name: networkConfig.usdcName,
+                            version: networkConfig.usdcVersion
+                        }
+                    }
+                );
+            }
 
             // Enviar al servidor para facilitar el pago
             const response = await fetch("/api/x402-pay", {
@@ -160,6 +233,7 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
                     paymentHeader,
                     recipientAddress,
                     amount: amountInAtomicUnits,
+                    network: networkConfig.network, // Enviar la red al servidor
                 }),
             });
 
@@ -190,12 +264,17 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
         connect();
     }, [hydrated, isEmbedded]);
 
+    // Obtener la configuración de red actual
+    const currentNetwork = isUsingXO ? NETWORK_CONFIG.xo : NETWORK_CONFIG.local;
+
     return (
         <XOContractsContext.Provider
             value={{
                 connect,
                 address,
                 client: useMainWalletStore.getState().xoClient,
+                isUsingXO,
+                currentNetwork,
                 payX402,
             }}
         >

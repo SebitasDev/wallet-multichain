@@ -1,17 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const FACILITATOR_URL = "https://x402.org/facilitator";
-const USDC_BASE = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+
+// Configuración de USDC por red
+const NETWORK_CONFIG: Record<string, { usdc: string; usdcName: string; usdcVersion: string }> = {
+    "base": {
+        usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        usdcName: "USD Coin",
+        usdcVersion: "2"
+    },
+    "base-sepolia": {
+        usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        usdcName: "USDC",
+        usdcVersion: "2"
+    }
+};
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { paymentHeader, recipientAddress, amount } = body;
+        const { paymentHeader, recipientAddress, amount, network } = body;
 
         console.log("=== x402 Payment Request ===");
         console.log("paymentHeader:", paymentHeader);
         console.log("recipientAddress:", recipientAddress);
         console.log("amount:", amount);
+        console.log("network:", network);
 
         if (!paymentHeader || !recipientAddress || !amount) {
             return NextResponse.json(
@@ -33,20 +47,34 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Usar la red del payload o la enviada por el cliente, con fallback a base-sepolia
+        const paymentNetwork = paymentPayload.network || network || "base-sepolia";
+        const networkConfig = NETWORK_CONFIG[paymentNetwork];
+
+        if (!networkConfig) {
+            return NextResponse.json(
+                { error: `Unsupported network: ${paymentNetwork}` },
+                { status: 400 }
+            );
+        }
+
+        console.log(`Using network: ${paymentNetwork}`);
+        console.log(`USDC address: ${networkConfig.usdc}`);
+
         // Payment requirements que coinciden con lo que el cliente firmó
         const paymentRequirements = {
             scheme: "exact",
-            network: "base-sepolia",
+            network: paymentNetwork,
             maxAmountRequired: amount,
             resource: "https://x402-payment.local",
             description: "x402 Payment",
             mimeType: "application/json",
             payTo: recipientAddress,
             maxTimeoutSeconds: 300,
-            asset: USDC_BASE,
+            asset: networkConfig.usdc,
             extra: {
-                name: "USDC",
-                version: "2"
+                name: networkConfig.usdcName,
+                version: networkConfig.usdcVersion
             }
         };
 
