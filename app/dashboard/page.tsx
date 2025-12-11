@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 
 import "react-toastify/dist/ReactToastify.css";
 
-import { TopBar } from "./components/TopBar";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
 import { SendMoneyModal } from "./components/SendMoneyModal";
 import { ReceiveModal } from "./components/ReceiveModal";
+import SendIcon from "@mui/icons-material/Send";
+import DownloadIcon from "@mui/icons-material/Download";
+import AddIcon from "@mui/icons-material/Add";
 
 import { AddressCard } from "./components/AddressCard";
 import { useSendModalState } from "@/app/dashboard/store/useSendModalState";
@@ -66,23 +68,206 @@ export default function Dashboard() {
                 <EmbeddedProvider>
                     <XOContractsProvider password={currentPassword!}>
                         <>
-                            <TopBar
-                                onAdd={() => openAdd()}
-                                onSend={() => {
-                                    if (!wallets[0]) {
-                                        toast.error("Primero agrega una wallet de origen.");
-                                        return;
-                                    }
-                                    setSendModal(true);
+                            <Box
+                                sx={{
+                                    maxWidth: 1200,
+                                    width: "100%",
+                                    mx: "auto",
+                                    display: "flex",
+                                    flexDirection: { xs: "column", sm: "row" },
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    gap: { xs: 2.5, sm: 3 },
+                                    px: { xs: 3, md: 4 },
+                                    py: { xs: 2.5, md: 3 },
+                                    borderRadius: { xs: 3, md: "5rem" },
+                                    background: "rgba(15, 18, 40, 0.6)",
+                                    backdropFilter: "blur(20px)",
+                                    border: "1px solid rgba(255,255,255,0.05)",
                                 }}
-                                onReceive={() => {
-                                    if (!wallets.length) {
-                                        toast.error("Primero agrega una wallet.");
-                                        return;
-                                    }
-                                    openReceive();
-                                }}
-                            />
+                            >
+                                <Stack
+                                    spacing={1}
+                                    sx={{
+                                        alignItems: { xs: "center", sm: "flex-start" },
+                                        textAlign: { xs: "center", sm: "left" },
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            width: 54,
+                                            height: 54,
+                                            borderRadius: "50%",
+                                            background: "linear-gradient(135deg, #5d2de9, #32d3ff)",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            color: "#fff",
+                                            fontWeight: 800,
+                                            letterSpacing: 0.2,
+                                        }}
+                                    >
+                                        M
+                                    </Box>
+                                    <Typography
+                                        variant="h6"
+                                        sx={{ fontWeight: 700, color: "#fff", letterSpacing: 0.2 }}
+                                    >
+                                        MultiChain Wallet
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{ color: "rgba(255,255,255,0.75)", maxWidth: 460 }}
+                                    >
+                                        Gestiona todas tus wallets y chains desde un solo lugar.
+                                    </Typography>
+                                    <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent={{ xs: "center", sm: "flex-start" }}>
+                                        {["6 chains", "3 wallets hijas", "Solo USDC"].map((chip) => (
+                                            <Box
+                                                key={chip}
+                                                sx={{
+                                                    background: "rgba(255,255,255,0.08)",
+                                                    color: "#fff",
+                                                    borderRadius: "999px",
+                                                    fontSize: 12,
+                                                    px: 1.5,
+                                                    py: 0.5,
+                                                }}
+                                            >
+                                                {chip}
+                                            </Box>
+                                        ))}
+                                    </Stack>
+                                </Stack>
+
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: "16px",
+                                        width: { xs: "100%", sm: "auto" },
+                                        flexWrap: "wrap",
+                                        rowGap: 1.5,
+                                    }}
+                                >
+                                    <Button
+                                        onClick={() => {
+                                            if (!wallets[0]) {
+                                                toast.error("Primero agrega una wallet de origen.");
+                                                return;
+                                            }
+                                            setSendModal(true);
+                                        }}
+                                        sx={{
+                                            width: 90,
+                                            minWidth: 90,
+                                            maxWidth: 90,
+                                            height: 90,
+                                            borderRadius: 18,
+                                            backgroundColor: "#252525",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            gap: 0.75,
+                                            textTransform: "none",
+                                            boxShadow: "none",
+                                            border: "none",
+                                            color: "#ffffff",
+                                            "&:hover": { backgroundColor: "#303030" },
+                                            "&:active": { backgroundColor: "#383838" },
+                                        }}
+                                    >
+                                        <SendIcon sx={{ fontSize: 26, color: "#BFBFBF" }} />
+                                        <Typography
+                                            sx={{
+                                                fontSize: 14,
+                                                fontWeight: 500,
+                                                color: "#ffffff",
+                                                textAlign: "center",
+                                            }}
+                                        >
+                                            Enviar
+                                        </Typography>
+                                    </Button>
+                                    <Button
+                                        onClick={() => {
+                                            if (!wallets.length) {
+                                                toast.error("Primero agrega una wallet.");
+                                                return;
+                                            }
+                                            openReceive();
+                                        }}
+                                        sx={{
+                                            width: 90,
+                                            minWidth: 90,
+                                            maxWidth: 90,
+                                            height: 90,
+                                            borderRadius: 18,
+                                            backgroundColor: "#252525",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            gap: 0.75,
+                                            textTransform: "none",
+                                            boxShadow: "none",
+                                            border: "none",
+                                            color: "#ffffff",
+                                            "&:hover": { backgroundColor: "#303030" },
+                                            "&:active": { backgroundColor: "#383838" },
+                                        }}
+                                    >
+                                        <DownloadIcon sx={{ fontSize: 26, color: "#BFBFBF" }} />
+                                        <Typography
+                                            sx={{
+                                                fontSize: 14,
+                                                fontWeight: 500,
+                                                color: "#ffffff",
+                                                textAlign: "center",
+                                            }}
+                                        >
+                                            Recibir
+                                        </Typography>
+                                    </Button>
+                                    <Button
+                                        onClick={() => openAdd()}
+                                        sx={{
+                                            width: 90,
+                                            minWidth: 90,
+                                            maxWidth: 90,
+                                            height: 90,
+                                            borderRadius: 18,
+                                            backgroundColor: "#252525",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            gap: 0.75,
+                                            textTransform: "none",
+                                            boxShadow: "none",
+                                            border: "none",
+                                            color: "#ffffff",
+                                            "&:hover": { backgroundColor: "#303030" },
+                                            "&:active": { backgroundColor: "#383838" },
+                                        }}
+                                    >
+                                        <AddIcon sx={{ fontSize: 26, color: "#BFBFBF" }} />
+                                        <Typography
+                                            sx={{
+                                                fontSize: 14,
+                                                fontWeight: 500,
+                                                color: "#ffffff",
+                                                textAlign: "center",
+                                            }}
+                                        >
+                                            Agregar Address
+                                        </Typography>
+                                    </Button>
+                                </Box>
+                            </Box>
 
                             <HeroBanner background={"var(--gradient-hero)"} />
 
@@ -125,16 +310,17 @@ export default function Dashboard() {
                                 sx={{
                                     maxWidth: 1200,
                                     mx: "auto",
-                                    px: { xs: 2, md: 4 },
+                                    px: { xs: 2, md: 3 },
                                     mt: 4,
                                     display: "flex",
                                     flexWrap: { xs: "nowrap", md: "wrap" },
                                     gap: { xs: 2, md: 3 },
                                     justifyContent: { xs: "flex-start", md: "flex-start" },
                                     overflowX: { xs: "auto", md: "visible" },
-                                    scrollSnapType: { xs: "x mandatory", md: "none" },
-                                    scrollPadding: { xs: 16, md: 0 },
+                                    scrollSnapType: "x mandatory",
+                                    scrollPadding: { xs: 16, md: 24 },
                                     WebkitOverflowScrolling: "touch",
+                                    "&::-webkit-scrollbar": { display: "none" },
                                     pb: { xs: 2, md: 0 },
                                 }}
                             >
@@ -148,7 +334,7 @@ export default function Dashboard() {
                                                 md: "1 1 calc(33.33% - 16px)",
                                             },
                                             minWidth: 0,
-                                            scrollSnapAlign: { xs: "start", md: "unset" },
+                                            scrollSnapAlign: "start",
                                             scrollSnapStop: { xs: "always", md: "unset" },
                                         }}
                                     >

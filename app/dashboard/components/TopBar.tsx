@@ -15,22 +15,25 @@ export function TopBar({ onAdd, onSend, onReceive }: Props) {
   return (
     <Box
       sx={{
-        display: "flex",
-        alignItems: { xs: "center", sm: "center" },
-        justifyContent: "space-between",
-        gap: 2.5,
-        flexWrap: "wrap",
-        width: "100vw",
-        mx: "calc(50% - 50vw)",
-        px: { xs: 2.4, md: 4 },
-        py: { xs: 1.8, md: 2 },
-        borderRadius: 0,
-        mb: { xs: 2.5, md: 3 },
+        maxWidth: 1200,
+        width: "100%",
+        mx: "auto",
+        px: { xs: 2.4, md: 3.4 },
+        py: { xs: 2, md: 2.5 },
+        mb: { xs: 2.5, md: 3.5 },
+        borderRadius: 20,
         background:
-          "radial-gradient(circle at 12% 20%, rgba(59,130,246,0.22), transparent 32%), radial-gradient(circle at 82% 16%, rgba(14,165,233,0.18), transparent 30%), linear-gradient(120deg, #0b1220, #10192f)",
-        border: "none",
-        boxShadow: "none",
+          "radial-gradient(circle at 16% 18%, rgba(109,40,217,0.18) 0%, transparent 32%), radial-gradient(circle at 82% 0%, rgba(59,130,246,0.18) 0%, transparent 26%), linear-gradient(130deg, rgba(10,10,24,0.92), rgba(12,12,28,0.88))",
+        border: "1px solid rgba(255,255,255,0.08)",
+        boxShadow:
+          "0 28px 72px rgba(0,0,0,0.55), 0 16px 36px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.08)",
         color: "#fff",
+        backdropFilter: "blur(12px)",
+        display: "flex",
+        alignItems: { xs: "flex-start", sm: "center" },
+        justifyContent: "space-between",
+        gap: { xs: 2, md: 3 },
+        flexWrap: "wrap",
         overflow: "hidden",
       }}
     >
@@ -39,8 +42,8 @@ export function TopBar({ onAdd, onSend, onReceive }: Props) {
         alignItems="center"
         spacing={{ xs: 0.85, sm: 1.5 }}
         sx={{
-          flex: { xs: "0 0 auto", sm: 1 },
-          minWidth: 240,
+          flex: { xs: "1 1 100%", sm: 1 },
+          minWidth: 260,
           justifyContent: "flex-start",
           textAlign: "left",
           flexWrap: "nowrap",
@@ -50,38 +53,60 @@ export function TopBar({ onAdd, onSend, onReceive }: Props) {
           sx={{
             width: 48,
             height: 48,
-          borderRadius: 16,
-            background: "linear-gradient(145deg, #0ea5e9 0%, #6366f1 100%)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#fff",
-          fontWeight: 800,
-          boxShadow: "0 12px 26px rgba(0,0,0,0.28)",
-          fontSize: 17,
+            borderRadius: 16,
+            background: "linear-gradient(150deg, #5b21b6 0%, #4338ca 50%, #22d3ee 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            fontWeight: 800,
+            boxShadow: "0 16px 32px rgba(0,0,0,0.35)",
+            fontSize: 18,
           }}
         >
           M
         </Box>
-        <Box sx={{ ml: { xs: 0.5, sm: 0.75 } }}>
-          <Typography fontWeight={900} fontSize={18} sx={{ color: "#fff" }}>
+        <Box sx={{ ml: { xs: 0.75, sm: 1 }, minWidth: 0 }}>
+          <Typography fontWeight={700} fontSize={20} sx={{ color: "#f8fafc", letterSpacing: 0.2 }}>
             MultiChain Wallet
           </Typography>
-          <Typography variant="body2" sx={{ fontSize: 12.5, color: "rgba(255,255,255,0.8)" }}>
-            Gestiona todas tus addresses en un solo lugar
+          <Typography variant="body2" sx={{ fontSize: 13.5, color: "rgba(226,232,240,0.78)" }}>
+            Gestiona todas tus wallets y chains desde un solo lugar.
           </Typography>
+          <Stack direction="row" spacing={1} mt={1.2} flexWrap="wrap" useFlexGap>
+            {["6 chains", "3 wallets hijas", "Solo USDC"].map((item) => (
+              <Box
+                key={item}
+                sx={{
+                  px: 1.2,
+                  py: 0.35,
+                  borderRadius: 999,
+                  backgroundColor: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "rgba(226,232,240,0.9)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: 0.2,
+                  lineHeight: 1.2,
+                }}
+              >
+                {item}
+              </Box>
+            ))}
+          </Stack>
         </Box>
       </Stack>
 
       <Stack
         direction="row"
-        spacing={1.5}
         sx={{
-          width: { xs: "100%", sm: "auto" },
-          justifyContent: { xs: "center", sm: "flex-end" },
+          width: "100%",
+          justifyContent: "center",
           alignItems: "center",
-          flexWrap: { xs: "wrap", sm: "nowrap" },
-          rowGap: 1,
+          flexWrap: "wrap",
+          gap: "20px",
+          mt: 2.5,
+          py: 1.25,
         }}
       >
         {[{ icon: <SendIcon />, label: "Enviar", action: onSend },
@@ -93,33 +118,35 @@ export function TopBar({ onAdd, onSend, onReceive }: Props) {
             onClick={btn.action}
             sx={{
               textTransform: "none",
-              px: 2.6,
-              py: 1.05,
-              borderRadius: 1.75,
-              fontWeight: 800,
+              width: 88,
+              minWidth: 88,
+              maxWidth: 88,
+              height: 88,
+              borderRadius: 18,
+              p: 0,
+              fontWeight: 500,
+              fontSize: 13,
               letterSpacing: 0.1,
-              border: btn.label === "Enviar" ? "none" : "1px solid rgba(255,255,255,0.14)",
-              color: btn.label === "Enviar" ? "#0b1224" : "#e2e8f0",
-              background:
-                btn.label === "Enviar"
-                  ? "linear-gradient(135deg, #38bdf8 0%, #60a5fa 50%, #7c3aed 100%)"
-                  : "rgba(255,255,255,0.07)",
-              boxShadow:
-                btn.label === "Enviar"
-                  ? "0 14px 28px rgba(96,165,250,0.30)"
-                  : "0 10px 22px rgba(0,0,0,0.22)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1,
+              backgroundColor: "#1c1d22",
+              border: "1px solid transparent",
+              color: "#e5e5e5",
+              boxShadow: "none",
               "& .MuiButton-startIcon": {
-                color: btn.label === "Enviar" ? "#0b1224" : "#e2e8f0",
+                margin: 0,
+                color: "#c9c9c9",
+                "& svg": { fontSize: 26 },
+              },
+              "&:focus-visible": {
+                outline: "2px solid rgba(255,255,255,0.08)",
+                outlineOffset: 1.5,
               },
               "&:hover": {
-                background:
-                  btn.label === "Enviar"
-                    ? "linear-gradient(135deg, #60a5fa 0%, #7c3aed 60%, #a855f7 100%)"
-                    : "rgba(255,255,255,0.12)",
-                boxShadow:
-                  btn.label === "Enviar"
-                    ? "0 16px 32px rgba(96,165,250,0.35)"
-                    : "0 12px 24px rgba(0,0,0,0.24)",
+                backgroundColor: "#26272c",
               },
             }}
           >
