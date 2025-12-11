@@ -26,55 +26,58 @@ import {
 } from "@/app/facilitator/types";
 import { Address } from "abitype";
 
-// Dirección del facilitador (debe coincidir con la del backend)
 const FACILITATOR_ADDRESS = process.env.NEXT_PUBLIC_FACILITATOR_ADDRESS as Address;
 
+const LOG_PREFIX = "[Facilitator]";
+
 interface UseFacilitatorOptions {
-    // Provider de XO o cualquier otro wallet
+    /** External wallet provider (XO, MetaMask, etc.) */
     provider?: any;
-    // Private key para wallet local (alternativa a provider)
+    /** Local private key for signing (alternative to provider) */
     privateKey?: `0x${string}`;
-    // Dirección del usuario
+    /** User's wallet address */
     userAddress: Address;
 }
 
 interface TransferParams {
-    amount: string; // En USDC (ej: "10.50")
+    /** Amount in USDC (e.g., "10.50") */
+    amount: string;
+    /** Source chain for the transfer */
     sourceChain: FacilitatorChainKey;
-    // Para transfer directo
+    /** Recipient address (for same-chain transfers) */
     recipient?: Address;
-    // Para cross-chain
+    /** Cross-chain configuration (for CCTP transfers) */
     crossChainConfig?: CrossChainConfig;
 }
 
+/**
+ * Hook for facilitator-based USDC transfers.
+ * Supports both same-chain and cross-chain (CCTP) transfers.
+ */
 export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilitatorOptions) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Generar nonce aleatorio para ERC-3009
+    /** Generates a random nonce for ERC-3009 authorization */
     const generateNonce = (): `0x${string}` => {
         const randomBytes = new Uint8Array(32);
         crypto.getRandomValues(randomBytes);
         return keccak256(toHex(randomBytes));
     };
 
-    // Crear payload de autorización firmado
+    /** Creates and signs an ERC-3009 authorization payload */
     const createAuthorizationPayload = useCallback(async (
         amount: bigint,
         sourceChain: FacilitatorChainKey
     ): Promise<FacilitatorPaymentPayload> => {
         const networkConfig = FACILITATOR_NETWORKS[sourceChain];
-
-        // Calcular total con fee
         const totalAmount = calculateTotalWithFee(amount);
 
-        // Crear cliente público
         const publicClient = createPublicClient({
             chain: networkConfig.chain,
             transport: http(networkConfig.rpcUrl)
         });
 
-        // Obtener info del contrato para EIP-712
         const usdcContract = getContract({
             address: networkConfig.usdc,
             abi: usdcErc3009Abi,
@@ -86,10 +89,9 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
             usdcContract.read.version()
         ]);
 
-        // Preparar datos de autorización
         const nonce = generateNonce();
-        const validAfter = BigInt(0); // Válido inmediatamente
-        const validBefore = BigInt(Math.floor(Date.now() / 1000) + 3600); // Válido por 1 hora
+        const validAfter = BigInt(0);
+        const validBefore = BigInt(Math.floor(Date.now() / 1000) + 3600);
 
         const authorization = {
             from: userAddress,
@@ -100,7 +102,6 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
             nonce
         };
 
-        // Dominio EIP-712
         const domain = {
             name: usdcName as string,
             version: usdcVersion as string,
@@ -108,7 +109,6 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
             verifyingContract: networkConfig.usdc
         };
 
-        // Mensaje a firmar
         const message = {
             from: userAddress,
             to: FACILITATOR_ADDRESS,
@@ -118,20 +118,17 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
             nonce
         };
 
+        console.log(LOG_PREFIX, "Creating ERC-3009 authorization", {
+            from: userAddress,
+            to: FACILITATOR_ADDRESS,
+            amount: totalAmount.toString(),
+            chain: sourceChain
+        });
+
         let signature: `0x${string}`;
 
-        console.log("=== CREANDO FIRMA ERC-3009 ===");
-        console.log("Usuario (from):", userAddress);
-        console.log("Facilitador (to):", FACILITATOR_ADDRESS);
-        console.log("Monto total (con fee):", totalAmount.toString());
-        console.log("Nonce:", nonce);
-        console.log("Valid After:", validAfter.toString());
-        console.log("Valid Before:", validBefore.toString());
-        console.log("Domain:", domain);
-
         if (provider) {
-            // Usar provider externo (XO, MetaMask, etc.)
-            console.log(">>> Firmando con PROVIDER (XO/MetaMask)...");
+            console.log(LOG_PREFIX, "Signing with external provider");
             const walletClient = createWalletClient({
                 chain: networkConfig.chain,
                 transport: custom(provider),
@@ -144,10 +141,8 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
                 primaryType: "TransferWithAuthorization",
                 message
             });
-            console.log(">>> Firma obtenida con provider:", signature);
         } else if (privateKey) {
-            // Usar private key local (solo para firmar, NO se envía al servidor)
-            console.log(">>> Firmando con PRIVATE KEY local...");
+            console.log(LOG_PREFIX, "Signing with local key");
             const account = privateKeyToAccount(privateKey);
             const walletClient = createWalletClient({
                 account,
@@ -161,22 +156,16 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
                 primaryType: "TransferWithAuthorization",
                 message
             });
-            console.log(">>> Firma obtenida con private key:", signature);
         } else {
             throw new Error("No provider or private key provided");
         }
 
-        console.log("=== FIRMA COMPLETADA ===");
-        console.log("Signature:", signature);
-        console.log("Authorization payload:", authorization);
+        console.log(LOG_PREFIX, "Authorization signed successfully");
 
-        return {
-            authorization,
-            signature
-        };
+        return { authorization, signature };
     }, [provider, privateKey, userAddress]);
 
-    // Verificar el pago con el facilitador
+    /** Verifies payment authorization with the facilitator API */
     const verify = useCallback(async (
         paymentPayload: FacilitatorPaymentPayload,
         sourceChain: FacilitatorChainKey,
@@ -195,7 +184,7 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         return response.json();
     }, []);
 
-    // Liquidar el pago (ejecutar transfer + CCTP si aplica)
+    /** Settles the payment (executes transfer + CCTP if cross-chain) */
     const settle = useCallback(async (
         paymentPayload: FacilitatorPaymentPayload,
         sourceChain: FacilitatorChainKey,
@@ -218,7 +207,7 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         return response.json();
     }, []);
 
-    // Función principal: ejecutar transfer completo
+    /** Executes a complete transfer (sign → verify → settle) */
     const transfer = useCallback(async ({
         amount,
         sourceChain,
@@ -228,30 +217,31 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         setIsLoading(true);
         setError(null);
 
+        const transferType = crossChainConfig ? "cross-chain" : "direct";
+        console.log(LOG_PREFIX, `Starting ${transferType} transfer`, {
+            amount,
+            sourceChain,
+            destination: crossChainConfig?.destinationChain || sourceChain
+        });
+
         try {
-            // Convertir amount a unidades atómicas (6 decimales)
             const amountAtomic = BigInt(Math.floor(parseFloat(amount) * 1_000_000));
             const amountAtomicStr = amountAtomic.toString();
 
-            console.log("Creating authorization payload...");
-            console.log("Amount (atomic):", amountAtomicStr);
-            console.log("Source chain:", sourceChain);
-
-            // 1. Crear y firmar autorización
+            // Step 1: Create and sign authorization
+            console.log(LOG_PREFIX, "Step 1/3: Creating authorization");
             const paymentPayload = await createAuthorizationPayload(amountAtomic, sourceChain);
-            console.log("Authorization payload created");
 
-            // 2. Verificar
-            console.log("Verifying payment...");
+            // Step 2: Verify with facilitator
+            console.log(LOG_PREFIX, "Step 2/3: Verifying payment");
             const verifyResult = await verify(paymentPayload, sourceChain, amountAtomicStr);
 
             if (!verifyResult.isValid) {
                 throw new Error(verifyResult.invalidReason || "Verification failed");
             }
-            console.log("Payment verified:", verifyResult);
 
-            // 3. Liquidar
-            console.log("Settling payment...");
+            // Step 3: Settle payment
+            console.log(LOG_PREFIX, "Step 3/3: Settling payment");
             const settleResult = await settle(
                 paymentPayload,
                 sourceChain,
@@ -264,11 +254,16 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
                 throw new Error(settleResult.errorReason || "Settlement failed");
             }
 
-            console.log("Payment settled:", settleResult);
+            console.log(LOG_PREFIX, "Transfer completed", {
+                txHash: settleResult.transactionHash,
+                burnTxHash: settleResult.burnTransactionHash
+            });
+
             return settleResult;
 
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Unknown error";
+            console.error(LOG_PREFIX, "Transfer failed:", errorMessage);
             setError(errorMessage);
             return {
                 success: false,
@@ -279,7 +274,7 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         }
     }, [createAuthorizationPayload, verify, settle]);
 
-    // Transfer directo (misma chain)
+    /** Same-chain USDC transfer */
     const transferDirect = useCallback(async (
         amount: string,
         sourceChain: FacilitatorChainKey,
@@ -288,7 +283,7 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         return transfer({ amount, sourceChain, recipient });
     }, [transfer]);
 
-    // Transfer cross-chain via CCTP
+    /** Cross-chain USDC transfer via CCTP */
     const transferCrossChain = useCallback(async (
         amount: string,
         sourceChain: FacilitatorChainKey,
@@ -307,14 +302,13 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         });
     }, [transfer]);
 
-    // Helper para obtener el fee
-    const getFee = useCallback((amount: string): string => {
-        const amountAtomic = BigInt(Math.floor(parseFloat(amount) * 1_000_000));
+    /** Returns the facilitator fee in USDC */
+    const getFee = useCallback((): string => {
         const fee = calculateFee();
         return (Number(fee) / 1_000_000).toFixed(2);
     }, []);
 
-    // Helper para obtener el total con fee
+    /** Returns the total amount including fee */
     const getTotalWithFee = useCallback((amount: string): string => {
         const amountAtomic = BigInt(Math.floor(parseFloat(amount) * 1_000_000));
         const total = calculateTotalWithFee(amountAtomic);
