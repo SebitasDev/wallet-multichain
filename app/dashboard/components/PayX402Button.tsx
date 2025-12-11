@@ -7,7 +7,7 @@ import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 
 // Address de prueba para recibir el pago
 const TEST_RECIPIENT = "0x1234567890123456789012345678901234567890";
-const TEST_AMOUNT = "0.01"; // $0.01 USDC
+const TEST_AMOUNT = "0.001"; // $0.01 USDC
 
 export const PayX402Button = () => {
     const [loading, setLoading] = useState(false);
