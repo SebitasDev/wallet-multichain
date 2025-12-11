@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
             scheme: "exact",
             network: paymentNetwork,
             maxAmountRequired: amount,
-            resource: "https://x402-payment.local",
+            resource: "https://facilitator.ultravioletadao.xyz",
             description: "x402 Payment",
             mimeType: "application/json",
             payTo: recipientAddress,

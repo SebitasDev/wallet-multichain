@@ -19,7 +19,7 @@ const NETWORK_CONFIG = {
         chainId: "0x2105", // 8453 en hex
         rpcUrl: "https://mainnet.base.org",
         usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-        usdcName: "USD Coin",
+        usdcName: "USDC",
         usdcVersion: "2"
     },
     local: {
@@ -170,7 +170,7 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
                         scheme: "exact",
                         network: networkConfig.network,
                         maxAmountRequired: amountInAtomicUnits,
-                        resource: "https://x402-payment.local",
+                        resource: "https://facilitator.ultravioletadao.xyz",
                         description: "x402 Payment",
                         mimeType: "application/json",
                         payTo: recipientAddress as `0x${string}`,
@@ -213,7 +213,7 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
                         scheme: "exact",
                         network: networkConfig.network,
                         maxAmountRequired: amountInAtomicUnits,
-                        resource: "https://x402-payment.local",
+                        resource: "https://facilitator.ultravioletadao.xyz",
                         description: "x402 Payment",
                         mimeType: "application/json",
                         payTo: recipientAddress as `0x${string}`,
