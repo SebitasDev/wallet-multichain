@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const FACILITATOR_URL = "https://facilitator.ultravioletadao.xyz'";
+const FACILITATOR_URL = "https://facilitator.ultravioletadao.xyz";
 
 // Configuración de USDC por red
 const NETWORK_CONFIG: Record<string, { usdc: string; usdcName: string; usdcVersion: string }> = {
