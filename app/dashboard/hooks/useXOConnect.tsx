@@ -8,7 +8,7 @@ import { useMainWalletStore } from "@/app/store/useMainWalletStore";
 import { decryptPrivateKey, encryptPrivateKey, generateSalt } from "@/app/utils/cripto";
 import { createPaymentHeader } from "x402/client";
 import { privateKeyToAccount } from "viem/accounts";
-import { createWalletClient, custom } from "viem";
+import { createWalletClient, custom, publicActions } from "viem";
 import { base, baseSepolia } from "viem/chains";
 
 // Configuración de red y USDC
@@ -155,15 +155,16 @@ export const XOContractsProvider = ({ children, password }: { children: ReactNod
                 console.log("Firmando con XOConnect en Base Mainnet...");
 
                 // Crear wallet client de viem usando el provider de XO
+                // Extender con publicActions para cumplir con el tipo SignerWallet de x402
                 const walletClient = createWalletClient({
                     chain: networkConfig.chain,
                     transport: custom(xoProviderRef.current),
                     account: address as `0x${string}`
-                });
+                }).extend(publicActions);
 
                 // Crear el payment header con x402 usando el wallet client de XO
                 paymentHeader = await createPaymentHeader(
-                    walletClient,
+                    walletClient as any,
                     1, // x402 version
                     {
                         scheme: "exact",
