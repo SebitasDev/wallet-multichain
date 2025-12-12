@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {Box } from "@mui/material";
+import {Box, Typography } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { HeroBanner } from "./components/HeroBanner";
@@ -19,6 +19,7 @@ import {GenerateWalletButton} from "@/app/dashboard/components/GenerateWalletBut
 import {SendMoneyMainWallet} from "@/app/dashboard/components/SendMoneyMainWallet";
 import {CrossChainTransferModal} from "@/app/dashboard/components/CrossChainTransferModal";
 import {TopBar} from "@/app/dashboard/components/TopBar";
+import {ToastContainerCustom} from "@/app/components/atoms/ToastContainerCustom";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -129,7 +130,7 @@ export default function Dashboard() {
                             <SendMoneyModal walletNames={{}} />
                             <ReceiveModal open={receiveOpen} wallets={wallets} onClose={closeReceive} />
 
-                            <ToastContainer position="top-right" />
+                            <ToastContainerCustom/>
                         </>
                     </XOContractsProvider>
                 </EmbeddedProvider>

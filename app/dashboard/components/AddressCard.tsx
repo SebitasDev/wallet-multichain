@@ -111,69 +111,112 @@ export const AddressCard = ({
             {/* HEADER */}
             <Box
                 sx={{
-                    p: 3,
+                    p: { xs: 2, sm: 3 },
                     background: "#f5f5f5",
                     borderBottom: "3px solid #000000",
                     color: "#000000",
                 }}
             >
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2}>
-
-                    {/* Left */}
-                    <Box flex={1} minWidth={0}>
-                        <Box
-                            display="flex"
-                            alignItems="center"
-                            gap={1}
-                            flexWrap="wrap"
-                            sx={{ minWidth: 0 }}
+                {/* Top row: Name, Chip, Delete - Solo en desktop */}
+                <Box
+                    display={{ xs: "none", sm: "flex" }}
+                    justifyContent="space-between"
+                    alignItems="flex-start"
+                    gap={2}
+                    mb={2}
+                >
+                    <Box display="flex" alignItems="center" gap={1} flex={1}>
+                        <Typography
+                            variant="h6"
+                            fontWeight={800}
+                            sx={{
+                                color: "#000000",
+                                fontSize: { sm: 18, md: 20 },
+                            }}
                         >
-                            {/* Wallet name */}
+                            {displayName}
+                        </Typography>
+
+                        {exceedsNameLimit && (
+                            <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowNameExpanded((prev) => !prev);
+                                }}
+                                sx={{
+                                    color: "#000000",
+                                    background: "#ffffff",
+                                    border: "2px solid #000000",
+                                    borderRadius: 2,
+                                    width: 28,
+                                    height: 28,
+                                    "&:hover": {
+                                        background: "#f5f5f5",
+                                    },
+                                }}
+                            >
+                                {showNameExpanded ? (
+                                    <ExpandLess fontSize="small" />
+                                ) : (
+                                    <ExpandMoreIcon fontSize="small" />
+                                )}
+                            </IconButton>
+                        )}
+
+                        <Chip
+                            label="6 chains"
+                            size="small"
+                            sx={{
+                                background: "#ffffff",
+                                color: "#000000",
+                                border: "2px solid #000000",
+                                fontWeight: 800,
+                                fontSize: 11,
+                                letterSpacing: "0.5px",
+                            }}
+                        />
+                    </Box>
+
+                    <IconButton
+                        size="small"
+                        sx={{
+                            color: "#000000",
+                            background: "#ff4444",
+                            border: "2px solid #000000",
+                            borderRadius: 2,
+                            width: 36,
+                            height: 36,
+                            transition: "all 0.2s",
+                            "&:hover": {
+                                background: "#ff3333",
+                                transform: "scale(1.05)",
+                            },
+                        }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            removeWallet(address);
+                        }}
+                    >
+                        <DeleteOutlineIcon fontSize="small" sx={{ color: "#ffffff" }} />
+                    </IconButton>
+                </Box>
+
+                {/* Mobile layout */}
+                <Box display={{ xs: "flex", sm: "none" }} flexDirection="column" gap={2}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Box display="flex" alignItems="center" gap={1}>
                             <Typography
                                 variant="h6"
                                 fontWeight={800}
                                 sx={{
                                     color: "#000000",
-                                    maxWidth: { xs: 150, sm: 200 },
-                                    minWidth: 0,
-                                    whiteSpace: showNameExpanded ? "normal" : "nowrap",
-                                    textOverflow: showNameExpanded ? "clip" : "ellipsis",
-                                    overflow: "hidden",
-                                    fontSize: { xs: 18, md: 20 },
+                                    fontSize: 16,
                                 }}
-                                title={walletName}
                             >
                                 {displayName}
                             </Typography>
 
-                            {exceedsNameLimit && (
-                                <IconButton
-                                    size="small"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowNameExpanded((prev) => !prev);
-                                    }}
-                                    sx={{
-                                        color: "#000000",
-                                        background: "#ffffff",
-                                        border: "2px solid #000000",
-                                        borderRadius: 2,
-                                        width: 28,
-                                        height: 28,
-                                        "&:hover": {
-                                            background: "#f5f5f5",
-                                        },
-                                    }}
-                                >
-                                    {showNameExpanded ? (
-                                        <ExpandLess fontSize="small" />
-                                    ) : (
-                                        <ExpandMoreIcon fontSize="small" />
-                                    )}
-                                </IconButton>
-                            )}
-
-                            {/* numero de chains disponibles */}
                             <Chip
                                 label="6 chains"
                                 size="small"
@@ -182,84 +225,13 @@ export const AddressCard = ({
                                     color: "#000000",
                                     border: "2px solid #000000",
                                     fontWeight: 800,
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     letterSpacing: "0.5px",
+                                    height: 24,
                                 }}
                             />
                         </Box>
 
-                        <Box mt={1.5} display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                            <Box
-                                component="code"
-                                sx={{
-                                    backgroundColor: "#ffffff",
-                                    px: 1.5,
-                                    py: 0.75,
-                                    borderRadius: 2,
-                                    fontSize: "13px",
-                                    fontWeight: 700,
-                                    color: "#000000",
-                                    border: "2px solid #000000",
-                                    fontFamily: "monospace",
-                                }}
-                            >
-                                {truncated}
-                            </Box>
-
-                            <IconButton
-                                size="small"
-                                aria-label="Copiar address"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    copyToClipboard(address, "Address");
-                                }}
-                                sx={{
-                                    color: "#000000",
-                                    background: "#ffffff",
-                                    border: "2px solid #000000",
-                                    borderRadius: 2,
-                                    width: 32,
-                                    height: 32,
-                                    transition: "all 0.2s",
-                                    "&:hover": {
-                                        background: "#3CD2FF",
-                                        transform: "scale(1.05)",
-                                    },
-                                }}
-                            >
-                                <ContentCopyIcon fontSize="small" />
-                            </IconButton>
-
-                            <IconButton
-                                size="small"
-                                component="a"
-                                href={`https://etherscan.io/address/${address}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                sx={{
-                                    color: "#000000",
-                                    background: "#ffffff",
-                                    border: "2px solid #000000",
-                                    borderRadius: 2,
-                                    width: 32,
-                                    height: 32,
-                                    transition: "all 0.2s",
-                                    "&:hover": {
-                                        background: "#7852FF",
-                                        color: "#ffffff",
-                                        transform: "scale(1.05)",
-                                    },
-                                }}
-                            >
-                                <OpenInNewIcon fontSize="small" />
-                            </IconButton>
-                        </Box>
-                    </Box>
-
-                    {/* Right */}
-                    <Box textAlign="right" display="flex" flexDirection="column" alignItems="flex-end" gap={1}>
-
-                        {/* Delete button */}
                         <IconButton
                             size="small"
                             sx={{
@@ -267,12 +239,11 @@ export const AddressCard = ({
                                 background: "#ff4444",
                                 border: "2px solid #000000",
                                 borderRadius: 2,
-                                width: 36,
-                                height: 36,
+                                width: 32,
+                                height: 32,
                                 transition: "all 0.2s",
                                 "&:hover": {
                                     background: "#ff3333",
-                                    transform: "scale(1.05)",
                                 },
                             }}
                             onClick={(e) => {
@@ -282,39 +253,118 @@ export const AddressCard = ({
                         >
                             <DeleteOutlineIcon fontSize="small" sx={{ color: "#ffffff" }} />
                         </IconButton>
+                    </Box>
+                </Box>
 
+                {/* Bottom section: Address + Actions + Balance */}
+                <Box
+                    display="flex"
+                    flexDirection={{ xs: "column", sm: "row" }}
+                    justifyContent="space-between"
+                    alignItems={{ xs: "stretch", sm: "flex-end" }}
+                    gap={2}
+                >
+                    {/* Address and action buttons */}
+                    <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                         <Box
+                            component="code"
                             sx={{
+                                backgroundColor: "#ffffff",
+                                px: { xs: 1.2, sm: 1.5 },
+                                py: 0.75,
+                                borderRadius: 2,
+                                fontSize: { xs: "12px", sm: "13px" },
+                                fontWeight: 700,
+                                color: "#000000",
+                                border: "2px solid #000000",
+                                fontFamily: "monospace",
+                            }}
+                        >
+                            {truncated}
+                        </Box>
+
+                        <IconButton
+                            size="small"
+                            aria-label="Copiar address"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(address, "Address");
+                            }}
+                            sx={{
+                                color: "#000000",
                                 background: "#ffffff",
                                 border: "2px solid #000000",
                                 borderRadius: 2,
-                                px: 2,
-                                py: 1,
-                                textAlign: "center",
+                                width: { xs: 30, sm: 32 },
+                                height: { xs: 30, sm: 32 },
+                                transition: "all 0.2s",
+                                "&:hover": {
+                                    background: "#3CD2FF",
+                                    transform: "scale(1.05)",
+                                },
                             }}
                         >
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    color: "#666666",
-                                    fontWeight: 700,
-                                    fontSize: 11,
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.5px",
-                                    display: "block",
-                                    mb: 0.5,
-                                }}
-                            >
-                                Valor Total
-                            </Typography>
-                            <Typography
-                                variant="h5"
-                                fontWeight={900}
-                                sx={{ color: "#000000", fontSize: { xs: 20, md: 24 } }}
-                            >
-                                ${totalBalance.toFixed(2)}
-                            </Typography>
-                        </Box>
+                            <ContentCopyIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                        </IconButton>
+
+                        <IconButton
+                            size="small"
+                            component="a"
+                            href={`https://etherscan.io/address/${address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{
+                                color: "#000000",
+                                background: "#ffffff",
+                                border: "2px solid #000000",
+                                borderRadius: 2,
+                                width: { xs: 30, sm: 32 },
+                                height: { xs: 30, sm: 32 },
+                                transition: "all 0.2s",
+                                "&:hover": {
+                                    background: "#7852FF",
+                                    color: "#ffffff",
+                                    transform: "scale(1.05)",
+                                },
+                            }}
+                        >
+                            <OpenInNewIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                        </IconButton>
+                    </Box>
+
+                    {/* Balance */}
+                    <Box
+                        sx={{
+                            background: "#ffffff",
+                            border: "2px solid #000000",
+                            borderRadius: 2,
+                            px: { xs: 2, sm: 2 },
+                            py: { xs: 1, sm: 1 },
+                            textAlign: { xs: "left", sm: "center" },
+                            minWidth: { xs: "auto", sm: 140 },
+                        }}
+                    >
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "#666666",
+                                fontWeight: 700,
+                                fontSize: 11,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.5px",
+                                display: "block",
+                                mb: 0.5,
+                            }}
+                        >
+                            Valor Total
+                        </Typography>
+                        <Typography
+                            variant="h5"
+                            fontWeight={900}
+                            sx={{ color: "#000000", fontSize: { xs: 18, sm: 20, md: 24 } }}
+                        >
+                            ${totalBalance.toFixed(2)}
+                        </Typography>
                     </Box>
                 </Box>
             </Box>
@@ -358,7 +408,7 @@ export const AddressCard = ({
             <Divider sx={{ borderColor: "#000000", borderWidth: "3px" }} />
             <CardActions
                 sx={{
-                    p: 2,
+                    p: { xs: 1.5, sm: 2 },
                     background: "#f5f5f5",
                 }}
             >
@@ -378,8 +428,8 @@ export const AddressCard = ({
                         textTransform: "none",
                         color: "#000000",
                         fontWeight: 800,
-                        fontSize: 14,
-                        py: 1.2,
+                        fontSize: { xs: 13, sm: 14 },
+                        py: { xs: 1, sm: 1.2 },
                         borderRadius: 3,
                         border: "2px solid #000000",
                         background: "#ffffff",

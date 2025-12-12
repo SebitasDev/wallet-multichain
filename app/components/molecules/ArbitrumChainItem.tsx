@@ -50,78 +50,178 @@ export default function ArbitrumChainItem({ address } : IPolChainItemProps) {
 
     return (
         <>
-            {/* Arbitrum */}
-            <Divider />
+            <ListItemButton
+                sx={{
+                    py: 2,
+                    px: { xs: 2, sm: 3 },
+                    transition: "all 0.2s",
+                    "&:hover": {
+                        backgroundColor: "#f5f5f5",
+                    },
+                }}
+                onClick={() => setOpen(!open)}
+            >
+                <Box display="flex" alignItems="center" gap={{ xs: 1.5, sm: 2 }} flex={1} minWidth={0}>
+                    <Box sx={{
+                        width: { xs: 32, sm: 36 },
+                        height: { xs: 32, sm: 36 },
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        "& svg": {
+                            width: "100%",
+                            height: "100%",
+                        }
+                    }}>
+                        <ArbIcon />
+                    </Box>
 
-            <ListItemButton sx={{ py: 2 }} onClick={() => setOpen(!open)}>
-                <Box display="flex" alignItems="center" gap={2}>
-                    <ArbIcon />
-
-                    <Box>
-                        <Typography fontWeight="600">Arbitrum</Typography>
-                        <Typography variant="caption" color="text.secondary">
+                    <Box flex={1} minWidth={0}>
+                        <Typography
+                            fontWeight={800}
+                            sx={{
+                                fontSize: { xs: 14, sm: 15 },
+                                color: "#000000"
+                            }}
+                        >
+                            Arbitrum
+                        </Typography>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "#666666",
+                                fontWeight: 600,
+                                fontSize: { xs: 11, sm: 12 }
+                            }}
+                        >
                             1 token
                         </Typography>
                     </Box>
+                </Box>
+
+                <ListItemSecondaryAction
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: { xs: 0.5, sm: 1 },
+                        pr: { xs: 1, sm: 2 },
+                        right: { xs: 8, sm: 16 },
+                    }}
+                >
+                    <Typography
+                        fontWeight={800}
+                        sx={{
+                            fontSize: { xs: 13, sm: 15 },
+                            color: "#000000",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        ${(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
+                    </Typography>
 
                     <Chip
                         label="ARB"
                         size="small"
                         sx={{
-                            ml: 1,
-                            backgroundColor: "rgba(21,101,250,0.2)",
-                            border: "1px solid #3D8BFF",
-                            boxShadow: "0 0 6px #3D8BFF",
-                            color: "#3D8BFF",
-                            fontWeight: 600
+                            backgroundColor: "#28A0F0",
+                            border: "2px solid #000000",
+                            color: "#ffffff",
+                            fontWeight: 800,
+                            fontSize: { xs: 10, sm: 11 },
+                            height: { xs: 22, sm: 24 },
+                            "& .MuiChip-label": {
+                                px: { xs: 1, sm: 1.5 },
+                            }
                         }}
                     />
-                </Box>
-
-                <ListItemSecondaryAction
-                    sx={{ display: "flex", alignItems: "center", gap: 1, pr: 2 }}
-                >
-                    <Typography fontWeight="600">${(Math.floor(Number(balance) * 100) / 100).toFixed(2)}</Typography>
 
                     {open ? (
-                        <ExpandMoreIcon fontSize="small" color="disabled" />
+                        <ExpandMoreIcon
+                            sx={{
+                                fontSize: { xs: 18, sm: 20 },
+                                color: "#000000"
+                            }}
+                        />
                     ) : (
-                        <ChevronRightIcon fontSize="small" color="disabled" />
+                        <ChevronRightIcon
+                            sx={{
+                                fontSize: { xs: 18, sm: 20 },
+                                color: "#000000"
+                            }}
+                        />
                     )}
                 </ListItemSecondaryAction>
             </ListItemButton>
 
             {/* Dropdown tokens */}
             <Collapse in={open} timeout="auto" unmountOnExit>
-                <List sx={{ px: 4 }}>
-                    <ListItem
-                        sx={{
-                            backgroundColor: "rgba(0,0,0,0.03)",
-                            borderRadius: 2,
-                            my: 1,
-                            py: 1.5,
-                            px: 2,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 2,
-                            "&:hover": { backgroundColor: "rgba(0,0,0,0.06)" },
-                        }}
-                    >
-                        <UsdcIcon size={28} />
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: 1.5, backgroundColor: "#f5f5f5" }}>
+                    <List disablePadding>
+                        <ListItem
+                            sx={{
+                                backgroundColor: "#ffffff",
+                                border: "2px solid #000000",
+                                borderRadius: 3,
+                                py: 1.5,
+                                px: 2,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 2,
+                                transition: "all 0.2s",
+                                "&:hover": {
+                                    backgroundColor: "#f5f5f5",
+                                    transform: "translateX(4px)",
+                                },
+                            }}
+                        >
+                            <Box sx={{
+                                width: 32,
+                                height: 32,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                            }}>
+                                <UsdcIcon size={32} />
+                            </Box>
 
-                        <Box display="flex" flexDirection="column">
-                            <Typography fontWeight="600">USDC</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                Balance: {(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
-                            </Typography>
-                        </Box>
+                            <Box display="flex" flexDirection="column" flex={1} minWidth={0}>
+                                <Typography
+                                    fontWeight={800}
+                                    sx={{
+                                        fontSize: { xs: 13, sm: 14 },
+                                        color: "#000000"
+                                    }}
+                                >
+                                    USDC
+                                </Typography>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "#666666",
+                                        fontWeight: 600,
+                                        fontSize: { xs: 11, sm: 12 }
+                                    }}
+                                >
+                                    Balance: {(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
+                                </Typography>
+                            </Box>
 
-                        {/* Reemplazo del ListItemSecondaryAction */}
-                        <Box sx={{ ml: "auto", pr: 2 }}>
-                            <Typography fontWeight="600">${(Math.floor(Number(balance) * 100) / 100).toFixed(2)}</Typography>
-                        </Box>
-                    </ListItem>
-                </List>
+                            <Box sx={{ flexShrink: 0 }}>
+                                <Typography
+                                    fontWeight={800}
+                                    sx={{
+                                        fontSize: { xs: 13, sm: 14 },
+                                        color: "#000000"
+                                    }}
+                                >
+                                    ${(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
+                                </Typography>
+                            </Box>
+                        </ListItem>
+                    </List>
+                </Box>
             </Collapse>
         </>
     );
