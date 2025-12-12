@@ -115,9 +115,14 @@ export const CrossChainTransferModal = () => {
 
     // Calcular monto mínimo basado SOLO en la cadena de origen
     const minAmount = useMemo(() => {
+        // Si es la misma chain, no hay mínimo requerido
+        if (watchSourceChain === watchDestChain) {
+            return 0;
+        }
+
         const sourceConfig = NETWORKS[watchSourceChain];
         return sourceConfig.aproxFromFee;
-    }, [watchSourceChain]);
+    }, [watchSourceChain, watchDestChain]);
 
     // Validar si el monto es menor al mínimo - ARREGLADO
     const isAmountValid = useMemo(() => {
@@ -205,8 +210,8 @@ export const CrossChainTransferModal = () => {
                 disabled={!address || (!privateKey && !provider)}
                 sx={{
                     background: "#00DC8C",
-                    color: "#000000",
                     fontWeight: 800,
+                    color: "white",
                     letterSpacing: "0.5px",
                     px: 3.4,
                     py: 1.5,
@@ -218,7 +223,7 @@ export const CrossChainTransferModal = () => {
                     whiteSpace: "nowrap",
                     width: "100%",
                     minWidth: 0,
-                    maxWidth: 280,
+                    maxWidth: 240,
                     transition: "all 0.2s",
                     "&:hover": {
                         background: "#00CC7C",
@@ -234,7 +239,7 @@ export const CrossChainTransferModal = () => {
                     },
                 }}
             >
-                Cross-Chain Transfer
+                Cross-Chain
             </Button>
 
             <Dialog
@@ -510,20 +515,23 @@ export const CrossChainTransferModal = () => {
                                 >
                                     Monto USDC
                                 </Typography>
-                                <Typography
-                                    fontSize={11}
-                                    fontWeight={700}
-                                    sx={{
-                                        color: "#00DC8C",
-                                        bgcolor: "rgba(0, 220, 140, 0.1)",
-                                        px: 1.5,
-                                        py: 0.5,
-                                        borderRadius: 1,
-                                        border: "1px solid #00DC8C",
-                                    }}
-                                >
-                                    Mínimo: {minAmount} USDC
-                                </Typography>
+                                {/* Solo mostrar el badge si es cross-chain */}
+                                {isCrossChain && (
+                                    <Typography
+                                        fontSize={11}
+                                        fontWeight={700}
+                                        sx={{
+                                            color: "#00DC8C",
+                                            bgcolor: "rgba(0, 220, 140, 0.1)",
+                                            px: 1.5,
+                                            py: 0.5,
+                                            borderRadius: 1,
+                                            border: "1px solid #00DC8C",
+                                        }}
+                                    >
+                                        Mínimo: {minAmount} USDC
+                                    </Typography>
+                                )}
                             </Stack>
                             <Controller
                                 control={control}
@@ -531,10 +539,10 @@ export const CrossChainTransferModal = () => {
                                 render={({ field }) => (
                                     <TextField
                                         type="number"
-                                        placeholder={`Mín. ${minAmount}`}
+                                        placeholder={isCrossChain ? `Mín. ${minAmount}` : "0.00"}
                                         fullWidth
                                         inputProps={{
-                                            min: minAmount,
+                                            min: isCrossChain ? minAmount : 0,
                                             step: "0.0001"
                                         }}
                                         {...field}
