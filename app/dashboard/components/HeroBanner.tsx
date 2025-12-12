@@ -6,11 +6,7 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 import { useMainWalletStore } from "@/app/store/useMainWalletStore";
 
-type Props = {
-    background: string;
-};
-
-export function HeroBanner({ background }: Props) {
+export function HeroBanner() {
     const { wallets, getAllWalletsTotalBalance } = useWalletStore();
 
     // XO (embedded)
@@ -28,82 +24,148 @@ export function HeroBanner({ background }: Props) {
     return (
         <Box
             sx={{
+                maxWidth: 600,
+                width: "100%",
+                mx: "auto",
                 position: "relative",
                 overflow: "hidden",
-                background,
-                color: "#fff",
+                background: "#ffffff",
+                color: "#000000",
                 textAlign: "center",
-                py: { xs: 6, md: 7 },
-                borderRadius: "24px",
-                boxShadow:
-                    "0 26px 55px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)",
+                py: { xs: 3, md: 3.5 },
+                px: { xs: 2.5, md: 3 },
+                borderRadius: 4,
+                border: "3px solid #000000",
+                boxShadow: "6px 6px 0px #000000",
             }}
         >
-            {/* background lighting */}
+            {/* MAIN WALLET SECTION */}
             <Box
                 sx={{
-                    position: "absolute",
-                    inset: 0,
-                    background:
-                        "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.15) 0, transparent 30%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.18) 0, transparent 25%)",
-                    opacity: 0.7,
-                }}
-            />
-
-            {/* 🔥 MAIN WALLET */}
-            <Typography
-                variant="body2"
-                sx={{
-                    textTransform: "uppercase",
-                    letterSpacing: 0.6,
-                    fontSize: 12,
-                    position: "relative",
-                    color: "rgba(255,255,255,0.85)",
+                    background: "#f5f5f5",
+                    border: "2px solid #000000",
+                    borderRadius: 3,
+                    p: { xs: 2, md: 2.5 },
+                    mb: 2,
                 }}
             >
-                Main Wallet {xoClient ? ` de ${xoClient.alias}` : ""}
-            </Typography>
-
-            <Typography
-                sx={{
-                    fontSize: { xs: 42, md: 54 },
-                    fontWeight: 900,
-                    mt: 1,
-                    lineHeight: 1,
-                    position: "relative",
-                    textShadow: "0 6px 18px rgba(0,0,0,0.18)",
-                }}
-            >
-                {formatCurrency(burnedMainBalance)}
-            </Typography>
-
-            <Typography variant="body2" sx={{ mt: 1, fontSize: 13, opacity: 0.85 }}>
-                {mainAddress ?? "--"}
-            </Typography>
-
-            <Box sx={{ mt: 4, position: "relative" }}>
                 <Typography
                     variant="body2"
-                    sx={{ textTransform: "uppercase", fontSize: 12, opacity: 0.85 }}
+                    sx={{
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                        fontSize: { xs: 10, md: 11 },
+                        fontWeight: 700,
+                        color: "#666666",
+                        mb: 1,
+                    }}
+                >
+                    Main Wallet {xoClient ? ` de ${xoClient.alias}` : ""}
+                </Typography>
+
+                <Typography
+                    sx={{
+                        fontSize: { xs: 32, sm: 38, md: 44 },
+                        fontWeight: 900,
+                        lineHeight: 1,
+                        color: "#000000",
+                        mb: 1.5,
+                    }}
+                >
+                    {formatCurrency(burnedMainBalance)}
+                </Typography>
+
+                <Box
+                    sx={{
+                        background: "#ffffff",
+                        border: "2px solid #000000",
+                        borderRadius: 2,
+                        py: 0.75,
+                        px: 1.5,
+                        display: "inline-block",
+                        maxWidth: "100%",
+                    }}
+                >
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            fontSize: { xs: 10, md: 11 },
+                            fontWeight: 600,
+                            color: "#000000",
+                            fontFamily: "monospace",
+                            wordBreak: "break-all",
+                        }}
+                    >
+                        {mainAddress ?? "--"}
+                    </Typography>
+                </Box>
+            </Box>
+
+            {/* BALANCE TOTAL SECTION */}
+            <Box
+                sx={{
+                    background: "#f5f5f5",
+                    border: "2px solid #000000",
+                    borderRadius: 3,
+                    p: { xs: 2, md: 2.5 },
+                }}
+            >
+                <Typography
+                    variant="body2"
+                    sx={{
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                        fontSize: { xs: 10, md: 11 },
+                        fontWeight: 700,
+                        color: "#666666",
+                        mb: 1,
+                    }}
                 >
                     Balance Total (Hijas)
                 </Typography>
 
                 <Typography
                     sx={{
-                        fontSize: { xs: 32, md: 40 },
-                        fontWeight: 800,
-                        mt: 1,
+                        fontSize: { xs: 26, sm: 32, md: 36 },
+                        fontWeight: 900,
                         lineHeight: 1,
-                        position: "relative",
+                        color: "#000000",
+                        mb: 1.5,
                     }}
                 >
                     {getAllWalletsTotalBalance !== null ? formatCurrency(getAllWalletsTotalBalance()) : "--"}
                 </Typography>
 
-                <Typography variant="body2" sx={{ mt: 1, fontSize: 13, opacity: 0.85 }}>
-                    {wallets.length} wallets hijas conectadas
-                </Typography>
+                <Box
+                    sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 1,
+                        background: "#000000",
+                        color: "#ffffff",
+                        borderRadius: "999px",
+                        py: 0.6,
+                        px: 1.75,
+                    }}
+                >
+                    <Box
+                        sx={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: "50%",
+                            background: "#00DC8C",
+                        }}
+                    />
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            fontSize: { xs: 11, md: 12 },
+                            fontWeight: 700,
+                        }}
+                    >
+                        {wallets.length} wallets conectadas
+                    </Typography>
+                </Box>
             </Box>
         </Box>
     );
