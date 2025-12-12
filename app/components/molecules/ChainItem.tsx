@@ -1,52 +1,47 @@
-import {useEffect, useState} from "react";
+"use client";
+
+import { useState, useMemo } from "react";
 import {
     Box,
     Chip,
     Collapse,
-    Divider,
     ListItemButton,
     ListItemSecondaryAction,
     Typography,
     List,
     ListItem
 } from "@mui/material";
-
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
+import { Address } from "abitype";
+import { useWalletStore } from "@/app/store/useWalletsStore";
+import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
 
-import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
-import {Address} from "abitype";
-import ArbIcon from "@/app/components/atoms/ArbIcon";
-import {arbitrum, arbitrumSepolia} from "viem/chains";
-import {useWalletStore} from "@/app/store/useWalletsStore";
-
-interface IPolChainItemProps {
+interface IChainItemProps {
     address: Address;
+    chainKey: ChainKey;
 }
 
-export default function ArbitrumChainItem({ address } : IPolChainItemProps) {
+export default function ChainItem({ address, chainKey }: IChainItemProps) {
     const [open, setOpen] = useState(false);
-    const [balance, setBalance] = useState<number>(0);
-    const { getWalletBalanceByChain } = useWalletStore();
 
-    useEffect(() => {
-        const fetchBalance = async () => {
-            try {
-                const chainId =
-                    (process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-                            ? arbitrumSepolia.id
-                            : arbitrum.id
-                    ).toString();
+    const config = NETWORKS[chainKey];
+    const chainId = config.chain.id.toString();
 
-                const bal = await getWalletBalanceByChain(address, chainId);
-                setBalance(Number(bal));
-            } catch (err) {
-                console.error("Error al obtener balance:", err);
-            }
-        };
+    // Obtener todas las wallets y calcular el balance
+    const wallets = useWalletStore((state) => state.wallets);
 
-        fetchBalance();
-    }, [address, getWalletBalanceByChain]);
+    const balance = useMemo(() => {
+        const wallet = wallets.find(
+            (w) => w.address.toLowerCase() === address.toLowerCase()
+        );
+        if (!wallet) return 0;
+        const chainInfo = wallet.chains.find((c) => c.chainId === chainId);
+        return chainInfo?.amount ?? 0;
+    }, [wallets, address, chainId]);
+
+    const formattedBalance = (Math.floor(Number(balance) * 100) / 100).toFixed(2);
 
     return (
         <>
@@ -74,7 +69,7 @@ export default function ArbitrumChainItem({ address } : IPolChainItemProps) {
                             height: "100%",
                         }
                     }}>
-                        <ArbIcon />
+                        {config.icon}
                     </Box>
 
                     <Box flex={1} minWidth={0}>
@@ -85,7 +80,7 @@ export default function ArbitrumChainItem({ address } : IPolChainItemProps) {
                                 color: "#000000"
                             }}
                         >
-                            Arbitrum
+                            {config.label}
                         </Typography>
                         <Typography
                             variant="caption"
@@ -117,14 +112,14 @@ export default function ArbitrumChainItem({ address } : IPolChainItemProps) {
                             whiteSpace: "nowrap",
                         }}
                     >
-                        ${(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
+                        ${formattedBalance}
                     </Typography>
 
                     <Chip
-                        label="ARB"
+                        label={config.chipLabel}
                         size="small"
                         sx={{
-                            backgroundColor: "#28A0F0",
+                            backgroundColor: config.chipColor,
                             border: "2px solid #000000",
                             color: "#ffffff",
                             fontWeight: 800,
@@ -204,7 +199,7 @@ export default function ArbitrumChainItem({ address } : IPolChainItemProps) {
                                         fontSize: { xs: 11, sm: 12 }
                                     }}
                                 >
-                                    Balance: {(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
+                                    Balance: {formattedBalance}
                                 </Typography>
                             </Box>
 
@@ -216,7 +211,7 @@ export default function ArbitrumChainItem({ address } : IPolChainItemProps) {
                                         color: "#000000"
                                     }}
                                 >
-                                    ${(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
+                                    ${formattedBalance}
                                 </Typography>
                             </Box>
                         </ListItem>

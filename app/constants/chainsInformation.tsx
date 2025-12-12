@@ -37,6 +37,8 @@ export interface ChainConfig {
     label: string;
     icon: JSX.Element;
     rpcUrl: string;
+    chipLabel: string;
+    chipColor: string;
 }
 
 export const NETWORKS: Record<ChainKey, ChainConfig> = {
@@ -50,7 +52,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         label: "Optimism",
         icon: <OPIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? "https://opt-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://opt-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
+            ? "https://opt-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://opt-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
+        chipLabel: "ETH",
+        chipColor: "#FF0420",
     },
 
     Arbitrum: {
@@ -64,7 +68,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         label: "Arbitrum",
         icon: <ArbIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? "https://arb-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://arb-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
+            ? "https://arb-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://arb-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
+        chipLabel: "ARB",
+        chipColor: "#28A0F0",
     },
 
     Base: {
@@ -78,7 +84,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         label: "Base",
         icon: <BaseIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? "https://base-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://base-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
+            ? "https://base-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://base-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
+        chipLabel: "ETH",
+        chipColor: "#0052FF",
     },
 
     Unichain: {
@@ -92,7 +100,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         label: "Unichain",
         icon: <UnichainIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? "https://unichain-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://unichain-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
+            ? "https://unichain-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://unichain-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
+        chipLabel: "UNI",
+        chipColor: "#FF007A",
     },
 
     Polygon: {
@@ -106,7 +116,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         label: "Polygon",
         icon: <PolygonIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? "https://polygon-amoy.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://polygon-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN"
+            ? "https://polygon-amoy.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://polygon-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
+        chipLabel: "POL",
+        chipColor: "#8247E5",
     },
 
     Avalanche: {
@@ -120,7 +132,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         label: "Avalanche",
         icon: <AvalancheIcon />,
         rpcUrl: process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-            ? avalancheFuji.rpcUrls.default.http[0] : avalanche.rpcUrls.default.http[0]
+            ? avalancheFuji.rpcUrls.default.http[0] : avalanche.rpcUrls.default.http[0],
+        chipLabel: "AVAX",
+        chipColor: "#E84142",
     },
 };
 
