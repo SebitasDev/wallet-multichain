@@ -47,7 +47,6 @@ export function HeroBanner() {
             sx={{
                 maxWidth: 600,
                 width: "100%",
-                mx: "auto",
                 position: "relative",
                 overflow: "hidden",
                 background: "#ffffff",

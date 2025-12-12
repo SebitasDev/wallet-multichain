@@ -121,6 +121,29 @@ export async function POST(request: NextRequest) {
                 }, { status: 400 });
             }
 
+            // Verificar balance del facilitador antes del burn
+            const facilitatorBalance = await publicClient.readContract({
+                address: networkConfig.usdc,
+                abi: usdcErc3009Abi,
+                functionName: "balanceOf",
+                args: [facilitatorAccount.address]
+            }) as bigint;
+
+            console.log("[Facilitator] Balance check:", {
+                facilitatorAddress: facilitatorAccount.address,
+                balance: facilitatorBalance.toString(),
+                amountToBurn: amountBigInt.toString(),
+                chain: sourceChain
+            });
+
+            if (facilitatorBalance < amountBigInt) {
+                return NextResponse.json<SettleResponse>({
+                    success: false,
+                    transactionHash: transferHash,
+                    errorReason: `Insufficient facilitator balance. Has: ${facilitatorBalance.toString()}, needs: ${amountBigInt.toString()}`
+                }, { status: 500 });
+            }
+
             // Step 2: Approve USDC to TokenMessenger
             const approveHash = await walletClient.writeContract({
                 chain: networkConfig.chain,
@@ -132,13 +155,35 @@ export async function POST(request: NextRequest) {
 
             await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
+            // Verificar allowance después del approve
+            const allowance = await publicClient.readContract({
+                address: networkConfig.usdc,
+                abi: usdcErc3009Abi,
+                functionName: "allowance",
+                args: [facilitatorAccount.address, networkConfig.tokenMessenger]
+            }) as bigint;
+
+            console.log("[Facilitator] Allowance check:", {
+                owner: facilitatorAccount.address,
+                spender: networkConfig.tokenMessenger,
+                allowance: allowance.toString()
+            });
+
             // Step 3: Execute CCTP depositForBurn
             const mintRecipient = addressToBytes32(crossChainConfig.mintRecipient);
 
-            // Calculate maxFee (1% of amount, max 0.005 USDC)
+            // Calculate maxFee (1% of amount, min 200 = 0.0002 USDC)
             const maxFee = amountBigInt > BigInt(100)
-                ? BigInt(Math.min(Number(amountBigInt) / 100, 5000))
-                : BigInt(0);
+                ? BigInt(Math.max(Number(amountBigInt) / 100, 200))
+                : BigInt(200);
+
+            console.log("[Facilitator] depositForBurn args:", {
+                amount: amountBigInt.toString(),
+                destinationDomain: crossChainConfig.destinationDomain,
+                mintRecipient,
+                burnToken: networkConfig.usdc,
+                maxFee: maxFee.toString()
+            });
 
             const burnHash = await walletClient.writeContract({
                 chain: networkConfig.chain,

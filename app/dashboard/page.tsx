@@ -65,26 +65,69 @@ export default function Dashboard() {
 
                             <TopBar />
 
-                            <HeroBanner/>
-
                             <Box
                                 sx={{
-                                    mt: 3,
                                     display: "flex",
-                                    flexDirection: "row",
+                                    flexDirection: { xs: "column", md: "row" },
+                                    gap: 3,
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    gap: 2,
-                                    flexWrap: "wrap",
+                                    width: "100%",
+                                    maxWidth: 1200,
+                                    mx: "auto",
                                 }}
                             >
-                                <Box sx={{ flex: "0 0 auto" }}>
+                                <Box sx={{ width: "100%", maxWidth: 600 }}>
+                                    <HeroBanner />
+                                </Box>
+
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        justifyContent: "center",
+                                        alignItems: "stretch",
+                                        gap: { xs: 1.5, md: 2 },
+                                        width: "100%",
+                                        maxWidth: { xs: 280, md: 300 },
+                                        mx: { xs: "auto", md: 0 },
+                                    }}
+                                >
+                                    {/* Título con línea decorativa */}
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "center",
+                                            mb: 1,
+                                        }}
+                                    >
+                                        <Typography
+                                            sx={{
+                                                fontSize: { xs: 16, md: 18 },
+                                                fontWeight: 900,
+                                                textTransform: "uppercase",
+                                                letterSpacing: 1,
+                                                color: "#000000",
+                                                mb: 1,
+                                            }}
+                                        >
+                                            Funciones Main Wallet
+                                        </Typography>
+                                        <Box
+                                            sx={{
+                                                width: "100%",
+                                                maxWidth: 200,
+                                                height: 4,
+                                                background: "#000000",
+                                                borderRadius: 1,
+                                                boxShadow: "2px 2px 0px #00DC8C",
+                                            }}
+                                        />
+                                    </Box>
+
                                     <GenerateWalletButton />
-                                </Box>
-                                <Box sx={{ flex: "0 0 auto" }}>
                                     <SendMoneyMainWallet />
-                                </Box>
-                                <Box sx={{ flex: "0 0 auto" }}>
                                     <CrossChainTransferModal />
                                 </Box>
                             </Box>
