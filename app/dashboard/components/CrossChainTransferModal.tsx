@@ -5,7 +5,6 @@ import {
     Button,
     CircularProgress,
     Dialog,
-    DialogTitle,
     DialogContent,
     DialogActions,
     TextField,
@@ -15,7 +14,9 @@ import {
     Box,
     Chip,
     Alert,
+    IconButton,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { toast } from "react-toastify";
 import { useForm, Controller } from "react-hook-form";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
@@ -24,6 +25,7 @@ import { Address } from "abitype";
 import { useMainWalletStore } from "@/app/store/useMainWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
+import {NETWORKS} from "@/app/constants/chainsInformation";
 
 type FormValues = {
     sourceChain: FacilitatorChainKey;
@@ -181,137 +183,396 @@ export const CrossChainTransferModal = () => {
                 onClick={openModal}
                 disabled={!address || (!privateKey && !provider)}
                 sx={{
-                    background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    color: "white",
-                    fontWeight: 600,
-                    px: 3,
+                    background: "#00DC8C",
+                    color: "#000000",
+                    fontWeight: 800,
+                    letterSpacing: "0.5px",
+                    px: 3.4,
                     py: 1.5,
-                    borderRadius: 2,
+                    minHeight: 50,
+                    borderRadius: 3,
                     textTransform: "none",
+                    border: "3px solid #000000",
+                    boxShadow: "4px 4px 0px #000000",
+                    whiteSpace: "nowrap",
+                    width: "100%",
+                    minWidth: 0,
+                    maxWidth: 280,
+                    transition: "all 0.2s",
                     "&:hover": {
-                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                        background: "#00CC7C",
+                        transform: "translate(2px, 2px)",
+                        boxShadow: "2px 2px 0px #000000",
                     },
                     "&:disabled": {
-                        background: "#4b5563",
-                        color: "#9ca3af",
+                        background: "#cccccc",
+                        color: "#666666",
+                        border: "3px solid #999999",
+                        boxShadow: "none",
+                        transform: "none",
                     },
                 }}
             >
-                Cross-Chain Transfer (Facilitador)
+                Cross-Chain Transfer
             </Button>
 
-            <Dialog open={open} onClose={closeModal} maxWidth="sm" fullWidth>
-                <DialogTitle>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography variant="h6">Cross-Chain Transfer</Typography>
+            <Dialog
+                open={open}
+                onClose={closeModal}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 4,
+                        overflow: "hidden",
+                        border: "3px solid #000000",
+                        boxShadow: "8px 8px 0px #000000",
+                        background: "#ffffff",
+                    },
+                }}
+            >
+                {/* HEADER */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        px: 3,
+                        py: 2.5,
+                        background: "#000000",
+                        color: "#fff",
+                        borderBottom: "3px solid #000000",
+                    }}
+                >
+                    <Stack direction="row" alignItems="center" spacing={1.5} sx={{ flex: 1 }}>
+                        <Typography fontSize={18} fontWeight={800}>
+                            Cross-Chain Transfer
+                        </Typography>
                         <Chip
                             label="CCTP"
                             size="small"
-                            sx={{ bgcolor: "#10b981", color: "white" }}
+                            sx={{
+                                bgcolor: "#00DC8C",
+                                color: "#000000",
+                                fontWeight: 800,
+                                fontSize: 11,
+                                border: "2px solid #000000",
+                            }}
                         />
                     </Stack>
-                </DialogTitle>
 
-                <DialogContent>
-                    <Stack spacing={2} mt={1}>
-                        <Alert severity="info" sx={{ fontSize: "0.85rem" }}>
+                    <IconButton
+                        onClick={closeModal}
+                        disabled={isLoading}
+                        sx={{
+                            color: "white",
+                            background: "rgba(255,255,255,0.1)",
+                            borderRadius: 2,
+                            "&:hover": {
+                                background: "rgba(255,255,255,0.2)",
+                            },
+                            "&:disabled": {
+                                color: "rgba(255,255,255,0.3)",
+                            }
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+
+                <DialogContent sx={{ px: 3, py: 3, background: "#ffffff" }}>
+                    <Stack spacing={2.5} mt={0.5}>
+                        <Alert
+                            severity="info"
+                            sx={{
+                                fontSize: "0.85rem",
+                                border: "2px solid #3CD2FF",
+                                borderRadius: 2,
+                                bgcolor: "rgba(60, 210, 255, 0.1)",
+                                color: "#000000",
+                                fontWeight: 600,
+                                "& .MuiAlert-icon": {
+                                    color: "#3CD2FF"
+                                }
+                            }}
+                        >
                             Este transfer usa tu propio facilitador. El usuario firma una
                             autorización (gasless) y el facilitador ejecuta el CCTP de Circle.
                         </Alert>
 
                         {/* SOURCE CHAIN */}
-                        <Controller
-                            control={control}
-                            name="sourceChain"
-                            render={({ field }) => (
-                                <TextField select label="Chain origen" fullWidth {...field}>
-                                    {CHAIN_OPTIONS.map((chain) => (
-                                        <MenuItem key={chain} value={chain}>
-                                            {chain}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            )}
-                        />
+                        <Box>
+                            <Typography
+                                fontWeight={700}
+                                fontSize={13}
+                                sx={{
+                                    mb: 1,
+                                    textTransform: "uppercase",
+                                    letterSpacing: 0.5,
+                                    color: "#666666"
+                                }}
+                            >
+                                Chain origen
+                            </Typography>
+                            <Controller
+                                control={control}
+                                name="sourceChain"
+                                render={({ field }) => (
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        {...field}
+                                        InputProps={{
+                                            sx: {
+                                                borderRadius: 2,
+                                                background: "#f5f5f5",
+                                                border: "2px solid #000000",
+                                                fontWeight: 600,
+                                                "&:hover": {
+                                                    background: "#ffffff",
+                                                },
+                                                "&.Mui-focused": {
+                                                    background: "#ffffff",
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        {CHAIN_OPTIONS.map((chain) => {
+                                            const chainConfig = NETWORKS[chain as keyof typeof NETWORKS];
+                                            return (
+                                                <MenuItem key={chain} value={chain}>
+                                                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                                                        <Box sx={{
+                                                            width: 24,
+                                                            height: 24,
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            "& svg": {
+                                                                width: "100%",
+                                                                height: "100%",
+                                                            }
+                                                        }}>
+                                                            {chainConfig.icon}
+                                                        </Box>
+                                                        <Typography fontWeight={600}>
+                                                            {chainConfig.label}
+                                                        </Typography>
+                                                    </Stack>
+                                                </MenuItem>
+                                            );
+                                        })}
+                                    </TextField>
+                                )}
+                            />
+                        </Box>
 
                         {/* DEST CHAIN */}
-                        <Controller
-                            control={control}
-                            name="destChain"
-                            render={({ field }) => (
-                                <TextField select label="Chain destino" fullWidth {...field}>
-                                    {CHAIN_OPTIONS.map((chain) => (
-                                        <MenuItem key={chain} value={chain}>
-                                            {chain}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            )}
-                        />
+                        <Box>
+                            <Typography
+                                fontWeight={700}
+                                fontSize={13}
+                                sx={{
+                                    mb: 1,
+                                    textTransform: "uppercase",
+                                    letterSpacing: 0.5,
+                                    color: "#666666"
+                                }}
+                            >
+                                Chain destino
+                            </Typography>
+                            <Controller
+                                control={control}
+                                name="destChain"
+                                render={({ field }) => (
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        {...field}
+                                        InputProps={{
+                                            sx: {
+                                                borderRadius: 2,
+                                                background: "#f5f5f5",
+                                                border: "2px solid #000000",
+                                                fontWeight: 600,
+                                                "&:hover": {
+                                                    background: "#ffffff",
+                                                },
+                                                "&.Mui-focused": {
+                                                    background: "#ffffff",
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        {CHAIN_OPTIONS.map((chain) => {
+                                            const chainConfig = NETWORKS[chain as keyof typeof NETWORKS];
+                                            return (
+                                                <MenuItem key={chain} value={chain}>
+                                                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                                                        <Box sx={{
+                                                            width: 24,
+                                                            height: 24,
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            "& svg": {
+                                                                width: "100%",
+                                                                height: "100%",
+                                                            }
+                                                        }}>
+                                                            {chainConfig.icon}
+                                                        </Box>
+                                                        <Typography fontWeight={600}>
+                                                            {chainConfig.label}
+                                                        </Typography>
+                                                    </Stack>
+                                                </MenuItem>
+                                            );
+                                        })}
+                                    </TextField>
+                                )}
+                            />
+                        </Box>
 
                         {/* RECIPIENT */}
-                        <Controller
-                            control={control}
-                            name="recipient"
-                            render={({ field }) => (
-                                <TextField
-                                    label="Address destino"
-                                    placeholder="0x..."
-                                    fullWidth
-                                    {...field}
-                                />
-                            )}
-                        />
+                        <Box>
+                            <Typography
+                                fontWeight={700}
+                                fontSize={13}
+                                sx={{
+                                    mb: 1,
+                                    textTransform: "uppercase",
+                                    letterSpacing: 0.5,
+                                    color: "#666666"
+                                }}
+                            >
+                                Address destino
+                            </Typography>
+                            <Controller
+                                control={control}
+                                name="recipient"
+                                render={({ field }) => (
+                                    <TextField
+                                        placeholder="0x..."
+                                        fullWidth
+                                        {...field}
+                                        InputProps={{
+                                            sx: {
+                                                borderRadius: 2,
+                                                background: "#f5f5f5",
+                                                border: "2px solid #000000",
+                                                fontWeight: 600,
+                                                fontFamily: "monospace",
+                                                "&:hover": {
+                                                    background: "#ffffff",
+                                                },
+                                                "&.Mui-focused": {
+                                                    background: "#ffffff",
+                                                }
+                                            }
+                                        }}
+                                    />
+                                )}
+                            />
+                        </Box>
 
                         {/* AMOUNT */}
-                        <Controller
-                            control={control}
-                            name="amount"
-                            render={({ field }) => (
-                                <TextField
-                                    label="Monto USDC"
-                                    type="number"
-                                    placeholder="0.00"
-                                    fullWidth
-                                    inputProps={{ min: 0, step: "0.01" }}
-                                    {...field}
-                                />
-                            )}
-                        />
+                        <Box>
+                            <Typography
+                                fontWeight={700}
+                                fontSize={13}
+                                sx={{
+                                    mb: 1,
+                                    textTransform: "uppercase",
+                                    letterSpacing: 0.5,
+                                    color: "#666666"
+                                }}
+                            >
+                                Monto USDC
+                            </Typography>
+                            <Controller
+                                control={control}
+                                name="amount"
+                                render={({ field }) => (
+                                    <TextField
+                                        type="number"
+                                        placeholder="0.00"
+                                        fullWidth
+                                        inputProps={{ min: 0, step: "0.01" }}
+                                        {...field}
+                                        InputProps={{
+                                            sx: {
+                                                borderRadius: 2,
+                                                background: "#f5f5f5",
+                                                border: "2px solid #000000",
+                                                fontWeight: 700,
+                                                fontSize: 16,
+                                                "&:hover": {
+                                                    background: "#ffffff",
+                                                },
+                                                "&.Mui-focused": {
+                                                    background: "#ffffff",
+                                                }
+                                            }
+                                        }}
+                                    />
+                                )}
+                            />
+                        </Box>
 
                         {/* FEE INFO */}
                         {watchAmount && parseFloat(watchAmount) > 0 && (
                             <Box
                                 sx={{
-                                    p: 2,
-                                    bgcolor: "#1f2937",
-                                    borderRadius: 2,
-                                    border: "1px solid #374151",
+                                    p: 2.5,
+                                    bgcolor: "#f5f5f5",
+                                    borderRadius: 3,
+                                    border: "2px solid #000000",
                                 }}
                             >
-                                <Stack spacing={1}>
+                                <Stack spacing={1.5}>
                                     <Stack direction="row" justifyContent="space-between">
-                                        <Typography color="gray">Monto:</Typography>
-                                        <Typography>{watchAmount} USDC</Typography>
-                                    </Stack>
-                                    <Stack direction="row" justifyContent="space-between">
-                                        <Typography color="gray">Fee facilitador:</Typography>
-                                        <Typography color="#10b981">{fee} USDC</Typography>
-                                    </Stack>
-                                    <Stack direction="row" justifyContent="space-between">
-                                        <Typography color="gray" fontWeight={600}>
-                                            Total a firmar:
+                                        <Typography color="#666666" fontWeight={600} fontSize={13}>
+                                            Monto:
                                         </Typography>
-                                        <Typography fontWeight={600}>{total} USDC</Typography>
+                                        <Typography fontWeight={700} fontSize={14}>
+                                            {watchAmount} USDC
+                                        </Typography>
                                     </Stack>
                                     <Stack direction="row" justifyContent="space-between">
-                                        <Typography color="gray">Tipo:</Typography>
+                                        <Typography color="#666666" fontWeight={600} fontSize={13}>
+                                            Fee facilitador:
+                                        </Typography>
+                                        <Typography color="#00DC8C" fontWeight={700} fontSize={14}>
+                                            {fee} USDC
+                                        </Typography>
+                                    </Stack>
+                                    <Box sx={{
+                                        borderTop: "2px solid #000000",
+                                        pt: 1.5,
+                                        mt: 0.5
+                                    }}>
+                                        <Stack direction="row" justifyContent="space-between">
+                                            <Typography color="#000000" fontWeight={800} fontSize={14}>
+                                                Total a firmar:
+                                            </Typography>
+                                            <Typography fontWeight={800} fontSize={15}>
+                                                {total} USDC
+                                            </Typography>
+                                        </Stack>
+                                    </Box>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                        <Typography color="#666666" fontWeight={600} fontSize={13}>
+                                            Tipo:
+                                        </Typography>
                                         <Chip
                                             label={isCrossChain ? "Cross-Chain" : "Mismo Chain"}
                                             size="small"
                                             sx={{
-                                                bgcolor: isCrossChain ? "#8b5cf6" : "#6366f1",
-                                                color: "white",
+                                                bgcolor: isCrossChain ? "#7852FF" : "#3CD2FF",
+                                                color: "#000000",
+                                                fontWeight: 800,
+                                                fontSize: 11,
+                                                border: "2px solid #000000",
                                             }}
                                         />
                                     </Stack>
@@ -319,12 +580,52 @@ export const CrossChainTransferModal = () => {
                             </Box>
                         )}
 
-                        {error && <Alert severity="error">{error}</Alert>}
+                        {error && (
+                            <Alert
+                                severity="error"
+                                sx={{
+                                    border: "2px solid #ff4444",
+                                    borderRadius: 2,
+                                    bgcolor: "rgba(255, 68, 68, 0.1)",
+                                    color: "#000000",
+                                    fontWeight: 600,
+                                    "& .MuiAlert-icon": {
+                                        color: "#ff4444"
+                                    }
+                                }}
+                            >
+                                {error}
+                            </Alert>
+                        )}
                     </Stack>
                 </DialogContent>
 
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={closeModal} disabled={isLoading}>
+                <DialogActions sx={{ p: 3, gap: 2, background: "#ffffff" }}>
+                    <Button
+                        onClick={closeModal}
+                        disabled={isLoading}
+                        sx={{
+                            flex: 1,
+                            textTransform: "none",
+                            borderRadius: 3,
+                            py: 1.4,
+                            fontWeight: 800,
+                            fontSize: 15,
+                            background: "#ffffff",
+                            color: "#000000",
+                            border: "3px solid #000000",
+                            boxShadow: "4px 4px 0px #000000",
+                            transition: "all 0.2s",
+                            "&:hover": {
+                                background: "#f5f5f5",
+                                transform: "translate(2px, 2px)",
+                                boxShadow: "2px 2px 0px #000000",
+                            },
+                            "&:disabled": {
+                                opacity: 0.4,
+                            },
+                        }}
+                    >
                         Cancelar
                     </Button>
 
@@ -333,12 +634,31 @@ export const CrossChainTransferModal = () => {
                         onClick={handleSubmit(onSubmit)}
                         disabled={isLoading || !watchAmount || !watch("recipient")}
                         sx={{
-                            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                            flex: 1,
+                            textTransform: "none",
+                            borderRadius: 3,
+                            py: 1.4,
+                            fontWeight: 800,
+                            fontSize: 15,
+                            background: "#00DC8C",
+                            color: "#000000",
+                            border: "3px solid #000000",
+                            boxShadow: "4px 4px 0px #000000",
+                            transition: "all 0.2s",
+                            "&:hover": {
+                                background: "#00CC7C",
+                                transform: "translate(2px, 2px)",
+                                boxShadow: "2px 2px 0px #000000",
+                            },
+                            "&:disabled": {
+                                opacity: 0.4,
+                                background: "#cccccc",
+                            },
                         }}
                     >
                         {isLoading ? (
                             <>
-                                <CircularProgress size={20} sx={{ color: "white", mr: 1 }} />
+                                <CircularProgress size={20} sx={{ color: "#000000", mr: 1 }} />
                                 Procesando...
                             </>
                         ) : (

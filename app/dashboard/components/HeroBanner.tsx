@@ -153,7 +153,25 @@ export function HeroBanner() {
                             width: 7,
                             height: 7,
                             borderRadius: "50%",
-                            background: "#00DC8C",
+                            background: wallets.length > 0 ? "#00DC8C" : "#ff4444",
+                            boxShadow: wallets.length > 0
+                                ? "0 0 8px rgba(0, 220, 140, 0.6)"
+                                : "0 0 8px rgba(255, 68, 68, 0.6)",
+                            animation: "pulse 2.5s ease-in-out infinite",
+                            "@keyframes pulse": {
+                                "0%, 100%": {
+                                    opacity: 1,
+                                    boxShadow: wallets.length > 0
+                                        ? "0 0 8px rgba(0, 220, 140, 0.6)"
+                                        : "0 0 8px rgba(255, 68, 68, 0.6)",
+                                },
+                                "50%": {
+                                    opacity: 0.85,
+                                    boxShadow: wallets.length > 0
+                                        ? "0 0 12px rgba(0, 220, 140, 0.8)"
+                                        : "0 0 12px rgba(255, 68, 68, 0.8)",
+                                },
+                            },
                         }}
                     />
                     <Typography
