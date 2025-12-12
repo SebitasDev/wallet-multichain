@@ -227,8 +227,16 @@ export function AddSecretModal({ open, onClose }: Props) {
                     px: 3,
                     pb: 2.8,
                     pt: 1.2,
-                    gap: 1.5,
-                    flexWrap: "wrap",
+                    display: "grid",
+                    gridTemplateColumns: "1fr",
+                    rowGap: 1.2,
+                    alignItems: "stretch",
+                    width: "100%",
+                    "& .MuiButton-root": {
+                        width: "100%",
+                        justifyContent: "center",
+                        margin: 0,
+                    },
                 }}
             >
                 <Button
@@ -236,6 +244,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                     variant="outlined"
                     onClick={onClose}
                     sx={{
+                        width: "100%",
                         textTransform: "none",
                         borderRadius: 1.5,
                         fontWeight: 700,
@@ -257,6 +266,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                     onClick={handleAdd}
                     disabled={!canConfirm}
                     sx={{
+                        width: "100%",
                         textTransform: "none",
                         borderRadius: 1.5,
                         fontWeight: 800,

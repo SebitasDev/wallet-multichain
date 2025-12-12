@@ -75,23 +75,32 @@ export const SendMoneyMainWallet = () => {
                 onClick={openModal}
                 disabled={!address}
                 sx={{
-                    background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                    background: "linear-gradient(135deg, #ff38d1 0%, #4f46ff 100%)",
                     color: "white",
-                    fontWeight: 600,
-                    px: 3,
+                    fontWeight: 800,
+                    letterSpacing: "0.1px",
+                    px: 3.4,
                     py: 1.5,
-                    borderRadius: 2,
+                    minHeight: 50,
+                    borderRadius: 999,
                     textTransform: "none",
+                    boxShadow: "0 10px 24px rgba(79,70,255,0.35)",
+                    whiteSpace: "nowrap",
+                    width: "100%",
+                    minWidth: 0,
+                    maxWidth: 240,
                     "&:hover": {
-                        background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                        background: "linear-gradient(135deg, #ff4fe0 0%, #5b55ff 100%)",
+                        boxShadow: "0 12px 26px rgba(79,70,255,0.42)",
                     },
                     "&:disabled": {
                         background: "#4b5563",
                         color: "#9ca3af",
+                        boxShadow: "none",
                     },
                 }}
             >
-                Enviar dinero desde Main wallet
+                Enviar desde Main
             </Button>
 
             {/* MODAL */}
@@ -172,7 +181,12 @@ export const SendMoneyMainWallet = () => {
                         disabled={sendLoading}
                         sx={{
                             background:
-                                "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                                "linear-gradient(135deg, #ff38d1 0%, #4f46ff 100%)",
+                            fontWeight: 800,
+                            borderRadius: 999,
+                            "&:hover": {
+                                background: "linear-gradient(135deg, #ff4fe0 0%, #5b55ff 100%)",
+                            },
                         }}
                     >
                         {sendLoading ? (
