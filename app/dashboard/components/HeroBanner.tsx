@@ -1,13 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import { formatCurrency } from "@/app/utils/formatCurrency";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, IconButton, CircularProgress } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 import { useMainWalletStore } from "@/app/store/useMainWalletStore";
+import { toast } from "react-toastify";
 
 export function HeroBanner() {
-    const { wallets, getAllWalletsTotalBalance } = useWalletStore();
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const { wallets, getAllWalletsTotalBalance, updateWalletBalances } = useWalletStore();
+
+    const handleRefreshBalances = async () => {
+        if (isRefreshing) return;
+
+        setIsRefreshing(true);
+        toast.info("Actualizando balances...");
+
+        try {
+            await updateWalletBalances();
+            toast.success("Balances actualizados");
+        } catch (error) {
+            console.error("Error al actualizar balances:", error);
+            toast.error("Error al actualizar balances");
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     // XO (embedded)
     const { address: xoAddress } = useXOContracts();
@@ -108,8 +129,40 @@ export function HeroBanner() {
                     border: "2px solid #000000",
                     borderRadius: 3,
                     p: { xs: 2, md: 2.5 },
+                    position: "relative",
                 }}
             >
+                {/* Botón de refrescar */}
+                <IconButton
+                    onClick={handleRefreshBalances}
+                    disabled={isRefreshing || wallets.length === 0}
+                    sx={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        width: 36,
+                        height: 36,
+                        background: "#ffffff",
+                        border: "2px solid #000000",
+                        borderRadius: 2,
+                        transition: "all 0.2s",
+                        "&:hover": {
+                            background: "#3CD2FF",
+                            transform: "scale(1.05)",
+                        },
+                        "&:disabled": {
+                            background: "#e0e0e0",
+                            border: "2px solid #999999",
+                        },
+                    }}
+                >
+                    {isRefreshing ? (
+                        <CircularProgress size={18} sx={{ color: "#000000" }} />
+                    ) : (
+                        <RefreshIcon sx={{ fontSize: 20, color: "#000000" }} />
+                    )}
+                </IconButton>
+
                 <Typography
                     variant="body2"
                     sx={{

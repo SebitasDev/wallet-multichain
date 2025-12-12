@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {
     Box,
     Chip,
@@ -25,27 +25,19 @@ interface IPolChainItemProps {
 
 export default function PolygonChainItem({ address } : IPolChainItemProps) {
     const [open, setOpen] = useState(false);
-    const [balance, setBalance] = useState<number>(0);
-    const { getWalletBalanceByChain } = useWalletStore();
 
-    useEffect(() => {
-        const fetchBalance = async () => {
-            try {
-                const chainId =
-                    (process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-                            ? polygonAmoy.id
-                            : polygon.id
-                    ).toString();
+    const chainId = (process.env.NEXT_PUBLIC_ENVIROMENT === "development"
+        ? polygonAmoy.id
+        : polygon.id
+    ).toString();
 
-                const bal = await getWalletBalanceByChain(address, chainId);
-                setBalance(Number(bal));
-            } catch (err) {
-                console.error("Error al obtener balance:", err);
-            }
-        };
-
-        fetchBalance();
-    }, [address, getWalletBalanceByChain]);
+    const balance = useWalletStore((state) => {
+        const wallet = state.wallets.find(
+            (w) => w.address.toLowerCase() === address.toLowerCase()
+        );
+        const chainInfo = wallet?.chains.find((c) => c.chainId === chainId);
+        return chainInfo?.amount ?? 0;
+    });
 
     return (
         <>
