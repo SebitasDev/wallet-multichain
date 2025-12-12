@@ -17,16 +17,12 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLess from "@mui/icons-material/ExpandLess";
-import BaseChainItem from "@/app/components/molecules/BaseChainItem";
-import OptimismChainItem from "@/app/components/molecules/OptimismChainItem";
-import {useMemo, useState} from "react";
-import ArbitrumChainItem from "@/app/components/molecules/ArbitrumChainItem";
+import ChainItem from "@/app/components/molecules/ChainItem";
+import {useState} from "react";
 import {Address} from "abitype";
 import { toast } from "react-toastify";
 import {useWalletStore} from "@/app/store/useWalletsStore";
-import UnichainChainItem from "@/app/components/molecules/UnichainChainItem";
-import PolygonChainItem from "@/app/components/molecules/PolygonChainItem";
-import AvalancheChainItem from "@/app/components/molecules/AvalancheChainItem";
+import { ChainKey } from "@/app/constants/chainsInformation";
 
 interface IAddressCardProps {
     address: Address
@@ -381,24 +377,23 @@ export const AddressCard = ({
                 }}
             >
                 <List disablePadding sx={{ backgroundColor: "transparent" }}>
-                    {/* Base */}
+                    {/* Chains visibles por defecto */}
                     <Divider />
-                    <BaseChainItem address={address}/>
+                    <ChainItem address={address} chainKey="Base" />
+                    <Divider />
+                    <ChainItem address={address} chainKey="Optimism" />
 
-                    {/* Optimism */}
-                    <Divider/>
-                    <OptimismChainItem address={address}/>
-
+                    {/* Chains adicionales */}
                     {showMore && (
                         <>
                             <Divider />
-                            <ArbitrumChainItem address={address}/>
+                            <ChainItem address={address} chainKey="Arbitrum" />
                             <Divider />
-                            <UnichainChainItem address={address}/>
+                            <ChainItem address={address} chainKey="Unichain" />
                             <Divider />
-                            <PolygonChainItem address={address}/>
+                            <ChainItem address={address} chainKey="Polygon" />
                             <Divider />
-                            <AvalancheChainItem address={address}/>
+                            <ChainItem address={address} chainKey="Avalanche" />
                         </>
                     )}
                 </List>

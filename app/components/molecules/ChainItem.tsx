@@ -1,4 +1,6 @@
-import {useState} from "react";
+"use client";
+
+import { useState, useMemo } from "react";
 import {
     Box,
     Chip,
@@ -9,35 +11,37 @@ import {
     List,
     ListItem
 } from "@mui/material";
-
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
+import { Address } from "abitype";
+import { useWalletStore } from "@/app/store/useWalletsStore";
+import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
 
-import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
-import {Address} from "abitype";
-import {base, baseSepolia} from "viem/chains";
-import {useWalletStore} from "@/app/store/useWalletsStore";
-import {BaseIcon} from "@/app/components/atoms/BaseIcon";
-
-interface IPolChainItemProps {
+interface IChainItemProps {
     address: Address;
+    chainKey: ChainKey;
 }
 
-export default function BaseChainItem({ address } : IPolChainItemProps) {
+export default function ChainItem({ address, chainKey }: IChainItemProps) {
     const [open, setOpen] = useState(false);
 
-    const chainId = (process.env.NEXT_PUBLIC_ENVIROMENT === "development"
-        ? baseSepolia.id
-        : base.id
-    ).toString();
+    const config = NETWORKS[chainKey];
+    const chainId = config.chain.id.toString();
 
-    const balance = useWalletStore((state) => {
-        const wallet = state.wallets.find(
+    // Obtener todas las wallets y calcular el balance
+    const wallets = useWalletStore((state) => state.wallets);
+
+    const balance = useMemo(() => {
+        const wallet = wallets.find(
             (w) => w.address.toLowerCase() === address.toLowerCase()
         );
-        const chainInfo = wallet?.chains.find((c) => c.chainId === chainId);
+        if (!wallet) return 0;
+        const chainInfo = wallet.chains.find((c) => c.chainId === chainId);
         return chainInfo?.amount ?? 0;
-    });
+    }, [wallets, address, chainId]);
+
+    const formattedBalance = (Math.floor(Number(balance) * 100) / 100).toFixed(2);
 
     return (
         <>
@@ -65,7 +69,7 @@ export default function BaseChainItem({ address } : IPolChainItemProps) {
                             height: "100%",
                         }
                     }}>
-                        <BaseIcon />
+                        {config.icon}
                     </Box>
 
                     <Box flex={1} minWidth={0}>
@@ -76,7 +80,7 @@ export default function BaseChainItem({ address } : IPolChainItemProps) {
                                 color: "#000000"
                             }}
                         >
-                            Base
+                            {config.label}
                         </Typography>
                         <Typography
                             variant="caption"
@@ -108,14 +112,14 @@ export default function BaseChainItem({ address } : IPolChainItemProps) {
                             whiteSpace: "nowrap",
                         }}
                     >
-                        ${(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
+                        ${formattedBalance}
                     </Typography>
 
                     <Chip
-                        label="ETH"
+                        label={config.chipLabel}
                         size="small"
                         sx={{
-                            backgroundColor: "#0052FF",
+                            backgroundColor: config.chipColor,
                             border: "2px solid #000000",
                             color: "#ffffff",
                             fontWeight: 800,
@@ -195,7 +199,7 @@ export default function BaseChainItem({ address } : IPolChainItemProps) {
                                         fontSize: { xs: 11, sm: 12 }
                                     }}
                                 >
-                                    Balance: {(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
+                                    Balance: {formattedBalance}
                                 </Typography>
                             </Box>
 
@@ -207,7 +211,7 @@ export default function BaseChainItem({ address } : IPolChainItemProps) {
                                         color: "#000000"
                                     }}
                                 >
-                                    ${(Math.floor(Number(balance) * 100) / 100).toFixed(2)}
+                                    ${formattedBalance}
                                 </Typography>
                             </Box>
                         </ListItem>
