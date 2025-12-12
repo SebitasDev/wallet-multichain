@@ -167,7 +167,7 @@ export const XOContractsProvider = ({
         targetChain: AvailableChains
     ) => {
         try {
-            const networkConfig = NETWORKS[targetChain];
+            const networkConfig = NETWORKS[targetChain.toLowerCase() as keyof typeof NETWORKS];
             const amountAtomic = (parseFloat(amount) * 1_000_000).toString();
 
             let paymentHeader: string;
@@ -206,8 +206,7 @@ export const XOContractsProvider = ({
 
                 paymentHeader = await createPaymentHeader(account, 1, {
                     scheme: "exact",
-                    network:
-                    networkConfig.network,
+                    network: networkConfig.network,
                     maxAmountRequired: amountAtomic,
                     resource: "https://facilitator.ultravioletadao.xyz",
                     description: "x402 Payment",
