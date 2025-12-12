@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     Button,
     CircularProgress,
@@ -94,7 +94,6 @@ export const CrossChainTransferModal = () => {
         getTotalWithFee,
         isLoading,
         error,
-        facilitatorAddress,
     } = useFacilitator({
         provider: provider || undefined,
         privateKey: !provider ? privateKey || undefined : undefined,
@@ -114,6 +113,20 @@ export const CrossChainTransferModal = () => {
     const watchSourceChain = watch("sourceChain");
     const watchDestChain = watch("destChain");
 
+    // Calcular monto mínimo basado SOLO en la cadena de origen
+    const minAmount = useMemo(() => {
+        const sourceConfig = NETWORKS[watchSourceChain];
+        return sourceConfig.aproxFromFee;
+    }, [watchSourceChain]);
+
+    // Validar si el monto es menor al mínimo - ARREGLADO
+    const isAmountValid = useMemo(() => {
+        if (!watchAmount || watchAmount.trim() === "") return true; // Si está vacío, no mostrar error
+        const amount = parseFloat(watchAmount);
+        if (isNaN(amount)) return false; // Si no es un número válido
+        return amount >= minAmount;
+    }, [watchAmount, minAmount]); // ⚠️ IMPORTANTE: agregar minAmount como dependencia
+
     const openModal = () => setOpen(true);
     const closeModal = () => {
         reset();
@@ -128,6 +141,14 @@ export const CrossChainTransferModal = () => {
 
         if (!data.recipient || !data.amount) {
             toast.error("Completa todos los campos");
+            return;
+        }
+
+        const amount = parseFloat(data.amount);
+
+        // Validación final del monto mínimo
+        if (isNaN(amount) || amount < minAmount) {
+            toast.error(`El monto mínimo es ${minAmount} USDC`);
             return;
         }
 
@@ -477,33 +498,59 @@ export const CrossChainTransferModal = () => {
 
                         {/* AMOUNT */}
                         <Box>
-                            <Typography
-                                fontWeight={700}
-                                fontSize={13}
-                                sx={{
-                                    mb: 1,
-                                    textTransform: "uppercase",
-                                    letterSpacing: 0.5,
-                                    color: "#666666"
-                                }}
-                            >
-                                Monto USDC
-                            </Typography>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+                                <Typography
+                                    fontWeight={700}
+                                    fontSize={13}
+                                    sx={{
+                                        textTransform: "uppercase",
+                                        letterSpacing: 0.5,
+                                        color: "#666666"
+                                    }}
+                                >
+                                    Monto USDC
+                                </Typography>
+                                <Typography
+                                    fontSize={11}
+                                    fontWeight={700}
+                                    sx={{
+                                        color: "#00DC8C",
+                                        bgcolor: "rgba(0, 220, 140, 0.1)",
+                                        px: 1.5,
+                                        py: 0.5,
+                                        borderRadius: 1,
+                                        border: "1px solid #00DC8C",
+                                    }}
+                                >
+                                    Mínimo: {minAmount} USDC
+                                </Typography>
+                            </Stack>
                             <Controller
                                 control={control}
                                 name="amount"
                                 render={({ field }) => (
                                     <TextField
                                         type="number"
-                                        placeholder="0.00"
+                                        placeholder={`Mín. ${minAmount}`}
                                         fullWidth
-                                        inputProps={{ min: 0, step: "0.01" }}
+                                        inputProps={{
+                                            min: minAmount,
+                                            step: "0.0001"
+                                        }}
                                         {...field}
+                                        error={!isAmountValid && !!watchAmount}
+                                        helperText={
+                                            !isAmountValid && watchAmount
+                                                ? `El monto debe ser al menos ${minAmount} USDC`
+                                                : ""
+                                        }
                                         InputProps={{
                                             sx: {
                                                 borderRadius: 2,
                                                 background: "#f5f5f5",
-                                                border: "2px solid #000000",
+                                                border: !isAmountValid && watchAmount
+                                                    ? "2px solid #ff4444"
+                                                    : "2px solid #000000",
                                                 fontWeight: 700,
                                                 fontSize: 16,
                                                 "&:hover": {
@@ -512,6 +559,13 @@ export const CrossChainTransferModal = () => {
                                                 "&.Mui-focused": {
                                                     background: "#ffffff",
                                                 }
+                                            }
+                                        }}
+                                        FormHelperTextProps={{
+                                            sx: {
+                                                fontWeight: 600,
+                                                fontSize: 12,
+                                                ml: 0.5,
                                             }
                                         }}
                                     />
@@ -580,6 +634,25 @@ export const CrossChainTransferModal = () => {
                             </Box>
                         )}
 
+                        {/* ALERTA DE MONTO INSUFICIENTE */}
+                        {!isAmountValid && watchAmount && (
+                            <Alert
+                                severity="warning"
+                                sx={{
+                                    border: "2px solid #FFA500",
+                                    borderRadius: 2,
+                                    bgcolor: "rgba(255, 165, 0, 0.1)",
+                                    color: "#000000",
+                                    fontWeight: 600,
+                                    "& .MuiAlert-icon": {
+                                        color: "#FFA500"
+                                    }
+                                }}
+                            >
+                                El monto debe ser al menos <strong>{minAmount} USDC</strong> para cubrir el fee del facilitador en {NETWORKS[watchSourceChain].label}.
+                            </Alert>
+                        )}
+
                         {error && (
                             <Alert
                                 severity="error"
@@ -632,7 +705,7 @@ export const CrossChainTransferModal = () => {
                     <Button
                         variant="contained"
                         onClick={handleSubmit(onSubmit)}
-                        disabled={isLoading || !watchAmount || !watch("recipient")}
+                        disabled={isLoading || !watchAmount || !watch("recipient") || !isAmountValid}
                         sx={{
                             flex: 1,
                             textTransform: "none",
