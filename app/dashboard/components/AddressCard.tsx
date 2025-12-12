@@ -34,23 +34,15 @@ interface IAddressCardProps {
 }
 
 export const AddressCard = ({
-        address,
-        walletName
-    }: IAddressCardProps) => {
+                                address,
+                                walletName
+                            }: IAddressCardProps) => {
     const [showMore, setShowMore] = useState(false);
     const [showNameExpanded, setShowNameExpanded] = useState(false);
 
     const totalBalance = useWalletStore(
         (state) => state.getWalletTotalBalance(address)
     );
-
-    const bgGradient = useMemo(() => {
-        const seed = address
-            .split("")
-            .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const pastel = (h: number) => `hsl(${h % 360}, 80%, 92%)`;
-        return `linear-gradient(135deg, ${pastel(seed)}, ${pastel(seed * 7)})`;
-    }, [address]);
 
     const copyToClipboard = async (value: string, label: string) => {
         const text = value ?? "";
@@ -102,28 +94,17 @@ export const AddressCard = ({
 
     return (
         <Card
-            elevation={3}
+            elevation={0}
             sx={{
-                position: "relative",
-                isolation: "isolate",
-                borderRadius: 18,
+                borderRadius: 4,
                 overflow: "hidden",
-                transition: "0.25s",
-                background:
-                    "radial-gradient(circle at 18% 12%, rgba(126,87,255,0.2) 0%, transparent 30%), radial-gradient(circle at 85% 5%, rgba(255,72,160,0.18) 0%, transparent 25%), linear-gradient(185deg, #0d0a1f 0%, #0b081a 45%, #05040f 100%)",
-                color: "#f9fafb",
-                boxShadow:
-                    "0 24px 68px rgba(0,0,0,0.78), 0 12px 28px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)",
-                border: "1px solid rgba(126,87,255,0.18)",
-                "&::before": {
-                    content: '""',
-                    position: "absolute",
-                    inset: -6,
-                    borderRadius: "inherit",
-                    background: "linear-gradient(135deg, rgba(126,87,255,0.35), rgba(255,72,160,0.3))",
-                    filter: "blur(16px)",
-                    opacity: 0.32,
-                    zIndex: 0,
+                background: "#ffffff",
+                border: "3px solid #000000",
+                boxShadow: "6px 6px 0px #000000",
+                transition: "all 0.2s",
+                "&:hover": {
+                    transform: "translate(2px, 2px)",
+                    boxShadow: "4px 4px 0px #000000",
                 },
             }}
         >
@@ -131,16 +112,12 @@ export const AddressCard = ({
             <Box
                 sx={{
                     p: 3,
-                    background: `linear-gradient(135deg, rgba(24,18,46,0.92) 0%, rgba(14,10,32,0.95) 100%), ${bgGradient}`,
-                    borderBottom: "1px solid rgba(255,255,255,0.08)",
-                    color: "#f9fafb",
-                    boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.05)",
-                    position: "relative",
-                    zIndex: 1,
-                    backdropFilter: "blur(4px)",
+                    background: "#f5f5f5",
+                    borderBottom: "3px solid #000000",
+                    color: "#000000",
                 }}
             >
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2}>
 
                     {/* Left */}
                     <Box flex={1} minWidth={0}>
@@ -148,21 +125,21 @@ export const AddressCard = ({
                             display="flex"
                             alignItems="center"
                             gap={1}
-                            flexWrap="nowrap"
-                            sx={{ minWidth: 0, overflow: "hidden" }}
+                            flexWrap="wrap"
+                            sx={{ minWidth: 0 }}
                         >
                             {/* Wallet name */}
                             <Typography
                                 variant="h6"
-                                fontWeight="bold"
+                                fontWeight={800}
                                 sx={{
-                                    color: "#f9fafb",
+                                    color: "#000000",
                                     maxWidth: { xs: 150, sm: 200 },
                                     minWidth: 0,
                                     whiteSpace: showNameExpanded ? "normal" : "nowrap",
                                     textOverflow: showNameExpanded ? "clip" : "ellipsis",
                                     overflow: "hidden",
-                                    letterSpacing: "0.3px",
+                                    fontSize: { xs: 18, md: 20 },
                                 }}
                                 title={walletName}
                             >
@@ -177,11 +154,15 @@ export const AddressCard = ({
                                         setShowNameExpanded((prev) => !prev);
                                     }}
                                     sx={{
-                                        color: "rgba(255,255,255,0.85)",
-                                        p: 0.25,
-                                        backgroundColor: "rgba(255,255,255,0.08)",
-                                        border: "1px solid rgba(255,255,255,0.12)",
-                                        "&:hover": { backgroundColor: "rgba(255,255,255,0.14)" },
+                                        color: "#000000",
+                                        background: "#ffffff",
+                                        border: "2px solid #000000",
+                                        borderRadius: 2,
+                                        width: 28,
+                                        height: 28,
+                                        "&:hover": {
+                                            background: "#f5f5f5",
+                                        },
                                     }}
                                 >
                                     {showNameExpanded ? (
@@ -197,32 +178,33 @@ export const AddressCard = ({
                                 label="6 chains"
                                 size="small"
                                 sx={{
-                                    background: "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05))",
-                                    color: "#f3f4f6",
-                                    border: "1px solid rgba(255,255,255,0.18)",
-                                    fontWeight: 700,
-                                    letterSpacing: "0.35px",
-                                    backdropFilter: "blur(10px)",
-                                    boxShadow: "0 14px 32px rgba(0,0,0,0.45)",
+                                    background: "#ffffff",
+                                    color: "#000000",
+                                    border: "2px solid #000000",
+                                    fontWeight: 800,
+                                    fontSize: 11,
+                                    letterSpacing: "0.5px",
                                 }}
                             />
                         </Box>
 
-                        <Box mt={1.5} display="flex" alignItems="center" gap={1}>
-                            <Typography
+                        <Box mt={1.5} display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                            <Box
                                 component="code"
                                 sx={{
-                                    backgroundColor: "rgba(255,255,255,0.08)",
-                                    px: 1,
-                                    py: 0.5,
-                                    borderRadius: 1,
-                                    fontSize: "12px",
-                                    color: "#f9fafb",
-                                    border: "1px solid rgba(255,255,255,0.12)",
+                                    backgroundColor: "#ffffff",
+                                    px: 1.5,
+                                    py: 0.75,
+                                    borderRadius: 2,
+                                    fontSize: "13px",
+                                    fontWeight: 700,
+                                    color: "#000000",
+                                    border: "2px solid #000000",
+                                    fontFamily: "monospace",
                                 }}
                             >
                                 {truncated}
-                            </Typography>
+                            </Box>
 
                             <IconButton
                                 size="small"
@@ -232,13 +214,20 @@ export const AddressCard = ({
                                     copyToClipboard(address, "Address");
                                 }}
                                 sx={{
-                                    color: "rgba(255,255,255,0.85)",
-                                    backgroundColor: "rgba(255,255,255,0.06)",
-                                    border: "1px solid rgba(255,255,255,0.12)",
-                                    "&:hover": { backgroundColor: "rgba(255,255,255,0.12)" },
+                                    color: "#000000",
+                                    background: "#ffffff",
+                                    border: "2px solid #000000",
+                                    borderRadius: 2,
+                                    width: 32,
+                                    height: 32,
+                                    transition: "all 0.2s",
+                                    "&:hover": {
+                                        background: "#3CD2FF",
+                                        transform: "scale(1.05)",
+                                    },
                                 }}
                             >
-                                <ContentCopyIcon fontSize="inherit" />
+                                <ContentCopyIcon fontSize="small" />
                             </IconButton>
 
                             <IconButton
@@ -248,46 +237,84 @@ export const AddressCard = ({
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 sx={{
-                                    color: "rgba(255,255,255,0.85)",
-                                    backgroundColor: "rgba(255,255,255,0.06)",
-                                    border: "1px solid rgba(255,255,255,0.12)",
-                                    "&:hover": { backgroundColor: "rgba(255,255,255,0.12)" },
+                                    color: "#000000",
+                                    background: "#ffffff",
+                                    border: "2px solid #000000",
+                                    borderRadius: 2,
+                                    width: 32,
+                                    height: 32,
+                                    transition: "all 0.2s",
+                                    "&:hover": {
+                                        background: "#7852FF",
+                                        color: "#ffffff",
+                                        transform: "scale(1.05)",
+                                    },
                                 }}
                             >
-                                <OpenInNewIcon fontSize="inherit" />
+                                <OpenInNewIcon fontSize="small" />
                             </IconButton>
                         </Box>
                     </Box>
 
                     {/* Right */}
-                    <Box textAlign="right" display="flex" flexDirection="column" alignItems="flex-end">
+                    <Box textAlign="right" display="flex" flexDirection="column" alignItems="flex-end" gap={1}>
 
                         {/* Delete button */}
                         <IconButton
                             size="small"
                             sx={{
-                                color: "#f87171",
-                                mb: 1,
-                                backgroundColor: "rgba(248,113,113,0.1)",
-                                border: "1px solid rgba(248,113,113,0.35)",
-                                "&:hover": { backgroundColor: "rgba(248,113,113,0.18)" },
+                                color: "#000000",
+                                background: "#ff4444",
+                                border: "2px solid #000000",
+                                borderRadius: 2,
+                                width: 36,
+                                height: 36,
+                                transition: "all 0.2s",
+                                "&:hover": {
+                                    background: "#ff3333",
+                                    transform: "scale(1.05)",
+                                },
                             }}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 removeWallet(address);
                             }}
                         >
-                            <DeleteOutlineIcon fontSize="small" />
+                            <DeleteOutlineIcon fontSize="small" sx={{ color: "#ffffff" }} />
                         </IconButton>
 
-                        <Typography variant="h5" fontWeight="bold">
-                            <Box component="span" sx={{ color: "#f9fafb" }}>
+                        <Box
+                            sx={{
+                                background: "#ffffff",
+                                border: "2px solid #000000",
+                                borderRadius: 2,
+                                px: 2,
+                                py: 1,
+                                textAlign: "center",
+                            }}
+                        >
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    color: "#666666",
+                                    fontWeight: 700,
+                                    fontSize: 11,
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.5px",
+                                    display: "block",
+                                    mb: 0.5,
+                                }}
+                            >
+                                Valor Total
+                            </Typography>
+                            <Typography
+                                variant="h5"
+                                fontWeight={900}
+                                sx={{ color: "#000000", fontSize: { xs: 20, md: 24 } }}
+                            >
                                 ${totalBalance.toFixed(2)}
-                            </Box>
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: "rgba(226,232,240,0.7)" }}>
-                            Valor Total
-                        </Typography>
+                            </Typography>
+                        </Box>
                     </Box>
                 </Box>
             </Box>
@@ -296,17 +323,10 @@ export const AddressCard = ({
             <CardContent
                 sx={{
                     p: 0,
-                    background: "rgba(8,8,18,0.9)",
-                    color: "#e5e7eb",
-                    backdropFilter: "blur(6px)",
-                    "& .MuiDivider-root": { borderColor: "rgba(255,255,255,0.08)" },
-                    "& .MuiTypography-root": { color: "#e5e7eb" },
-                    "& .MuiTypography-root.MuiTypography-caption": { color: "rgba(229,231,235,0.7)" },
-                    "& .MuiListItemButton-root": {
-                        "&:hover": { backgroundColor: "rgba(255,255,255,0.05)" },
-                    },
-                    "& .MuiListItem-root": {
-                        color: "#e5e7eb",
+                    background: "#ffffff",
+                    "& .MuiDivider-root": {
+                        borderColor: "#000000",
+                        borderWidth: "1px",
                     },
                 }}
             >
@@ -323,8 +343,11 @@ export const AddressCard = ({
                         <>
                             <Divider />
                             <ArbitrumChainItem address={address}/>
+                            <Divider />
                             <UnichainChainItem address={address}/>
+                            <Divider />
                             <PolygonChainItem address={address}/>
+                            <Divider />
                             <AvalancheChainItem address={address}/>
                         </>
                     )}
@@ -332,13 +355,11 @@ export const AddressCard = ({
             </CardContent>
 
             {/* FOOTER */}
-            <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
+            <Divider sx={{ borderColor: "#000000", borderWidth: "3px" }} />
             <CardActions
                 sx={{
                     p: 2,
-                    color: "#e5e7eb",
-                    backgroundColor: "rgba(8,8,18,0.9)",
-                    backdropFilter: "blur(6px)",
+                    background: "#f5f5f5",
                 }}
             >
                 <Button
@@ -348,20 +369,29 @@ export const AddressCard = ({
                         <ExpandMoreIcon
                             sx={{
                                 transform: showMore ? "rotate(180deg)" : "rotate(0deg)",
-                                transition: "0.2s",
-                                color: "#cbd5e1",
+                                transition: "transform 0.3s",
+                                color: "#000000",
                             }}
                         />
                     }
                     sx={{
                         textTransform: "none",
-                        color: "#e5e7eb",
-                        fontWeight: 700,
-                        "&:hover": { backgroundColor: "rgba(255,255,255,0.06)" },
+                        color: "#000000",
+                        fontWeight: 800,
+                        fontSize: 14,
+                        py: 1.2,
+                        borderRadius: 3,
+                        border: "2px solid #000000",
+                        background: "#ffffff",
+                        transition: "all 0.2s",
+                        "&:hover": {
+                            background: "#f5f5f5",
+                            transform: "scale(1.01)",
+                        },
                     }}
                     onClick={() => setShowMore(!showMore)}
                 >
-                    {showMore ? "Ocultar chains" : "Ver 1 chain más"}
+                    {showMore ? "Ocultar chains" : "Ver 4 chains más"}
                 </Button>
             </CardActions>
         </Card>

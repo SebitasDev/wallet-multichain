@@ -1,14 +1,17 @@
 "use client";
 
 import {
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  Typography,
+    Box,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    Typography,
+    IconButton,
+    CircularProgress,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import CloseIcon from "@mui/icons-material/Close";
 import {useSendMoney} from "@/app/dashboard/hooks/useSendMoney";
 import {FormSendMoney} from "@/app/dashboard/components/sendMoney/FormSendMoney";
 import {FinishRoute} from "@/app/dashboard/components/sendMoney/FinishRoute";
@@ -25,106 +28,157 @@ export function SendMoneyModal({walletNames}: Props) {
 
 
     return (
-    <Dialog
-      open={isOpen}
-      onClose={() => setSendModal(false)}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 4,
-          overflow: "hidden",
-          boxShadow: "0 30px 80px rgba(15,23,42,0.25)",
-        },
-      }}
-      slotProps={{
-          backdrop: {
-              sx: {
-                  backdropFilter: "blur(25px) brightness(0.7)",
-                  backgroundColor: "rgba(255,255,255,0.05)", // glass suave
-              },
-          },
-      }}
-    >
-      <Box
-        sx={{
-          background: "linear-gradient(135deg, #1f50ff 0%, #19a3b7 50%, #16a34a 100%)",
-          px: 3,
-          py: 2.2,
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          color: "#fff",
-        }}
-      >
-        <Box
-          sx={{
-            width: 46,
-            height: 46,
-            borderRadius: 2.5,
-            background: "rgba(255,255,255,0.14)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backdropFilter: "blur(6px)",
-          }}
+        <Dialog
+            open={isOpen}
+            onClose={() => setSendModal(false)}
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{
+                sx: {
+                    borderRadius: 4,
+                    overflow: "hidden",
+                    border: "3px solid #000000",
+                    boxShadow: "8px 8px 0px #000000",
+                    background: "#ffffff",
+                },
+            }}
         >
-          <SendIcon />
-        </Box>
-        <Box sx={{ flex: 1 }}>
-          <Typography fontWeight={900} fontSize={18.5} sx={{ lineHeight: 1.2 }}>
-            Enviar fondos
-          </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            Elige la chain destino e ingresa address, monto y contrasena.
-          </Typography>
-        </Box>
-      </Box>
+            {/* HEADER */}
+            <Box
+                sx={{
+                    background: "#000000",
+                    px: 3,
+                    py: 2.5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    color: "#fff",
+                    borderBottom: "3px solid #000000",
+                }}
+            >
+                <Box
+                    sx={{
+                        width: 46,
+                        height: 46,
+                        borderRadius: 2.5,
+                        background: "rgba(255,255,255,0.1)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "2px solid rgba(255,255,255,0.2)",
+                    }}
+                >
+                    <SendIcon />
+                </Box>
 
-      <DialogContent sx={{ px: 3, pb: 1.5, pt: 2.5 }}>
-        {!routeReady ? ( <FormSendMoney control={control} sendLoading={sendLoading} errors={errors} />) : (
-          <FinishRoute routeSummary={routeSummary} routeDetails={routeDetails} routeReady={routeReady} selected={selected} />
-        )}
-      </DialogContent>
+                <Box sx={{ flex: 1 }}>
+                    <Typography fontWeight={800} fontSize={18} sx={{ lineHeight: 1.2 }}>
+                        Enviar fondos
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8, fontSize: 13 }}>
+                        Elige la chain destino e ingresa address, monto y contraseña.
+                    </Typography>
+                </Box>
 
-      <DialogActions sx={{ px: 3, pb: 2.5, pt: 1 }}>
-        <Button
-          variant="outlined"
-          onClick={() => setSendModal(false)}
-          sx={{
-            textTransform: "none",
-            borderRadius: 1.5,
-            fontWeight: 700,
-            borderColor: "#e2e8f0",
-            color: "#0f172a",
-            backgroundColor: "#fff",
-            "&:hover": {
-              borderColor: "#cbd5e1",
-              backgroundColor: "#f8fafc",
-            },
-          }}
-        >
-          Cancelar
-        </Button>
-          <Button
-              variant="contained"
-              disabled={!canSend || sendLoading}
-              onClick={routeReady ? handleOnConfirm : handleSubmit(handleOnSend)}
-              sx={{
-                  textTransform: "none",
-                  borderRadius: 1.5,
-                  fontWeight: 800,
-                  letterSpacing: 0.2,
-                  boxShadow: "0 14px 35px rgba(26,146,255,0.35)",
-                  background: "linear-gradient(135deg, #0f7bff 0%, #0ac5a8 100%)",
-                  "&:hover": {
-                      background: "linear-gradient(135deg, #0d6bdc 0%, #09ad93 100%)",
-                  },
-              }}
-          >
-              {sendLoading ? "Cargando..." : routeReady ? "Confirmar" : "Aceptar"}
-          </Button>
-      </DialogActions>
-    </Dialog>
-  );
+                <IconButton
+                    size="small"
+                    onClick={() => setSendModal(false)}
+                    disabled={sendLoading}
+                    sx={{
+                        color: "white",
+                        background: "rgba(255,255,255,0.1)",
+                        borderRadius: 2,
+                        "&:hover": {
+                            background: "rgba(255,255,255,0.2)",
+                        },
+                        "&:disabled": {
+                            color: "rgba(255,255,255,0.3)",
+                        }
+                    }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            </Box>
+
+            <DialogContent sx={{ px: 3, py: 3, background: "#ffffff" }}>
+                {!routeReady ? (
+                    <FormSendMoney control={control} sendLoading={sendLoading} errors={errors} />
+                ) : (
+                    <FinishRoute
+                        routeSummary={routeSummary}
+                        routeDetails={routeDetails}
+                        routeReady={routeReady}
+                        selected={selected}
+                    />
+                )}
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 2, background: "#ffffff" }}>
+                <Button
+                    variant="outlined"
+                    onClick={() => setSendModal(false)}
+                    disabled={sendLoading}
+                    sx={{
+                        flex: 1,
+                        textTransform: "none",
+                        borderRadius: 3,
+                        py: 1.4,
+                        fontWeight: 800,
+                        fontSize: 15,
+                        background: "#ffffff",
+                        color: "#000000",
+                        border: "3px solid #000000",
+                        boxShadow: "4px 4px 0px #000000",
+                        transition: "all 0.2s",
+                        "&:hover": {
+                            background: "#f5f5f5",
+                            transform: "translate(2px, 2px)",
+                            boxShadow: "2px 2px 0px #000000",
+                        },
+                        "&:disabled": {
+                            opacity: 0.4,
+                        },
+                    }}
+                >
+                    Cancelar
+                </Button>
+
+                <Button
+                    variant="contained"
+                    disabled={!canSend || sendLoading}
+                    onClick={routeReady ? handleOnConfirm : handleSubmit(handleOnSend)}
+                    sx={{
+                        flex: 1,
+                        textTransform: "none",
+                        borderRadius: 3,
+                        py: 1.4,
+                        fontWeight: 800,
+                        fontSize: 15,
+                        background: "#7852FF",
+                        color: "#ffffff",
+                        border: "3px solid #000000",
+                        boxShadow: "4px 4px 0px #000000",
+                        transition: "all 0.2s",
+                        "&:hover": {
+                            background: "#6342E6",
+                            transform: "translate(2px, 2px)",
+                            boxShadow: "2px 2px 0px #000000",
+                        },
+                        "&:disabled": {
+                            opacity: 0.4,
+                            background: "#cccccc",
+                            transform: "none",
+                        },
+                    }}
+                >
+                    {sendLoading ? (
+                        <>
+                            <CircularProgress size={20} sx={{ color: "white", mr: 1 }} />
+                            Cargando...
+                        </>
+                    ) : routeReady ? "Confirmar" : "Aceptar"}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
 }
