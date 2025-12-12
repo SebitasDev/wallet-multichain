@@ -50,7 +50,6 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
     const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
     const { allocateAcrossNetworks } = useFindBestRoute();
     const { unlockWallet, transferBalance } = useWalletStore();
-    const { privateKey } = useGeneralWalletStore();
     const { setSendModal, isOpen } = useSendModalState();
     const [routeDetails, setRouteDetails] = useState<RouteDetail[]>([]);
 
@@ -59,7 +58,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
 
         const details = routeSummary.allocations.map((a) => ({
             wallet: a.from,
-            walletName: walletNames?.[a.from.toLowerCase()] || a.from,
+            walletName: a.from,
             chains: a.chains.map((c) => {
                 const chainDef = resolveChain(c.chainId);
                 return {

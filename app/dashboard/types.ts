@@ -14,12 +14,6 @@ export type Wallet = {
   defaultExpanded?: boolean;
 };
 
-export interface WalletInfo {
-  name: string;
-  address: string;
-  encryptedSeed: string;
-}
-
 export type AllocationSummary = {
   targetAmount: number;
   totalAmountTaken: number;
