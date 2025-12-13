@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import {Box, Typography } from "@mui/material";
-import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
@@ -40,7 +39,6 @@ export default function Dashboard() {
             setMode("create");
             setAskPassword(true);
         } else {
-            localStorage.removeItem("wallets");
             setMode("unlock");
             setAskPassword(true);
         }
