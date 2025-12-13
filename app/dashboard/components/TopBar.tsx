@@ -4,12 +4,15 @@ import {Avatar, Box, Button, Stack, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SendIcon from "@mui/icons-material/Send";
 import DownloadIcon from "@mui/icons-material/Download";
+import SavingsIcon from "@mui/icons-material/Savings";
 import {useModalStore} from "@/app/store/useModalStore";
 import {useSendModalState} from "@/app/dashboard/store/useSendModalState";
 import {useWalletStore} from "@/app/store/useWalletsStore";
 import {toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 
 export function TopBar() {
+    const router = useRouter();
     const { openAdd, openReceive } = useModalStore();
     const { setSendModal } = useSendModalState();
     const { wallets } = useWalletStore();
@@ -181,6 +184,37 @@ export function TopBar() {
                     <AddIcon sx={{ fontSize: 28, color: "#000000" }} />
                     <Typography sx={{ fontSize: 14, fontWeight: 600, textAlign: "center" }}>
                         Agregar Address
+                    </Typography>
+                </Button>
+
+                {/* SAVINGS */}
+                <Button
+                    onClick={() => router.push("/dashboard/savings")}
+                    sx={{
+                        width: 90,
+                        height: 90,
+                        borderRadius: 3,
+                        backgroundColor: "#FFD700",
+                        border: "3px solid #000000",
+                        boxShadow: "4px 4px 0px #000000",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 0.75,
+                        textTransform: "none",
+                        color: "#000",
+                        transition: "all 0.2s",
+                        "&:hover": {
+                            backgroundColor: "#E6C200",
+                            transform: "translate(2px, 2px)",
+                            boxShadow: "2px 2px 0px #000000",
+                        },
+                    }}
+                >
+                    <SavingsIcon sx={{ fontSize: 28, color: "#000000" }} />
+                    <Typography sx={{ fontSize: 14, fontWeight: 600, textAlign: "center" }}>
+                        Savings
                     </Typography>
                 </Button>
             </Box>
