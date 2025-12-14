@@ -43,7 +43,7 @@ export interface ChainConfig {
     crossChainInformation: CrossChainInformation;
 }
 
-const isDevelopment = process.env.NODE_ENV === "development";
+const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
 export const NETWORKS: Record<ChainKey, ChainConfig> = {
     Optimism: OPTIMISM,

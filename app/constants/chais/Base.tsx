@@ -3,7 +3,7 @@ import {BaseIcon} from "@/app/components/atoms/BaseIcon";
 import {Address} from "abitype";
 import {ChainConfig} from "@/app/constants/chainsInformation";
 
-const isDevelopment = process.env.NODE_ENV === "development";
+const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
 export const BASE: ChainConfig = {
     usdc: (isDevelopment ? "0x036CbD53842c5426634e7929541eC2318f3dCF7e" : "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") as Address,

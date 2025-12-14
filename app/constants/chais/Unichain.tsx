@@ -3,7 +3,7 @@ import {UnichainIcon} from "@/app/components/atoms/UnichainIcon";
 import {Address} from "abitype";
 import {ChainConfig} from "@/app/constants/chainsInformation";
 
-const isDevelopment = process.env.NODE_ENV === "development";
+const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
 export const UNICHAIN: ChainConfig = {
     usdc: (isDevelopment ? "0x31d0220469e10c4E71834a79b1f276d740d3768F" : "0x078D782b760474a361dDA0AF3839290b0EF57AD6") as Address,
