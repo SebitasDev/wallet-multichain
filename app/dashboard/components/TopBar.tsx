@@ -190,6 +190,7 @@ export function TopBar() {
 
                 {/* SAVINGS */}
                 <Button
+                    disabled={true}
                     onClick={() => router.push("/dashboard/savings")}
                     sx={{
                         width: 90,
