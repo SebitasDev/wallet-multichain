@@ -394,6 +394,8 @@ export const AddressCard = ({
                             <ChainItem address={address} chainKey="Polygon" />
                             <Divider />
                             <ChainItem address={address} chainKey="Avalanche" />
+                            <Divider />
+                            <ChainItem address={address} chainKey="WorldChain" />
                         </>
                     )}
                 </List>
