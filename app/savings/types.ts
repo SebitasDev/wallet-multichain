@@ -9,12 +9,16 @@ export interface SavingsPosition {
     chain: SavingsChainKey;
     /** Number of sUSDC shares held */
     shares: string;
-    /** Current value in USDC (from convertToAssets) */
+    /** Current value in USDC (from convertToAssets) - formatted for display */
     currentValue: string;
+    /** Current value as raw BigInt string (6 decimals) for animation */
+    currentValueRaw: string;
     /** Amount originally deposited in USDC */
     deposited: string;
-    /** Earnings in USDC (currentValue - deposited) */
+    /** Earnings in USDC (currentValue - deposited) - formatted for display */
     earned: string;
+    /** Earnings as raw BigInt string (6 decimals) for animation */
+    earnedRaw: string;
     /** Current APY percentage */
     apy: string;
 }
@@ -121,8 +125,12 @@ export interface SavingsSummary {
     totalDeposited: string;
     /** Total current value across all chains (formatted) */
     totalValue: string;
+    /** Total current value as raw BigInt string for animation */
+    totalValueRaw: string;
     /** Total earned across all chains (formatted) */
     totalEarned: string;
+    /** Total earned as raw BigInt string for animation */
+    totalEarnedRaw: string;
     /** Average APY weighted by value */
     averageApy: string;
     /** Number of active positions */

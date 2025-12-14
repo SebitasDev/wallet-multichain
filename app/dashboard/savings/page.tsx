@@ -31,8 +31,8 @@ export default function SavingsPage() {
 
     const encrypted = useWalletPasswordStore((s) => s.encryptedPassword);
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
-    const { wallets, unlockWallet } = useWalletStore();
-    const { positions, loading } = useSavingsStore();
+    const { wallets } = useWalletStore();
+    const { positions } = useSavingsStore();
 
     // Get selected wallet
     const selectedWallet = wallets.find(w => w.address === selectedWalletAddress) || (wallets.length > 0 ? wallets[0] : null);
@@ -59,13 +59,6 @@ export default function SavingsPage() {
     useEffect(() => {
         if (!askPassword && selectedWallet) {
             fetchSavingsPositions(selectedWallet.address);
-
-            // Poll every 10 seconds
-            const interval = setInterval(() => {
-                fetchSavingsPositions(selectedWallet.address);
-            }, 10000);
-
-            return () => clearInterval(interval);
         }
     }, [askPassword, selectedWallet]);
 

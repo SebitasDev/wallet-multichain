@@ -22,6 +22,7 @@ import {
 } from "@/app/savings/config";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { SavingsPosition } from "@/app/savings/types";
+import { AnimatedValue } from "./AnimatedValue";
 
 interface PositionsTableProps {
     onOpenConfirmModal: (
@@ -296,26 +297,27 @@ export function PositionsTable({ onOpenConfirmModal }: PositionsTableProps) {
                                     </Typography>
                                 </Box>
 
-                                {/* Value */}
-                                <Typography sx={{ fontWeight: 900, fontSize: 14 }}>
-                                    ${position.currentValue}
-                                </Typography>
+                                {/* Value - Animated real-time */}
+                                <AnimatedValue
+                                    rawValue={position.currentValueRaw}
+                                    apy={position.apy}
+                                    decimals={12}
+                                    sx={{ fontWeight: 900, fontSize: 13 }}
+                                />
 
-                                {/* Earned */}
-                                <Typography
+                                {/* Earned - Animated real-time */}
+                                <AnimatedValue
+                                    rawValue={position.earnedRaw}
+                                    apy={position.apy}
+                                    decimals={12}
+                                    showPlusSign={true}
                                     sx={{
                                         fontWeight: 900,
-                                        fontSize: 14,
-                                        color:
-                                            parseFloat(position.earned.replace(/[^0-9.-]/g, "")) > 0
-                                                ? "#00DC8C"
-                                                : "#000000",
+                                        fontSize: 13,
+                                        color: "#00DC8C",
                                         display: { xs: "none", md: "block" },
                                     }}
-                                >
-                                    {parseFloat(position.earned.replace(/[^0-9.-]/g, "")) > 0 ? "+" : ""}
-                                    ${position.earned}
-                                </Typography>
+                                />
 
                                 {/* APY */}
                                 <Typography

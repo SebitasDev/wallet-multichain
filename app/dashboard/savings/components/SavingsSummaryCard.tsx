@@ -6,6 +6,7 @@ import SavingsIcon from "@mui/icons-material/Savings";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import PercentIcon from "@mui/icons-material/Percent";
+import { AnimatedValue } from "./AnimatedValue";
 
 export function SavingsSummaryCard() {
     const { loading, getSummary } = useSavingsStore();
@@ -14,15 +15,23 @@ export function SavingsSummaryCard() {
     const StatBox = ({
         label,
         value,
+        rawValue,
         icon,
         color = "#000000",
         isPositive = false,
+        isAnimated = false,
+        apy = "4.50",
+        isPercentage = false,
     }: {
         label: string;
         value: string;
+        rawValue?: string;
         icon: React.ReactNode;
         color?: string;
         isPositive?: boolean;
+        isAnimated?: boolean;
+        apy?: string;
+        isPercentage?: boolean;
     }) => (
         <Box
             sx={{
@@ -66,6 +75,18 @@ export function SavingsSummaryCard() {
             </Typography>
             {loading ? (
                 <Skeleton width={80} height={28} />
+            ) : isAnimated && rawValue ? (
+                <AnimatedValue
+                    rawValue={rawValue}
+                    apy={apy}
+                    decimals={12}
+                    showPlusSign={isPositive}
+                    sx={{
+                        fontSize: { xs: 12, md: 14 },
+                        fontWeight: 900,
+                        color: isPositive ? "#00DC8C" : "#000000",
+                    }}
+                />
             ) : (
                 <Typography
                     sx={{
@@ -74,8 +95,7 @@ export function SavingsSummaryCard() {
                         color: isPositive ? "#00DC8C" : "#000000",
                     }}
                 >
-                    {isPositive && parseFloat(value.replace(/[^0-9.-]/g, "")) > 0 ? "+" : ""}
-                    ${value}
+                    {isPercentage ? "" : "$"}{value}
                 </Typography>
             )}
         </Box>
@@ -153,21 +173,28 @@ export function SavingsSummaryCard() {
                 <StatBox
                     label="Current Value"
                     value={summary.totalValue}
+                    rawValue={summary.totalValueRaw}
                     icon={<SavingsIcon sx={{ fontSize: 22 }} />}
                     color="#7852FF"
+                    isAnimated={summary.positionCount > 0}
+                    apy={summary.averageApy}
                 />
                 <StatBox
                     label="Total Earned"
                     value={summary.totalEarned}
+                    rawValue={summary.totalEarnedRaw}
                     icon={<TrendingUpIcon sx={{ fontSize: 22 }} />}
                     color="#00DC8C"
                     isPositive
+                    isAnimated={summary.positionCount > 0}
+                    apy={summary.averageApy}
                 />
                 <StatBox
                     label="Avg APY"
                     value={`${summary.averageApy}%`}
                     icon={<PercentIcon sx={{ fontSize: 22 }} />}
                     color="#FFD700"
+                    isPercentage
                 />
             </Box>
 

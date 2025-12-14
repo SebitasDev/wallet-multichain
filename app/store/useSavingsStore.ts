@@ -127,6 +127,7 @@ export const useSavingsStore = create<SavingsState>()(
                 const deposited = get().getDepositedAmount(position.chain);
                 const currentValue = BigInt(position.currentValue);
                 const earned = currentValue - deposited;
+                const earnedClamped = earned < BigInt(0) ? BigInt(0) : earned;
 
                 // Calculate APY (simplified - would need more data for accurate calculation)
                 // For now, estimate based on Spark's ~4.5% SSR
@@ -136,8 +137,10 @@ export const useSavingsStore = create<SavingsState>()(
                     chain: position.chain,
                     shares: position.shares,
                     currentValue: formatUsdcAmount(currentValue),
+                    currentValueRaw: currentValue.toString(),
                     deposited: formatUsdcAmount(deposited),
-                    earned: formatUsdcAmount(earned < BigInt(0) ? BigInt(0) : earned),
+                    earned: formatUsdcAmount(earnedClamped),
+                    earnedRaw: earnedClamped.toString(),
                     apy,
                 };
             },
@@ -160,6 +163,7 @@ export const useSavingsStore = create<SavingsState>()(
 
                 const totalDeposited = getTotalDeposited();
                 const totalEarned = totalValue - totalDeposited;
+                const totalEarnedClamped = totalEarned < BigInt(0) ? BigInt(0) : totalEarned;
 
                 // Weighted average APY (simplified)
                 const averageApy = positionCount > 0 ? "4.50" : "0.00";
@@ -167,7 +171,9 @@ export const useSavingsStore = create<SavingsState>()(
                 return {
                     totalDeposited: formatUsdcAmount(totalDeposited),
                     totalValue: formatUsdcAmount(totalValue),
-                    totalEarned: formatUsdcAmount(totalEarned < BigInt(0) ? BigInt(0) : totalEarned),
+                    totalValueRaw: totalValue.toString(),
+                    totalEarned: formatUsdcAmount(totalEarnedClamped),
+                    totalEarnedRaw: totalEarnedClamped.toString(),
                     averageApy,
                     positionCount,
                 };
@@ -175,9 +181,11 @@ export const useSavingsStore = create<SavingsState>()(
         }),
         {
             name: "savings-storage",
-            // Only persist depositHistory to localStorage
+            // Persist depositHistory, positions, and lastUpdated to localStorage
             partialize: (state) => ({
                 depositHistory: state.depositHistory,
+                positions: state.positions,
+                lastUpdated: state.lastUpdated,
             }),
         }
     )
