@@ -58,6 +58,7 @@ export function TopBar() {
                         {[
                             { text: "6 chains", bgColor: "#f5f5f5" },
                             { text: "$0.01 Fee", bgColor: "#f5f5f5" },
+                            { text: "4.25% APY", bgColor: "#f5f5f5" },
                         ].map((chip) => (
                             <Box
                                 key={chip.text}
