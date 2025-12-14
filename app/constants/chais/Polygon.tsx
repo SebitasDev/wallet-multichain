@@ -4,7 +4,7 @@ import PolygonIcon from "@/app/components/atoms/PolygonIcon";
 import {Address} from "abitype";
 import {ChainConfig} from "@/app/constants/chainsInformation";
 
-const isDevelopment = process.env.NODE_ENV === "development";
+const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
 export const POLYGON: ChainConfig = {
     usdc: (isDevelopment ? "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582" : "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359") as Address,

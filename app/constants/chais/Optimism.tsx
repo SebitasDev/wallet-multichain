@@ -3,7 +3,7 @@ import {OPIcon} from "@/app/components/atoms/OPIcon";
 import {Address} from "abitype";
 import {ChainConfig} from "@/app/constants/chainsInformation";
 
-const isDevelopment = process.env.NODE_ENV === "development";
+const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
 export const OPTIMISM: ChainConfig = {
     usdc: ( isDevelopment ? "0x5fd84259d66Cd46123540766Be93DFE6D43130D7" : "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85" ) as Address,

@@ -3,7 +3,7 @@ import {AvalancheIcon} from "@/app/components/atoms/AvalancheIcon";
 import {Address} from "abitype";
 import {ChainConfig} from "@/app/constants/chainsInformation";
 
-const isDevelopment = process.env.NODE_ENV === "development";
+const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
 export const AVALANCHE: ChainConfig = {
     usdc: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address,

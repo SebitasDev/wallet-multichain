@@ -3,7 +3,7 @@ import ArbIcon from "@/app/components/atoms/ArbIcon";
 import {Address} from "abitype";
 import {ChainConfig} from "@/app/constants/chainsInformation";
 
-const isDevelopment = process.env.NODE_ENV === "development";
+const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
 export const ARBITRUM: ChainConfig = {
     usdc: (isDevelopment ? "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d" : "0xaf88d065e77c8cC2239327C5EDb3A432268e5831") as Address,
