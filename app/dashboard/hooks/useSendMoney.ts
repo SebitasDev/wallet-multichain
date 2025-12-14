@@ -234,8 +234,6 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
 
             const authorization = await createAuthorization(toAccount.owner, toClient, toAccount.account)
 
-            console.log("Lo q mandaria", amount)
-
             const hash = await bundlerClientTo.sendUserOperation({
                 account: toAccount.account,
                 calls: [
@@ -249,7 +247,7 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
                         to: token as Address,
                         abi: usdcAbi,
                         functionName: "transfer",
-                        args: [to, amount - toUSDCBigInt(NETWORKS[chainName].aproxFromFee)],
+                        args: [to, amount],
                     }
                 ],
                 authorization: authorization,
