@@ -18,10 +18,27 @@ import { generateMnemonic } from "viem/accounts";
 import {useWalletStore} from "@/app/store/useWalletsStore";
 import {wordlist} from "@scure/bip39/wordlists/english";
 import {useWalletPasswordStore} from "@/app/store/useWalletPasswordStore";
+import { LocalizedString, translate, useDashboardLang } from "@/app/dashboard/lang";
+
+const copy = {
+    toastFill: { es: "Completa nombre y contraseña", en: "Fill in name and password" },
+    toastIncorrect: { es: "Contraseña incorrecta", en: "Incorrect password" },
+    toastSuccess: { es: 'Wallet "{{name}}" creada correctamente', en: 'Wallet "{{name}}" created successfully' },
+    toastError: { es: "Error creando wallet", en: "Error creating wallet" },
+    button: { es: "Generar address", en: "Generate address" },
+    header: { es: "Crear nueva wallet", en: "Create new wallet" },
+    labelName: { es: "Nombre de la wallet", en: "Wallet name" },
+    placeholderName: { es: "Ej: Mi Wallet", en: "e.g., My wallet" },
+    labelPassword: { es: "Contraseña", en: "Password" },
+    placeholderPassword: { es: "••••••••", en: "••••••••" },
+    labelSeed: { es: "Frase secreta (generada automáticamente)", en: "Seed phrase (auto-generated)" },
+    cta: { es: "Crear Wallet", en: "Create wallet" },
+} satisfies Record<string, LocalizedString>;
 
 export function GenerateWalletButton() {
     const { addWallet } = useWalletStore();
     const verifyPassword = useWalletPasswordStore(s => s.verifyPassword);
+    const lang = useDashboardLang();
 
     const [open, setOpen] = useState(false);
     const [walletName, setWalletName] = useState("");
@@ -43,31 +60,31 @@ export function GenerateWalletButton() {
 
     const handleCreate = async () => {
         if (!walletName.trim() || !password.trim()) {
-            toast.error("Completa nombre y contraseña");
+            toast.error(translate(copy.toastFill, lang));
             return;
         }
 
         const isValid = await verifyPassword(password);
         if (!isValid) {
-            toast.error("Contraseña incorrecta");
+            toast.error(translate(copy.toastIncorrect, lang));
             return;
         }
 
         try {
             await addWallet(mnemonic, password, walletName);
 
-            toast.success(`Wallet "${walletName}" creada correctamente`);
+            toast.success(translate(copy.toastSuccess, lang).replace("{{name}}", walletName));
             closeModal();
         } catch (err) {
             console.error(err);
-            toast.error((err as Error).message || "Error creando wallet");
+            toast.error((err as Error).message || translate(copy.toastError, lang));
         }
     };
 
 
     return (
         <>
-            {/* BOTÓN */}
+            {/* BUTTON */}
             <Button
                 variant="contained"
                 onClick={openModal}
@@ -95,7 +112,7 @@ export function GenerateWalletButton() {
                     },
                 }}
             >
-                Generar address
+                {translate(copy.button, lang)}
             </Button>
 
             {/* MODAL */}
@@ -127,7 +144,7 @@ export function GenerateWalletButton() {
                     }}
                 >
                     <Typography sx={{ flex: 1 }} fontSize={18} fontWeight={800}>
-                        Crear nueva wallet
+                        {translate(copy.header, lang)}
                     </Typography>
 
                     <IconButton
@@ -159,13 +176,13 @@ export function GenerateWalletButton() {
                                     color: "#666666"
                                 }}
                             >
-                                Nombre de la wallet
+                                {translate(copy.labelName, lang)}
                             </Typography>
                             <TextField
                                 fullWidth
                                 value={walletName}
                                 onChange={(e) => setWalletName(e.target.value)}
-                                placeholder="Ej: Mi Wallet"
+                                placeholder={translate(copy.placeholderName, lang)}
                                 InputProps={{
                                     sx: {
                                         borderRadius: 2,
@@ -194,14 +211,14 @@ export function GenerateWalletButton() {
                                     color: "#666666"
                                 }}
                             >
-                                Contraseña
+                                {translate(copy.labelPassword, lang)}
                             </Typography>
                             <TextField
                                 fullWidth
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
+                                placeholder={translate(copy.placeholderPassword, lang)}
                                 InputProps={{
                                     sx: {
                                         borderRadius: 2,
@@ -230,7 +247,7 @@ export function GenerateWalletButton() {
                                     color: "#666666"
                                 }}
                             >
-                                Frase secreta (generada automáticamente)
+                                {translate(copy.labelSeed, lang)}
                             </Typography>
                             <TextField
                                 fullWidth
@@ -283,7 +300,7 @@ export function GenerateWalletButton() {
                         }}
                         disabled={!walletName || !password}
                     >
-                        Crear Wallet
+                        {translate(copy.cta, lang)}
                     </Button>
                 </DialogActions>
             </Dialog>

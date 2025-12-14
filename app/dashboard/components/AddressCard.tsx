@@ -23,6 +23,17 @@ import {Address} from "abitype";
 import { toast } from "react-toastify";
 import {useWalletStore} from "@/app/store/useWalletsStore";
 import { ChainKey } from "@/app/constants/chainsInformation";
+import { translate, useDashboardLang, LocalizedString } from "@/app/dashboard/lang";
+
+const copy = {
+    nothingToCopy: { es: "No hay nada para copiar", en: "Nothing to copy" },
+    copied: { es: "copiado", en: "copied" },
+    copyError: { es: "No se pudo copiar", en: "Could not copy" },
+    prompt: { es: "Copia y pega:", en: "Copy and paste:" },
+    hideChains: { es: "Ocultar chains", en: "Hide chains" },
+    viewMoreChains: { es: "Ver 4 chains más", en: "View 4 more chains" },
+    chainsLabel: { es: "6 chains", en: "6 chains" },
+} satisfies Record<string, LocalizedString>;
 
 interface IAddressCardProps {
     address: Address
@@ -33,6 +44,7 @@ export const AddressCard = ({
                                 address,
                                 walletName
                             }: IAddressCardProps) => {
+    const lang = useDashboardLang();
     const [showMore, setShowMore] = useState(false);
     const [showNameExpanded, setShowNameExpanded] = useState(false);
 
@@ -43,13 +55,13 @@ export const AddressCard = ({
     const copyToClipboard = async (value: string, label: string) => {
         const text = value ?? "";
         if (!text) {
-            toast.error("No hay nada para copiar");
+            toast.error(translate(copy.nothingToCopy, lang));
             return;
         }
-        const onSuccess = () => toast.success(`${label} copiado`);
-        const onError = () => toast.error("No se pudo copiar");
+        const onSuccess = () => toast.success(`${label} ${translate(copy.copied, lang)}`);
+        const onError = () => toast.error(translate(copy.copyError, lang));
         const promptFallback = () => {
-            const manual = window.prompt("Copia y pega:", text);
+            const manual = window.prompt(translate(copy.prompt, lang), text);
             if (manual !== null) onSuccess();
         };
         const fallbackCopy = () => {
@@ -161,7 +173,7 @@ export const AddressCard = ({
                         )}
 
                         <Chip
-                            label="6 chains"
+                            label={translate(copy.chainsLabel, lang)}
                             size="small"
                             sx={{
                                 background: "#ffffff",
@@ -438,7 +450,7 @@ export const AddressCard = ({
                     }}
                     onClick={() => setShowMore(!showMore)}
                 >
-                    {showMore ? "Ocultar chains" : "Ver 4 chains más"}
+            {showMore ? translate(copy.hideChains, lang) : translate(copy.viewMoreChains, lang)}
                 </Button>
             </CardActions>
         </Card>

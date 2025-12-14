@@ -157,10 +157,10 @@ export const useSendMoney = (walletNames?: Record<string, string>) => {
 
             setRouteSummary(summary);
             setRouteReady(true);
-            toast.info("Ruta encontrada. Ahora puedes enviar.");
+            toast.info("Route found. You can send now.");
         } catch (err) {
             console.error(err);
-            toast.error("No se pudo calcular la ruta");
+            toast.error("Could not compute the route");
         } finally {
             setSendLoading(false);
         }

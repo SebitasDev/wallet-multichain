@@ -27,7 +27,7 @@ type Props = {
 export const FormSendMoney = ({ control, errors, sendLoading }: Props) => {
     return (
         <Stack spacing={2.5}>
-            {/* CHAIN DESTINO */}
+            {/* DESTINATION CHAIN */}
             <Box>
                 <Typography
                     fontWeight={700}
@@ -39,7 +39,7 @@ export const FormSendMoney = ({ control, errors, sendLoading }: Props) => {
                         color: "#666666"
                     }}
                 >
-                    Chain destino
+                    Destination chain
                 </Typography>
                 <Controller
                     control={control}
@@ -96,7 +96,7 @@ export const FormSendMoney = ({ control, errors, sendLoading }: Props) => {
                 />
             </Box>
 
-            {/* ADDRESS DESTINO */}
+            {/* DESTINATION ADDRESS */}
             <Box>
                 <Typography
                     fontWeight={700}
@@ -108,7 +108,7 @@ export const FormSendMoney = ({ control, errors, sendLoading }: Props) => {
                         color: "#666666"
                     }}
                 >
-                    Address destino
+                    Destination address
                 </Typography>
                 <Controller
                     control={control}
@@ -145,7 +145,7 @@ export const FormSendMoney = ({ control, errors, sendLoading }: Props) => {
                 />
             </Box>
 
-            {/* MONTO */}
+            {/* AMOUNT */}
             <Box>
                 <Typography
                     fontWeight={700}
@@ -157,7 +157,7 @@ export const FormSendMoney = ({ control, errors, sendLoading }: Props) => {
                         color: "#666666"
                     }}
                 >
-                    Monto (USDC)
+                    Amount (USDC)
                 </Typography>
                 <Controller
                     control={control}
@@ -208,7 +208,7 @@ export const FormSendMoney = ({ control, errors, sendLoading }: Props) => {
                         color: "#666666"
                     }}
                 >
-                    Password de la wallet
+                    Wallet password
                 </Typography>
                 <Controller
                     control={control}
@@ -291,10 +291,10 @@ export const FormSendMoney = ({ control, errors, sendLoading }: Props) => {
                             label={
                                 <Box>
                                     <Typography fontWeight={800} fontSize={14} color="#000000">
-                                        Optimizar ruta
+                                        Optimize route
                                     </Typography>
                                     <Typography variant="caption" color="#666666" fontWeight={600} fontSize={12}>
-                                        Encuentra la ruta más eficiente para tu transacción
+                                        Find the most efficient route for your transaction
                                     </Typography>
                                 </Box>
                             }

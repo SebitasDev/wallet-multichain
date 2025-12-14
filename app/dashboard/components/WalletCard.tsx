@@ -67,11 +67,11 @@ export function WalletCard({ wallet }: Props) {
   const copyToClipboard = async (value: string, label: string) => {
     const text = value ? String(value) : "";
     if (!text) {
-      toast.error("No hay nada para copiar");
+      toast.error("Nothing to copy");
       return;
     }
-    const onSuccess = () => toast.success(`${label} copiado`);
-    const onError = () => toast.error("No se pudo copiar");
+    const onSuccess = () => toast.success(`${label} copied`);
+    const onError = () => toast.error("Could not copy");
     const promptFallback = () => {
       const manual = window.prompt("Copia y pega:", text);
       if (manual !== null) onSuccess();

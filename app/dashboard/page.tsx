@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {Box, Typography } from "@mui/material";
+import {Box, Typography, Button } from "@mui/material";
 import "react-toastify/dist/ReactToastify.css";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
@@ -19,11 +19,14 @@ import {SendMoneyMainWallet} from "@/app/dashboard/components/SendMoneyMainWalle
 import {CrossChainTransferModal} from "@/app/dashboard/components/CrossChainTransferModal";
 import {TopBar} from "@/app/dashboard/components/TopBar";
 import {ToastContainerCustom} from "@/app/components/atoms/ToastContainerCustom";
+import TranslateIcon from "@mui/icons-material/Translate";
+import { DashboardLangProvider, Language } from "@/app/dashboard/lang";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
     const [askPassword, setAskPassword] = useState(true);
     const [mode, setMode] = useState<"create" | "unlock">("unlock");
+    const [lang, setLang] = useState<Language>("es");
 
     const encrypted = useWalletPasswordStore(s => s.encryptedPassword);
     const currentPassword = useWalletPasswordStore(s => s.currentPassword);
@@ -34,6 +37,12 @@ export default function Dashboard() {
 
     useEffect(() => {
         setMounted(true);
+        if (typeof window !== "undefined") {
+            const saved = window.localStorage.getItem("multichain_lang") as Language | null;
+            if (saved === "en" || saved === "es") {
+                setLang(saved);
+            }
+        }
         if (!encrypted) {
             localStorage.removeItem("wallets");
             setMode("create");
@@ -47,21 +56,48 @@ export default function Dashboard() {
     if (!mounted) return null;
 
     return (
+        <DashboardLangProvider lang={lang}>
         <Box sx={{ minHeight: "100vh"}}>
-            {/* MODAL DE PASSWORD */}
+            {/* PASSWORD MODAL */}
             <PasswordModal
                 open={askPassword}
                 mode={mode}
                 onSuccess={() => setAskPassword(false)}
             />
 
-            {/* 🔒 Bloquea el dashboard si no validó contraseña */}
+            {/* 🔒 Block dashboard until password is validated */}
             {!askPassword && (
-                <EmbeddedProvider>
-                    <XOContractsProvider password={currentPassword!}>
-                        <>
+                    <EmbeddedProvider>
+                        <XOContractsProvider password={currentPassword!}>
+                            <>
 
                             <TopBar />
+
+                            <Box sx={{ display: "flex", justifyContent: "flex-end", px: { xs: 3, md: 4 }, mb: 2 }}>
+                                <Button
+                                    onClick={() => setLang((prev) => (prev === "es" ? "en" : "es"))}
+                                    startIcon={<TranslateIcon />}
+                                    variant="outlined"
+                                    sx={{
+                                        textTransform: "none",
+                                        fontWeight: 800,
+                                        color: "#000000",
+                                        border: "2px solid #000000",
+                                        background: "#ffffff",
+                                        borderRadius: 999,
+                                        px: 2.5,
+                                        py: 1,
+                                        boxShadow: "4px 4px 0px #000000",
+                                        "&:hover": {
+                                            background: "#f5f5f5",
+                                            transform: "translate(1px, 1px)",
+                                            boxShadow: "3px 3px 0px #000000",
+                                        },
+                                    }}
+                                >
+                                    {lang === "es" ? "Ver en inglés" : "View in Spanish"}
+                                </Button>
+                            </Box>
 
                             <Box
                                 sx={{
@@ -91,7 +127,7 @@ export default function Dashboard() {
                                         mx: { xs: "auto", md: 0 },
                                     }}
                                 >
-                                    {/* Título con línea decorativa */}
+                                    {/* Title with decorative line */}
                                     <Box
                                         sx={{
                                             display: "flex",
@@ -110,7 +146,7 @@ export default function Dashboard() {
                                                 mb: 1,
                                             }}
                                         >
-                                            Funciones Main Wallet
+                                            Main wallet actions
                                         </Typography>
                                         <Box
                                             sx={{
@@ -177,5 +213,6 @@ export default function Dashboard() {
                 </EmbeddedProvider>
             )}
         </Box>
+        </DashboardLangProvider>
     );
 }

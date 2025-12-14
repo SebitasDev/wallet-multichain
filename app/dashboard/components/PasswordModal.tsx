@@ -15,6 +15,23 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+import { useDashboardLang, translate, LocalizedString } from "@/app/dashboard/lang";
+
+const copy = {
+    empty: { es: "La contraseña no puede estar vacía", en: "Password cannot be empty" },
+    incorrect: { es: "Contraseña incorrecta", en: "Incorrect password" },
+    headerCreate: { es: "Crea tu contraseña", en: "Create your password" },
+    headerUnlock: { es: "Ingresa tu contraseña", en: "Enter your password" },
+    subtitleCreate: { es: "Protege tus wallets con una contraseña segura", en: "Protect your wallets with a secure password" },
+    subtitleUnlock: { es: "Desbloquea tu sesión para continuar", en: "Unlock your session to continue" },
+    labelPassword: { es: "Contraseña", en: "Password" },
+    ariaShow: { es: "Mostrar contraseña", en: "Show password" },
+    ariaHide: { es: "Ocultar contraseña", en: "Hide password" },
+    processing: { es: "Procesando...", en: "Processing..." },
+    createCta: { es: "Crear contraseña", en: "Create password" },
+    unlockCta: { es: "Desbloquear", en: "Unlock" },
+    tip: { es: "💡 Tip: Usa una contraseña fuerte que incluya letras, números y símbolos. Esta contraseña protegerá todas tus wallets.", en: "💡 Tip: Use a strong password with letters, numbers, and symbols. This password will protect all your wallets." },
+} satisfies Record<string, LocalizedString>;
 
 type PasswordModalProps = {
     open: boolean;
@@ -23,6 +40,7 @@ type PasswordModalProps = {
 };
 
 export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => {
+    const lang = useDashboardLang();
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -38,7 +56,7 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
     const handleSubmit = async (evt: FormEvent<HTMLFormElement>) => {
         evt.preventDefault();
         if (isEmpty) {
-            setError("La contraseña no puede estar vacía");
+            setError(translate(copy.empty, lang));
             return;
         }
 
@@ -54,7 +72,7 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
 
             const ok = await verifyPassword(password);
             if (!ok) {
-                setError("Contraseña incorrecta");
+                setError(translate(copy.incorrect, lang));
                 return;
             }
 
@@ -141,7 +159,7 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
                                     mb: 0.5
                                 }}
                             >
-                                {mode === "create" ? "Crea tu contraseña" : "Ingresa tu contraseña"}
+                                {mode === "create" ? translate(copy.headerCreate, lang) : translate(copy.headerUnlock, lang)}
                             </Typography>
                             <Typography
                                 variant="body2"
@@ -152,8 +170,8 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
                                 }}
                             >
                                 {mode === "create"
-                                    ? "Protege tus wallets con una contraseña segura"
-                                    : "Desbloquea tu sesión para continuar"
+                                    ? translate(copy.subtitleCreate, lang)
+                                    : translate(copy.subtitleUnlock, lang)
                                 }
                             </Typography>
                         </Box>
@@ -175,7 +193,7 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
                                     mb: 1
                                 }}
                             >
-                                Contraseña
+                                {translate(copy.labelPassword, lang)}
                             </Typography>
                             <TextField
                                 id="password-input"
@@ -226,7 +244,7 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
                                             <IconButton
                                                 edge="end"
                                                 onClick={() => setShowPassword((prev) => !prev)}
-                                                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                                aria-label={showPassword ? translate(copy.ariaHide, lang) : translate(copy.ariaShow, lang)}
                                                 sx={{
                                                     color: "#000000",
                                                     background: "#ffffff",
@@ -312,13 +330,13 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
                             }}
                         >
                             {isSubmitting
-                                ? "Procesando..."
+                                ? translate(copy.processing, lang)
                                 : mode === "create"
-                                    ? "Crear contraseña"
-                                    : "Desbloquear"}
+                                ? translate(copy.createCta, lang)
+                                : translate(copy.unlockCta, lang)}
                         </Button>
 
-                        {/* INFO ADICIONAL */}
+                        {/* EXTRA INFO */}
                         {mode === "create" && (
                             <Box
                                 sx={{
@@ -337,7 +355,7 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
                                         lineHeight: 1.6,
                                     }}
                                 >
-                                    💡 <strong>Tip:</strong> Usa una contraseña fuerte que incluya letras, números y símbolos. Esta contraseña protegerá todas tus wallets.
+                                    {translate(copy.tip, lang)}
                                 </Typography>
                             </Box>
                         )}

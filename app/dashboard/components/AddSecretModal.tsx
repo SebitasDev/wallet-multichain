@@ -18,6 +18,27 @@ import { toast } from "react-toastify";
 
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+import { LocalizedString, translate, useDashboardLang } from "@/app/dashboard/lang";
+
+const copy = {
+    toastIncomplete: { es: "Fill in name, password, and all 12 words.", en: "Fill in name, password, and all 12 words." },
+    toastIncorrect: { es: "Incorrect password.", en: "Incorrect password." },
+    toastSuccess: { es: 'Wallet "{{name}}" added successfully.', en: 'Wallet "{{name}}" added successfully.' },
+    toastError: { es: "Error adding wallet", en: "Error adding wallet" },
+    header: { es: "Add seed phrase", en: "Add seed phrase" },
+    subheader: { es: "Paste the 12 words of your seed to link your wallet.", en: "Paste the 12 words of your seed to link your wallet." },
+    labelName: { es: "Wallet name", en: "Wallet name" },
+    placeholderName: { es: "e.g., My main wallet", en: "e.g., My main wallet" },
+    labelSeed: { es: "Seed phrase (12 words)", en: "Seed phrase (12 words)" },
+    placeholderSeed: { es: "word1 word2 ... word12", en: "word1 word2 ... word12" },
+    helperSeed: { es: "Must be exactly 12 words.", en: "Must be exactly 12 words." },
+    labelPassword: { es: "Password", en: "Password" },
+    suffixUnlock: { es: " (to unlock)", en: " (to unlock)" },
+    suffixEncrypt: { es: " (to encrypt)", en: " (to encrypt)" },
+    placeholderPassword: { es: "••••••••", en: "••••••••" },
+    cancel: { es: "Cancel", en: "Cancel" },
+    add: { es: "Add", en: "Add" },
+} satisfies Record<string, LocalizedString>;
 
 type Props = {
     open: boolean;
@@ -26,6 +47,7 @@ type Props = {
 
 export function AddSecretModal({ open, onClose }: Props) {
     const { addWallet } = useWalletStore();
+    const lang = useDashboardLang();
 
     const encryptedPassword = useWalletPasswordStore(s => s.encryptedPassword);
     const verifyPassword = useWalletPasswordStore(s => s.verifyPassword);
@@ -56,7 +78,7 @@ export function AddSecretModal({ open, onClose }: Props) {
 
     const handleAdd = async () => {
         if (!canConfirm) {
-            toast.error("Completa nombre, password y las 12 palabras.");
+            toast.error(translate(copy.toastIncomplete, lang));
             return;
         }
 
@@ -66,7 +88,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                 const ok = await verifyPassword(password);
 
                 if (!ok) {
-                    toast.error("Password incorrecta.");
+                    toast.error(translate(copy.toastIncorrect, lang));
                     return;
                 }
             }
@@ -75,14 +97,14 @@ export function AddSecretModal({ open, onClose }: Props) {
             // La password ingresada será la que se guarda como password maestra
             await addWallet(phrase, password, walletName);
 
-            toast.success(`Wallet "${walletName}" agregada correctamente.`);
+            toast.success(translate(copy.toastSuccess, lang).replace("{{name}}", walletName));
             onClose();
             setWalletName("");
             setPhrase("");
             setPassword("");
         } catch (err) {
             console.error(err);
-            toast.error((err as Error).message || "Error al agregar wallet");
+            toast.error((err as Error).message || translate(copy.toastError, lang));
         }
     };
 
@@ -132,10 +154,10 @@ export function AddSecretModal({ open, onClose }: Props) {
 
                 <Box sx={{ flex: 1 }}>
                     <Typography fontWeight={800} fontSize={18} sx={{ lineHeight: 1.2 }}>
-                        Agregar Frase Secreta
+                        {translate(copy.header, lang)}
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.8, fontSize: 13 }}>
-                        Pega las 12 palabras de tu seed para vincular tu wallet.
+                        {translate(copy.subheader, lang)}
                     </Typography>
                 </Box>
 
@@ -168,7 +190,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                                 color: "#666666"
                             }}
                         >
-                            Nombre de la Wallet
+                            {translate(copy.labelName, lang)}
                         </Typography>
 
                         <TextField
@@ -176,7 +198,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                             size="medium"
                             value={walletName}
                             onChange={({ target }) => setWalletName(target.value)}
-                            placeholder="Ej: Mi Wallet Principal"
+                            placeholder={translate(copy.placeholderName, lang)}
                             InputProps={{
                                 sx: {
                                     borderRadius: 2,
@@ -205,7 +227,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                                 color: "#666666"
                             }}
                         >
-                            Frase secreta (12 palabras)
+                            {translate(copy.labelSeed, lang)}
                         </Typography>
 
                         <TextField
@@ -213,7 +235,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                             size="medium"
                             value={phrase}
                             onChange={({ target }) => setPhrase(target.value)}
-                            placeholder="palabra1 palabra2 ... palabra12"
+                            placeholder={translate(copy.placeholderSeed, lang)}
                             InputProps={{
                                 sx: {
                                     borderRadius: 2,
@@ -241,7 +263,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                                         color: has12Words ? "#00DC8C" : "#666666"
                                     }}
                                 >
-                                    {phrase ? `${words.length}/12 palabras` : "Debe tener 12 palabras exactas."}
+                                     {phrase ? `${words.length}/12 words` : translate(copy.helperSeed, lang)}
                                 </Box>
                             }
                         />
@@ -258,8 +280,8 @@ export function AddSecretModal({ open, onClose }: Props) {
                                 color: "#666666"
                             }}
                         >
-                            Password
-                            {encryptedPassword ? " (para desbloquear)" : " (para cifrar)"}
+                            {translate(copy.labelPassword, lang)}
+                            {encryptedPassword ? translate(copy.suffixUnlock, lang) : translate(copy.suffixEncrypt, lang)}
                         </Typography>
 
                         <TextField
@@ -268,7 +290,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                             type="password"
                             value={password}
                             onChange={({ target }) => setPassword(target.value)}
-                            placeholder="••••••••"
+                            placeholder={translate(copy.placeholderPassword, lang)}
                             InputProps={{
                                 sx: {
                                     borderRadius: 2,
@@ -320,7 +342,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                         },
                     }}
                 >
-                    Cancelar
+                    {translate(copy.cancel, lang)}
                 </Button>
 
                 <Button
@@ -352,7 +374,7 @@ export function AddSecretModal({ open, onClose }: Props) {
                         },
                     }}
                 >
-                    Agregar
+                    {translate(copy.add, lang)}
                 </Button>
             </DialogActions>
         </Dialog>

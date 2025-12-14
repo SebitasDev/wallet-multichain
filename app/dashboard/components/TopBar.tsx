@@ -10,12 +10,23 @@ import {useSendModalState} from "@/app/dashboard/store/useSendModalState";
 import {useWalletStore} from "@/app/store/useWalletsStore";
 import {toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import { translate, useDashboardLang, LocalizedString } from "@/app/dashboard/lang";
+
+const copy = {
+    send: { es: "Enviar", en: "Send" },
+    receive: { es: "Recibir", en: "Receive" },
+    addAddress: { es: "Agregar address", en: "Add address" },
+    savings: { es: "Savings", en: "Savings" },
+    toastNoSource: { es: "Primero agrega una wallet de origen.", en: "Add a source wallet first." },
+    toastNoWallet: { es: "Primero agrega una wallet.", en: "Add a wallet first." },
+} satisfies Record<string, LocalizedString>;
 
 export function TopBar() {
     const router = useRouter();
     const { openAdd, openReceive } = useModalStore();
     const { setSendModal } = useSendModalState();
     const { wallets } = useWalletStore();
+    const lang = useDashboardLang();
     return (
         <Box
             sx={{
@@ -96,7 +107,7 @@ export function TopBar() {
                 {/* ENVIAR */}
                 <Button
                     onClick={() => {
-                        if (!wallets[0]) return toast.error("Primero agrega una wallet de origen.");
+                        if (!wallets[0]) return toast.error(translate(copy.toastNoSource, lang));
                         setSendModal(true);
                     }}
                     sx={{
@@ -122,13 +133,13 @@ export function TopBar() {
                     }}
                 >
                     <SendIcon sx={{ fontSize: 28, color: "white" }} />
-                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Enviar</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{translate(copy.send, lang)}</Typography>
                 </Button>
 
                 {/* RECIBIR */}
                 <Button
                     onClick={() => {
-                        if (!wallets.length) return toast.error("Primero agrega una wallet.");
+                        if (!wallets.length) return toast.error(translate(copy.toastNoWallet, lang));
                         openReceive();
                     }}
                     sx={{
@@ -154,7 +165,7 @@ export function TopBar() {
                     }}
                 >
                     <DownloadIcon sx={{ fontSize: 28, color: "#000000" }} />
-                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Recibir</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{translate(copy.receive, lang)}</Typography>
                 </Button>
 
                 {/* AGREGAR ADDRESS */}
@@ -184,7 +195,7 @@ export function TopBar() {
                 >
                     <AddIcon sx={{ fontSize: 28, color: "#000000" }} />
                     <Typography sx={{ fontSize: 14, fontWeight: 600, textAlign: "center" }}>
-                        Agregar Address
+                        {translate(copy.addAddress, lang)}
                     </Typography>
                 </Button>
 
@@ -216,7 +227,7 @@ export function TopBar() {
                 >
                     <SavingsIcon sx={{ fontSize: 28, color: "#000000" }} />
                     <Typography sx={{ fontSize: 14, fontWeight: 600, textAlign: "center" }}>
-                        Savings
+                        {translate(copy.savings, lang)}
                     </Typography>
                 </Button>
             </Box>

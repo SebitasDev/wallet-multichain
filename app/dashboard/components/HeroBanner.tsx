@@ -8,23 +8,34 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 import { useMainWalletStore } from "@/app/store/useMainWalletStore";
 import { toast } from "react-toastify";
+import { translate, useDashboardLang, LocalizedString } from "@/app/dashboard/lang";
+
+const copy = {
+    updatingBalances: { es: "Actualizando balances...", en: "Updating balances..." },
+    balancesUpdated: { es: "Balances actualizados", en: "Balances updated" },
+    errorUpdating: { es: "Error al actualizar balances", en: "Error updating balances" },
+    mainWalletLabel: { es: "Main Wallet", en: "Main Wallet" },
+    totalBalance: { es: "Balance total (wallets hijas)", en: "Total balance (child wallets)" },
+    walletsConnected: { es: "wallets conectadas", en: "wallets connected" },
+};
 
 export function HeroBanner() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const { wallets, getAllWalletsTotalBalance, updateWalletBalances } = useWalletStore();
+    const lang = useDashboardLang();
 
     const handleRefreshBalances = async () => {
         if (isRefreshing) return;
 
         setIsRefreshing(true);
-        toast.info("Actualizando balances...");
+        toast.info(translate(copy.updatingBalances, lang));
 
         try {
             await updateWalletBalances();
-            toast.success("Balances actualizados");
+            toast.success(translate(copy.balancesUpdated, lang));
         } catch (error) {
-            console.error("Error al actualizar balances:", error);
-            toast.error("Error al actualizar balances");
+            console.error("Error updating balances:", error);
+            toast.error(translate(copy.errorUpdating, lang));
         } finally {
             setIsRefreshing(false);
         }
@@ -36,7 +47,7 @@ export function HeroBanner() {
     // Local fallback main wallet
     const { mainWallet, xoClient} = useMainWalletStore();
 
-    // Main wallet (XO si existe → sino local)
+    // Main wallet (XO if available, otherwise local)
     const mainAddress = xoAddress ?? mainWallet.address ?? null;
 
     // Balance quemado exclusivo para Main
@@ -80,7 +91,7 @@ export function HeroBanner() {
                         mb: 1,
                     }}
                 >
-                    Main Wallet {xoClient ? ` de ${xoClient.alias}` : ""}
+                    {translate(copy.mainWalletLabel, lang)}{xoClient ? ` ${lang === "es" ? "de" : "of"} ${xoClient.alias}` : ""}
                 </Typography>
 
                 <Typography
@@ -131,7 +142,7 @@ export function HeroBanner() {
                     position: "relative",
                 }}
             >
-                {/* Botón de refrescar */}
+                {/* Refresh balances */}
                 <IconButton
                     onClick={handleRefreshBalances}
                     disabled={isRefreshing || wallets.length === 0}
@@ -173,7 +184,7 @@ export function HeroBanner() {
                         mb: 1,
                     }}
                 >
-                    Balance Total (Hijas)
+                    {translate(copy.totalBalance, lang)}
                 </Typography>
 
                 <Typography
@@ -233,7 +244,7 @@ export function HeroBanner() {
                             fontWeight: 700,
                         }}
                     >
-                        {wallets.length} wallets conectadas
+                        {wallets.length} {translate(copy.walletsConnected, lang)}
                     </Typography>
                 </Box>
             </Box>

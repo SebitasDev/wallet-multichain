@@ -68,20 +68,20 @@ export function ReceiveModal({
 
     const copyToClipboard = async (value: string) => {
         if (!value) {
-            toast.error("No hay address para copiar");
+            toast.error("No address to copy");
             return;
         }
         try {
             if (navigator?.clipboard?.writeText) {
                 await navigator.clipboard.writeText(value);
-                toast.success("Address copiado");
+                toast.success("Address copied");
                 return;
             }
         } catch {
             // fallback abajo
         }
-        const manual = window.prompt("Copia y pega:", value);
-        if (manual !== null) toast.success("Address copiado");
+        const manual = window.prompt("Copy and paste:", value);
+        if (manual !== null) toast.success("Address copied");
     };
 
     return (
@@ -130,10 +130,10 @@ export function ReceiveModal({
 
                 <Box sx={{ flex: 1 }}>
                     <Typography fontWeight={800} fontSize={18} sx={{ lineHeight: 1.2 }}>
-                        Recibir fondos
+                        Receive funds
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.8, fontSize: 13 }}>
-                        Elige la wallet y la red para recibir.
+                        Choose the wallet and network to receive funds.
                     </Typography>
                 </Box>
 
@@ -292,7 +292,7 @@ export function ReceiveModal({
                             <Typography fontWeight={800} fontSize={16}>{currentChain?.label}</Typography>
                         </Stack>
                         <Typography variant="body2" color="#666666" fontWeight={600} sx={{ mt: 1, fontSize: 13 }}>
-                            Usa esta dirección solo en redes compatibles.
+                            Use this address only on compatible networks.
                         </Typography>
                     </Box>
 
@@ -342,7 +342,7 @@ export function ReceiveModal({
                                 color: "#666666"
                             }}
                         >
-                            Tu dirección
+                            Your address
                         </Typography>
                         <Typography
                             fontWeight={800}
@@ -382,7 +382,7 @@ export function ReceiveModal({
                         },
                     }}
                 >
-                    Copiar dirección
+                    Copy address
                 </Button>
             </DialogActions>
         </Dialog>

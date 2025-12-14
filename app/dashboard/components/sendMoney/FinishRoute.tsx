@@ -21,14 +21,14 @@ type Props = {
 }
 
 export const STATUS_META = {
-    idle:      { label: "Pendiente",      icon: <HourglassEmptyIcon />, color: "#cccccc" },
-    starting:  { label: "Iniciando",      icon: <RocketLaunchIcon />, color: "#3CD2FF" },
-    approving: { label: "Aprobando",      icon: <AutorenewIcon sx={{ animation: "spin 1.2s linear infinite" }} />, color: "#7852FF" },
-    burning:   { label: "Quemando",       icon: <LocalFireDepartmentIcon />, color: "#FF0420" },
-    waiting:   { label: "Esperando",      icon: <HourglassBottomIcon />, color: "#FF007A" },
-    minting:   { label: "Minteando",      icon: <AutorenewIcon sx={{ animation: "spin 1.2s linear infinite" }} />, color: "#8247E5" },
-    transfer:   { label: "Transfiriendo", icon: <MoveUpIcon />, color: "#28A0F0" },
-    done:      { label: "Completado",     icon: <CheckCircleIcon />, color: "#00DC8C" },
+    idle:      { label: "Pending",      icon: <HourglassEmptyIcon />, color: "#cccccc" },
+    starting:  { label: "Starting",      icon: <RocketLaunchIcon />, color: "#3CD2FF" },
+    approving: { label: "Approving",      icon: <AutorenewIcon sx={{ animation: "spin 1.2s linear infinite" }} />, color: "#7852FF" },
+    burning:   { label: "Burning",       icon: <LocalFireDepartmentIcon />, color: "#FF0420" },
+    waiting:   { label: "Waiting",      icon: <HourglassBottomIcon />, color: "#FF007A" },
+    minting:   { label: "Minting",      icon: <AutorenewIcon sx={{ animation: "spin 1.2s linear infinite" }} />, color: "#8247E5" },
+    transfer:   { label: "Transferring", icon: <MoveUpIcon />, color: "#28A0F0" },
+    done:      { label: "Completed",     icon: <CheckCircleIcon />, color: "#00DC8C" },
     error:     { label: "Error",          icon: <ErrorIcon />, color: "#ff4444" },
 } as const;
 
@@ -57,7 +57,7 @@ export const FinishRoute = (
                     color: "#000000"
                 }}
             >
-                Ruta encontrada
+                Route found
             </Typography>
 
             <Stack spacing={2}>
@@ -342,7 +342,7 @@ export const FinishRoute = (
                             fontSize={{ xs: 12, sm: 13 }}
                             color="#000000"
                         >
-                            Llega en {selected?.label || "Chain destino"}
+                            Arrives on {selected?.label || "Destination chain"}
                         </Typography>
                     </Stack>
                 </Box>
@@ -385,7 +385,7 @@ export const FinishRoute = (
                             fontSize: { xs: 10, sm: 11 }
                         }}
                     >
-                        Monto neto luego de comisión
+                        Net amount after fee
                     </Typography>
                 </Box>
             </Box>

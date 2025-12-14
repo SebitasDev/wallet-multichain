@@ -44,12 +44,12 @@ export const SendMoneyMainWallet = () => {
 
     const onSubmit = async (data: FormValues) => {
         if (!address) {
-            toast.error("No hay wallet conectada");
+            toast.error("No wallet connected");
             return;
         }
 
         setSendLoading(true);
-        toast.info("Procesando pago...");
+        toast.info("Processing payment...");
 
         try {
             const result = await payX402(data.amount, data.to, data.chain as "base" | "polygon");
@@ -64,18 +64,18 @@ export const SendMoneyMainWallet = () => {
             }
         } catch (err) {
             console.error(err);
-            toast.error("Error al procesar el pago");
+            toast.error("Error processing payment");
         } finally {
             setSendLoading(false);
         }
     };
 
-    // Chains disponibles (puedes filtrar según tus necesidades)
+    // Available chains
     const availableChains = ["Base", "Arbitrum", "Polygon", "Optimism", "Unichain", "Avalanche"];
 
     return (
         <>
-            {/* BOTÓN QUE ABRE EL MODAL */}
+            {/* OPEN MODAL BUTTON */}
             <Button
                 variant="contained"
                 onClick={openModal}
@@ -111,7 +111,7 @@ export const SendMoneyMainWallet = () => {
                     },
                 }}
             >
-                Enviar desde Main
+                Send from Main
             </Button>
 
             {/* MODAL */}
@@ -143,7 +143,7 @@ export const SendMoneyMainWallet = () => {
                     }}
                 >
                     <Typography sx={{ flex: 1 }} fontSize={18} fontWeight={800}>
-                        Enviar dinero
+                        Send funds
                     </Typography>
 
                     <IconButton
@@ -179,7 +179,7 @@ export const SendMoneyMainWallet = () => {
                                     color: "#666666"
                                 }}
                             >
-                                Chain destino
+                                Destination chain
                             </Typography>
                             <Controller
                                 control={control}
@@ -246,7 +246,7 @@ export const SendMoneyMainWallet = () => {
                                     color: "#666666"
                                 }}
                             >
-                                Address destino
+                                Destination address
                             </Typography>
                             <Controller
                                 control={control}
@@ -288,7 +288,7 @@ export const SendMoneyMainWallet = () => {
                                     color: "#666666"
                                 }}
                             >
-                                Monto (USD)
+                                Amount (USD)
                             </Typography>
                             <Controller
                                 control={control}
@@ -348,7 +348,7 @@ export const SendMoneyMainWallet = () => {
                             },
                         }}
                     >
-                        Cancelar
+                        Cancel
                     </Button>
 
                     <Button
@@ -381,10 +381,10 @@ export const SendMoneyMainWallet = () => {
                         {sendLoading ? (
                             <>
                                 <CircularProgress size={20} sx={{ color: "white", mr: 1 }} />
-                                Enviando...
+                                Sending...
                             </>
                         ) : (
-                            "Enviar"
+                            "Send"
                         )}
                     </Button>
                 </DialogActions>

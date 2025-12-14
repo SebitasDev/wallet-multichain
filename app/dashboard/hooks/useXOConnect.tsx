@@ -82,7 +82,7 @@ export const XOContractsProvider = ({
     // ======================
     const connect = async () => {
         try {
-            toast.info("Conectando a XO...");
+            toast.info("Connecting to XO...");
 
             const { XOConnectProvider } = await import("xo-connect");
             const { BrowserProvider } = await import("ethers");
@@ -110,10 +110,10 @@ export const XOContractsProvider = ({
             const client = await XOConnect.getClient();
             setXOClient(client);
 
-            toast.success(`Wallet XO conectada: ${addr}`);
+            toast.success(`XO wallet connected: ${addr}`);
 
         } catch (err) {
-            toast.warning("No se pudo conectar a XO. Usando Wallet Local...");
+            toast.warning("Could not connect to XO. Using local wallet...");
             setIsUsingXO(false);
             await generateLocalOrLoad();
         }
@@ -135,10 +135,10 @@ export const XOContractsProvider = ({
 
                 const w = new Wallet(pk);
                 setAddress(w.address);
-                toast.success(`Wallet local cargada: ${w.address}`);
+                toast.success(`Local wallet loaded: ${w.address}`);
                 return;
             } catch {
-                toast.error("Wallet corrupta. Generando nueva...");
+                toast.error("Corrupted wallet. Generating a new one...");
             }
         }
 
@@ -154,7 +154,7 @@ export const XOContractsProvider = ({
         });
 
         setAddress(wallet.address);
-        toast.info(`Wallet local generada: ${wallet.address}`);
+        toast.info(`Local wallet generated: ${wallet.address}`);
     };
 
 

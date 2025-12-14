@@ -73,10 +73,10 @@ export function SendMoneyModal({walletNames}: Props) {
 
                 <Box sx={{ flex: 1 }}>
                     <Typography fontWeight={800} fontSize={18} sx={{ lineHeight: 1.2 }}>
-                        Enviar fondos
+                        Send funds
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.8, fontSize: 13 }}>
-                        Elige la chain destino e ingresa address, monto y contraseña.
+                        Pick the destination chain and enter address, amount, and password.
                     </Typography>
                 </Box>
 
@@ -140,7 +140,7 @@ export function SendMoneyModal({walletNames}: Props) {
                         },
                     }}
                 >
-                    Cancelar
+                    Cancel
                 </Button>
 
                 <Button
@@ -174,9 +174,9 @@ export function SendMoneyModal({walletNames}: Props) {
                     {sendLoading ? (
                         <>
                             <CircularProgress size={20} sx={{ color: "white", mr: 1 }} />
-                            Cargando...
+                            Loading...
                         </>
-                    ) : routeReady ? "Confirmar" : "Aceptar"}
+                    ) : routeReady ? "Confirm" : "Continue"}
                 </Button>
             </DialogActions>
         </Dialog>

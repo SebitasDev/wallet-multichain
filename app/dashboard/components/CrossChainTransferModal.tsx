@@ -140,12 +140,12 @@ export const CrossChainTransferModal = () => {
 
     const onSubmit = async (data: FormValues) => {
         if (!address) {
-            toast.error("No hay wallet conectada");
+            toast.error("No wallet connected");
             return;
         }
 
         if (!data.recipient || !data.amount) {
-            toast.error("Completa todos los campos");
+            toast.error("Fill in all fields");
             return;
         }
 
@@ -153,11 +153,11 @@ export const CrossChainTransferModal = () => {
 
         // Validación final del monto mínimo
         if (isNaN(amount) || amount < minAmount) {
-            toast.error(`El monto mínimo es ${minAmount} USDC`);
+            toast.error(`Minimum amount is ${minAmount} USDC`);
             return;
         }
 
-        toast.info("Firmando autorización...");
+        toast.info("Signing authorization...");
 
         try {
             let result;
@@ -181,11 +181,11 @@ export const CrossChainTransferModal = () => {
 
             if (result.success) {
                 toast.success(
-                    `Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`
+                    `Transfer successful! TX: ${result.transactionHash?.slice(0, 10)}...`
                 );
                 if (result.burnTransactionHash) {
                     toast.info(
-                        `Burn TX: ${result.burnTransactionHash.slice(0, 10)}... Circle minteará automáticamente.`
+                        `Burn TX: ${result.burnTransactionHash.slice(0, 10)}... Circle will mint automatically.`
                     );
                 }
                 closeModal();
@@ -194,7 +194,7 @@ export const CrossChainTransferModal = () => {
             }
         } catch (err) {
             console.error(err);
-            toast.error("Error al procesar el transfer");
+            toast.error("Error processing transfer");
         }
     };
 
@@ -337,7 +337,7 @@ export const CrossChainTransferModal = () => {
                                     color: "#666666"
                                 }}
                             >
-                                Chain origen
+                                Source chain
                             </Typography>
                             <Controller
                                 control={control}
@@ -404,7 +404,7 @@ export const CrossChainTransferModal = () => {
                                     color: "#666666"
                                 }}
                             >
-                                Chain destino
+                                Destination chain
                             </Typography>
                             <Controller
                                 control={control}
@@ -471,7 +471,7 @@ export const CrossChainTransferModal = () => {
                                     color: "#666666"
                                 }}
                             >
-                                Address destino
+                                Destination address
                             </Typography>
                             <Controller
                                 control={control}
@@ -513,7 +513,7 @@ export const CrossChainTransferModal = () => {
                                         color: "#666666"
                                     }}
                                 >
-                                    Monto USDC
+                                    Amount (USDC)
                                 </Typography>
                                 {/* Solo mostrar el badge si es cross-chain */}
                                 {isCrossChain && (
@@ -529,7 +529,7 @@ export const CrossChainTransferModal = () => {
                                             border: "1px solid #00DC8C",
                                         }}
                                     >
-                                        Mínimo: {minAmount} USDC
+                                         Minimum: {minAmount} USDC
                                     </Typography>
                                 )}
                             </Stack>
@@ -539,7 +539,7 @@ export const CrossChainTransferModal = () => {
                                 render={({ field }) => (
                                     <TextField
                                         type="number"
-                                        placeholder={isCrossChain ? `Mín. ${minAmount}` : "0.00"}
+                                         placeholder={isCrossChain ? `Min. ${minAmount}` : "0.00"}
                                         fullWidth
                                         inputProps={{
                                             min: isCrossChain ? minAmount : 0,
@@ -549,7 +549,7 @@ export const CrossChainTransferModal = () => {
                                         error={!isAmountValid && !!watchAmount}
                                         helperText={
                                             !isAmountValid && watchAmount
-                                                ? `El monto debe ser al menos ${minAmount} USDC`
+                                                 ? `Amount must be at least ${minAmount} USDC`
                                                 : ""
                                         }
                                         InputProps={{
@@ -594,7 +594,7 @@ export const CrossChainTransferModal = () => {
                                 <Stack spacing={1.5}>
                                     <Stack direction="row" justifyContent="space-between">
                                         <Typography color="#666666" fontWeight={600} fontSize={13}>
-                                            Monto:
+                                             Amount:
                                         </Typography>
                                         <Typography fontWeight={700} fontSize={14}>
                                             {watchAmount} USDC
@@ -602,7 +602,7 @@ export const CrossChainTransferModal = () => {
                                     </Stack>
                                     <Stack direction="row" justifyContent="space-between">
                                         <Typography color="#666666" fontWeight={600} fontSize={13}>
-                                            Fee facilitador:
+                                             Facilitator fee:
                                         </Typography>
                                         <Typography color="#00DC8C" fontWeight={700} fontSize={14}>
                                             {fee} USDC
@@ -615,7 +615,7 @@ export const CrossChainTransferModal = () => {
                                     }}>
                                         <Stack direction="row" justifyContent="space-between">
                                             <Typography color="#000000" fontWeight={800} fontSize={14}>
-                                                Total a firmar:
+                                             Total to sign:
                                             </Typography>
                                             <Typography fontWeight={800} fontSize={15}>
                                                 {total} USDC
@@ -624,10 +624,10 @@ export const CrossChainTransferModal = () => {
                                     </Box>
                                     <Stack direction="row" justifyContent="space-between" alignItems="center">
                                         <Typography color="#666666" fontWeight={600} fontSize={13}>
-                                            Tipo:
+                                             Type:
                                         </Typography>
                                         <Chip
-                                            label={isCrossChain ? "Cross-Chain" : "Mismo Chain"}
+                                            label={isCrossChain ? "Cross-Chain" : "Same chain"}
                                             size="small"
                                             sx={{
                                                 bgcolor: isCrossChain ? "#7852FF" : "#3CD2FF",
@@ -642,7 +642,7 @@ export const CrossChainTransferModal = () => {
                             </Box>
                         )}
 
-                        {/* ALERTA DE MONTO INSUFICIENTE */}
+                         {/* INSUFFICIENT AMOUNT ALERT */}
                         {!isAmountValid && watchAmount && (
                             <Alert
                                 severity="warning"
@@ -657,7 +657,7 @@ export const CrossChainTransferModal = () => {
                                     }
                                 }}
                             >
-                                El monto debe ser al menos <strong>{minAmount} USDC</strong> para cubrir el fee del facilitador en {NETWORKS[watchSourceChain].label}.
+                                 Amount must be at least <strong>{minAmount} USDC</strong> to cover facilitator fee on {NETWORKS[watchSourceChain].label}.
                             </Alert>
                         )}
 
@@ -707,7 +707,7 @@ export const CrossChainTransferModal = () => {
                             },
                         }}
                     >
-                        Cancelar
+                        Cancel
                     </Button>
 
                     <Button
@@ -740,10 +740,10 @@ export const CrossChainTransferModal = () => {
                         {isLoading ? (
                             <>
                                 <CircularProgress size={20} sx={{ color: "#000000", mr: 1 }} />
-                                Procesando...
+                                Processing...
                             </>
                         ) : (
-                            `Enviar ${isCrossChain ? "(Cross-Chain)" : ""}`
+                            `Send ${isCrossChain ? "(Cross-Chain)" : ""}`
                         )}
                     </Button>
                 </DialogActions>
