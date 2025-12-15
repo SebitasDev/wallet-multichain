@@ -1,5 +1,5 @@
-import {StellarIcon} from "@/app/components/atoms/StellarIcon";
-import {Networks} from "stellar-sdk";
+import { StellarIcon } from "@/app/components/atoms/StellarIcon";
+import { Networks } from "stellar-sdk";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
@@ -15,5 +15,6 @@ export const STELLAR = {
     crossChainInformation: {
         supportCCTP: false,
         supportCirclePaymaster: false
-    }
+    },
+    aproxFromFee: isDevelopment ? 0.003 : 0.0028
 }

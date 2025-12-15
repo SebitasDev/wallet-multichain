@@ -25,21 +25,30 @@ import { Address } from "abitype";
 import { useMainWalletStore } from "@/app/store/useMainWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
-import {NETWORKS} from "@/app/constants/chainsInformation";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { StellarIcon } from "@/app/components/atoms/StellarIcon";
+import { STELLAR } from "@/app/constants/chais/Stellar";
 
 type FormValues = {
     sourceChain: FacilitatorChainKey;
-    destChain: FacilitatorChainKey;
+    destChain: FacilitatorChainKey | typeof STELLAR_CHAIN_KEY;
     recipient: string;
     amount: string;
 };
 
-const CHAIN_OPTIONS: FacilitatorChainKey[] = [
+const STELLAR_CHAIN_KEY = "Stellar";
+
+const SOURCE_CHAIN_OPTIONS: FacilitatorChainKey[] = [
     "Base",
     "Polygon",
     "Arbitrum",
     "Optimism",
     "Unichain",
+];
+
+const DESTINATION_CHAIN_OPTIONS = [
+    ...SOURCE_CHAIN_OPTIONS,
+    STELLAR_CHAIN_KEY
 ];
 
 export const CrossChainTransferModal = () => {
@@ -120,8 +129,13 @@ export const CrossChainTransferModal = () => {
             return 0;
         }
 
+        if (watchDestChain === STELLAR_CHAIN_KEY) {
+            // For Stellar, we use the source chain fee as we don't have destination fees for it yet
+            // and the user requested to remove specific Stellar logic if it was "from source" (interpreted as reverting to simple source logic)
+        }
+
         const sourceConfig = NETWORKS[watchSourceChain];
-        return sourceConfig.aproxFromFee;
+        return sourceConfig?.aproxFromFee || 0;
     }, [watchSourceChain, watchDestChain]);
 
     // Validar si el monto es menor al mínimo - ARREGLADO
@@ -157,6 +171,21 @@ export const CrossChainTransferModal = () => {
             return;
         }
 
+        // ---------------------------------------------------------
+        // LOGICA PARA STELLAR (DESTINO)
+        // ---------------------------------------------------------
+        if (data.destChain === STELLAR_CHAIN_KEY) {
+            console.log(">>> TRAMITANDO ENVÍO A STELLAR: ", {
+                amount: data.amount,
+                recipient: data.recipient,
+                sourceChain: data.sourceChain,
+                destChain: STELLAR_CHAIN_KEY
+            });
+            toast.info("Tramitando envío a Stellar (Simulado check console)...");
+            closeModal();
+            return; // 🛑 DETENER AQUÍ para no llamar a la API
+        }
+
         toast.info("Firmando autorización...");
 
         try {
@@ -174,7 +203,7 @@ export const CrossChainTransferModal = () => {
                 result = await transferCrossChain(
                     data.amount,
                     data.sourceChain,
-                    data.destChain,
+                    data.destChain as FacilitatorChainKey, // Cast necesario porque FacilitatorChainKey no incluye Stellar
                     data.recipient as Address
                 );
             }
@@ -199,7 +228,18 @@ export const CrossChainTransferModal = () => {
     };
 
     const isCrossChain = watchSourceChain !== watchDestChain;
-    const fee = watchAmount ? getFee() : "0.00";
+
+    // Fee calculation logic
+    const fee = useMemo(() => {
+        if (!watchAmount) return "0.00";
+
+        if (watchDestChain === STELLAR_CHAIN_KEY) {
+            return STELLAR.aproxFromFee.toString();
+        }
+
+        return getFee();
+    }, [watchAmount, watchDestChain, getFee]);
+
     const total = watchAmount ? getTotalWithFee(watchAmount) : "0.00";
 
     return (
@@ -362,7 +402,7 @@ export const CrossChainTransferModal = () => {
                                             }
                                         }}
                                     >
-                                        {CHAIN_OPTIONS.map((chain) => {
+                                        {SOURCE_CHAIN_OPTIONS.map((chain) => {
                                             const chainConfig = NETWORKS[chain as keyof typeof NETWORKS];
                                             return (
                                                 <MenuItem key={chain} value={chain}>
@@ -429,8 +469,36 @@ export const CrossChainTransferModal = () => {
                                             }
                                         }}
                                     >
-                                        {CHAIN_OPTIONS.map((chain) => {
+                                        {DESTINATION_CHAIN_OPTIONS.map((chain) => {
+                                            // Handle Stellar manually
+                                            if (chain === STELLAR_CHAIN_KEY) {
+                                                return (
+                                                    <MenuItem key={chain} value={chain}>
+                                                        <Stack direction="row" alignItems="center" spacing={1.5}>
+                                                            <Box sx={{
+                                                                width: 24,
+                                                                height: 24,
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                                "& svg": {
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                }
+                                                            }}>
+                                                                <StellarIcon />
+                                                            </Box>
+                                                            <Typography fontWeight={600}>
+                                                                Stellar
+                                                            </Typography>
+                                                        </Stack>
+                                                    </MenuItem>
+                                                );
+                                            }
+
                                             const chainConfig = NETWORKS[chain as keyof typeof NETWORKS];
+                                            if (!chainConfig) return null; // Safety check
+
                                             return (
                                                 <MenuItem key={chain} value={chain}>
                                                     <Stack direction="row" alignItems="center" spacing={1.5}>
@@ -454,13 +522,15 @@ export const CrossChainTransferModal = () => {
                                                 </MenuItem>
                                             );
                                         })}
+
                                     </TextField>
-                                )}
+                                )
+                                }
                             />
-                        </Box>
+                        </Box >
 
                         {/* RECIPIENT */}
-                        <Box>
+                        < Box >
                             <Typography
                                 fontWeight={700}
                                 fontSize={13}
@@ -499,10 +569,10 @@ export const CrossChainTransferModal = () => {
                                     />
                                 )}
                             />
-                        </Box>
+                        </Box >
 
                         {/* AMOUNT */}
-                        <Box>
+                        < Box >
                             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
                                 <Typography
                                     fontWeight={700}
@@ -579,107 +649,113 @@ export const CrossChainTransferModal = () => {
                                     />
                                 )}
                             />
-                        </Box>
+                        </Box >
 
                         {/* FEE INFO */}
-                        {watchAmount && parseFloat(watchAmount) > 0 && (
-                            <Box
-                                sx={{
-                                    p: 2.5,
-                                    bgcolor: "#f5f5f5",
-                                    borderRadius: 3,
-                                    border: "2px solid #000000",
-                                }}
-                            >
-                                <Stack spacing={1.5}>
-                                    <Stack direction="row" justifyContent="space-between">
-                                        <Typography color="#666666" fontWeight={600} fontSize={13}>
-                                            Monto:
-                                        </Typography>
-                                        <Typography fontWeight={700} fontSize={14}>
-                                            {watchAmount} USDC
-                                        </Typography>
-                                    </Stack>
-                                    <Stack direction="row" justifyContent="space-between">
-                                        <Typography color="#666666" fontWeight={600} fontSize={13}>
-                                            Fee facilitador:
-                                        </Typography>
-                                        <Typography color="#00DC8C" fontWeight={700} fontSize={14}>
-                                            {fee} USDC
-                                        </Typography>
-                                    </Stack>
-                                    <Box sx={{
-                                        borderTop: "2px solid #000000",
-                                        pt: 1.5,
-                                        mt: 0.5
-                                    }}>
+                        {
+                            watchAmount && parseFloat(watchAmount) > 0 && (
+                                <Box
+                                    sx={{
+                                        p: 2.5,
+                                        bgcolor: "#f5f5f5",
+                                        borderRadius: 3,
+                                        border: "2px solid #000000",
+                                    }}
+                                >
+                                    <Stack spacing={1.5}>
                                         <Stack direction="row" justifyContent="space-between">
-                                            <Typography color="#000000" fontWeight={800} fontSize={14}>
-                                                Total a firmar:
+                                            <Typography color="#666666" fontWeight={600} fontSize={13}>
+                                                Monto:
                                             </Typography>
-                                            <Typography fontWeight={800} fontSize={15}>
-                                                {total} USDC
+                                            <Typography fontWeight={700} fontSize={14}>
+                                                {watchAmount} USDC
                                             </Typography>
                                         </Stack>
-                                    </Box>
-                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                        <Typography color="#666666" fontWeight={600} fontSize={13}>
-                                            Tipo:
-                                        </Typography>
-                                        <Chip
-                                            label={isCrossChain ? "Cross-Chain" : "Mismo Chain"}
-                                            size="small"
-                                            sx={{
-                                                bgcolor: isCrossChain ? "#7852FF" : "#3CD2FF",
-                                                color: "#000000",
-                                                fontWeight: 800,
-                                                fontSize: 11,
-                                                border: "2px solid #000000",
-                                            }}
-                                        />
+                                        <Stack direction="row" justifyContent="space-between">
+                                            <Typography color="#666666" fontWeight={600} fontSize={13}>
+                                                Fee facilitador:
+                                            </Typography>
+                                            <Typography color="#00DC8C" fontWeight={700} fontSize={14}>
+                                                {fee} USDC
+                                            </Typography>
+                                        </Stack>
+                                        <Box sx={{
+                                            borderTop: "2px solid #000000",
+                                            pt: 1.5,
+                                            mt: 0.5
+                                        }}>
+                                            <Stack direction="row" justifyContent="space-between">
+                                                <Typography color="#000000" fontWeight={800} fontSize={14}>
+                                                    Total a firmar:
+                                                </Typography>
+                                                <Typography fontWeight={800} fontSize={15}>
+                                                    {total} USDC
+                                                </Typography>
+                                            </Stack>
+                                        </Box>
+                                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                            <Typography color="#666666" fontWeight={600} fontSize={13}>
+                                                Tipo:
+                                            </Typography>
+                                            <Chip
+                                                label={isCrossChain ? "Cross-Chain" : "Mismo Chain"}
+                                                size="small"
+                                                sx={{
+                                                    bgcolor: isCrossChain ? "#7852FF" : "#3CD2FF",
+                                                    color: "#000000",
+                                                    fontWeight: 800,
+                                                    fontSize: 11,
+                                                    border: "2px solid #000000",
+                                                }}
+                                            />
+                                        </Stack>
                                     </Stack>
-                                </Stack>
-                            </Box>
-                        )}
+                                </Box>
+                            )
+                        }
 
                         {/* ALERTA DE MONTO INSUFICIENTE */}
-                        {!isAmountValid && watchAmount && (
-                            <Alert
-                                severity="warning"
-                                sx={{
-                                    border: "2px solid #FFA500",
-                                    borderRadius: 2,
-                                    bgcolor: "rgba(255, 165, 0, 0.1)",
-                                    color: "#000000",
-                                    fontWeight: 600,
-                                    "& .MuiAlert-icon": {
-                                        color: "#FFA500"
-                                    }
-                                }}
-                            >
-                                El monto debe ser al menos <strong>{minAmount} USDC</strong> para cubrir el fee del facilitador en {NETWORKS[watchSourceChain].label}.
-                            </Alert>
-                        )}
+                        {
+                            !isAmountValid && watchAmount && (
+                                <Alert
+                                    severity="warning"
+                                    sx={{
+                                        border: "2px solid #FFA500",
+                                        borderRadius: 2,
+                                        bgcolor: "rgba(255, 165, 0, 0.1)",
+                                        color: "#000000",
+                                        fontWeight: 600,
+                                        "& .MuiAlert-icon": {
+                                            color: "#FFA500"
+                                        }
+                                    }}
+                                >
+                                    El monto debe ser al menos <strong>{minAmount} USDC</strong> para cubrir el fee del facilitador en {NETWORKS[watchSourceChain].label}.
+                                </Alert>
+                            )
+                        }
 
-                        {error && (
-                            <Alert
-                                severity="error"
-                                sx={{
-                                    border: "2px solid #ff4444",
-                                    borderRadius: 2,
-                                    bgcolor: "rgba(255, 68, 68, 0.1)",
-                                    color: "#000000",
-                                    fontWeight: 600,
-                                    "& .MuiAlert-icon": {
-                                        color: "#ff4444"
-                                    }
-                                }}
-                            >
-                                {error}
-                            </Alert>
-                        )}
-                    </Stack>
-                </DialogContent>
+                        {
+                            error && (
+                                <Alert
+                                    severity="error"
+                                    sx={{
+                                        border: "2px solid #ff4444",
+                                        borderRadius: 2,
+                                        bgcolor: "rgba(255, 68, 68, 0.1)",
+                                        color: "#000000",
+                                        fontWeight: 600,
+                                        "& .MuiAlert-icon": {
+                                            color: "#ff4444"
+                                        }
+                                    }}
+                                >
+                                    {error}
+                                </Alert>
+                            )
+                        }
+                    </Stack >
+                </DialogContent >
 
                 <DialogActions sx={{ p: 3, gap: 2, background: "#ffffff" }}>
                     <Button
@@ -747,7 +823,7 @@ export const CrossChainTransferModal = () => {
                         )}
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </Dialog >
         </>
     );
 };
