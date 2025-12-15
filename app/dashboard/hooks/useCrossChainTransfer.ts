@@ -67,6 +67,7 @@ export const useCrossChainTransfer = () => {
     const {
         transferCrossChain,
         transferDirect,
+        transferStellar,
         getFee,
         getTotalWithFee,
         isLoading,
@@ -100,7 +101,7 @@ export const useCrossChainTransfer = () => {
         }
 
         if (watchDestChain === STELLAR_CHAIN_KEY) {
-            // Reverted to source logic as requested
+            return 0.001; // Testing minimum for 1-Click Bridge
         }
 
         const sourceConfig = NETWORKS[watchSourceChain];
@@ -150,14 +151,24 @@ export const useCrossChainTransfer = () => {
 
         // Stellar Logic
         if (data.destChain === STELLAR_CHAIN_KEY) {
-            console.log(">>> TRAMITANDO ENVÍO A STELLAR: ", {
-                amount: data.amount,
-                recipient: data.recipient,
-                sourceChain: data.sourceChain,
-                destChain: STELLAR_CHAIN_KEY
-            });
-            toast.info("Tramitando envío a Stellar (Simulado check console)...");
-            closeModal();
+            toast.info("Firmando autorización para Stellar...");
+            try {
+                const result = await transferStellar(
+                    data.amount,
+                    data.sourceChain,
+                    data.recipient
+                );
+
+                if (result.success) {
+                    toast.success(`Transfer a Stellar exitoso! TX EVM: ${result.transactionHash?.slice(0, 10)}...`);
+                    closeModal();
+                } else {
+                    toast.error(`Error Stellar: ${result.errorReason}`);
+                }
+            } catch (err) {
+                console.error(err);
+                toast.error("Error al procesar el transfer a Stellar");
+            }
             return;
         }
 

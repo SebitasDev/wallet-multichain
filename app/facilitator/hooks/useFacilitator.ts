@@ -302,6 +302,66 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         });
     }, [transfer]);
 
+    /** Stellar Bridge Transfer */
+    const transferStellar = useCallback(async (
+        amount: string,
+        sourceChain: FacilitatorChainKey,
+        recipientStellar: string
+    ): Promise<SettleResponse> => {
+        setIsLoading(true);
+        setError(null);
+
+        console.log(LOG_PREFIX, "Starting Stellar transfer", {
+            amount,
+            sourceChain,
+            recipientStellar
+        });
+
+        try {
+            const amountAtomic = BigInt(Math.floor(parseFloat(amount) * 1_000_000));
+
+            // Step 1: Create and sign authorization
+            console.log(LOG_PREFIX, "Step 1/2: Creating authorization for Stellar bridge");
+            const paymentPayload = await createAuthorizationPayload(amountAtomic, sourceChain);
+
+            // Step 2: Call Stellar Bridge API
+            console.log(LOG_PREFIX, "Step 2/2: Calling Stellar Bridge API");
+            const response = await fetch("/api/bridge-stellar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    paymentPayload,
+                    sourceChain,
+                    amount,
+                    recipientStellar
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.errorReason || "Stellar bridge failed");
+            }
+
+            console.log(LOG_PREFIX, "Stellar Transfer completed", {
+                txHash: result.transactionHash
+            });
+
+            return result;
+
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Unknown error";
+            console.error(LOG_PREFIX, "Stellar Transfer failed:", errorMessage);
+            setError(errorMessage);
+            return {
+                success: false,
+                errorReason: errorMessage
+            };
+        } finally {
+            setIsLoading(false);
+        }
+    }, [createAuthorizationPayload]);
+
     /** Returns the facilitator fee in USDC */
     const getFee = useCallback((): string => {
         const fee = calculateFee();
@@ -319,6 +379,7 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         transfer,
         transferDirect,
         transferCrossChain,
+        transferStellar,
         verify,
         settle,
         createAuthorizationPayload,
