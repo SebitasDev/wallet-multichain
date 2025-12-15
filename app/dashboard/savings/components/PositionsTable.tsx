@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { toast } from "react-toastify";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { useSavingsStore, fetchSavingsPositions } from "@/app/store/useSavingsStore";
+import { useSavingsStore, fetchSavingsPositions } from "@/app/dashboard/store/useSavingsStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import {

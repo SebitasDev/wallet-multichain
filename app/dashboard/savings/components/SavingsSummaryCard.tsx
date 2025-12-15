@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Typography, Skeleton } from "@mui/material";
-import { useSavingsStore } from "@/app/store/useSavingsStore";
+import { useSavingsStore } from "@/app/dashboard/store/useSavingsStore";
 import SavingsIcon from "@mui/icons-material/Savings";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";

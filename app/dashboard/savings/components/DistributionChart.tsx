@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
-import { useSavingsStore } from "@/app/store/useSavingsStore";
+import { useSavingsStore } from "@/app/dashboard/store/useSavingsStore";
 import { getSavingsChainConfig, SavingsChainKey } from "@/app/savings/config";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 

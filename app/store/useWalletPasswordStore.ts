@@ -1,6 +1,6 @@
-import {create} from "zustand";
-import {persist} from "zustand/middleware";
-import {decryptPrivateKey, encryptPrivateKey, generateSalt} from "@/app/utils/cripto";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { decryptPrivateKey, encryptPrivateKey, generateSalt } from "@/app/utils/cripto";
 
 interface EncryptedPassword {
     encrypted: string;
@@ -12,9 +12,11 @@ interface WalletState {
     encryptedPassword: EncryptedPassword | null;
     currentPassword: string | null;
     setPassword: (password: string) => Promise<void>;
-    getPassword: (password: string)  => Promise<string | null>;
+    getPassword: (password: string) => Promise<string | null>;
     verifyPassword: (password: string) => Promise<boolean>;
     setCurrentPassword: (password: string) => void;
+    hydrated: boolean;
+    setHydrated: (val: boolean) => void;
 }
 
 export const useWalletPasswordStore = create<WalletState>()(
@@ -76,12 +78,19 @@ export const useWalletPasswordStore = create<WalletState>()(
                     return false;
                 }
             },
+
+            // Hydration state
+            hydrated: false,
+            setHydrated: (val: boolean) => set({ hydrated: val }),
         }),
         {
             name: "wallet_password",
             partialize: (state) => ({
                 encryptedPassword: state.encryptedPassword,
             }),
+            onRehydrateStorage: () => (state) => {
+                state?.setHydrated(true);
+            },
         }
     )
 );

@@ -11,7 +11,7 @@ import React, {
 import { useEmbedded } from "@/app/dashboard/hooks/embebed";
 import { toast } from "react-toastify";
 import { Wallet } from "ethers";
-import { useMainWalletStore } from "@/app/store/useMainWalletStore";
+import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import {
     decryptPrivateKey,
     encryptPrivateKey,
@@ -68,9 +68,9 @@ interface XOContractsContextType {
 const XOContractsContext = createContext<XOContractsContextType | null>(null);
 
 export const XOContractsProvider = ({
-                                        children,
-                                        password,
-                                    }: {
+    children,
+    password,
+}: {
     children: ReactNode;
     password: string;
 }) => {
@@ -82,11 +82,11 @@ export const XOContractsProvider = ({
     const initOnce = useRef(false);
 
     const { isEmbedded } = useEmbedded();
-    const mainWallet = useMainWalletStore((s) => s.mainWallet);
-    const hydrated = useMainWalletStore((s) => s.hydrated);
-    const setMainWallet = useMainWalletStore((s) => s.setMainWallet);
-    const setXOWallet = useMainWalletStore((s) => s.setXOWallet);
-    const setXOClient = useMainWalletStore((s) => s.setXOClient);
+    const mainWallet = useXOWalletStore((s) => s.mainWallet);
+    const hydrated = useXOWalletStore((s) => s.hydrated);
+    const setMainWallet = useXOWalletStore((s) => s.setMainWallet);
+    const setXOWallet = useXOWalletStore((s) => s.setXOWallet);
+    const setXOClient = useXOWalletStore((s) => s.setXOClient);
 
     const canDecrypt =
         hydrated &&
@@ -302,7 +302,7 @@ export const XOContractsProvider = ({
             value={{
                 connect,
                 address,
-                client: useMainWalletStore.getState().xoClient,
+                client: useXOWalletStore.getState().xoClient,
                 isUsingXO,
                 currentNetwork,
                 payX402,
