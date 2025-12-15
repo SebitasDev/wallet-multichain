@@ -1,20 +1,32 @@
 "use client";
 
-import React, { ReactNode, createContext, useContext, useState, useEffect, useRef } from "react";
+import React, {
+    ReactNode,
+    createContext,
+    useContext,
+    useState,
+    useEffect,
+    useRef,
+} from "react";
 import { useEmbedded } from "@/app/dashboard/hooks/embebed";
 import { toast } from "react-toastify";
 import { Wallet } from "ethers";
 import { useMainWalletStore } from "@/app/store/useMainWalletStore";
-import { decryptPrivateKey, encryptPrivateKey, generateSalt } from "@/app/utils/cripto";
+import {
+    decryptPrivateKey,
+    encryptPrivateKey,
+    generateSalt,
+} from "@/app/utils/cripto";
 import { createPaymentHeader } from "x402/client";
 import { privateKeyToAccount } from "viem/accounts";
 import { createWalletClient, custom, publicActions } from "viem";
-import { arbitrum, base, polygon } from "viem/chains";
-import {Address} from "abitype";
-
+import { base, polygon } from "viem/chains";
+import { Address } from "abitype";
+import { Keypair } from "stellar-sdk";
+import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
 
 // =====================
-//  TRUE NETWORK CONFIG
+//  NETWORK CONFIG
 // =====================
 
 const NETWORKS = {
@@ -35,11 +47,9 @@ const NETWORKS = {
         usdc: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
         usdcName: "USD Coin",
         usdcVersion: "2",
-    }
+    },
 };
 
-
-// TYPE CORRECTO
 type AvailableChains = keyof typeof NETWORKS;
 
 interface XOContractsContextType {
@@ -65,9 +75,11 @@ export const XOContractsProvider = ({
     password: string;
 }) => {
     const [address, setAddress] = useState<string | null>(null);
-    const [selectedChain, setSelectedChain] = useState<AvailableChains>("polygon");
-    const [isUsingXO, setIsUsingXO] = useState<boolean>(false);
+    const [selectedChain] = useState<AvailableChains>("polygon");
+    const [isUsingXO, setIsUsingXO] = useState(false);
+
     const xoProviderRef = useRef<any>(null);
+    const initOnce = useRef(false);
 
     const { isEmbedded } = useEmbedded();
     const mainWallet = useMainWalletStore((s) => s.mainWallet);
@@ -76,24 +88,39 @@ export const XOContractsProvider = ({
     const setXOWallet = useMainWalletStore((s) => s.setXOWallet);
     const setXOClient = useMainWalletStore((s) => s.setXOClient);
 
+    const canDecrypt =
+        hydrated &&
+        !!password &&
+        !!mainWallet.encryptedPrivateKey &&
+        !!mainWallet.salt &&
+        !!mainWallet.iv;
+
+    // ======================
+    //  INIT (SINGLE RUN)
+    // ======================
+    useEffect(() => {
+        if (!hydrated) return;
+        if (isEmbedded === undefined) return;
+        if (!password) return;
+        if (initOnce.current) return;
+
+        initOnce.current = true;
+        connect();
+    }, [hydrated, isEmbedded, password]);
 
     // ======================
     //  CONNECT XO WALLET
     // ======================
     const connect = async () => {
         try {
-            toast.info("Conectando a XO...");
-
-            const { XOConnectProvider } = await import("xo-connect");
+            const { XOConnectProvider, XOConnect } = await import("xo-connect");
             const { BrowserProvider } = await import("ethers");
-            const { XOConnect } = await import("xo-connect");
 
             if (!isEmbedded) throw new Error("No XO Embedded");
 
-            // Siempre XO usa BASE MAINNET
             const provider = new XOConnectProvider({
                 rpcs: { ["0x2105"]: "https://mainnet.base.org" },
-                defaultChainId: "0x2105"
+                defaultChainId: "0x2105",
             });
 
             await provider.request({ method: "eth_requestAccounts" });
@@ -111,23 +138,22 @@ export const XOContractsProvider = ({
             setXOClient(client);
 
             toast.success(`Wallet XO conectada: ${addr}`);
-
-        } catch (err) {
-            toast.warning("No se pudo conectar a XO. Usando Wallet Local...");
+        } catch {
             setIsUsingXO(false);
             await generateLocalOrLoad();
         }
     };
 
-
     // ======================
-    //   LOCAL WALLET
+    //  LOCAL WALLET
     // ======================
     const generateLocalOrLoad = async () => {
-        if (mainWallet.address && mainWallet.encryptedPrivateKey) {
+        if (!hydrated || !password) return;
+
+        if (canDecrypt) {
             try {
                 const pk = await decryptPrivateKey(
-                    mainWallet.encryptedPrivateKey,
+                    mainWallet.encryptedPrivateKey!,
                     password,
                     mainWallet.salt!,
                     mainWallet.iv!
@@ -142,13 +168,42 @@ export const XOContractsProvider = ({
             }
         }
 
+        // === CREATE NEW WALLET ===
         const wallet = Wallet.createRandom();
+
+        const keypair = Keypair.random();
+        const secret = keypair.secret();
+
+        try {
+            await fetch(`https://friendbot.stellar.org?addr=${keypair.publicKey()}`);
+        } catch {
+            toast.error("No se pudo crear la cuenta Stellar");
+            return;
+        }
+
+        await createUSDCTrustline({
+            stellarAddress: keypair.publicKey(),
+            secret,
+        });
+
         const salt = generateSalt();
-        const { encrypted, iv } = await encryptPrivateKey(wallet.privateKey, password, salt);
+        const { encrypted, iv } = await encryptPrivateKey(
+            wallet.privateKey,
+            password,
+            salt
+        );
+
+        const { encrypted: encryptedStellar } = await encryptPrivateKey(
+            secret,
+            password,
+            salt
+        );
 
         setMainWallet({
             address: wallet.address,
+            addressStellar: keypair.publicKey(),
             encryptedPrivateKey: encrypted,
+            encryptedPrivateKeyStellar: encryptedStellar,
             salt,
             iv,
         });
@@ -157,9 +212,8 @@ export const XOContractsProvider = ({
         toast.info(`Wallet local generada: ${wallet.address}`);
     };
 
-
     // ======================
-    //        PAY X402
+    //  PAY X402
     // ======================
     const payX402 = async (
         amount: string,
@@ -167,7 +221,7 @@ export const XOContractsProvider = ({
         targetChain: AvailableChains
     ) => {
         try {
-            const networkConfig = NETWORKS[targetChain.toLowerCase() as keyof typeof NETWORKS];
+            const networkConfig = NETWORKS[targetChain];
             const amountAtomic = (parseFloat(amount) * 1_000_000).toString();
 
             let paymentHeader: string;
@@ -233,27 +287,14 @@ export const XOContractsProvider = ({
             });
 
             const result = await res.json();
-
             if (!res.ok) throw new Error(result.error);
 
             return { success: true, txHash: result.transaction };
-
         } catch (err: any) {
             return { success: false, error: err.message };
         }
     };
 
-
-
-    useEffect(() => {
-        if (!hydrated) return;
-        if (isEmbedded === undefined) return;
-
-        connect();
-    }, [hydrated, isEmbedded]);
-
-
-    // 🎯 Aquí ya no rompe porque selectedChain ahora existe
     const currentNetwork = NETWORKS[selectedChain];
 
     return (
@@ -271,7 +312,6 @@ export const XOContractsProvider = ({
         </XOContractsContext.Provider>
     );
 };
-
 
 export const useXOContracts = () => {
     const ctx = useContext(XOContractsContext);

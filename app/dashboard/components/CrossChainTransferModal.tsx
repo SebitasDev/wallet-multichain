@@ -321,8 +321,8 @@ export const CrossChainTransferModal = () => {
                                 }
                             }}
                         >
-                            Este transfer usa tu propio facilitador. El usuario firma una
-                            autorización (gasless) y el facilitador ejecuta el CCTP de Circle.
+                            Este transfer usa un facilitador. firmas una
+                            autorización (gasless) y el facilitador ejecuta la TX.
                         </Alert>
 
                         {/* SOURCE CHAIN */}

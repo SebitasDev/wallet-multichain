@@ -168,7 +168,7 @@ export default function Dashboard() {
                             </Box>
 
                             <AddSecretModal open={addOpen} onClose={closeAdd} />
-                            <SendMoneyModal walletNames={{}} />
+                            <SendMoneyModal/>
                             <ReceiveModal open={receiveOpen} wallets={wallets} onClose={closeReceive} />
 
                             <ToastContainerCustom/>

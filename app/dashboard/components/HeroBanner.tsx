@@ -1,17 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { formatCurrency } from "@/app/utils/formatCurrency";
-import { Box, Typography, IconButton, CircularProgress } from "@mui/material";
+import {
+    Box,
+    Typography,
+    IconButton,
+    CircularProgress,
+} from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 import { useMainWalletStore } from "@/app/store/useMainWalletStore";
 import { toast } from "react-toastify";
+import {EthIcon} from "@/app/components/atoms/EthIcon";
+import {StellarIcon} from "@/app/components/atoms/StellarIcon";
+import {getStellarUSDCBalance} from "@/app/lib/stellar/getStellarUSDCBalance";
+
+type ActiveWallet = "EVM" | "STELLAR";
 
 export function HeroBanner() {
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const { wallets, getAllWalletsTotalBalance, updateWalletBalances } = useWalletStore();
+    const [activeWallet, setActiveWallet] = useState<ActiveWallet>("EVM");
+    const [stellarUSDCBalance, setStellarUSDCBalance] = useState<number>(0);
+
+    // XO (embedded)
+    const { address: xoAddress } = useXOContracts();
+
+    // Local fallback main wallet
+    const { mainWallet, xoClient } = useMainWalletStore();
+
+    useEffect(() => {
+        if (!mainWallet.addressStellar) return;
+
+        const loadStellarBalance = async () => {
+            try {
+                const balance = await getStellarUSDCBalance(
+                    mainWallet.addressStellar!
+                );
+                setStellarUSDCBalance(balance);
+            } catch (error) {
+                console.error("Error cargando balance Stellar USDC", error);
+            }
+        };
+
+        loadStellarBalance();
+    }, [mainWallet.addressStellar]);
+
+    const {
+        wallets,
+        getAllWalletsTotalBalance,
+        updateWalletBalances,
+    } = useWalletStore();
 
     const handleRefreshBalances = async () => {
         if (isRefreshing) return;
@@ -30,17 +70,17 @@ export function HeroBanner() {
         }
     };
 
-    // XO (embedded)
-    const { address: xoAddress } = useXOContracts();
-
-    // Local fallback main wallet
-    const { mainWallet, xoClient} = useMainWalletStore();
-
-    // Main wallet (XO si existe → sino local)
     const mainAddress = xoAddress ?? mainWallet.address ?? null;
 
-    // Balance quemado exclusivo para Main
-    const burnedMainBalance = 0;
+    const burnedBalances: Record<ActiveWallet, number> = {
+        EVM: 0.00,
+        STELLAR: stellarUSDCBalance,
+    };
+
+    const burnedAddresses: Record<ActiveWallet, string> = {
+        EVM: mainAddress ?? "--",
+        STELLAR: mainWallet.addressStellar ?? "--",
+    };
 
     return (
         <Box
@@ -59,6 +99,46 @@ export function HeroBanner() {
                 boxShadow: "6px 6px 0px #000000",
             }}
         >
+            <Box
+                sx={{
+                    position: "absolute",
+                    top: 10,
+                    left: 10,
+                    width: 28,
+                    height: 28,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#ffffff",
+                }}
+            >
+                {activeWallet === "EVM" ? (<EthIcon/>) : (<StellarIcon />)}
+            </Box>
+
+            {/* TOGGLE WALLET BUTTON */}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+                <IconButton
+                    onClick={() =>
+                        setActiveWallet((prev) =>
+                            prev === "EVM" ? "STELLAR" : "EVM"
+                        )
+                    }
+                    sx={{
+                        background: "#ffffff",
+                        border: "2px solid #000000",
+                        borderRadius: 2,
+                        px: 1.5,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        "&:hover": {
+                            background: "#3CD2FF",
+                        },
+                    }}
+                >
+                    {activeWallet === "EVM" ? "→ STELLAR" : "→ EVM"}
+                </IconButton>
+            </Box>
+
             {/* MAIN WALLET SECTION */}
             <Box
                 sx={{
@@ -80,7 +160,10 @@ export function HeroBanner() {
                         mb: 1,
                     }}
                 >
-                    Main Wallet {xoClient ? ` de ${xoClient.alias}` : ""}
+                    Main Wallet {activeWallet}
+                    {activeWallet === "EVM" && xoClient
+                        ? ` de ${xoClient.alias}`
+                        : ""}
                 </Typography>
 
                 <Typography
@@ -92,7 +175,7 @@ export function HeroBanner() {
                         mb: 1.5,
                     }}
                 >
-                    {formatCurrency(burnedMainBalance)}
+                    {formatCurrency(burnedBalances[activeWallet])}
                 </Typography>
 
                 <Box
@@ -116,7 +199,7 @@ export function HeroBanner() {
                             wordBreak: "break-all",
                         }}
                     >
-                        {mainAddress ?? "--"}
+                        {burnedAddresses[activeWallet]}
                     </Typography>
                 </Box>
             </Box>
@@ -131,7 +214,6 @@ export function HeroBanner() {
                     position: "relative",
                 }}
             >
-                {/* Botón de refrescar */}
                 <IconButton
                     onClick={handleRefreshBalances}
                     disabled={isRefreshing || wallets.length === 0}
@@ -156,9 +238,14 @@ export function HeroBanner() {
                     }}
                 >
                     {isRefreshing ? (
-                        <CircularProgress size={18} sx={{ color: "#000000" }} />
+                        <CircularProgress
+                            size={18}
+                            sx={{ color: "#000000" }}
+                        />
                     ) : (
-                        <RefreshIcon sx={{ fontSize: 20, color: "#000000" }} />
+                        <RefreshIcon
+                            sx={{ fontSize: 20, color: "#000000" }}
+                        />
                     )}
                 </IconButton>
 
@@ -185,7 +272,9 @@ export function HeroBanner() {
                         mb: 1.5,
                     }}
                 >
-                    {getAllWalletsTotalBalance !== null ? formatCurrency(getAllWalletsTotalBalance()) : "--"}
+                    {getAllWalletsTotalBalance !== null
+                        ? formatCurrency(getAllWalletsTotalBalance())
+                        : "--"}
                 </Typography>
 
                 <Box
@@ -205,23 +294,19 @@ export function HeroBanner() {
                             width: 7,
                             height: 7,
                             borderRadius: "50%",
-                            background: wallets.length > 0 ? "#00DC8C" : "#ff4444",
-                            boxShadow: wallets.length > 0
-                                ? "0 0 8px rgba(0, 220, 140, 0.6)"
-                                : "0 0 8px rgba(255, 68, 68, 0.6)",
+                            background:
+                                wallets.length > 0 ? "#00DC8C" : "#ff4444",
+                            boxShadow:
+                                wallets.length > 0
+                                    ? "0 0 8px rgba(0, 220, 140, 0.6)"
+                                    : "0 0 8px rgba(255, 68, 68, 0.6)",
                             animation: "pulse 2.5s ease-in-out infinite",
                             "@keyframes pulse": {
                                 "0%, 100%": {
                                     opacity: 1,
-                                    boxShadow: wallets.length > 0
-                                        ? "0 0 8px rgba(0, 220, 140, 0.6)"
-                                        : "0 0 8px rgba(255, 68, 68, 0.6)",
                                 },
                                 "50%": {
                                     opacity: 0.85,
-                                    boxShadow: wallets.length > 0
-                                        ? "0 0 12px rgba(0, 220, 140, 0.8)"
-                                        : "0 0 12px rgba(255, 68, 68, 0.8)",
                                 },
                             },
                         }}

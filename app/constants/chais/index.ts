@@ -5,7 +5,7 @@ import {UNICHAIN} from "@/app/constants/chais/Unichain";
 import {POLYGON} from "@/app/constants/chais/Polygon";
 import {AVALANCHE} from "@/app/constants/chais/Avalanche";
 import {WORLD_CHAIN} from "@/app/constants/chais/WorldChain";
-
+import {STELLAR} from "@/app/constants/chais/Stellar";
 
 export {
     OPTIMISM,
@@ -14,6 +14,7 @@ export {
     UNICHAIN,
     POLYGON,
     AVALANCHE,
-    WORLD_CHAIN
+    WORLD_CHAIN,
+    STELLAR
 
 }

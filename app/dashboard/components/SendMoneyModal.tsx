@@ -16,15 +16,11 @@ import {useSendMoney} from "@/app/dashboard/hooks/useSendMoney";
 import {FormSendMoney} from "@/app/dashboard/components/sendMoney/FormSendMoney";
 import {FinishRoute} from "@/app/dashboard/components/sendMoney/FinishRoute";
 
-type Props = {
-    walletNames?: Record<string, string>;
-};
-
-export function SendMoneyModal({walletNames}: Props) {
+export function SendMoneyModal() {
 
     const { sendLoading, control, handleSubmit, errors, handleOnSend, handleOnConfirm,
         canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary,
-    } = useSendMoney(walletNames);
+    } = useSendMoney();
 
 
     return (

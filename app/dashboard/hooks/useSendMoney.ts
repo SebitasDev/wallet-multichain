@@ -44,7 +44,7 @@ export type RouteDetail = {
 };
 
 
-export const useSendMoney = (walletNames?: Record<string, string>) => {
+export const useSendMoney = () => {
     const [sendLoading, setSendLoading] = useState(false);
     const [routeReady, setRouteReady] = useState(false);
     const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
