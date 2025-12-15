@@ -16,6 +16,7 @@ import { toast } from "react-toastify";
 import { EthIcon } from "@/app/components/atoms/EthIcon";
 import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
+import { formatFeeAmount } from "@/app/utils/calculateFees";
 
 type ActiveWallet = "EVM" | "STELLAR";
 
@@ -29,6 +30,13 @@ export function HeroBanner() {
 
     // Local fallback main wallet
     const { mainWallet, xoClient } = useMainWalletStore();
+
+    const {
+        wallets,
+        getAllWalletsTotalBalance,
+        updateWalletBalances,
+        getTotalFees,
+    } = useWalletStore();
 
     useEffect(() => {
         if (!mainWallet.addressStellar) return;
@@ -46,12 +54,6 @@ export function HeroBanner() {
 
         loadStellarBalance();
     }, [mainWallet.addressStellar]);
-
-    const {
-        wallets,
-        getAllWalletsTotalBalance,
-        updateWalletBalances,
-    } = useWalletStore();
 
     const handleRefreshBalances = async () => {
         if (isRefreshing) return;
@@ -273,7 +275,7 @@ export function HeroBanner() {
                     }}
                 >
                     {getAllWalletsTotalBalance !== null
-                        ? formatCurrency(Math.max(0, getAllWalletsTotalBalance() - 0.01))
+                        ? formatCurrency(Math.max(0, getAllWalletsTotalBalance() - getTotalFees()))
                         : "--"}
                 </Typography>
 
@@ -315,7 +317,7 @@ export function HeroBanner() {
                                 color: "#d32f2f", // Red text
                             }}
                         >
-                            -0.01 USDC
+                            -{formatFeeAmount(getTotalFees())} USDC
                         </Typography>
                     </Box>
                 </Box>

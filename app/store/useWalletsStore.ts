@@ -1,14 +1,15 @@
-import {create} from "zustand";
-import {persist} from "zustand/middleware";
-import {mnemonicToSeedSync, validateMnemonic} from "@scure/bip39";
-import {wordlist} from "@scure/bip39/wordlists/english";
-import {HDKey} from "ethereum-cryptography/hdkey";
-import {privateKeyToAccount} from "viem/accounts";
-import {Buffer} from "buffer";
-import {decryptSeed, encryptSeed} from "../utils/cripto";
-import {NETWORKS} from "@/app/constants/chainsInformation";
-import {Address} from "abitype";
-import {getBalanceFromChain} from "@/app/hook/useGetBalanceFromChain";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { mnemonicToSeedSync, validateMnemonic } from "@scure/bip39";
+import { wordlist } from "@scure/bip39/wordlists/english";
+import { HDKey } from "ethereum-cryptography/hdkey";
+import { privateKeyToAccount } from "viem/accounts";
+import { Buffer } from "buffer";
+import { decryptSeed, encryptSeed } from "../utils/cripto";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { Address } from "abitype";
+import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
+import { calculateTotalFees } from "@/app/utils/calculateFees";
 
 interface ChainInfo {
     chainId: string;
@@ -42,6 +43,8 @@ interface WalletStore {
     getWalletTotalBalance: (walletAddress: `0x${string}`) => number;
 
     getAllWalletsTotalBalance: () => number;
+
+    getTotalFees: () => number;
 
     transferBalance: (originAddress: Address, destinationAddress: Address, originChainId: string, destinationChainId: string, amount: number) => void;
 
@@ -269,6 +272,14 @@ export const useWalletStore = create<WalletStore>()(
                 }, 0);
             },
 
+            // -----------------------------
+            // GET TOTAL FEES
+            // -----------------------------
+            getTotalFees: () => {
+                const wallets = get().wallets;
+                return calculateTotalFees(wallets);
+            },
+
 
             transferBalance: (
                 originAddress: Address,
@@ -282,7 +293,7 @@ export const useWalletStore = create<WalletStore>()(
                         const lowerAddr = wallet.address.toLowerCase();
 
                         if (lowerAddr === originAddress.toLowerCase()) {
-                            console.log("inicio",lowerAddr)
+                            console.log("inicio", lowerAddr)
                             return {
                                 ...wallet,
                                 chains: wallet.chains.map((chain) =>
@@ -294,7 +305,7 @@ export const useWalletStore = create<WalletStore>()(
                         }
 
                         if (lowerAddr === destinationAddress.toLowerCase()) {
-                            console.log("destino",lowerAddr)
+                            console.log("destino", lowerAddr)
                             return {
                                 ...wallet,
                                 chains: wallet.chains.map((chain) =>
