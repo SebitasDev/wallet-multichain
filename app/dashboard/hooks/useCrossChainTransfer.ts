@@ -5,7 +5,7 @@ import { Address } from "abitype";
 
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
-import { useMainWalletStore } from "@/app/store/useMainWalletStore";
+import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
@@ -27,7 +27,7 @@ export const useCrossChainTransfer = () => {
     const [provider, setProvider] = useState<any>(null);
 
     const { address, isUsingXO } = useXOContracts();
-    const mainWallet = useMainWalletStore((s) => s.mainWallet);
+    const mainWallet = useXOWalletStore((s) => s.mainWallet);
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
 
     // Setup provider or private key

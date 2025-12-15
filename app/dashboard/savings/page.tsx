@@ -12,7 +12,7 @@ import { DepositSection } from "./components/DepositSection";
 import { PositionsTable } from "./components/PositionsTable";
 import { DistributionChart } from "./components/DistributionChart";
 import { ConfirmationModal } from "./components/ConfirmationModal";
-import { useSavingsStore, fetchSavingsPositions } from "@/app/store/useSavingsStore";
+import { useSavingsStore, fetchSavingsPositions } from "@/app/dashboard/store/useSavingsStore";
 import { SavingsChainKey } from "@/app/savings/config";
 
 export default function SavingsPage() {
