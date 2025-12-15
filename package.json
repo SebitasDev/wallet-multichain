@@ -12,6 +12,7 @@
     "@account-abstraction/sdk": "^0.6.0",
     "@circle-fin/adapter-viem-v2": "^1.1.1",
     "@circle-fin/bridge-kit": "^1.1.2",
+    "@defuse-protocol/one-click-sdk-typescript": "^0.1.15",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.2.2",
