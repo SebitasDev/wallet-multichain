@@ -1,13 +1,13 @@
 import { useRouter } from "next/navigation";
-import { useModalStore } from "@/app/store/useModalStore";
-import { useSendModalState } from "@/app/dashboard/store/useSendModalState";
+import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
+import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { toast } from "react-toastify";
 
 export const useTopBar = () => {
     const router = useRouter();
-    const { openAdd, openReceive } = useModalStore();
-    const { setSendModal } = useSendModalState();
+    const { openAdd, openReceive } = useDashboardModalsStore();
+    const { setSendModal } = useSendMoneyStore();
     const { wallets } = useWalletStore();
 
     const handleSend = () => {

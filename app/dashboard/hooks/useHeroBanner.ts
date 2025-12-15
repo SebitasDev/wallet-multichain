@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
-import { useMainWalletStore } from "@/app/store/useMainWalletStore";
+import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 
 export type ActiveWallet = "EVM" | "STELLAR";
@@ -16,7 +16,7 @@ export const useHeroBanner = () => {
     const { address: xoAddress } = useXOContracts();
 
     // Local fallback main wallet
-    const { mainWallet, xoClient } = useMainWalletStore();
+    const { mainWallet, xoClient } = useXOWalletStore();
 
     const {
         wallets,

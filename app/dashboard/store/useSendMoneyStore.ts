@@ -6,7 +6,7 @@ interface SendModalState {
     setSendModal: (v: boolean) => void;
 }
 
-export const useSendModalState = create<SendModalState>((set) => ({
+export const useSendMoneyStore = create<SendModalState>((set) => ({
     isOpen: false,
     setSendModal: (v) => set({ isOpen: v })
 }));

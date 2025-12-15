@@ -1,5 +1,5 @@
 import { Dialog } from "@mui/material";
-import { WalletInfo } from "@/app/store/useWalletManager";
+import { WalletInfo } from "@/app/store/useWalletsStore";
 import { useReceiveModal } from "@/app/dashboard/hooks/useReceiveModal";
 import { ReceiveModalHeader } from "./ReceiveModalHeader";
 import { ReceiveModalContent } from "./ReceiveModalContent";

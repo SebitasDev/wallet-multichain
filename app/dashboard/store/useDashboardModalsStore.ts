@@ -9,7 +9,7 @@ type ModalState = {
   closeReceive: () => void;
 };
 
-export const useModalStore = create<ModalState>((set) => ({
+export const useDashboardModalsStore = create<ModalState>((set) => ({
   addOpen: false,
   receiveOpen: false,
   openAdd: () => set({ addOpen: true }),

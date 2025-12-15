@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
-import { WalletInfo } from "@/app/store/useWalletManager";
+import { WalletInfo } from "@/app/store/useWalletsStore";
 import { BaseIcon } from "@/app/components/atoms/BaseIcon";
 import { OPIcon } from "@/app/components/atoms/OPIcon";
 import ArbIcon from "@/app/components/atoms/ArbIcon";

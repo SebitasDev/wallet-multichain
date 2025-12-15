@@ -7,7 +7,7 @@ import {
     DialogContent
 } from "@mui/material";
 import QRCode from "react-qr-code";
-import { WalletInfo } from "@/app/store/useWalletManager";
+import { WalletInfo } from "@/app/store/useWalletsStore";
 
 // Helper types for chains from the hook
 interface Chain {

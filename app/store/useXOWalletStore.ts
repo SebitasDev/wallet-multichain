@@ -24,7 +24,7 @@ interface WalletState {
     setXOClient: (client: any) => void;
 }
 
-export const useMainWalletStore = create<WalletState>()(
+export const useXOWalletStore = create<WalletState>()(
     persist(
         (set) => ({
             mainWallet: { address: null, addressStellar: null, encryptedPrivateKey: null, encryptedPrivateKeyStellar: null, salt: null, iv: null },
@@ -39,7 +39,7 @@ export const useMainWalletStore = create<WalletState>()(
             setXOClient: (client) => set({ xoClient: client }),
         }),
         {
-            name: "wallet-storage",
+            name: "xo_wallet_storage",
             version: 1,
             onRehydrateStorage: () => (state) => {
                 if (state) state.setHydrated(true); // ⚡ cuando zustand termina de hidratar

@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form";
 import { AllocationSummary } from "../types";
 import { useFindBestRoute } from "./useFindBestRoute";
 import { useWalletStore } from "@/app/store/useWalletsStore";
-import { useGeneralWalletStore } from "@/app/store/useGeneralWalletStore";
-import { useSendModalState } from "@/app/dashboard/store/useSendModalState";
+import { useSessionWalletStore } from "@/app/store/useSessionWalletStore";
+import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { toast } from "react-toastify";
 import { Address, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -50,7 +50,8 @@ export const useSendMoneyModal = () => {
     const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
     const { allocateAcrossNetworks } = useFindBestRoute();
     const { unlockWallet, transferBalance } = useWalletStore();
-    const { setSendModal, isOpen } = useSendModalState();
+    const generalWallet = useSessionWalletStore(state => state.address);
+    const { setSendModal, isOpen } = useSendMoneyStore();
     const [routeDetails, setRouteDetails] = useState<RouteDetail[]>([]);
 
     useEffect(() => {

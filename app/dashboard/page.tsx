@@ -1,24 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {Box, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import "react-toastify/dist/ReactToastify.css";
 import { HeroBanner } from "./components/HeroBanner";
 import { AddSecretModal } from "./components/AddSecretModal";
 import { SendMoneyModal } from "./components/SendMoneyModal";
 import { ReceiveModal } from "./components/ReceiveModal";
 import { AddressCard } from "./components/AddressCard";
-import { useModalStore } from "@/app/store/useModalStore";
+import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { PasswordModal } from "./components/PasswordModal";
-import {XOContractsProvider} from "@/app/dashboard/hooks/useXOConnect";
-import {EmbeddedProvider} from "@/app/dashboard/hooks/embebed";
-import {GenerateWalletButton} from "@/app/dashboard/components/GenerateWalletButton";
-import {SendMoneyMainWallet} from "@/app/dashboard/components/SendMoneyMainWallet";
-import {CrossChainTransferModal} from "@/app/dashboard/components/CrossChainTransferModal";
-import {TopBar} from "@/app/dashboard/components/TopBar";
-import {ToastContainerCustom} from "@/app/components/atoms/ToastContainerCustom";
+import { XOContractsProvider } from "@/app/dashboard/hooks/useXOConnect";
+import { EmbeddedProvider } from "@/app/dashboard/hooks/embebed";
+import { GenerateWalletButton } from "@/app/dashboard/components/GenerateWalletButton";
+import { SendMoneyMainWallet } from "@/app/dashboard/components/SendMoneyMainWallet";
+import { CrossChainTransferModal } from "@/app/dashboard/components/CrossChainTransferModal";
+import { TopBar } from "@/app/dashboard/components/TopBar";
+import { ToastContainerCustom } from "@/app/components/atoms/ToastContainerCustom";
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false);
@@ -28,7 +28,7 @@ export default function Dashboard() {
     const encrypted = useWalletPasswordStore(s => s.encryptedPassword);
     const currentPassword = useWalletPasswordStore(s => s.currentPassword);
 
-    const { addOpen, receiveOpen, closeAdd, closeReceive } = useModalStore();
+    const { addOpen, receiveOpen, closeAdd, closeReceive } = useDashboardModalsStore();
     const { wallets } = useWalletStore();
 
 
@@ -47,7 +47,7 @@ export default function Dashboard() {
     if (!mounted) return null;
 
     return (
-        <Box sx={{ minHeight: "100vh"}}>
+        <Box sx={{ minHeight: "100vh" }}>
             {/* MODAL DE PASSWORD */}
             <PasswordModal
                 open={askPassword}
@@ -168,10 +168,10 @@ export default function Dashboard() {
                             </Box>
 
                             <AddSecretModal open={addOpen} onClose={closeAdd} />
-                            <SendMoneyModal/>
+                            <SendMoneyModal />
                             <ReceiveModal open={receiveOpen} wallets={wallets} onClose={closeReceive} />
 
-                            <ToastContainerCustom/>
+                            <ToastContainerCustom />
                         </>
                     </XOContractsProvider>
                 </EmbeddedProvider>

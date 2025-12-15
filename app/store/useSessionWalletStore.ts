@@ -11,7 +11,7 @@ interface WalletState {
     resetWallet: () => void;
 }
 
-export const useGeneralWalletStore = create<WalletState>()(
+export const useSessionWalletStore = create<WalletState>()(
     persist(
         (set, get) => ({
             privateKey: null,
@@ -58,7 +58,7 @@ export const useGeneralWalletStore = create<WalletState>()(
         }),
 
         {
-            name: "user_wallet_store",
+            name: "user_session_wallet_store",
             partialize: (state) => ({
                 privateKey: state.privateKey
             })
