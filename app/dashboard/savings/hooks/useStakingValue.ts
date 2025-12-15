@@ -25,7 +25,7 @@ export function useStakingValue(
     const baseValue = parseRawValue(rawValue);
     const [displayValue, setDisplayValue] = useState<number>(baseValue);
     const animationRef = useRef<number | null>(null);
-    const lastFrameRef = useRef<number>(performance.now());
+    const lastFrameRef = useRef<number>(0);
     const currentValueRef = useRef<number>(baseValue);
     const rawValueRef = useRef<string>(rawValue);
 

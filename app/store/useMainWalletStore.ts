@@ -4,7 +4,9 @@ import { persist } from "zustand/middleware";
 interface WalletState {
     mainWallet: {
         address: string | null;
+        addressStellar: string | null;
         encryptedPrivateKey: string | null;
+        encryptedPrivateKeyStellar: string | null;
         salt: string | null;
         iv: string | null;
     };
@@ -25,7 +27,7 @@ interface WalletState {
 export const useMainWalletStore = create<WalletState>()(
     persist(
         (set) => ({
-            mainWallet: { address: null, encryptedPrivateKey: null, salt: null, iv: null },
+            mainWallet: { address: null, addressStellar: null, encryptedPrivateKey: null, encryptedPrivateKeyStellar: null, salt: null, iv: null },
             xoWallet: { address: null },
             xoClient: null,
 

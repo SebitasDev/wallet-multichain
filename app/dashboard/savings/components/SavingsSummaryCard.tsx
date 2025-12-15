@@ -8,98 +8,100 @@ import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import PercentIcon from "@mui/icons-material/Percent";
 import { AnimatedValue } from "./AnimatedValue";
 
+const StatBox = ({
+    label,
+    value,
+    rawValue,
+    icon,
+    color = "#000000",
+    isPositive = false,
+    isAnimated = false,
+    apy = "4.50",
+    isPercentage = false,
+    loading = false,
+}: {
+    label: string;
+    value: string;
+    rawValue?: string;
+    icon: React.ReactNode;
+    color?: string;
+    isPositive?: boolean;
+    isAnimated?: boolean;
+    apy?: string;
+    isPercentage?: boolean;
+    loading?: boolean;
+}) => (
+    <Box
+        sx={{
+            flex: 1,
+            minWidth: { xs: "45%", sm: "auto" },
+            background: "#f5f5f5",
+            border: "2px solid #000000",
+            borderRadius: 3,
+            p: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+        }}
+    >
+        <Box
+            sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                background: color,
+                border: "2px solid #000000",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ffffff",
+            }}
+        >
+            {icon}
+        </Box>
+        <Typography
+            sx={{
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                color: "#666666",
+                letterSpacing: 0.5,
+            }}
+        >
+            {label}
+        </Typography>
+        {loading ? (
+            <Skeleton width={80} height={28} />
+        ) : isAnimated && rawValue ? (
+            <AnimatedValue
+                rawValue={rawValue}
+                apy={apy}
+                decimals={12}
+                showPlusSign={isPositive}
+                sx={{
+                    fontSize: { xs: 12, md: 14 },
+                    fontWeight: 900,
+                    color: isPositive ? "#00DC8C" : "#000000",
+                }}
+            />
+        ) : (
+            <Typography
+                sx={{
+                    fontSize: { xs: 16, md: 20 },
+                    fontWeight: 900,
+                    color: isPositive ? "#00DC8C" : "#000000",
+                }}
+            >
+                {isPercentage ? "" : "$"}{value}
+            </Typography>
+        )}
+    </Box>
+);
+
 export function SavingsSummaryCard() {
     const { loading, getSummary } = useSavingsStore();
     const summary = getSummary();
-
-    const StatBox = ({
-        label,
-        value,
-        rawValue,
-        icon,
-        color = "#000000",
-        isPositive = false,
-        isAnimated = false,
-        apy = "4.50",
-        isPercentage = false,
-    }: {
-        label: string;
-        value: string;
-        rawValue?: string;
-        icon: React.ReactNode;
-        color?: string;
-        isPositive?: boolean;
-        isAnimated?: boolean;
-        apy?: string;
-        isPercentage?: boolean;
-    }) => (
-        <Box
-            sx={{
-                flex: 1,
-                minWidth: { xs: "45%", sm: "auto" },
-                background: "#f5f5f5",
-                border: "2px solid #000000",
-                borderRadius: 3,
-                p: 2,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 1,
-            }}
-        >
-            <Box
-                sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    background: color,
-                    border: "2px solid #000000",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#ffffff",
-                }}
-            >
-                {icon}
-            </Box>
-            <Typography
-                sx={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    color: "#666666",
-                    letterSpacing: 0.5,
-                }}
-            >
-                {label}
-            </Typography>
-            {loading ? (
-                <Skeleton width={80} height={28} />
-            ) : isAnimated && rawValue ? (
-                <AnimatedValue
-                    rawValue={rawValue}
-                    apy={apy}
-                    decimals={12}
-                    showPlusSign={isPositive}
-                    sx={{
-                        fontSize: { xs: 12, md: 14 },
-                        fontWeight: 900,
-                        color: isPositive ? "#00DC8C" : "#000000",
-                    }}
-                />
-            ) : (
-                <Typography
-                    sx={{
-                        fontSize: { xs: 16, md: 20 },
-                        fontWeight: 900,
-                        color: isPositive ? "#00DC8C" : "#000000",
-                    }}
-                >
-                    {isPercentage ? "" : "$"}{value}
-                </Typography>
-            )}
-        </Box>
-    );
 
     return (
         <Box
@@ -169,6 +171,7 @@ export function SavingsSummaryCard() {
                     value={summary.totalDeposited}
                     icon={<AccountBalanceIcon sx={{ fontSize: 22 }} />}
                     color="#3CD2FF"
+                    loading={loading}
                 />
                 <StatBox
                     label="Current Value"
@@ -178,6 +181,7 @@ export function SavingsSummaryCard() {
                     color="#7852FF"
                     isAnimated={summary.positionCount > 0}
                     apy={summary.averageApy}
+                    loading={loading}
                 />
                 <StatBox
                     label="Total Earned"
@@ -188,6 +192,7 @@ export function SavingsSummaryCard() {
                     isPositive
                     isAnimated={summary.positionCount > 0}
                     apy={summary.averageApy}
+                    loading={loading}
                 />
                 <StatBox
                     label="Avg APY"
@@ -195,6 +200,7 @@ export function SavingsSummaryCard() {
                     icon={<PercentIcon sx={{ fontSize: 22 }} />}
                     color="#FFD700"
                     isPercentage
+                    loading={loading}
                 />
             </Box>
 
