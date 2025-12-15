@@ -1,24 +1,24 @@
-import {SendForm, sendSchema } from "@/app/lib/zod/sendSchema";
+import { SendForm, sendSchema } from "@/app/lib/zod/sendSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {JSX, useEffect, useState} from "react";
+import { JSX, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AllocationSummary } from "../types";
 import { useFindBestRoute } from "./useFindBestRoute";
 import { useWalletStore } from "@/app/store/useWalletsStore";
-import {useGeneralWalletStore} from "@/app/store/useGeneralWalletStore";
-import {useSendModalState} from "@/app/dashboard/store/useSendModalState";
-import {toast} from "react-toastify";
-import {Address, createPublicClient, http} from "viem";
+import { useGeneralWalletStore } from "@/app/store/useGeneralWalletStore";
+import { useSendModalState } from "@/app/dashboard/store/useSendModalState";
+import { toast } from "react-toastify";
+import { Address, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import {CHAIN_ID_TO_KEY, ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
+import { CHAIN_ID_TO_KEY, ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
 import { getPrivateClientByNetworkName } from "@/app/utils/getClientByNetworkName";
-import {createAccount} from "@/app/cross-chain-core/clientFactory";
-import {createPaymaster} from "@/app/cross-chain-core/paymasterFactory";
-import {bundlerClientFactory} from "@/app/cross-chain-core/bundlerClientFactory";
-import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
-import {usdcAbi} from "@/app/cross-chain-core/usdcAbi";
-import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
-import {useBridgeUsdcStream} from "@/app/dashboard/hooks/useBridgeUsdcStream";
+import { createAccount } from "@/app/cross-chain-core/clientFactory";
+import { createPaymaster } from "@/app/cross-chain-core/paymasterFactory";
+import { bundlerClientFactory } from "@/app/cross-chain-core/bundlerClientFactory";
+import { createAuthorization } from "@/app/cross-chain-core/autorizationFactory";
+import { usdcAbi } from "@/app/cross-chain-core/usdcAbi";
+import { toUSDCBigInt } from "@/app/utils/toUSDCBigInt";
+import { useBridgeUsdcStream } from "@/app/dashboard/hooks/useBridgeUsdcStream";
 
 export type RouteStatus =
     | "idle"
@@ -44,7 +44,7 @@ export type RouteDetail = {
 };
 
 
-export const useSendMoney = () => {
+export const useSendMoneyModal = () => {
     const [sendLoading, setSendLoading] = useState(false);
     const [routeReady, setRouteReady] = useState(false);
     const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);

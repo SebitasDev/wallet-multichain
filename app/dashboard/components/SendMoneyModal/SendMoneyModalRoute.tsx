@@ -1,8 +1,8 @@
-import {Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography} from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import {formatCurrency} from "@/app/utils/formatCurrency";
-import {CHAIN_ID_TO_KEY, ChainConfig, ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
-import {AllocationSummary} from "@/app/dashboard/types";
+import { formatCurrency } from "@/app/utils/formatCurrency";
+import { CHAIN_ID_TO_KEY, ChainConfig, ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
+import { AllocationSummary } from "@/app/dashboard/types";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
@@ -11,7 +11,7 @@ import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
-import {RouteDetail} from "@/app/dashboard/hooks/useSendMoney";
+import { RouteDetail } from "@/app/dashboard/hooks/useSendMoneyModal";
 
 type Props = {
     routeDetails: RouteDetail[],
@@ -21,20 +21,20 @@ type Props = {
 }
 
 export const STATUS_META = {
-    idle:      { label: "Pendiente",      icon: <HourglassEmptyIcon />, color: "#cccccc" },
-    starting:  { label: "Iniciando",      icon: <RocketLaunchIcon />, color: "#3CD2FF" },
-    approving: { label: "Aprobando",      icon: <AutorenewIcon sx={{ animation: "spin 1.2s linear infinite" }} />, color: "#7852FF" },
-    burning:   { label: "Quemando",       icon: <LocalFireDepartmentIcon />, color: "#FF0420" },
-    waiting:   { label: "Esperando",      icon: <HourglassBottomIcon />, color: "#FF007A" },
-    minting:   { label: "Minteando",      icon: <AutorenewIcon sx={{ animation: "spin 1.2s linear infinite" }} />, color: "#8247E5" },
-    transfer:   { label: "Transfiriendo", icon: <MoveUpIcon />, color: "#28A0F0" },
-    done:      { label: "Completado",     icon: <CheckCircleIcon />, color: "#00DC8C" },
-    error:     { label: "Error",          icon: <ErrorIcon />, color: "#ff4444" },
+    idle: { label: "Pendiente", icon: <HourglassEmptyIcon />, color: "#cccccc" },
+    starting: { label: "Iniciando", icon: <RocketLaunchIcon />, color: "#3CD2FF" },
+    approving: { label: "Aprobando", icon: <AutorenewIcon sx={{ animation: "spin 1.2s linear infinite" }} />, color: "#7852FF" },
+    burning: { label: "Quemando", icon: <LocalFireDepartmentIcon />, color: "#FF0420" },
+    waiting: { label: "Esperando", icon: <HourglassBottomIcon />, color: "#FF007A" },
+    minting: { label: "Minteando", icon: <AutorenewIcon sx={{ animation: "spin 1.2s linear infinite" }} />, color: "#8247E5" },
+    transfer: { label: "Transfiriendo", icon: <MoveUpIcon />, color: "#28A0F0" },
+    done: { label: "Completado", icon: <CheckCircleIcon />, color: "#00DC8C" },
+    error: { label: "Error", icon: <ErrorIcon />, color: "#ff4444" },
 } as const;
 
 
-export const FinishRoute = (
-    { routeDetails, routeReady, routeSummary, selected } : Props
+export const SendMoneyModalRoute = (
+    { routeDetails, routeReady, routeSummary, selected }: Props
 ) => {
     return (
         <Box
@@ -142,7 +142,7 @@ export const FinishRoute = (
                                             color="#000000"
                                         >
                                             {formatCurrency(
-                                                wallet.chains.reduce((acc, c) => {
+                                                wallet.chains.reduce((acc: number, c: any) => {
                                                     const chainKey = CHAIN_ID_TO_KEY[c.id];
                                                     const fee = chainKey ? NETWORKS[chainKey as ChainKey].aproxFromFee : 0;
                                                     return acc + c.amount + fee;
@@ -154,10 +154,10 @@ export const FinishRoute = (
                             </AccordionSummary>
                             <AccordionDetails sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: "#f5f5f5" }}>
                                 <Stack spacing={1.5}>
-                                    {wallet.chains.map((r) => {
+                                    {wallet.chains.map((r: any) => {
                                         const network = Object.values(NETWORKS).find(n => n.chain.id.toString() === r.id);
                                         const fee = (network?.aproxFromFee ?? 0) + 0.01;
-                                        const statusMeta = STATUS_META[r.status];
+                                        const statusMeta = STATUS_META[r.status as keyof typeof STATUS_META];
 
                                         return (
                                             <Box

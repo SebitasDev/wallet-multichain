@@ -1,4 +1,4 @@
-import {Control, Controller, FieldErrors} from "react-hook-form";
+import { Control, Controller, FieldErrors } from "react-hook-form";
 import {
     MenuItem,
     Stack,
@@ -8,7 +8,7 @@ import {
     FormControlLabel,
     Box
 } from "@mui/material";
-import {ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
+import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
 
 type FormValues = {
     toAddress: string;
@@ -24,7 +24,7 @@ type Props = {
     sendLoading: boolean;
 };
 
-export const FormSendMoney = ({ control, errors, sendLoading }: Props) => {
+export const SendMoneyModalForm = ({ control, errors, sendLoading }: Props) => {
     return (
         <Stack spacing={2.5}>
             {/* CHAIN DESTINO */}
