@@ -26,23 +26,31 @@ export default function Dashboard() {
     const [mode, setMode] = useState<"create" | "unlock">("unlock");
 
     const encrypted = useWalletPasswordStore(s => s.encryptedPassword);
+    const hydrated = useWalletPasswordStore(s => s.hydrated);
     const currentPassword = useWalletPasswordStore(s => s.currentPassword);
 
     const { addOpen, receiveOpen, closeAdd, closeReceive } = useDashboardModalsStore();
-    const { wallets } = useWalletStore();
 
+    // Use selectors for better performance and explicit dependency
+    const wallets = useWalletStore(s => s.wallets);
+    const clearAllWallets = useWalletStore(s => s.clearAll);
 
     useEffect(() => {
         setMounted(true);
+
+        // Wait for store hydration before deciding to clear wallets
+        if (!hydrated) return;
+
         if (!encrypted) {
-            localStorage.removeItem("wallets");
+            // Use store action instead of direct localStorage manipulation to keep state in sync
+            clearAllWallets();
             setMode("create");
             setAskPassword(true);
         } else {
             setMode("unlock");
             setAskPassword(true);
         }
-    }, [encrypted]);
+    }, [encrypted, hydrated]);
 
     if (!mounted) return null;
 
