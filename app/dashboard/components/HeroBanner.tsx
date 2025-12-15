@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import {
     Box,
@@ -13,9 +13,9 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 import { useMainWalletStore } from "@/app/store/useMainWalletStore";
 import { toast } from "react-toastify";
-import {EthIcon} from "@/app/components/atoms/EthIcon";
-import {StellarIcon} from "@/app/components/atoms/StellarIcon";
-import {getStellarUSDCBalance} from "@/app/lib/stellar/getStellarUSDCBalance";
+import { EthIcon } from "@/app/components/atoms/EthIcon";
+import { StellarIcon } from "@/app/components/atoms/StellarIcon";
+import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 
 type ActiveWallet = "EVM" | "STELLAR";
 
@@ -112,7 +112,7 @@ export function HeroBanner() {
                     background: "#ffffff",
                 }}
             >
-                {activeWallet === "EVM" ? (<EthIcon/>) : (<StellarIcon />)}
+                {activeWallet === "EVM" ? (<EthIcon />) : (<StellarIcon />)}
             </Box>
 
             {/* TOGGLE WALLET BUTTON */}
@@ -260,7 +260,7 @@ export function HeroBanner() {
                         mb: 1,
                     }}
                 >
-                    Balance Total (Hijas)
+                    Balance Disponible (Hijas)
                 </Typography>
 
                 <Typography
@@ -273,9 +273,52 @@ export function HeroBanner() {
                     }}
                 >
                     {getAllWalletsTotalBalance !== null
-                        ? formatCurrency(getAllWalletsTotalBalance())
+                        ? formatCurrency(Math.max(0, getAllWalletsTotalBalance() - 0.01))
                         : "--"}
                 </Typography>
+
+                {/* FEES DISPLAY */}
+                <Box
+                    sx={{
+                        mt: 1,
+                        mb: 2,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 0.5,
+                    }}
+                >
+                    <Typography
+                        sx={{
+                            fontSize: { xs: 10, md: 11 },
+                            fontWeight: 700,
+                            color: "#666666",
+                            textTransform: "uppercase",
+                            letterSpacing: 0.5,
+                        }}
+                    >
+                        Comisión Total
+                    </Typography>
+                    <Box
+                        sx={{
+                            background: "#ffebee", // Light red background
+                            border: "1px dashed #ff4444",
+                            borderRadius: 1.5,
+                            px: 1.5,
+                            py: 0.5,
+                        }}
+                    >
+                        <Typography
+                            sx={{
+                                fontSize: { xs: 14, md: 16 },
+                                fontWeight: 800,
+                                color: "#d32f2f", // Red text
+                            }}
+                        >
+                            -0.01 USDC
+                        </Typography>
+                    </Box>
+                </Box>
 
                 <Box
                     sx={{
