@@ -16,13 +16,14 @@ import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 interface CreateGameModalProps {
     open: boolean;
     onClose: () => void;
-    onCreate: (durationHours: number, costETH: string) => void;
+    onCreate: (durationHours: number, costETH: string, rewardAmount: string) => void;
     loading: boolean;
 }
 
 export function CreateGameModal({ open, onClose, onCreate, loading }: CreateGameModalProps) {
     const [duration, setDuration] = useState("1"); // Default 1 hour
     const [cost, setCost] = useState("0.001"); // Default 0.001 ETH
+    const [reward, setReward] = useState("0"); // Default 0 USDC
 
     const handleCreate = () => {
         const durationNum = parseFloat(duration);
@@ -34,7 +35,11 @@ export function CreateGameModal({ open, onClose, onCreate, loading }: CreateGame
             alert("Please enter a valid cost >= 0");
             return;
         }
-        onCreate(durationNum, cost);
+        if (!reward || parseFloat(reward) < 0) {
+            alert("Please enter a valid reward >= 0");
+            return;
+        }
+        onCreate(durationNum, cost, reward);
     };
 
     return (
@@ -103,6 +108,34 @@ export function CreateGameModal({ open, onClose, onCreate, loading }: CreateGame
                                     </InputAdornment>
                                 ),
                                 inputProps: { min: 0, step: 0.0001 }
+                            }}
+                            sx={{
+                                "& .MuiOutlinedInput-root": {
+                                    borderRadius: 2,
+                                    border: "2px solid #000",
+                                    bgcolor: "white"
+                                }
+                            }}
+                        />
+                    </Box>
+
+                    <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1 }}>
+                            Reward Pool (USDC)
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            type="number"
+                            value={reward}
+                            onChange={(e) => setReward(e.target.value)}
+                            disabled={loading}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Typography sx={{ fontWeight: "bold" }}>$</Typography>
+                                    </InputAdornment>
+                                ),
+                                inputProps: { min: 0, step: 0.01 }
                             }}
                             sx={{
                                 "& .MuiOutlinedInput-root": {

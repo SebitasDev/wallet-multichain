@@ -32,6 +32,7 @@ export interface GameDetailsData {
         address: string;
         totalDuration: number;
     } | null;
+    rewardAmount?: string;
 }
 
 interface GameDetailsModalProps {
@@ -53,90 +54,158 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
             onClose={onClose}
             fullWidth
             maxWidth="sm"
+            scroll="paper" // Enable scrolling within the paper
             PaperProps={{
                 sx: {
-                    borderRadius: 4,
-                    border: "3px solid #000",
-                    boxShadow: "8px 8px 0px #000",
-                    p: 1,
-                    maxHeight: "80vh"
+                    borderRadius: 0, // No radius for raw look
+                    border: "4px solid #000",
+                    boxShadow: "10px 10px 0px #000",
+                    overflow: "hidden" // Let DialogContent handle overflow
                 }
             }}
         >
-            <DialogTitle sx={{ textAlign: "center", borderBottom: "2px dashed #eee" }}>
-                <Typography component="div" variant="h5" sx={{ fontWeight: 900, textTransform: "uppercase" }}>
-                    Game Details
-                </Typography>
-                <Box
-                    component="a"
-                    href={`https://sepolia.scrollscan.com/address/${gameAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 0.5,
-                        textDecoration: "none",
-                        color: "text.secondary",
-                        cursor: "pointer",
-                        "&:hover > *": { color: "#2196F3", textDecoration: "underline" }
-                    }}
-                >
-                    <Typography variant="caption" sx={{ fontWeight: "bold" }}>
-                        {gameAddress}
-                    </Typography>
-                    <OpenInNewIcon fontSize="inherit" sx={{ fontSize: 14 }} />
+            {loading || !data ? (
+                <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+                    <CircularProgress sx={{ color: "black" }} />
                 </Box>
-                {isWinner && (
-                    <Box sx={{ mt: 1 }}>
-                        <Chip
-                            label="🏆 YOU WON THIS GAME 🏆"
-                            sx={{ bgcolor: "#00DC8C", color: "black", fontWeight: "bold", border: "1px solid black" }}
-                        />
-                    </Box>
-                )}
-            </DialogTitle>
+            ) : (
+                <>
+                    <DialogTitle sx={{ p: 4, pb: 1, textAlign: "center", bgcolor: "white" }}>
+                        <Typography component="div" variant="h5" sx={{ fontWeight: 900, textTransform: "uppercase", letterSpacing: 1 }}>
+                            Game Details
+                        </Typography>
+                        {/* Contract Address Link */}
+                        <Box
+                            component="a"
+                            href={`https://sepolia.scrollscan.com/address/${gameAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 1,
+                                textDecoration: "none",
+                                color: "text.secondary",
+                                cursor: "pointer",
+                                mt: 1,
+                                py: 0.5,
+                                px: 1,
+                                border: "2px solid transparent",
+                                "&:hover": {
+                                    color: "black",
+                                    border: "2px solid #000",
+                                    bgcolor: "#e0e0e0"
+                                }
+                            }}
+                        >
+                            <Typography variant="caption" sx={{ fontWeight: "bold", fontFamily: "monospace", fontSize: { xs: "0.7rem", sm: "0.8rem" } }}>
+                                {gameAddress.slice(0, 10)}...{gameAddress.slice(-8)}
+                            </Typography>
+                            <OpenInNewIcon fontSize="inherit" sx={{ fontSize: 14 }} />
+                        </Box>
+                    </DialogTitle>
 
-            <DialogContent sx={{ mt: 2 }}>
-                {loading || !data ? (
-                    <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-                        <CircularProgress sx={{ color: "black" }} />
-                    </Box>
-                ) : (
-                    <Box>
-                        {/* Summary Stats */}
-                        <Box sx={{ display: "flex", gap: 1, mb: 3, justifyContent: "center", flexWrap: "wrap" }}>
-                            <Chip
-                                icon={<ReceiptLongIcon />}
-                                label={`${data.totalTransactions} Txns`}
-                                sx={{ border: "2px solid #000", fontWeight: "bold", bgcolor: "#f0f0f0" }}
-                            />
-                            <Chip
-                                icon={<PeopleIcon />}
-                                label={`${data.totalPlayers} Players`}
-                                sx={{ border: "2px solid #000", fontWeight: "bold", bgcolor: "#f0f0f0" }}
-                            />
+                    <DialogContent dividers sx={{ p: { xs: 2, sm: 4 }, bgcolor: "white" }}>
+
+                        {isWinner && (
+                            <Box sx={{ mb: 3, textAlign: 'center' }}>
+                                <Box sx={{
+                                    display: "inline-block",
+                                    bgcolor: "#00DC8C",
+                                    border: "3px solid #000",
+                                    boxShadow: "4px 4px 0px #000",
+                                    px: 3,
+                                    py: 1,
+                                    fontWeight: 900,
+                                    fontSize: "1rem"
+                                }}>
+                                    🏆 YOU WON THIS GAME 🏆
+                                </Box>
+                            </Box>
+                        )}
+
+                        {/* Reward Pool Display */}
+                        <Box sx={{ textAlign: 'center' }}>
+                            {data && data.rewardAmount && data.rewardAmount !== "0" && (
+                                <Chip
+                                    icon={<EmojiEventsIcon />}
+                                    label={`${data.rewardAmount} USDC`}
+                                    sx={{
+                                        mb: 2,
+                                        fontWeight: "bold",
+                                        bgcolor: "#FFD700",
+                                        color: "black",
+                                        border: "2px solid #000",
+                                        boxShadow: "4px 4px 0px #000"
+                                    }}
+                                />
+                            )}
                         </Box>
 
-                        {/* Your Performance */}
+                        {/* Stats Row */}
+                        <Box sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            gap: 3,
+                            mb: 4,
+                            flexWrap: "wrap"
+                        }}>
+                            <Box sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                border: "3px solid #000",
+                                boxShadow: "4px 4px 0px #000",
+                                px: 2,
+                                py: 1,
+                                bgcolor: "white"
+                            }}>
+                                <ReceiptLongIcon />
+                                <Typography sx={{ fontWeight: "bold", fontSize: { xs: "0.9rem", sm: "1rem" } }}>{data.totalTransactions} Txns</Typography>
+                            </Box>
+
+                            <Box sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                border: "3px solid #000",
+                                boxShadow: "4px 4px 0px #000",
+                                px: 2,
+                                py: 1,
+                                bgcolor: "white"
+                            }}>
+                                <PeopleIcon />
+                                <Typography sx={{ fontWeight: "bold", fontSize: { xs: "0.9rem", sm: "1rem" } }}>{data.allPlayers.length} Players</Typography>
+                            </Box>
+                        </Box>
+
+                        {/* User Performance Card */}
                         {data.userStats && (
-                            <Box sx={{ mb: 3, p: 2, bgcolor: "#E3F2FD", borderRadius: 2, border: "2px solid #2196F3" }}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 900, color: "#1565C0", mb: 1 }}>
-                                    YOUR PERFORMANCE
+                            <Box sx={{
+                                border: "3px solid #000",
+                                boxShadow: "6px 6px 0px #000",
+                                p: 3,
+                                mb: 4,
+                                textAlign: "left",
+                                bgcolor: "#E3F2FD" // Light blue accent
+                            }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 900, textTransform: "uppercase", color: "#1565C0", mb: 2 }}>
+                                    Your Performance
                                 </Typography>
-                                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+
+                                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                                     <Box>
-                                        <Typography variant="caption" sx={{ fontWeight: "bold" }}>Rank</Typography>
-                                        <Typography variant="h4" sx={{ fontWeight: 900 }}>
+                                        <Typography variant="caption" sx={{ fontWeight: "bold", opacity: 0.7 }}>Rank</Typography>
+                                        <Typography variant="h3" sx={{ fontWeight: 900, fontSize: { xs: "2.5rem", sm: "3rem" } }}>
                                             {data.userStats.rank ? `#${data.userStats.rank}` : "-"}
                                         </Typography>
                                     </Box>
                                     <Box sx={{ textAlign: "right" }}>
-                                        <Typography variant="caption" sx={{ fontWeight: "bold" }}>Time Held</Typography>
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                        <Typography variant="caption" sx={{ fontWeight: "bold", opacity: 0.7 }}>Time Held</Typography>
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, justifyContent: "flex-end" }}>
                                             <TimerIcon fontSize="small" />
-                                            <Typography variant="h5" sx={{ fontWeight: 900 }}>
-                                                {data.userStats.totalDuration}s
+                                            <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: "2rem", sm: "2.5rem" } }}>
+                                                {data.userStats ? `${data.userStats.totalDuration}s` : "0s"}
                                             </Typography>
                                         </Box>
                                     </Box>
@@ -144,79 +213,106 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                             </Box>
                         )}
 
-                        {/* Full Leaderboard */}
-                        <Typography variant="h6" sx={{ fontWeight: 900, mb: 1 }}>
+                        {/* Global Leaderboard */}
+                        <Typography variant="h6" sx={{ fontWeight: 900, textAlign: "left", mb: 2, textTransform: "uppercase" }}>
                             Global Leaderboard
                         </Typography>
+
                         <Box sx={{
-                            maxHeight: 250,
+                            maxHeight: 200,
                             overflowY: "auto",
-                            border: "1px solid #ddd",
-                            borderRadius: 2,
-                            bgcolor: "#f9f9f9"
+                            border: "3px solid #000",
+                            "&::-webkit-scrollbar": { width: "8px" },
+                            "&::-webkit-scrollbar-thumb": { background: "#000" }
                         }}>
-                            <List dense>
-                                {data.allPlayers.map((player) => (
-                                    <div key={player.address}>
-                                        <ListItem>
-                                            <Typography sx={{ fontWeight: "bold", width: 30, mr: 1 }}>
+                            <List disablePadding>
+                                {data.allPlayers.length === 0 ? (
+                                    <ListItem>
+                                        <ListItemText
+                                            secondary="No holders yet"
+                                            secondaryTypographyProps={{ textAlign: "center", fontStyle: "italic" }}
+                                        />
+                                    </ListItem>
+                                ) : (
+                                    data.allPlayers.map((player, index) => (
+                                        <ListItem
+                                            key={player.address}
+                                            divider={index !== data.allPlayers.length - 1}
+                                            sx={{
+                                                bgcolor: player.rank === 1 ? "#FFF9C4" : index % 2 === 0 ? "white" : "#f5f5f5",
+                                                borderBottom: "1px solid #000",
+                                                px: { xs: 1, sm: 2 } // Reduce padding on mobile
+                                            }}
+                                        >
+                                            <Typography sx={{ fontWeight: 900, width: { xs: 20, sm: 30 }, mr: 1, fontSize: { xs: "0.9rem", sm: "1.1rem" } }}>
                                                 #{player.rank}
                                             </Typography>
                                             <ListItemText
                                                 primary={
                                                     <Box
                                                         component="a"
-                                                        // Attempting to filter Game's history by Player. 
-                                                        // If filter fails, at least it shows the relevant Game Contract history.
                                                         href={`https://sepolia.scrollscan.com/txs?a=${gameAddress}&q=${player.address}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         sx={{
                                                             textDecoration: "none",
                                                             color: "inherit",
-                                                            "&:hover": { color: "#2196F3", textDecoration: "underline" }
+                                                            "&:hover": { color: "#2196F3", textDecoration: "underline" },
+                                                            display: 'block',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
                                                         }}
                                                     >
-                                                        <span style={{ fontWeight: player.rank === 1 ? "bold" : "normal" }}>
-                                                            {player.address.slice(0, 10)}...{player.address.slice(-8)}
+                                                        <span style={{ fontWeight: player.rank === 1 ? "bold" : "normal", fontFamily: "monospace", fontSize: "0.9rem" }}>
+                                                            {/* Responsive address truncation */}
+                                                            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                                                                {player.address.slice(0, 10)}...{player.address.slice(-8)}
+                                                            </Box>
+                                                            <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                                                                {player.address.slice(0, 6)}...{player.address.slice(-4)}
+                                                            </Box>
                                                             {player.rank === 1 && " 👑"}
                                                             {data.userStats && player.address === data.userStats.address && " (You)"}
                                                         </span>
                                                     </Box>
                                                 }
                                             />
-                                            <Typography sx={{ fontWeight: "bold", fontFamily: "monospace" }}>
+                                            <Typography sx={{ fontWeight: "bold", fontFamily: "monospace", fontSize: { xs: "0.9rem", sm: "1.1rem" } }}>
                                                 {player.totalDuration}s
                                             </Typography>
                                         </ListItem>
-                                        <Divider component="li" />
-                                    </div>
-                                ))}
-                                {data.allPlayers.length === 0 && (
-                                    <Typography sx={{ p: 2, textAlign: "center", fontStyle: "italic", color: "gray" }}>
-                                        No holders yet
-                                    </Typography>
+                                    ))
                                 )}
                             </List>
                         </Box>
-                    </Box>
-                )}
-            </DialogContent>
+                    </DialogContent>
 
-            <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
-                <Button
-                    onClick={onClose}
-                    variant="contained"
-                    sx={{
-                        bgcolor: "black",
-                        color: "white",
-                        fontWeight: "bold",
-                        "&:hover": { bgcolor: "#333" }
-                    }}
-                >
-                    Close
-                </Button>
-            </DialogActions>
+                    <DialogActions sx={{ p: 4, justifyContent: 'center', bgcolor: 'white' }}>
+                        <Button
+                            onClick={onClose}
+                            variant="contained"
+                            sx={{
+                                borderRadius: 0,
+                                bgcolor: "#000",
+                                color: "white",
+                                fontWeight: 900,
+                                px: 5,
+                                py: 1.5,
+                                border: "2px solid #000",
+                                boxShadow: "4px 4px 0px #888",
+                                "&:hover": {
+                                    bgcolor: "#333",
+                                    boxShadow: "2px 2px 0px #888",
+                                    transform: "translate(2px, 2px)"
+                                }
+                            }}
+                        >
+                            CLOSE
+                        </Button>
+                    </DialogActions>
+                </>
+            )}
         </Dialog>
     );
 }

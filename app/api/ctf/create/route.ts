@@ -10,7 +10,8 @@ export async function POST(req: Request) {
             creator,
             captureFee,
             duration,
-            txHash
+            txHash,
+            rewardAmount // Optional
         } = body;
 
         // Validate
@@ -25,7 +26,8 @@ export async function POST(req: Request) {
             address: address.toLowerCase(),
             creator: creator.toLowerCase(),
             captureFee,
-            duration
+            duration,
+            rewardAmount: rewardAmount || "0"
         });
 
         // 2. Log Creation Transaction
