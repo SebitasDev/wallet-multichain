@@ -10,6 +10,7 @@ import { CreateGameModal } from "./components/CreateGameModal";
 import { GameDetailsModal, GameDetailsData } from "./components/GameDetailsModal";
 import { ProfileView } from "./components/ProfileView";
 import { GameCard } from "./components/GameCard";
+import { LoadWalletButton } from "../components/LoadWalletButton";
 
 export default function CTFPage() {
     const { games, loading, captureFlag, refresh, createGame, joinGame, address, needsPassword, setNeedsPassword, leaderboard, gameEvents, page, setPage, totalPages, totalGames, error } = useCTF();
@@ -154,6 +155,8 @@ export default function CTFPage() {
                         >
                             Actualizar
                         </Button>
+
+                        <LoadWalletButton />
                     </Box>
 
                     <Grid container spacing={3}>
@@ -245,6 +248,6 @@ export default function CTFPage() {
                 gameAddress={selectedGameAddress}
                 isWinner={selectedGameIsWinner}
             />
-        </Box>
+        </Box >
     );
 }

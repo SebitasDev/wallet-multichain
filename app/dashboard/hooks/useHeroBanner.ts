@@ -34,7 +34,12 @@ export const useHeroBanner = () => {
                     mainWallet.addressStellar!
                 );
                 setStellarUSDCBalance(balance);
-            } catch (error) {
+            } catch (error: any) {
+                // Ignore 404 (Account not found) as it's expected for new wallets
+                if (error?.response?.status === 404 || error?.message?.includes("404")) {
+                    setStellarUSDCBalance(0);
+                    return;
+                }
                 console.error("Error cargando balance Stellar USDC", error);
             }
         };
