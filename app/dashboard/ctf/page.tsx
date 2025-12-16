@@ -10,14 +10,19 @@ import { PasswordModal } from "../components/PasswordModal";
 import { useState } from "react";
 import { CreateGameModal } from "./components/CreateGameModal";
 import { GameDetailsModal, GameDetailsData } from "./components/GameDetailsModal";
+import { ProfileView } from "./components/ProfileView";
 import { GameCard } from "./components/GameCard";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 
 export default function CTFPage() {
-    const { games, loading, captureFlag, refresh, createGame, joinGame, address, needsPassword, setNeedsPassword, leaderboard } = useCTF();
+    const { games, loading, captureFlag, refresh, createGame, joinGame, address, needsPassword, setNeedsPassword, leaderboard, gameEvents, page, setPage, totalPages, totalGames, error } = useCTF();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    const [activeTab, setActiveTab] = useState<"lobby" | "profile">("lobby");
+    // ... (skip lines)
+
 
     // Details Modal State
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -26,8 +31,8 @@ export default function CTFPage() {
     const [selectedGameAddress, setSelectedGameAddress] = useState("");
     const [selectedGameIsWinner, setSelectedGameIsWinner] = useState(false);
 
-    const handleCreateGame = async (durationHours: number, costETH: string) => {
-        await createGame(durationHours, costETH);
+    const handleCreateGame = async (durationHours: number, costETH: string, rewardAmount: string) => {
+        await createGame(durationHours, costETH, rewardAmount);
         setIsCreateModalOpen(false);
     };
 
@@ -76,79 +81,163 @@ export default function CTFPage() {
                 <FlagIcon sx={{ fontSize: 60 }} />
             </Box>
 
-            {/* Actions */}
-            <Box sx={{ mb: 4, display: "flex", gap: 2, alignItems: "center" }}>
-                {address && (
-                    <>
-                        <Button
-                            variant="contained"
-                            onClick={() => setIsCreateModalOpen(true)}
-                            disabled={loading}
-                            sx={{
-                                border: "2px solid #000",
-                                boxShadow: "4px 4px 0px #000",
-                                bgcolor: "#00DC8C",
-                                color: "black",
-                                fontWeight: "bold",
-                                "&:hover": { bgcolor: "#00C27A" }
-                            }}
-                        >
-                            {loading ? "Creating..." : "Create New Event"}
-                        </Button>
-                        <Typography sx={{ fontWeight: "bold" }}>
-                            {address.slice(0, 6)}...{address.slice(-4)}
-                        </Typography>
-                    </>
-                )}
-
+            {/* Tab Navigation */}
+            <Box sx={{ mb: 4, display: "flex", justifyContent: "center", gap: 2 }}>
                 <Button
-                    onClick={refresh}
-                    variant="outlined"
+                    onClick={() => setActiveTab("lobby")}
+                    variant={activeTab === "lobby" ? "contained" : "outlined"}
                     sx={{
                         border: "2px solid #000",
-                        boxShadow: "4px 4px 0px #000",
-                        color: "black",
-                        fontWeight: "bold",
-                        bgcolor: "white"
+                        boxShadow: activeTab === "lobby" ? "4px 4px 0px #000" : "none",
+                        bgcolor: activeTab === "lobby" ? "black" : "transparent",
+                        color: activeTab === "lobby" ? "white" : "black",
+                        fontWeight: 900,
+                        px: 4,
+                        py: 1,
+                        borderRadius: 0,
+                        "&:hover": {
+                            bgcolor: activeTab === "lobby" ? "#333" : "#eee",
+                            boxShadow: "4px 4px 0px #000"
+                        }
                     }}
                 >
-                    Refresh
+                    LOBBY
+                </Button>
+                <Button
+                    onClick={() => setActiveTab("profile")}
+                    variant={activeTab === "profile" ? "contained" : "outlined"}
+                    sx={{
+                        border: "2px solid #000",
+                        boxShadow: activeTab === "profile" ? "4px 4px 0px #000" : "none",
+                        bgcolor: activeTab === "profile" ? "black" : "transparent",
+                        color: activeTab === "profile" ? "white" : "black",
+                        fontWeight: 900,
+                        px: 4,
+                        py: 1,
+                        borderRadius: 0,
+                        "&:hover": {
+                            bgcolor: activeTab === "profile" ? "#333" : "#eee",
+                            boxShadow: "4px 4px 0px #000"
+                        }
+                    }}
+                >
+                    MY PROFILE
                 </Button>
             </Box>
 
-            {/* Games Grid */}
-            <Grid container spacing={3}>
-                {[...games].sort((a, b) => {
-                    // 1. Active First
-                    if (a.isActive && !b.isActive) return -1;
-                    if (!a.isActive && b.isActive) return 1;
+            {activeTab === "lobby" ? (
+                <>
+                    {/* Actions */}
+                    <Box sx={{ mb: 4, display: "flex", gap: 2, alignItems: "center" }}>
+                        {address && (
+                            <>
+                                <Button
+                                    variant="contained"
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    disabled={loading}
+                                    sx={{
+                                        border: "2px solid #000",
+                                        boxShadow: "4px 4px 0px #000",
+                                        bgcolor: "#00DC8C",
+                                        color: "black",
+                                        fontWeight: "bold",
+                                        "&:hover": { bgcolor: "#00C27A" }
+                                    }}
+                                >
+                                    {loading ? "Creating..." : "Create New Event"}
+                                </Button>
+                                <Typography sx={{ fontWeight: "bold" }}>
+                                    {address.slice(0, 6)}...{address.slice(-4)}
+                                </Typography>
+                            </>
+                        )}
 
-                    // 2. Won Games Next (if both inactive)
-                    if (!a.isActive && !b.isActive) {
-                        const lbA = leaderboard[a.address];
-                        const lbB = leaderboard[b.address];
-                        const wonA = lbA?.top5?.[0]?.address?.toLowerCase() === address?.toLowerCase();
-                        const wonB = lbB?.top5?.[0]?.address?.toLowerCase() === address?.toLowerCase();
+                        <Button
+                            onClick={() => refresh()}
+                            variant="outlined"
+                            sx={{
+                                border: "2px solid #000",
+                                boxShadow: "4px 4px 0px #000",
+                                color: "black",
+                                fontWeight: "bold",
+                                bgcolor: "white"
+                            }}
+                        >
+                            Refresh
+                        </Button>
+                    </Box>
 
-                        if (wonA && !wonB) return -1;
-                        if (!wonA && wonB) return 1;
-                    }
+                    {/* Games Grid */}
+                    <Grid container spacing={3}>
+                        {[...games].sort((a, b) => {
+                            // 1. Active First
+                            if (a.isActive && !b.isActive) return -1;
+                            if (!a.isActive && b.isActive) return 1;
 
-                    return 0; // Keep original order
-                }).map((game) => (
-                    <Grid size={{ xs: 12, md: 6, lg: 4 }} key={game.address}>
-                        <GameCard
-                            game={game}
-                            leaderboardData={leaderboard[game.address]}
-                            address={address}
-                            loading={loading}
-                            onJoin={joinGame}
-                            onCapture={captureFlag}
-                            onOpenDetails={handleOpenDetails}
-                        />
+                            // 2. Won Games Next (if both inactive)
+                            if (!a.isActive && !b.isActive) {
+                                const lbA = leaderboard[a.address];
+                                const lbB = leaderboard[b.address];
+                                const wonA = lbA?.top5?.[0]?.address?.toLowerCase() === address?.toLowerCase();
+                                const wonB = lbB?.top5?.[0]?.address?.toLowerCase() === address?.toLowerCase();
+
+                                if (wonA && !wonB) return -1;
+                                if (!wonA && wonB) return 1;
+                            }
+
+                            return 0; // Keep original order
+                        }).map((game) => (
+                            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={game.address}>
+                                <GameCard
+                                    game={game}
+                                    leaderboardData={leaderboard[game.address]}
+                                    address={address}
+                                    loading={loading}
+                                    onJoin={joinGame}
+                                    onCapture={captureFlag}
+                                    onOpenDetails={handleOpenDetails}
+                                    lastEvent={gameEvents ? gameEvents[game.address] : undefined}
+                                />
+                            </Grid>
+                        ))}
                     </Grid>
-                ))}
-            </Grid>
+
+                    {/* Pagination Controls */}
+                    <Box sx={{ mt: 4, display: "flex", justifyContent: "center", gap: 2, alignItems: "center" }}>
+                        <Button
+                            onClick={() => setPage(page - 1)}
+                            disabled={page === 1}
+                            variant="outlined"
+                            sx={{
+                                border: "2px solid #000",
+                                color: "black",
+                                fontWeight: "bold",
+                                "&.Mui-disabled": { borderColor: "#ccc", color: "#ccc" }
+                            }}
+                        >
+                            Previous
+                        </Button>
+                        <Typography sx={{ fontWeight: "bold" }}>
+                            Page {page} of {totalPages} ({totalGames} Games)
+                        </Typography>
+                        <Button
+                            onClick={() => setPage(page + 1)}
+                            disabled={page === totalPages}
+                            variant="outlined"
+                            sx={{
+                                border: "2px solid #000",
+                                color: "black",
+                                fontWeight: "bold",
+                                "&.Mui-disabled": { borderColor: "#ccc", color: "#ccc" }
+                            }}
+                        >
+                            Next
+                        </Button>
+                    </Box>
+                </>
+            ) : (
+                <ProfileView userAddress={address || ""} />
+            )}
 
             {/* Password Modal */}
             <PasswordModal

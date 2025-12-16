@@ -6,6 +6,7 @@ const GameSchema = new Schema({
     creator: { type: String, required: true },
     captureFee: { type: String, required: true },
     duration: { type: Number, required: true }, // in seconds
+    rewardAmount: { type: String, default: "0" }, // USDC amount
     createdAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true }
 });
