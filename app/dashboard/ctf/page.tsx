@@ -1,0 +1,179 @@
+"use client";
+
+import { Box, Typography, Button, Grid, Card, CardContent, Chip } from "@mui/material";
+import FlagIcon from "@mui/icons-material/Flag";
+import TimerIcon from "@mui/icons-material/Timer";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import { useCTF } from "../hooks/useCTF";
+import { PasswordModal } from "../components/PasswordModal";
+
+import { useState } from "react";
+import { CreateGameModal } from "./components/CreateGameModal";
+import { GameDetailsModal, GameDetailsData } from "./components/GameDetailsModal";
+import { GameCard } from "./components/GameCard";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+
+export default function CTFPage() {
+    const { games, loading, captureFlag, refresh, createGame, joinGame, address, needsPassword, setNeedsPassword, leaderboard } = useCTF();
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    // Details Modal State
+    const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+    const [detailsLoading, setDetailsLoading] = useState(false);
+    const [selectedDetailsData, setSelectedDetailsData] = useState<GameDetailsData | null>(null);
+    const [selectedGameAddress, setSelectedGameAddress] = useState("");
+    const [selectedGameIsWinner, setSelectedGameIsWinner] = useState(false);
+
+    const handleCreateGame = async (durationHours: number, costETH: string) => {
+        await createGame(durationHours, costETH);
+        setIsCreateModalOpen(false);
+    };
+
+    const handleOpenDetails = async (gameAddress: string, isWinner: boolean) => {
+        setSelectedGameAddress(gameAddress);
+        setSelectedGameIsWinner(isWinner);
+        setDetailsModalOpen(true);
+        setDetailsLoading(true);
+        setSelectedDetailsData(null); // Reset prev data
+
+        try {
+            const res = await fetch(`/api/ctf/game-details?gameAddress=${gameAddress}&userAddress=${address || ""}`);
+            if (!res.ok) throw new Error("Failed to fetch details");
+            const data = await res.json();
+            setSelectedDetailsData(data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setDetailsLoading(false);
+        }
+    };
+
+    return (
+        <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
+            {/* ... Header ... */}
+            <Box sx={{
+                mb: 4,
+                p: 3,
+                border: "3px solid #000",
+                borderRadius: 4,
+                boxShadow: "6px 6px 0px #000",
+                bgcolor: "#FF2E2E",
+                color: "white",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center"
+            }}>
+                <Box>
+                    <Typography variant="h3" sx={{ fontWeight: 900, textTransform: "uppercase" }}>
+                        Capture the Flag
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        Scroll Sepolia Edition
+                    </Typography>
+                </Box>
+                <FlagIcon sx={{ fontSize: 60 }} />
+            </Box>
+
+            {/* Actions */}
+            <Box sx={{ mb: 4, display: "flex", gap: 2, alignItems: "center" }}>
+                {address && (
+                    <>
+                        <Button
+                            variant="contained"
+                            onClick={() => setIsCreateModalOpen(true)}
+                            disabled={loading}
+                            sx={{
+                                border: "2px solid #000",
+                                boxShadow: "4px 4px 0px #000",
+                                bgcolor: "#00DC8C",
+                                color: "black",
+                                fontWeight: "bold",
+                                "&:hover": { bgcolor: "#00C27A" }
+                            }}
+                        >
+                            {loading ? "Creating..." : "Create New Event"}
+                        </Button>
+                        <Typography sx={{ fontWeight: "bold" }}>
+                            {address.slice(0, 6)}...{address.slice(-4)}
+                        </Typography>
+                    </>
+                )}
+
+                <Button
+                    onClick={refresh}
+                    variant="outlined"
+                    sx={{
+                        border: "2px solid #000",
+                        boxShadow: "4px 4px 0px #000",
+                        color: "black",
+                        fontWeight: "bold",
+                        bgcolor: "white"
+                    }}
+                >
+                    Refresh
+                </Button>
+            </Box>
+
+            {/* Games Grid */}
+            <Grid container spacing={3}>
+                {[...games].sort((a, b) => {
+                    // 1. Active First
+                    if (a.isActive && !b.isActive) return -1;
+                    if (!a.isActive && b.isActive) return 1;
+
+                    // 2. Won Games Next (if both inactive)
+                    if (!a.isActive && !b.isActive) {
+                        const lbA = leaderboard[a.address];
+                        const lbB = leaderboard[b.address];
+                        const wonA = lbA?.top5?.[0]?.address?.toLowerCase() === address?.toLowerCase();
+                        const wonB = lbB?.top5?.[0]?.address?.toLowerCase() === address?.toLowerCase();
+
+                        if (wonA && !wonB) return -1;
+                        if (!wonA && wonB) return 1;
+                    }
+
+                    return 0; // Keep original order
+                }).map((game) => (
+                    <Grid size={{ xs: 12, md: 6, lg: 4 }} key={game.address}>
+                        <GameCard
+                            game={game}
+                            leaderboardData={leaderboard[game.address]}
+                            address={address}
+                            loading={loading}
+                            onJoin={joinGame}
+                            onCapture={captureFlag}
+                            onOpenDetails={handleOpenDetails}
+                        />
+                    </Grid>
+                ))}
+            </Grid>
+
+            {/* Password Modal */}
+            <PasswordModal
+                open={needsPassword}
+                mode="unlock"
+                onSuccess={() => setNeedsPassword(false)}
+            />
+
+            {/* Create Game Modal */}
+            <CreateGameModal
+                open={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onCreate={handleCreateGame}
+                loading={loading}
+            />
+
+            {/* Game Details Modal */}
+            <GameDetailsModal
+                open={detailsModalOpen}
+                onClose={() => setDetailsModalOpen(false)}
+                data={selectedDetailsData}
+                loading={detailsLoading}
+                gameAddress={selectedGameAddress}
+                isWinner={selectedGameIsWinner}
+            />
+        </Box>
+    );
+}

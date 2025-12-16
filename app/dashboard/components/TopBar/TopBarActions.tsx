@@ -3,15 +3,17 @@ import AddIcon from "@mui/icons-material/Add";
 import SendIcon from "@mui/icons-material/Send";
 import DownloadIcon from "@mui/icons-material/Download";
 import SavingsIcon from "@mui/icons-material/Savings";
+import FlagIcon from "@mui/icons-material/Flag";
 
 interface TopBarActionsProps {
     onSend: () => void;
     onReceive: () => void;
     onAdd: () => void;
     onSavings: () => void;
+    onCTF: () => void;
 }
 
-export const TopBarActions = ({ onSend, onReceive, onAdd, onSavings }: TopBarActionsProps) => {
+export const TopBarActions = ({ onSend, onReceive, onAdd, onSavings, onCTF }: TopBarActionsProps) => {
     return (
         <Box
             sx={{
@@ -143,6 +145,37 @@ export const TopBarActions = ({ onSend, onReceive, onAdd, onSavings }: TopBarAct
                 <SavingsIcon sx={{ fontSize: 28, color: "#000000" }} />
                 <Typography sx={{ fontSize: 14, fontWeight: 600, textAlign: "center" }}>
                     Savings
+                </Typography>
+            </Button>
+
+            {/* CAPTURE THE FLAG */}
+            <Button
+                onClick={onCTF}
+                sx={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: 3,
+                    backgroundColor: "#FF2E2E", // Neobrutalist Red
+                    border: "3px solid #000000",
+                    boxShadow: "4px 4px 0px #000000",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 0.75,
+                    textTransform: "none",
+                    color: "#fff",
+                    transition: "all 0.2s",
+                    "&:hover": {
+                        backgroundColor: "#D90000",
+                        transform: "translate(2px, 2px)",
+                        boxShadow: "2px 2px 0px #000000",
+                    },
+                }}
+            >
+                <FlagIcon sx={{ fontSize: 28, color: "white" }} />
+                <Typography sx={{ fontSize: 14, fontWeight: 600, textAlign: "center" }}>
+                    CTF
                 </Typography>
             </Button>
         </Box>
