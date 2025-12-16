@@ -32,7 +32,6 @@ interface GameCardProps {
 export function GameCard({ game, leaderboardData, address, loading, onJoin, onCapture, onOpenDetails, lastEvent }: GameCardProps) {
     const [expanded, setExpanded] = useState(false);
 
-    // FIX 1: Instant Visual End when timer hits 0 (Client-side override)
     const isTimeExpired = game.timeLeft <= 0;
     const isGameActive = game.isActive && !isTimeExpired;
 
@@ -44,7 +43,7 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
             border: "3px solid #000",
             borderRadius: 4,
             boxShadow: "6px 6px 0px #000",
-            bgcolor: isGameActive ? "white" : "#f0f0f0", // Use derived state
+            bgcolor: isGameActive ? "white" : "#f0f0f0",
             transition: "transform 0.2s",
             height: "100%",
             display: "flex",
@@ -52,11 +51,10 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
             "&:hover": { transform: "translate(-2px, -2px)" }
         }}>
             <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-                {/* Header Chips */}
                 <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
                     <Box sx={{ display: "flex", gap: 1 }}>
                         <Chip
-                            label={isGameActive ? "ACTIVE" : isWinner ? "WON 🏆" : "ENDED"}
+                            label={isGameActive ? "ACTIVO" : isWinner ? "GANADO 🏆" : "TERMINADO"}
                             sx={{
                                 bgcolor: isGameActive ? "#00DC8C" : isWinner ? "#00DC8C" : "#999",
                                 border: "2px solid #000",
@@ -64,7 +62,7 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                                 color: isWinner || isGameActive ? "black" : "white"
                             }}
                         />
-                        <Tooltip title="View Details">
+                        <Tooltip title="Ver Detalles">
                             <IconButton
                                 size="small"
                                 onClick={() => onOpenDetails(game.address, isWinner)}
@@ -91,7 +89,6 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                                 fontWeight: "bold"
                             }}
                         />
-                        {/* Mini-Notification (Right side below Reward) */}
                         {lastEvent && (Date.now() - lastEvent.timestamp < 10000) && (
                             <Typography
                                 variant="caption"
@@ -110,23 +107,21 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                 </Box>
 
                 <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
-                    Host: {game.address.slice(0, 6)}...{game.address.slice(-4)}
+                    Anfitrión: {game.address.slice(0, 6)}...{game.address.slice(-4)}
                 </Typography>
 
-                {/* Holder Box */}
                 <Box sx={{ my: 2, p: 2, border: "2px dashed #000", borderRadius: 2 }}>
-                    <Typography variant="h5" fontWeight={900}>GLORY</Typography>
-                    <Typography variant="caption">Prize</Typography>
+                    <Typography variant="h5" fontWeight={900}>GLORIA</Typography>
+                    <Typography variant="caption">Premio</Typography>
                     <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                        Current Flag Holder:
+                        Poseedor Actual:
                     </Typography>
                     <Typography variant="body1" sx={{ color: "#FF2E2E", fontWeight: 900 }}>
-                        {game.holder === "0x0000000000000000000000000000000000000000" ? "None" :
+                        {game.holder === "0x0000000000000000000000000000000000000000" ? "Ninguno" :
                             `${game.holder.slice(0, 6)}...${game.holder.slice(-4)}`}
                     </Typography>
                 </Box>
 
-                {/* Collapsible Leaderboard Section */}
                 <Box sx={{ mb: 2, p: 1, bgcolor: "#f8f9fa", borderRadius: 2, border: "1px solid #ddd" }}>
                     <Box
                         onClick={() => setExpanded(!expanded)}
@@ -137,7 +132,7 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                             cursor: "pointer"
                         }}
                     >
-                        <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>🏆 TOP HOLDERS</Typography>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>🏆 MEJORES JUGADORES</Typography>
                         {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
                     </Box>
 
@@ -167,19 +162,18 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                                 </Box>
                             ))}
 
-                            {/* User Rank if not in Top 5 */}
                             {leaderboardData?.userRank && leaderboardData.userRank.rank > 5 && (
                                 <>
                                     <Typography variant="caption" display="block" align="center" sx={{ my: 0.5 }}>...</Typography>
                                     <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "blue", fontWeight: "bold" }}>
                                         <Typography variant="caption">
-                                            {leaderboardData.userRank.rank}. You
+                                            {leaderboardData.userRank.rank}. Tú
                                         </Typography>
                                         <Typography variant="caption">{leaderboardData.userRank.totalDuration}s</Typography>
                                     </Box>
                                 </>
                             )}
-                            {!leaderboardData && <Typography variant="caption">Loading...</Typography>}
+                            {!leaderboardData && <Typography variant="caption">Cargando...</Typography>}
                         </Box>
                     </Collapse>
                     {!expanded && leaderboardData?.top5?.[0] && (
@@ -212,12 +206,11 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
 
                     {leaderboardData?.userRank && leaderboardData.userRank.totalDuration > 0 && (
                         <Typography variant="body2" sx={{ ml: 1, color: "text.secondary", fontWeight: "bold" }}>
-                            (Your Time: {leaderboardData.userRank.totalDuration}s)
+                            (Tu Tiempo: {leaderboardData.userRank.totalDuration}s)
                         </Typography>
                     )}
                 </Box>
 
-                {/* Actions */}
                 {(() => {
                     if (!game.hasJoined && isGameActive) {
                         return (
@@ -236,7 +229,7 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                                     "&:hover": { bgcolor: "#2563EB" }
                                 }}
                             >
-                                JOIN GAME
+                                UNIRSE AL JUEGO
                             </Button>
                         );
                     }
@@ -244,7 +237,6 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                     if (isWinner || isHolder) {
                         return (
                             <Box sx={{ position: "relative", overflow: "visible" }}>
-                                {/* Winner GIF */}
                                 {isWinner && (
                                     <Box sx={{
                                         position: "absolute",
@@ -288,10 +280,9 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                                         zIndex: 5
                                     }}
                                 >
-                                    {isWinner ? "👑 YOU WON THE FLAG 👑" : "👑 YOU HOLD THE FLAG 👑"}
+                                    {isWinner ? "👑 HAS GANADO LA BANDERA 👑" : "👑 TIENES LA BANDERA 👑"}
                                 </Button>
 
-                                {/* Dancing GIFs */}
                                 {isHolder && (
                                     <>
                                         <Box
@@ -340,7 +331,7 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                                 "&:hover": { bgcolor: !isGameActive ? "#999" : "#D90000" }
                             }}
                         >
-                            {!isGameActive ? "GAME ENDED" : "CAPTURE FLAG (0.001 ETH)"}
+                            {!isGameActive ? "JUEGO TERMINADO" : "CAPTURAR BANDERA (0.001 ETH)"}
                         </Button>
                     );
                 })()}

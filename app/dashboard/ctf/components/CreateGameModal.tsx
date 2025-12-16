@@ -21,22 +21,22 @@ interface CreateGameModalProps {
 }
 
 export function CreateGameModal({ open, onClose, onCreate, loading }: CreateGameModalProps) {
-    const [duration, setDuration] = useState("1"); // Default 1 hour
-    const [cost, setCost] = useState("0.001"); // Default 0.001 ETH
-    const [reward, setReward] = useState("0"); // Default 0 USDC
+    const [duration, setDuration] = useState("1");
+    const [cost, setCost] = useState("0.001");
+    const [reward, setReward] = useState("0");
 
     const handleCreate = () => {
         const durationNum = parseFloat(duration);
         if (isNaN(durationNum) || durationNum <= 0) {
-            alert("Please enter a valid duration > 0");
+            alert("Por favor ingresa una duración válida > 0");
             return;
         }
         if (!cost || parseFloat(cost) < 0) {
-            alert("Please enter a valid cost >= 0");
+            alert("Por favor ingresa un costo válido >= 0");
             return;
         }
         if (!reward || parseFloat(reward) < 0) {
-            alert("Please enter a valid reward >= 0");
+            alert("Por favor ingresa una recompensa válida >= 0");
             return;
         }
         onCreate(durationNum, cost, reward);
@@ -56,13 +56,13 @@ export function CreateGameModal({ open, onClose, onCreate, loading }: CreateGame
             }}
         >
             <DialogTitle sx={{ fontWeight: 900, textTransform: "uppercase", textAlign: "center" }}>
-                Create New Event
+                Crear Nuevo Evento
             </DialogTitle>
             <DialogContent>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 1, minWidth: 300 }}>
                     <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1 }}>
-                            Game Duration (Hours)
+                            Duración del Juego (Horas)
                         </Typography>
                         <TextField
                             fullWidth
@@ -87,13 +87,13 @@ export function CreateGameModal({ open, onClose, onCreate, loading }: CreateGame
                             }}
                         />
                         <Typography variant="caption" color="text.secondary">
-                            Example: 0.1 = 6 minutes, 1 = 1 hour, 24 = 1 day
+                            Ejemplo: 0.1 = 6 minutos, 1 = 1 hora, 24 = 1 día
                         </Typography>
                     </Box>
 
                     <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1 }}>
-                            Capture Cost (ETH)
+                            Costo de Captura (ETH)
                         </Typography>
                         <TextField
                             fullWidth
@@ -121,7 +121,7 @@ export function CreateGameModal({ open, onClose, onCreate, loading }: CreateGame
 
                     <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1 }}>
-                            Reward Pool (USDC)
+                            Fondo de Recompensa (USDC)
                         </Typography>
                         <TextField
                             fullWidth
@@ -160,7 +160,7 @@ export function CreateGameModal({ open, onClose, onCreate, loading }: CreateGame
                         mr: 1
                     }}
                 >
-                    Cancel
+                    Cancelar
                 </Button>
                 <Button
                     onClick={handleCreate}
@@ -175,9 +175,10 @@ export function CreateGameModal({ open, onClose, onCreate, loading }: CreateGame
                         "&:hover": { bgcolor: "#00C27A" }
                     }}
                 >
-                    {loading ? "Creating..." : "Launch Event"}
+                    {loading ? "Creando..." : "Lanzar Evento"}
                 </Button>
             </DialogActions>
         </Dialog>
     );
 }
+
