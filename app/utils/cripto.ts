@@ -1,17 +1,17 @@
 import CryptoJS from "crypto-js";
 
 export const encryptSeed = (seed: string, password: string): string => {
-  return CryptoJS.AES.encrypt(seed, password).toString();
+    return CryptoJS.AES.encrypt(seed, password).toString();
 };
 
 export const decryptSeed = (cipher: string, password: string): string | null => {
-  try {
-    const bytes = CryptoJS.AES.decrypt(cipher, password);
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-    return decrypted || null;
-  } catch {
-    return null;
-  }
+    try {
+        const bytes = CryptoJS.AES.decrypt(cipher, password);
+        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+        return decrypted || null;
+    } catch {
+        return null;
+    }
 };
 
 export async function encryptPrivateKey(
@@ -80,11 +80,16 @@ export async function decryptPrivateKey(
 
     const key = await deriveKey(password, saltB64);
 
-    const decrypted = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv },
-        key,
-        encryptedBytes
-    );
+    try {
+        const decrypted = await crypto.subtle.decrypt(
+            { name: "AES-GCM", iv },
+            key,
+            encryptedBytes
+        );
 
-    return new TextDecoder().decode(decrypted);
+        return new TextDecoder().decode(decrypted);
+    } catch (e) {
+        console.error("Decryption failed (wrong password?)", e);
+        throw new Error("Contraseña incorrecta o datos corruptos");
+    }
 }

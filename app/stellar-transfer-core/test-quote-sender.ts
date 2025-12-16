@@ -7,10 +7,10 @@ OpenAPI.BASE = 'https://1click.chaindefuser.com';
 OpenAPI.TOKEN = process.env.ONE_CLICK_JWT;
 
 const originAsset = "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near";
-const destinationAsset = "nep245:v2_1.omni.hot.tg:10_359RPSJVdTxwTJT9TyGssr2rFoWo";
+const destinationAsset = "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu";
 const amount = "300000"; // 0.3 USDC
 const senderAddress = "0xF2dc6F3d0dd5ED6E9A794ea5914C85d6012b25A9";
-const recipientAddress = senderAddress; // User requested SAME sender as recipient
+const recipientAddress = "GCXWKC7KWZU7C7IJUM2P5PO2PAFMJAKSDELEUPGXSB7KKPS25KVSQXZA"; // User requested SAME sender as recipient
 
 async function testQuoteSender() {
     console.log(">>> [Test Quote] Requesting Quote with Sender as Recipient...");

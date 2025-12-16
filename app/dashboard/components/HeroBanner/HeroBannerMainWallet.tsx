@@ -7,7 +7,9 @@ import { formatCurrency } from "@/app/utils/formatCurrency";
 import { EthIcon } from "@/app/components/atoms/EthIcon";
 import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { ActiveWallet } from "@/app/dashboard/hooks/useHeroBanner";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
+import { LoadWalletModal } from "../LoadWalletModal";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 
 interface HeroBannerMainWalletProps {
     activeWallet: ActiveWallet;
@@ -24,6 +26,8 @@ export const HeroBannerMainWallet = ({
     burnedAddresses,
     xoClientAlias
 }: HeroBannerMainWalletProps) => {
+    const [loadWalletOpen, setLoadWalletOpen] = useState(false);
+
     return (
         <>
             <Box
@@ -42,8 +46,26 @@ export const HeroBannerMainWallet = ({
                 {activeWallet === "EVM" ? (<EthIcon />) : (<StellarIcon />)}
             </Box>
 
-            {/* TOGGLE WALLET BUTTON */}
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+            {/* TOGGLE WALLET BUTTON & LOAD WALLET */}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1, gap: 1 }}>
+                <IconButton
+                    onClick={() => setLoadWalletOpen(true)}
+                    sx={{
+                        background: "#ffffff",
+                        border: "2px solid #000000",
+                        borderRadius: 2,
+                        px: 1.5,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        "&:hover": {
+                            background: "#00DC8C", // Branding Green
+                        },
+                    }}
+                >
+                    <FileUploadIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                    IMPORTAR
+                </IconButton>
+
                 <IconButton
                     onClick={() =>
                         setActiveWallet((prev) =>
@@ -65,6 +87,8 @@ export const HeroBannerMainWallet = ({
                     {activeWallet === "EVM" ? "→ STELLAR" : "→ EVM"}
                 </IconButton>
             </Box>
+
+            <LoadWalletModal open={loadWalletOpen} onClose={() => setLoadWalletOpen(false)} />
 
             {/* MAIN WALLET SECTION */}
             <Box
