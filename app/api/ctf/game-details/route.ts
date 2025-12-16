@@ -18,7 +18,17 @@ export async function GET(req: Request) {
 
         // 1. Fetch Game Info
         const game = await Game.findOne({ address: lcGameAddress });
-        if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
+
+        // If game not found in DB, it might be unindexed. Return empty valid structure.
+        if (!game) {
+            return NextResponse.json({
+                totalTransactions: 0,
+                allPlayers: [],
+                userStats: { rank: null, address: lcUserAddress, totalDuration: 0 },
+                totalPlayers: 0,
+                unindexed: true // Flag for frontend
+            });
+        }
 
         const gameEndTime = new Date(game.createdAt.getTime() + game.duration * 1000);
         const now = new Date();
@@ -95,7 +105,8 @@ export async function GET(req: Request) {
             totalTransactions,
             allPlayers,
             userStats,
-            totalPlayers: allPlayers.length
+            totalPlayers: allPlayers.length,
+            rewardAmount: game.rewardAmount || "0"
         });
 
     } catch (error: any) {

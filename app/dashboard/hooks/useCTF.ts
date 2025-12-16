@@ -3,7 +3,7 @@ import { usePublicClient } from "wagmi";
 import { parseEther, Address, createWalletClient, http, publicActions, parseEventLogs } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { scrollSepolia } from "viem/chains";
-import { toast } from "react-toastify";
+
 import CTFFactoryABI from "../ctf/abis/CTFFactory.json";
 import CTFGameABI from "../ctf/abis/CTFGame.json";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
@@ -45,6 +45,10 @@ export const useCTF = () => {
     const [walletClient, setWalletClient] = useState<any>(null);
     const [needsPassword, setNeedsPassword] = useState(false);
 
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalGames, setTotalGames] = useState(0);
+
     const [games, setGames] = useState<GameData[]>([]);
     const gamesRef = useRef<GameData[]>([]); // Ref to access latest games in interval
 
@@ -54,6 +58,8 @@ export const useCTF = () => {
     }, [games]);
 
     const [leaderboard, setLeaderboard] = useState<Record<string, LeaderboardData>>({});
+    // Mini-Notification State: { gameAddress: { text, type, timestamp } }
+    const [gameEvents, setGameEvents] = useState<Record<string, { text: string, type: 'join' | 'capture', timestamp: number }>>({});
     const leaderboardRef = useRef<Record<string, LeaderboardData>>({}); // Ref to access latest state in async callbacks
 
     // Sync ref with state
@@ -62,6 +68,7 @@ export const useCTF = () => {
     }, [leaderboard]);
 
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Effect to handle wallet unlocking
     useEffect(() => {
@@ -112,176 +119,207 @@ export const useCTF = () => {
         unlockWallet();
     }, [mainWallet, currentPassword, walletClient]);
 
-    const fetchGames = useCallback(async () => {
+    const fetchGames = useCallback(async (targetPage?: number) => {
         if (!publicClient || !FACTORY_ADDRESS) return;
 
+        const pageToFetch = targetPage || page; // Use arg or state
+
         try {
-            // Get all game addresses
-            const gameAddresses = await publicClient.readContract({
-                address: FACTORY_ADDRESS,
-                abi: CTFFactoryABI,
-                functionName: "getAllGames",
-            }) as Address[];
+            // 1. Fetch Games List from DB (Paginated)
+            let gamesList: any[] = [];
+            try {
+                const res = await fetch(`/api/ctf/list?page=${pageToFetch}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.metadata) {
+                        gamesList = data.games;
+                        setTotalPages(data.metadata.totalPages);
+                        setTotalGames(data.metadata.total);
+                    } else {
+                        // Fallback for old API structure (shouldn't happen)
+                        gamesList = Array.isArray(data) ? data : [];
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch games list from DB", e);
+            }
 
+            // If empty, fallback to chain (just in case) or handle empty state
+            if (gamesList.length === 0) {
+                // You could keep the old logic as fallback, but let's assume DB is source of truth for "active" UI
+                setGames([]);
+                return;
+            }
+
+            // 2. Hydrate Game State from Chain (Time, Holder) for each game
+            // We parallelize these calls.
             const gamesData = await Promise.all(
-                gameAddresses.map(async (gameAddr) => {
-                    const state = await publicClient.readContract({
-                        address: gameAddr,
-                        abi: CTFGameABI,
-                        functionName: "getGameState",
-                    }) as [Address, bigint, boolean];
+                gamesList.map(async (dbGame) => {
+                    const gameAddr = dbGame.address as Address;
+                    // Skip invalid addresses OR if it matches Factory (Bad Data prevention)
+                    if (!gameAddr || !gameAddr.startsWith("0x") || gameAddr.toLowerCase() === FACTORY_ADDRESS.toLowerCase()) return null;
 
-                    const [holder, timeLeft, isActive] = state;
-
-                    // Optional: Get my time held and joined status if connected
-                    let myTime = BigInt(0);
-                    let joined = false;
-
-                    // Use 'account' state if available, otherwise fallback to mainWallet address for view-only
-                    const checkAddress = account || (mainWallet.address as Address);
-
-                    if (checkAddress) {
-                        try {
-                            const [timeHeldResult, hasJoinedResult] = await publicClient.multicall({
-                                contracts: [
-                                    {
-                                        address: gameAddr,
-                                        abi: CTFGameABI,
-                                        functionName: "timeHeld",
-                                        args: [checkAddress]
-                                    },
-                                    {
-                                        address: gameAddr,
-                                        abi: CTFGameABI,
-                                        functionName: "hasJoined",
-                                        args: [checkAddress]
-                                    }
-                                ]
-                            });
-
-                            if (timeHeldResult.status === "success") myTime = timeHeldResult.result as bigint;
-                            if (hasJoinedResult.status === "success") joined = hasJoinedResult.result as boolean;
-
-                        } catch (e) {
-                            console.log("Multicall failed, trying single calls", e);
-                            try {
-                                myTime = await publicClient.readContract({
-                                    address: gameAddr,
-                                    abi: CTFGameABI,
-                                    functionName: "timeHeld",
-                                    args: [checkAddress]
-                                }) as bigint;
-                                joined = await publicClient.readContract({
-                                    address: gameAddr,
-                                    abi: CTFGameABI,
-                                    functionName: "hasJoined",
-                                    args: [checkAddress]
-                                }) as boolean;
-                            } catch (innerE) {
-                                console.error("Single calls failed", innerE);
+                    // Update Leaderboard immediately from DB Batch (Optimization)
+                    if (dbGame.top5) {
+                        setLeaderboard(prev => ({
+                            ...prev,
+                            [gameAddr]: {
+                                top5: dbGame.top5,
+                                userRank: null // Only Top 5 fetched in batch. User rank needs individual fetch IF they care.
                             }
-                        }
+                        }));
                     }
 
-                    return {
-                        address: gameAddr,
-                        holder,
-                        timeLeft: Number(timeLeft),
-                        rewardPool: "0", // No reward
-                        isActive,
-                        myTimeHeld: Number(myTime),
-                        hasJoined: joined
-                    };
+                    try {
+                        const state = await publicClient.readContract({
+                            address: gameAddr,
+                            abi: CTFGameABI,
+                            functionName: "getGameState",
+                        }) as [Address, bigint, boolean];
+
+                        const [holder, timeLeft, isActive] = state;
+
+                        // Check my time held if connected
+                        let myTime = BigInt(0);
+                        let joined = false;
+                        const checkAddress = account || (mainWallet.address as Address);
+
+                        if (checkAddress) {
+                            // ... (Existing multicall logic kept same, simplified here for brevity of reading)
+                            // Re-using the logic from before or keeping it concise
+                            try {
+                                const [timeHeldResult, hasJoinedResult] = await publicClient.multicall({
+                                    contracts: [
+                                        { address: gameAddr, abi: CTFGameABI, functionName: "timeHeld", args: [checkAddress] },
+                                        { address: gameAddr, abi: CTFGameABI, functionName: "hasJoined", args: [checkAddress] }
+                                    ]
+                                });
+                                if (timeHeldResult.status === "success") myTime = timeHeldResult.result as bigint;
+                                if (hasJoinedResult.status === "success") joined = hasJoinedResult.result as boolean;
+                            } catch (e) { /* silent fail */ }
+                        }
+
+                        return {
+                            address: gameAddr,
+                            holder,
+                            timeLeft: Number(timeLeft),
+                            rewardPool: dbGame.rewardAmount || "0",
+                            isActive, // Chain is source of truth for Active status
+                            myTimeHeld: Number(myTime),
+                            hasJoined: joined
+                        };
+
+                    } catch (e) {
+                        console.error(`Failed to fetch state for game ${gameAddr}`, e);
+                        // Return partial data from DB if chain fails? Or null?
+                        // Better to return null and filter out broken games
+                        return null;
+                    }
                 })
             );
 
-            setGames(gamesData);
+            // Filter out nulls
+            setGames(gamesData.filter(g => g !== null) as GameData[]);
+            setError(null); // Clear error on success
 
-            // Fetch Leaderboards immediately after fetching games (every 10s or 15s normally)
-            const addressToCheck = account || mainWallet.address;
-            gamesData.forEach(async (game) => {
-                // Optimization: If game ended and we already have data, don't fetch again
-                if (!game.isActive && leaderboardRef.current[game.address]) {
-                    return;
-                }
 
-                try {
-                    const res = await fetch(`/api/ctf/leaderboard?gameAddress=${game.address}&userAddress=${addressToCheck || ""}`);
-                    if (!res.ok) throw new Error("Failed to fetch");
-                    const data = await res.json();
-
-                    if (data.top5) {
-                        setLeaderboard(prev => ({
-                            ...prev,
-                            [game.address]: data
-                        }));
-                    }
-                } catch (e) {
-                    // console.error("Error fetching leaderboard", e); 
-                    // Silent fail to avoid spam
-                }
-            });
-
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching games:", error);
+            setError("Failed to load games. Check database connection.");
+        } finally {
+            setLoading(false);
         }
-    }, [publicClient, account, mainWallet.address]);
+    }, [publicClient, account, mainWallet.address, page]); // Depend on page
 
-    const createGame = async (durationHours: number, captureFeeETH: string) => {
+    // REAL-TIME: Listen for NEW Games created
+    useEffect(() => {
+        if (!publicClient) return;
+
+        const unwatch = publicClient.watchContractEvent({
+            address: FACTORY_ADDRESS,
+            abi: CTFFactoryABI,
+            eventName: 'GameCreated',
+            onLogs: async (logs) => {
+                console.log("🆕 New Game Created Event!", logs);
+
+                // If we are on page 1, fetch new games. If not, maybe just notify?
+                // For simplicity, let's refresh current view.
+                fetchGames();
+            }
+        });
+
+        return () => unwatch();
+        // Depend on the JSON string of game addresses to catch new games
+    }, [publicClient, fetchGames]); // Re-check when game list structure changes
+
+    const createGame = async (durationHours: number, captureFeeETH: string, rewardAmount: string = "0") => {
         if (!walletClient || !account) {
-            toast.error("Wallet not unlocked");
-            setNeedsPassword(true);
+            console.error("Wallet not connected");
             return;
         }
 
         try {
             setLoading(true);
-            setLoading(true);
-            const durationSec = Math.floor(durationHours * 3600);
+            setError(null);
+
+            // Convert inputs
+            const durationSeconds = Math.floor(durationHours * 3600);
             const feeWei = parseEther(captureFeeETH);
 
             const hash = await walletClient.writeContract({
                 address: FACTORY_ADDRESS,
                 abi: CTFFactoryABI,
                 functionName: "createGame",
-                args: [BigInt(durationSec), feeWei],
-                chain: scrollSepolia
+                args: [BigInt(durationSeconds), feeWei]
             });
 
-            toast.success("Transaction sent!");
             const receipt = await publicClient?.waitForTransactionReceipt({ hash });
-            toast.success("Game created!");
 
-            // Parse logs to get the new Game Address
-            let newGameAddress = FACTORY_ADDRESS; // Fallback
-            if (receipt) {
-                const logs = parseEventLogs({
-                    abi: CTFFactoryABI,
-                    eventName: 'GameCreated',
-                    logs: receipt.logs,
+            // Find deployed game address from logs
+            const logs = parseEventLogs({
+                abi: CTFFactoryABI,
+                eventName: 'GameCreated',
+                logs: receipt?.logs || [],
+            });
+
+            // @ts-ignore
+            const newGameAddress = logs[0]?.args?.gameAddress;
+
+            if (newGameAddress) {
+                console.log("Detected new game:", newGameAddress);
+                // Call API to index the game creation
+                const res = await fetch("/api/ctf/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        address: newGameAddress,
+                        creator: account,
+                        captureFee: captureFeeETH,
+                        duration: durationSeconds,
+                        txHash: hash,
+                        rewardAmount // Pass reward amount to API
+                    })
                 });
-                if (logs.length > 0) {
-                    newGameAddress = (logs[0] as any).args.gameAddress;
+
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    console.error("Failed to index game:", errorData);
+                    // Don't block UI success, just log it. 
+                } else {
+                    console.log("Game Created Successfully!");
                 }
+
+                // Go to page 1 to see new game
+                setPage(1);
+                fetchGames(1);
+            } else {
+                console.warn("No GameCreated event found in logs", logs);
+                fetchGames();
             }
 
-            // Log to Backend with CORRECT Game Address
-            fetch("/api/ctf/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    address: newGameAddress,
-                    creator: account || mainWallet.address,
-                    captureFee: captureFeeETH,
-                    duration: durationSec,
-                    txHash: hash
-                })
-            });
-
-            fetchGames();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Failed to create game");
+            setError(error.message || "Failed to create game");
         } finally {
             setLoading(false);
         }
@@ -289,21 +327,21 @@ export const useCTF = () => {
 
     const joinGame = async (gameAddress: Address) => {
         if (!walletClient || !account) {
-            setNeedsPassword(true);
+            console.error("Wallet not connected");
             return;
         }
+
         try {
             setLoading(true);
+            setError(null); // Clear error on success
             const hash = await walletClient.writeContract({
                 address: gameAddress,
                 abi: CTFGameABI,
-                functionName: "joinGame",
-                args: [],
-                chain: scrollSepolia
+                functionName: "joinGame"
             });
-            toast.success("Joining game...");
-            const receipt = await publicClient?.waitForTransactionReceipt({ hash });
-            toast.success("Joined game!");
+
+            await publicClient?.waitForTransactionReceipt({ hash });
+            console.log("Joined game!");
 
             // Log Join
             fetch("/api/ctf/capture", {
@@ -311,21 +349,29 @@ export const useCTF = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     gameAddress: gameAddress,
-                    newHolder: account || mainWallet.address, // Executor is new holder for JOIN (though they don't hold flag yet, just participant)
-                    // Wait, joinGame doesn't make you holder. It just enters you.
-                    // User asked: "guardar cada vez que se hace una tx".
-                    // Let's log it as type JOIN.
-                    type: "JOIN",
+                    newHolder: account,
                     previousHolder: null,
                     amount: "0",
-                    txHash: hash
+                    txHash: hash,
+                    type: "JOIN"
                 })
             });
 
+            // Optimistic UI Update (Instant Feedback)
+            const shortPlayer = `${account.slice(0, 6)}...${account.slice(-4)}`;
+            setGameEvents(prev => ({
+                ...prev,
+                [gameAddress]: {
+                    text: `👋 ${shortPlayer} joined!`,
+                    type: 'join',
+                    timestamp: Date.now()
+                }
+            }));
+
             fetchGames();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Failed to join game");
+            setError(error.message || "Failed to join game");
         } finally {
             setLoading(false);
         }
@@ -333,21 +379,24 @@ export const useCTF = () => {
 
     const captureFlag = async (gameAddress: Address, feeETH: string) => {
         if (!walletClient || !account) {
-            setNeedsPassword(true);
+            console.error("Wallet not connected");
             return;
         }
+
         try {
             setLoading(true);
+            setError(null); // Clear error on success
+            const feeWei = parseEther(feeETH);
+
             const hash = await walletClient.writeContract({
                 address: gameAddress,
                 abi: CTFGameABI,
                 functionName: "captureFlag",
-                value: parseEther(feeETH),
-                chain: scrollSepolia
+                value: feeWei
             });
-            toast.success("Capturing flag...");
-            const receipt = await publicClient?.waitForTransactionReceipt({ hash });
-            toast.success("Flag captured!");
+
+            await publicClient?.waitForTransactionReceipt({ hash });
+            console.log("Flag captured!");
 
             // Log Capture
             // We need previous holder to log it correctly?
@@ -368,10 +417,21 @@ export const useCTF = () => {
                 })
             });
 
+            // Optimistic UI Update (Instant Feedback)
+            const shortHolder = `${(account || mainWallet.address).slice(0, 6)}...${(account || mainWallet.address).slice(-4)}`;
+            setGameEvents(prev => ({
+                ...prev,
+                [gameAddress]: {
+                    text: `👑 Captured by ${shortHolder}`,
+                    type: 'capture',
+                    timestamp: Date.now()
+                }
+            }));
+
             fetchGames();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Capture failed");
+            setError(error.message || "Failed to capture flag");
         } finally {
             setLoading(false);
         }
@@ -410,9 +470,9 @@ export const useCTF = () => {
                 let hasChanges = false;
 
                 gamesRef.current.forEach(game => {
-                    // Only update if game is active and has a valid holder
+                    // Only update if game is active AND has time left
                     const nullAddress = "0x0000000000000000000000000000000000000000";
-                    if (!game.isActive || !game.holder || game.holder === nullAddress) return;
+                    if (!game.isActive || game.timeLeft <= 0 || !game.holder || game.holder === nullAddress) return;
 
                     const gameLb = nextState[game.address];
                     if (!gameLb) return;
@@ -456,11 +516,95 @@ export const useCTF = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // Poll for game updates (FlagCaptured event impacts state) every 10 seconds
+    // REAL-TIME: Listen for Game Events (Capture & Join)
+    // We use a ref to track which games we are already watching to avoid re-subscribing constantly
+    const watchedGamesRef = useRef<Set<string>>(new Set());
+
+    useEffect(() => {
+        if (!publicClient) return;
+
+        // Identify active games to watch
+        const activeGames = gamesRef.current.filter(g => g.isActive);
+        const activeAddresses = activeGames.map(g => g.address);
+
+        // Determine which ones are new to watch
+        const newToWatch = activeAddresses.filter(addr => !watchedGamesRef.current.has(addr));
+
+        newToWatch.forEach(gameAddr => {
+            watchedGamesRef.current.add(gameAddr);
+
+            // Watch Capture
+            publicClient.watchContractEvent({
+                address: gameAddr,
+                abi: CTFGameABI,
+                eventName: 'FlagCaptured',
+                onLogs: (logs) => {
+                    logs.forEach(log => {
+                        const args = (log as any).args;
+                        const newHolder = args.newHolder;
+                        const previousHolder = args.previousHolder;
+
+                        // Valid notification
+                        if (newHolder) {
+                            // Set Mini-Notification Event
+                            const shortHolder = `${newHolder.slice(0, 6)}...${newHolder.slice(-4)}`;
+                            setGameEvents(prev => ({
+                                ...prev,
+                                [gameAddr]: {
+                                    text: `👑 Captured by ${shortHolder}`,
+                                    type: 'capture',
+                                    timestamp: Date.now()
+                                }
+                            }));
+                        }
+
+                        console.log("🚩 Real-time Capture!", args);
+                        fetchGames(); // Refresh state
+                    });
+                }
+            });
+
+            // Watch Join
+            publicClient.watchContractEvent({
+                address: gameAddr,
+                abi: CTFGameABI,
+                eventName: 'PlayerJoined',
+                onLogs: (logs) => {
+                    logs.forEach(log => {
+                        const args = (log as any).args;
+                        const player = args.player;
+
+                        if (player) {
+                            const shortPlayer = `${player.slice(0, 6)}...${player.slice(-4)}`;
+                            setGameEvents(prev => ({
+                                ...prev,
+                                [gameAddr]: {
+                                    text: `👋 ${shortPlayer} joined!`,
+                                    type: 'join',
+                                    timestamp: Date.now()
+                                }
+                            }));
+                        }
+                    });
+                }
+            });
+        });
+
+        // Note: We don't implement unwatch here for simplicity in this specific "add-only" logic 
+        // because unwatching specific individual listeners without storing their return fns is hard.
+        // A full teardown/rebuild approach (like previous) is cleaner for unwatching but caused loops.
+        // For this app, games don't go "inactive" active state often, preventing memory leaks is good but 
+        // given the "loop" issue, let's try to stabilize by only adding listeners for new games.
+        // If strict cleanup is needed, we'd store the unwatch fn in a Map<address, fn[]>.
+
+        // Depend on the JSON string of game addresses to catch new games
+    }, [publicClient, JSON.stringify(games.map(g => g.address))]); // Re-check when game list structure changes
+
+    // Back-up Polling (Reduced Frequency)
     useEffect(() => {
         const interval = setInterval(() => {
             fetchGames();
-        }, 10000);
+        }, 60000); // 60 seconds
         return () => clearInterval(interval);
     }, [fetchGames]);
 
@@ -474,6 +618,13 @@ export const useCTF = () => {
         address: account || (mainWallet.address as Address | null),
         needsPassword,
         setNeedsPassword,
-        leaderboard // Export leaderboard
+        leaderboard, // Export leaderboard
+        gameEvents, // Exposed for UI
+        // Pagination
+        page,
+        setPage,
+        totalPages,
+        totalGames,
+        error // Export error
     };
 };

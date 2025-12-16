@@ -25,22 +25,28 @@ interface GameCardProps {
     onJoin: (address: `0x${string}`) => void;
     onCapture: (address: `0x${string}`, fee: string) => void;
     onOpenDetails: (address: string, isWinner: boolean) => void;
+    // New: Mini-notification event
+    lastEvent?: { text: string, type: 'join' | 'capture', timestamp: number };
 }
 
-export function GameCard({ game, leaderboardData, address, loading, onJoin, onCapture, onOpenDetails }: GameCardProps) {
+export function GameCard({ game, leaderboardData, address, loading, onJoin, onCapture, onOpenDetails, lastEvent }: GameCardProps) {
     const [expanded, setExpanded] = useState(false);
 
-    const isWinner = !game.isActive && leaderboardData?.top5?.[0]?.address?.toLowerCase() === address?.toLowerCase();
-    const isHolder = game.isActive && game.holder.toLowerCase() === address?.toLowerCase();
+    // FIX 1: Instant Visual End when timer hits 0 (Client-side override)
+    const isTimeExpired = game.timeLeft <= 0;
+    const isGameActive = game.isActive && !isTimeExpired;
+
+    const isWinner = !isGameActive && leaderboardData?.top5?.[0]?.address?.toLowerCase() === address?.toLowerCase();
+    const isHolder = isGameActive && game.holder.toLowerCase() === address?.toLowerCase();
 
     return (
         <Card sx={{
             border: "3px solid #000",
             borderRadius: 4,
             boxShadow: "6px 6px 0px #000",
-            bgcolor: game.isActive ? "white" : "#f0f0f0",
+            bgcolor: isGameActive ? "white" : "#f0f0f0", // Use derived state
             transition: "transform 0.2s",
-            height: "100%", // Uniform height attempt
+            height: "100%",
             display: "flex",
             flexDirection: "column",
             "&:hover": { transform: "translate(-2px, -2px)" }
@@ -50,12 +56,12 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                 <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
                     <Box sx={{ display: "flex", gap: 1 }}>
                         <Chip
-                            label={game.isActive ? "ACTIVE" : isWinner ? "WON 🏆" : "ENDED"}
+                            label={isGameActive ? "ACTIVE" : isWinner ? "WON 🏆" : "ENDED"}
                             sx={{
-                                bgcolor: game.isActive ? "#00DC8C" : isWinner ? "#00DC8C" : "#999",
+                                bgcolor: isGameActive ? "#00DC8C" : isWinner ? "#00DC8C" : "#999",
                                 border: "2px solid #000",
                                 fontWeight: "bold",
-                                color: isWinner || game.isActive ? "black" : "white"
+                                color: isWinner || isGameActive ? "black" : "white"
                             }}
                         />
                         <Tooltip title="View Details">
@@ -75,15 +81,32 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                         </Tooltip>
                     </Box>
 
-                    <Chip
-                        icon={<EmojiEventsIcon />}
-                        label={`${game.rewardPool} USDC`}
-                        sx={{
-                            bgcolor: "#FFD700",
-                            border: "2px solid #000",
-                            fontWeight: "bold"
-                        }}
-                    />
+                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                        <Chip
+                            icon={<EmojiEventsIcon />}
+                            label={`${game.rewardPool} USDC`}
+                            sx={{
+                                bgcolor: "#FFD700",
+                                border: "2px solid #000",
+                                fontWeight: "bold"
+                            }}
+                        />
+                        {/* Mini-Notification (Right side below Reward) */}
+                        {lastEvent && (Date.now() - lastEvent.timestamp < 10000) && (
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    mt: 0.5,
+                                    fontWeight: "bold",
+                                    color: lastEvent.type === 'capture' ? '#FF2E2E' : '#3B82F6',
+                                    animation: 'fadeIn 0.5s',
+                                    "@keyframes fadeIn": { from: { opacity: 0 }, to: { opacity: 1 } }
+                                }}
+                            >
+                                {lastEvent.text}
+                            </Typography>
+                        )}
+                    </Box>
                 </Box>
 
                 <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
@@ -196,7 +219,7 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
 
                 {/* Actions */}
                 {(() => {
-                    if (!game.hasJoined && game.isActive) {
+                    if (!game.hasJoined && isGameActive) {
                         return (
                             <Button
                                 fullWidth
@@ -306,18 +329,18 @@ export function GameCard({ game, leaderboardData, address, loading, onJoin, onCa
                             fullWidth
                             variant="contained"
                             onClick={() => onCapture(game.address, "0.001")}
-                            disabled={!game.isActive || loading}
+                            disabled={!isGameActive || loading}
                             sx={{
-                                bgcolor: !game.isActive ? "#999" : "#FF2E2E",
+                                bgcolor: !isGameActive ? "#999" : "#FF2E2E",
                                 color: "white",
                                 border: "2px solid #000",
                                 boxShadow: "3px 3px 0px #000",
                                 fontWeight: 900,
                                 py: 1.5,
-                                "&:hover": { bgcolor: !game.isActive ? "#999" : "#D90000" }
+                                "&:hover": { bgcolor: !isGameActive ? "#999" : "#D90000" }
                             }}
                         >
-                            {!game.isActive ? "GAME ENDED" : "CAPTURE FLAG (0.001 ETH)"}
+                            {!isGameActive ? "GAME ENDED" : "CAPTURE FLAG (0.001 ETH)"}
                         </Button>
                     );
                 })()}
