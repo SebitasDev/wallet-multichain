@@ -1,9 +1,7 @@
 "use client";
 
-import { Box, Typography, Button, Grid, Card, CardContent, Chip } from "@mui/material";
+import { Box, Typography, Button, Grid } from "@mui/material";
 import FlagIcon from "@mui/icons-material/Flag";
-import TimerIcon from "@mui/icons-material/Timer";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { useCTF } from "../hooks/useCTF";
 import { PasswordModal } from "../components/PasswordModal";
 
@@ -12,19 +10,13 @@ import { CreateGameModal } from "./components/CreateGameModal";
 import { GameDetailsModal, GameDetailsData } from "./components/GameDetailsModal";
 import { ProfileView } from "./components/ProfileView";
 import { GameCard } from "./components/GameCard";
-import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
 
 export default function CTFPage() {
     const { games, loading, captureFlag, refresh, createGame, joinGame, address, needsPassword, setNeedsPassword, leaderboard, gameEvents, page, setPage, totalPages, totalGames, error } = useCTF();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     const [activeTab, setActiveTab] = useState<"lobby" | "profile">("lobby");
-    // ... (skip lines)
 
-
-    // Details Modal State
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
     const [detailsLoading, setDetailsLoading] = useState(false);
     const [selectedDetailsData, setSelectedDetailsData] = useState<GameDetailsData | null>(null);
@@ -41,7 +33,7 @@ export default function CTFPage() {
         setSelectedGameIsWinner(isWinner);
         setDetailsModalOpen(true);
         setDetailsLoading(true);
-        setSelectedDetailsData(null); // Reset prev data
+        setSelectedDetailsData(null);
 
         try {
             const res = await fetch(`/api/ctf/game-details?gameAddress=${gameAddress}&userAddress=${address || ""}`);
@@ -57,7 +49,6 @@ export default function CTFPage() {
 
     return (
         <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
-            {/* ... Header ... */}
             <Box sx={{
                 mb: 4,
                 p: 3,
@@ -72,16 +63,15 @@ export default function CTFPage() {
             }}>
                 <Box>
                     <Typography variant="h3" sx={{ fontWeight: 900, textTransform: "uppercase" }}>
-                        Capture the Flag
+                        Captura la Bandera
                     </Typography>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Scroll Sepolia Edition
+                        Edición Scroll Sepolia
                     </Typography>
                 </Box>
                 <FlagIcon sx={{ fontSize: 60 }} />
             </Box>
 
-            {/* Tab Navigation */}
             <Box sx={{ mb: 4, display: "flex", justifyContent: "center", gap: 2 }}>
                 <Button
                     onClick={() => setActiveTab("lobby")}
@@ -101,7 +91,7 @@ export default function CTFPage() {
                         }
                     }}
                 >
-                    LOBBY
+                    SALA
                 </Button>
                 <Button
                     onClick={() => setActiveTab("profile")}
@@ -121,13 +111,12 @@ export default function CTFPage() {
                         }
                     }}
                 >
-                    MY PROFILE
+                    MI PERFIL
                 </Button>
             </Box>
 
             {activeTab === "lobby" ? (
                 <>
-                    {/* Actions */}
                     <Box sx={{ mb: 4, display: "flex", gap: 2, alignItems: "center" }}>
                         {address && (
                             <>
@@ -144,7 +133,7 @@ export default function CTFPage() {
                                         "&:hover": { bgcolor: "#00C27A" }
                                     }}
                                 >
-                                    {loading ? "Creating..." : "Create New Event"}
+                                    {loading ? "Creando..." : "Crear Nuevo Evento"}
                                 </Button>
                                 <Typography sx={{ fontWeight: "bold" }}>
                                     {address.slice(0, 6)}...{address.slice(-4)}
@@ -163,18 +152,15 @@ export default function CTFPage() {
                                 bgcolor: "white"
                             }}
                         >
-                            Refresh
+                            Actualizar
                         </Button>
                     </Box>
 
-                    {/* Games Grid */}
                     <Grid container spacing={3}>
                         {[...games].sort((a, b) => {
-                            // 1. Active First
                             if (a.isActive && !b.isActive) return -1;
                             if (!a.isActive && b.isActive) return 1;
 
-                            // 2. Won Games Next (if both inactive)
                             if (!a.isActive && !b.isActive) {
                                 const lbA = leaderboard[a.address];
                                 const lbB = leaderboard[b.address];
@@ -185,7 +171,7 @@ export default function CTFPage() {
                                 if (!wonA && wonB) return 1;
                             }
 
-                            return 0; // Keep original order
+                            return 0;
                         }).map((game) => (
                             <Grid size={{ xs: 12, md: 6, lg: 4 }} key={game.address}>
                                 <GameCard
@@ -202,7 +188,6 @@ export default function CTFPage() {
                         ))}
                     </Grid>
 
-                    {/* Pagination Controls */}
                     <Box sx={{ mt: 4, display: "flex", justifyContent: "center", gap: 2, alignItems: "center" }}>
                         <Button
                             onClick={() => setPage(page - 1)}
@@ -215,10 +200,10 @@ export default function CTFPage() {
                                 "&.Mui-disabled": { borderColor: "#ccc", color: "#ccc" }
                             }}
                         >
-                            Previous
+                            Anterior
                         </Button>
                         <Typography sx={{ fontWeight: "bold" }}>
-                            Page {page} of {totalPages} ({totalGames} Games)
+                            Página {page} de {totalPages} ({totalGames} Juegos)
                         </Typography>
                         <Button
                             onClick={() => setPage(page + 1)}
@@ -231,7 +216,7 @@ export default function CTFPage() {
                                 "&.Mui-disabled": { borderColor: "#ccc", color: "#ccc" }
                             }}
                         >
-                            Next
+                            Siguiente
                         </Button>
                     </Box>
                 </>
@@ -239,14 +224,12 @@ export default function CTFPage() {
                 <ProfileView userAddress={address || ""} />
             )}
 
-            {/* Password Modal */}
             <PasswordModal
                 open={needsPassword}
                 mode="unlock"
                 onSuccess={() => setNeedsPassword(false)}
             />
 
-            {/* Create Game Modal */}
             <CreateGameModal
                 open={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
@@ -254,7 +237,6 @@ export default function CTFPage() {
                 loading={loading}
             />
 
-            {/* Game Details Modal */}
             <GameDetailsModal
                 open={detailsModalOpen}
                 onClose={() => setDetailsModalOpen(false)}

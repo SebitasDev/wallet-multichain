@@ -56,40 +56,40 @@ export function ProfileView({ userAddress }: ProfileViewProps) {
 
     const cards = [
         {
-            label: "Games Won",
+            label: "Juegos Ganados",
             value: stats.gamesWon,
-            icon: <EmojiEventsIcon sx={{ fontSize: 40, color: "#00DC8C" }} />, // Green Trophy
-            color: "#E0F7FA" // Cyan
+            icon: <EmojiEventsIcon sx={{ fontSize: 40, color: "#00DC8C" }} />,
+            color: "#E0F7FA"
         },
         {
-            label: "Total Earnings",
+            label: "Ganancias Totales",
             value: `${stats.totalWon} USDC`,
-            icon: <MonetizationOnIcon sx={{ fontSize: 40, color: "#FFD700" }} />, // Gold Coin
-            color: "#FFF9C4" // Yellow
+            icon: <MonetizationOnIcon sx={{ fontSize: 40, color: "#FFD700" }} />,
+            color: "#FFF9C4"
         },
         {
-            label: "Max Hold Time",
+            label: "Tiempo Máx. Retenido",
             value: `${stats.maxHoldTime}s`,
             icon: <TimerIcon sx={{ fontSize: 40 }} />,
-            color: "#F3E5F5" // Purple
+            color: "#F3E5F5"
         },
         {
-            label: "Games Created",
+            label: "Juegos Creados",
             value: stats.gamesCreated,
             icon: <SportsEsportsIcon sx={{ fontSize: 40 }} />,
-            color: "#E8EAF6" // Indigo
+            color: "#E8EAF6"
         },
         {
-            label: "Total Deposited",
+            label: "Total Depositado",
             value: `${stats.totalDeposited} USDC`,
             icon: <VolunteerActivismIcon sx={{ fontSize: 40 }} />,
-            color: "#FFEBEE" // Red
+            color: "#FFEBEE"
         },
         {
-            label: "Total Txs",
+            label: "Txns Totales",
             value: stats.totalTransactions,
             icon: <ReceiptLongIcon sx={{ fontSize: 40 }} />,
-            color: "#E0F2F1" // Teal
+            color: "#E0F2F1"
         }
     ];
 
@@ -97,7 +97,7 @@ export function ProfileView({ userAddress }: ProfileViewProps) {
         <Box sx={{ mt: 4, px: 2 }}>
             <Box sx={{ textAlign: "center", mb: 6 }}>
                 <Typography variant="h4" sx={{ fontWeight: 900, textTransform: "uppercase", letterSpacing: 2 }}>
-                    Your Legend
+                    Tu Leyenda
                 </Typography>
                 <Chip
                     label={userAddress}
@@ -150,10 +150,10 @@ export function ProfileView({ userAddress }: ProfileViewProps) {
                                 fontWeight: 900,
                                 mt: 2,
                                 textAlign: "right",
-                                fontSize: { xs: "1.8rem", md: "3rem" }, // Responsive font size
-                                whiteSpace: "nowrap", // Prevent wrapping
+                                fontSize: { xs: "1.8rem", md: "3rem" },
+                                whiteSpace: "nowrap",
                                 overflow: "hidden",
-                                textOverflow: "ellipsis" // Ellipsis for very long text
+                                textOverflow: "ellipsis"
                             }}>
                                 {card.value}
                             </Typography>

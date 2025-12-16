@@ -54,13 +54,13 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
             onClose={onClose}
             fullWidth
             maxWidth="sm"
-            scroll="paper" // Enable scrolling within the paper
+            scroll="paper"
             PaperProps={{
                 sx: {
-                    borderRadius: 0, // No radius for raw look
+                    borderRadius: 0,
                     border: "4px solid #000",
                     boxShadow: "10px 10px 0px #000",
-                    overflow: "hidden" // Let DialogContent handle overflow
+                    overflow: "hidden"
                 }
             }}
         >
@@ -72,9 +72,8 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                 <>
                     <DialogTitle sx={{ p: 4, pb: 1, textAlign: "center", bgcolor: "white" }}>
                         <Typography component="div" variant="h5" sx={{ fontWeight: 900, textTransform: "uppercase", letterSpacing: 1 }}>
-                            Game Details
+                            Detalles del Juego
                         </Typography>
-                        {/* Contract Address Link */}
                         <Box
                             component="a"
                             href={`https://sepolia.scrollscan.com/address/${gameAddress}`}
@@ -119,12 +118,11 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                                     fontWeight: 900,
                                     fontSize: "1rem"
                                 }}>
-                                    🏆 YOU WON THIS GAME 🏆
+                                    🏆 GANASTE ESTE JUEGO 🏆
                                 </Box>
                             </Box>
                         )}
 
-                        {/* Reward Pool Display */}
                         <Box sx={{ textAlign: 'center' }}>
                             {data && data.rewardAmount && data.rewardAmount !== "0" && (
                                 <Chip
@@ -142,7 +140,6 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                             )}
                         </Box>
 
-                        {/* Stats Row */}
                         <Box sx={{
                             display: "flex",
                             justifyContent: "center",
@@ -175,11 +172,10 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                                 bgcolor: "white"
                             }}>
                                 <PeopleIcon />
-                                <Typography sx={{ fontWeight: "bold", fontSize: { xs: "0.9rem", sm: "1rem" } }}>{data.allPlayers.length} Players</Typography>
+                                <Typography sx={{ fontWeight: "bold", fontSize: { xs: "0.9rem", sm: "1rem" } }}>{data.allPlayers.length} Jugadores</Typography>
                             </Box>
                         </Box>
 
-                        {/* User Performance Card */}
                         {data.userStats && (
                             <Box sx={{
                                 border: "3px solid #000",
@@ -190,18 +186,18 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                                 bgcolor: "#E3F2FD" // Light blue accent
                             }}>
                                 <Typography variant="subtitle2" sx={{ fontWeight: 900, textTransform: "uppercase", color: "#1565C0", mb: 2 }}>
-                                    Your Performance
+                                    Tu Rendimiento
                                 </Typography>
 
                                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                                     <Box>
-                                        <Typography variant="caption" sx={{ fontWeight: "bold", opacity: 0.7 }}>Rank</Typography>
+                                        <Typography variant="caption" sx={{ fontWeight: "bold", opacity: 0.7 }}>Rango</Typography>
                                         <Typography variant="h3" sx={{ fontWeight: 900, fontSize: { xs: "2.5rem", sm: "3rem" } }}>
                                             {data.userStats.rank ? `#${data.userStats.rank}` : "-"}
                                         </Typography>
                                     </Box>
                                     <Box sx={{ textAlign: "right" }}>
-                                        <Typography variant="caption" sx={{ fontWeight: "bold", opacity: 0.7 }}>Time Held</Typography>
+                                        <Typography variant="caption" sx={{ fontWeight: "bold", opacity: 0.7 }}>Tiempo Retenido</Typography>
                                         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, justifyContent: "flex-end" }}>
                                             <TimerIcon fontSize="small" />
                                             <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: "2rem", sm: "2.5rem" } }}>
@@ -213,9 +209,8 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                             </Box>
                         )}
 
-                        {/* Global Leaderboard */}
                         <Typography variant="h6" sx={{ fontWeight: 900, textAlign: "left", mb: 2, textTransform: "uppercase" }}>
-                            Global Leaderboard
+                            Tabla de Clasificación Global
                         </Typography>
 
                         <Box sx={{
@@ -229,7 +224,7 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                                 {data.allPlayers.length === 0 ? (
                                     <ListItem>
                                         <ListItemText
-                                            secondary="No holders yet"
+                                            secondary="Aún no hay poseedores"
                                             secondaryTypographyProps={{ textAlign: "center", fontStyle: "italic" }}
                                         />
                                     </ListItem>
@@ -241,7 +236,7 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                                             sx={{
                                                 bgcolor: player.rank === 1 ? "#FFF9C4" : index % 2 === 0 ? "white" : "#f5f5f5",
                                                 borderBottom: "1px solid #000",
-                                                px: { xs: 1, sm: 2 } // Reduce padding on mobile
+                                                px: { xs: 1, sm: 2 }
                                             }}
                                         >
                                             <Typography sx={{ fontWeight: 900, width: { xs: 20, sm: 30 }, mr: 1, fontSize: { xs: "0.9rem", sm: "1.1rem" } }}>
@@ -265,7 +260,6 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                                                         }}
                                                     >
                                                         <span style={{ fontWeight: player.rank === 1 ? "bold" : "normal", fontFamily: "monospace", fontSize: "0.9rem" }}>
-                                                            {/* Responsive address truncation */}
                                                             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
                                                                 {player.address.slice(0, 10)}...{player.address.slice(-8)}
                                                             </Box>
@@ -273,7 +267,7 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                                                                 {player.address.slice(0, 6)}...{player.address.slice(-4)}
                                                             </Box>
                                                             {player.rank === 1 && " 👑"}
-                                                            {data.userStats && player.address === data.userStats.address && " (You)"}
+                                                            {data.userStats && player.address === data.userStats.address && " (Tú)"}
                                                         </span>
                                                     </Box>
                                                 }
@@ -308,7 +302,7 @@ export function GameDetailsModal({ open, onClose, data, loading, gameAddress, is
                                 }
                             }}
                         >
-                            CLOSE
+                            CERRAR
                         </Button>
                     </DialogActions>
                 </>
