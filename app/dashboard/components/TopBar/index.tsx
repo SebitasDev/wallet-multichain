@@ -2,9 +2,12 @@ import { Box } from "@mui/material";
 import { useTopBar } from "@/app/dashboard/hooks/useTopBar";
 import { TopBarProfile } from "./TopBarProfile";
 import { TopBarActions } from "./TopBarActions";
+import { useRouter } from "next/navigation";
 
 export function TopBar() {
     const { handleSend, handleReceive, handleAdd, handleSavings } = useTopBar();
+
+    const router = useRouter();
 
     return (
         <Box
@@ -33,6 +36,7 @@ export function TopBar() {
                 onReceive={handleReceive}
                 onAdd={handleAdd}
                 onSavings={handleSavings}
+                onCTF={() => router.push("/dashboard/ctf")}
             />
         </Box>
     );
