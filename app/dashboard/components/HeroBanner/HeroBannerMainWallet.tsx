@@ -11,6 +11,7 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { LoadWalletModal } from "../LoadWalletModal";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { useXOContracts } from "../../hooks/useXOConnect";
 
 interface HeroBannerMainWalletProps {
@@ -19,6 +20,8 @@ interface HeroBannerMainWalletProps {
     burnedBalances: Record<ActiveWallet, number>;
     burnedAddresses: Record<ActiveWallet, string>;
     xoClientAlias?: string;
+    isRefreshing: boolean;
+    onRefresh: () => void;
 }
 
 export const HeroBannerMainWallet = ({
@@ -26,10 +29,13 @@ export const HeroBannerMainWallet = ({
     setActiveWallet,
     burnedBalances,
     burnedAddresses,
-    xoClientAlias
+    xoClientAlias,
+    isRefreshing,
+    onRefresh
 }: HeroBannerMainWalletProps) => {
     const [loadWalletOpen, setLoadWalletOpen] = useState(false);
     const { resetWallet, isUsingXO } = useXOContracts();
+    const canRefresh = isUsingXO || !!burnedAddresses[activeWallet];
 
     return (
         <>
@@ -125,8 +131,35 @@ export const HeroBannerMainWallet = ({
                     borderRadius: 3,
                     p: { xs: 2, md: 2.5 },
                     mb: 2,
+                    position: "relative",
                 }}
             >
+                <IconButton
+                    onClick={onRefresh}
+                    disabled={isRefreshing || !canRefresh}
+                    sx={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        width: 36,
+                        height: 36,
+                        background: "#ffffff",
+                        border: "2px solid #000000",
+                        borderRadius: 2,
+                        transition: "all 0.2s",
+                        "&:hover": {
+                            background: "#3CD2FF",
+                            transform: "scale(1.05)",
+                        },
+                        "&:disabled": {
+                            background: "#e0e0e0",
+                            border: "2px solid #999999",
+                        },
+                    }}
+                >
+                    <RefreshIcon sx={{ fontSize: 20, color: "#000000", animation: isRefreshing ? "spin 1s linear infinite" : "none", "@keyframes spin": { "0%": { transform: "rotate(0deg)" }, "100%": { transform: "rotate(360deg)" } } }} />
+                </IconButton>
+
                 <Typography
                     variant="body2"
                     sx={{

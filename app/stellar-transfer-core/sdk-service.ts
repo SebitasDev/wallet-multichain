@@ -1,4 +1,5 @@
 import { OpenAPI, OneClickService, QuoteRequest } from '@defuse-protocol/one-click-sdk-typescript';
+import { STELLAR } from '../constants/chais';
 
 // Initialize API
 OpenAPI.BASE = 'https://1click.chaindefuser.com';
@@ -8,9 +9,6 @@ export const SOURCE_TOKENS: Record<string, string> = {
     "Base": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
     "Polygon": "nep141:polygon-0x3c499c542cef5e3811e1192ce70d8cc03d5c3359.omft.near",
 };
-
-// User provided Asset ID for Stellar USDC (via Omni/Hot bridge representation)
-const STELLAR_ASSET_ID = "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu";
 
 export async function getOneClickQuote({
     amount,
@@ -27,7 +25,7 @@ export async function getOneClickQuote({
     const originAsset = SOURCE_TOKENS[sourceChain];
     if (!originAsset) throw new Error(`Unsupported source chain for 1-Click: ${sourceChain}`);
 
-    const destinationAsset = STELLAR_ASSET_ID;
+    const destinationAsset = STELLAR.crossChainInformation.nearIntentInformation.assetsId[0].assetId;
 
     const amountAtomic = Math.floor(parseFloat(amount) * 1_000_000).toString();
 
@@ -37,7 +35,7 @@ export async function getOneClickQuote({
         slippageTolerance: 100, // 1%
         originAsset,
         depositType: QuoteRequest.depositType.ORIGIN_CHAIN,
-        depositMode: sourceChain === "Stellar" ? ('MEMO' as any) : undefined,
+        //depositMode: STELLAR.crossChainInformation.nearIntentInformation.needMemo ? ('MEMO' as any) : undefined,
         destinationAsset,
         amount: amountAtomic,
         refundTo: userSenderAddress,
@@ -83,7 +81,6 @@ export async function submitTxHash(txHash: string, depositAddress: string) {
         return true;
     } catch (error) {
         console.error(">>> [1-Click SDK] Error submitting TX Hash:", error);
-        // We don't throw here to avoid failing the whole request if just the notification fails
         return false;
     }
 }

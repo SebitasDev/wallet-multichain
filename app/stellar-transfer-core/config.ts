@@ -18,7 +18,7 @@ export interface StellarBridgePayload {
     };
     sourceChain: string;
     amount: string;
-    recipientStellar: string; // Stellar recipient address
+    recipientStellar: string;
 }
 
 export interface StellarBridgeResponse {

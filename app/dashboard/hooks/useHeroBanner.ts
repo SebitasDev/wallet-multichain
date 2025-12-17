@@ -4,6 +4,8 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
+import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
+import { Address } from "viem";
 
 export type ActiveWallet = "EVM" | "STELLAR";
 
@@ -11,9 +13,10 @@ export const useHeroBanner = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeWallet, setActiveWallet] = useState<ActiveWallet>("EVM");
     const [stellarUSDCBalance, setStellarUSDCBalance] = useState<number>(0);
+    const [evmUSDCBalance, setEvmUSDCBalance] = useState<number>(0);
 
-    // XO (embedded)
-    const { address: xoAddress } = useXOContracts();
+    // XO (embedded) -> Current Network Provider info
+    const { address: xoAddress, currentNetwork } = useXOContracts();
 
     // Local fallback main wallet
     const { mainWallet, xoClient } = useXOWalletStore();
@@ -25,27 +28,56 @@ export const useHeroBanner = () => {
         getTotalFees,
     } = useWalletStore();
 
-    useEffect(() => {
-        if (!mainWallet.addressStellar) return;
+    const mainAddressEVM = xoAddress ?? mainWallet.address ?? null;
+    const mainAddressStellar = mainWallet.addressStellar ?? null;
 
-        const loadStellarBalance = async () => {
+    const fetchMainWalletBalances = async () => {
+        // 1. Stellar
+        if (mainAddressStellar) {
             try {
-                const balance = await getStellarUSDCBalance(
-                    mainWallet.addressStellar!
-                );
+                const balance = await getStellarUSDCBalance(mainAddressStellar);
                 setStellarUSDCBalance(balance);
             } catch (error: any) {
-                // Ignore 404 (Account not found) as it's expected for new wallets
                 if (error?.response?.status === 404 || error?.message?.includes("404")) {
                     setStellarUSDCBalance(0);
-                    return;
+                } else {
+                    console.error("Error cargando balance Stellar USDC", error);
                 }
-                console.error("Error cargando balance Stellar USDC", error);
             }
-        };
+        }
 
-        loadStellarBalance();
-    }, [mainWallet.addressStellar]);
+        // 2. EVM
+        if (mainAddressEVM && currentNetwork) {
+            try {
+                const { balance } = await getBalanceFromChain(
+                    currentNetwork.chain,
+                    mainAddressEVM as Address,
+                    currentNetwork.usdc as Address
+                );
+                setEvmUSDCBalance(Number(balance));
+            } catch (error) {
+                console.error("Error fetching EVM Main Balance", error);
+            }
+        }
+    };
+
+    useEffect(() => {
+        fetchMainWalletBalances();
+    }, [mainAddressStellar, mainAddressEVM, currentNetwork]);
+
+    const handleRefreshMainWallet = async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        toast.info("Actualizando Main Wallet...");
+        try {
+            await fetchMainWalletBalances();
+            toast.success("Main Wallet actualizada");
+        } catch (error) {
+            console.error("Error updating main wallet:", error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     const handleRefreshBalances = async () => {
         if (isRefreshing) return;
@@ -55,7 +87,7 @@ export const useHeroBanner = () => {
 
         try {
             await updateWalletBalances();
-            toast.success("Balances actualizados");
+            toast.success("Balances de hijas actualizados");
         } catch (error) {
             console.error("Error al actualizar balances:", error);
             toast.error("Error al actualizar balances");
@@ -64,16 +96,14 @@ export const useHeroBanner = () => {
         }
     };
 
-    const mainAddress = xoAddress ?? mainWallet.address ?? null;
-
     const burnedBalances: Record<ActiveWallet, number> = {
-        EVM: 0.00,
+        EVM: evmUSDCBalance,
         STELLAR: stellarUSDCBalance,
     };
 
     const burnedAddresses: Record<ActiveWallet, string> = {
-        EVM: mainAddress ?? "--",
-        STELLAR: mainWallet.addressStellar ?? "--",
+        EVM: mainAddressEVM ?? "--",
+        STELLAR: mainAddressStellar ?? "--",
     };
 
     const totalAvailableBalance = getAllWalletsTotalBalance !== null
@@ -97,5 +127,6 @@ export const useHeroBanner = () => {
 
         // Actions
         handleRefreshBalances,
+        handleRefreshMainWallet,
     };
 };
