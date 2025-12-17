@@ -32,6 +32,7 @@ export const AddressCard = ({ address, walletName }: IAddressCardProps) => {
 
     return (
         <Card
+            className="tour-address-card"
             elevation={0}
             sx={{
                 borderRadius: 4,

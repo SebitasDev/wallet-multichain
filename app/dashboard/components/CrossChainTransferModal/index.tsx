@@ -60,6 +60,7 @@ export const CrossChainTransferModal = () => {
         <>
             <Button
                 variant="contained"
+                id="tour-bridge"
                 onClick={openModal}
                 disabled={!address || (!privateKey && !provider)}
                 sx={{

@@ -12,7 +12,13 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { GenerateWalletButton } from "@/app/dashboard/components/GenerateWalletButton";
 import { SendMoneyMainWallet } from "@/app/dashboard/components/SendMoneyMainWallet";
 import { CrossChainTransferModal } from "@/app/dashboard/components/CrossChainTransferModal";
+import dynamic from "next/dynamic";
 import { TopBar } from "@/app/dashboard/components/TopBar";
+
+const DashboardTour = dynamic(
+    () => import("@/app/dashboard/components/DashboardTour").then((mod) => mod.DashboardTour),
+    { ssr: false }
+);
 
 export default function Dashboard() {
     const { addOpen, receiveOpen, closeAdd, closeReceive } = useDashboardModalsStore();
@@ -22,6 +28,7 @@ export default function Dashboard() {
 
     return (
         <Box sx={{ minHeight: "100vh" }}>
+            <DashboardTour />
             <TopBar />
 
             <Box
@@ -36,11 +43,12 @@ export default function Dashboard() {
                     mx: "auto",
                 }}
             >
-                <Box sx={{ width: "100%", maxWidth: 600 }}>
+                <Box id="dashboard-hero" sx={{ width: "100%", maxWidth: 600 }}>
                     <HeroBanner />
                 </Box>
 
                 <Box
+                    id="main-wallet-actions"
                     sx={{
                         display: "flex",
                         flexDirection: "column",
@@ -92,6 +100,7 @@ export default function Dashboard() {
             </Box>
 
             <Box
+                id="wallets-list"
                 sx={{
                     maxWidth: 1200,
                     mx: "auto",

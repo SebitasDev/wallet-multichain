@@ -29,6 +29,7 @@ export const TopBarActions = ({ onSend, onReceive, onAdd, onSavings, onCTF }: To
         >
             {/* ENVIAR */}
             <Button
+                id="tour-action-send"
                 onClick={onSend}
                 sx={{
                     width: 90,
@@ -58,6 +59,7 @@ export const TopBarActions = ({ onSend, onReceive, onAdd, onSavings, onCTF }: To
 
             {/* RECIBIR */}
             <Button
+                id="tour-action-receive"
                 onClick={onReceive}
                 sx={{
                     width: 90,
@@ -87,6 +89,7 @@ export const TopBarActions = ({ onSend, onReceive, onAdd, onSavings, onCTF }: To
 
             {/* AGREGAR ADDRESS */}
             <Button
+                id="tour-action-add"
                 onClick={onAdd}
                 sx={{
                     width: 90,
@@ -118,6 +121,7 @@ export const TopBarActions = ({ onSend, onReceive, onAdd, onSavings, onCTF }: To
 
             {/* SAVINGS */}
             <Button
+                id="tour-action-savings"
                 disabled={true}
                 onClick={onSavings}
                 sx={{
@@ -150,6 +154,7 @@ export const TopBarActions = ({ onSend, onReceive, onAdd, onSavings, onCTF }: To
 
             {/* CAPTURE THE FLAG */}
             <Button
+                id="tour-action-ctf"
                 onClick={onCTF}
                 sx={{
                     width: 90,
