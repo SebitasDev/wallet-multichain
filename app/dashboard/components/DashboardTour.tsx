@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef } from "react";
 import Shepherd, { Tour } from "shepherd.js";
 import "shepherd.js/dist/css/shepherd.css";
 import { useWalletStore } from "@/app/store/useWalletsStore";
@@ -21,11 +21,18 @@ export function DashboardTour() {
     const wallets = useWalletStore((s) => s.wallets);
     const hasWallets = wallets.length > 0;
 
-    const STORAGE_KEY = "hasSeenOnboarding_v4"; // Bumped to v4 for new logic
+    // Two distinct keys for progressive onboarding
+    const KEY_INTRO = "hasSeenOnboarding_v12_INTRO";
+    const KEY_WALLET = "hasSeenOnboarding_v12_WALLET";
 
-    // Define steps dynamically based on state
-    const getSteps = (tour: Tour) => {
-        const baseSteps = [
+    // --- STEP DEFINITIONS ---
+
+    // 1. INTRO TOUR (General UI + Call to Action)
+    const getIntroSteps = (tour: Tour) => {
+        const next = () => tour.next();
+        const back = () => tour.back();
+
+        return [
             {
                 id: "welcome",
                 attachTo: { element: "#dashboard-hero", on: "bottom" },
@@ -38,172 +45,169 @@ export function DashboardTour() {
                     });
                 },
                 buttons: [
-                    {
-                        classes: "shepherd-button-primary",
-                        text: "¡Vamos!",
-                        action: tour.next,
-                    },
+                    { classes: "shepherd-button-primary", text: "Comenzar", action: next },
                 ],
                 cancelIcon: { enabled: true },
                 title: "🚀 ¡Bienvenido a 1LLET!",
-                text: "Estás ante la billetera más rápida y rebelde de la Web3. ¿Listo para el tour?",
+                text: "Estás ante la billetera más rápida y rebelde de la Web3. Te enseñaremos lo básico.",
+            },
+            {
+                id: "action-add",
+                attachTo: { element: "#tour-action-add", on: "bottom" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "Importar o Crear",
+                text: "Aquí podrás conectar tus wallets existentes (Metamask, Phantom, etc).",
+            },
+            {
+                id: "profile-stats",
+                attachTo: { element: "#tour-profile", on: "bottom" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "Tu Perfil",
+                text: "Revisa tus medallas, estadísticas y nivel de Degen aquí mismo.",
+            },
+            {
+                id: "generate-wallet-cta",
+                attachTo: { element: "#tour-generate-wallet", on: "top" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "¡Entendido!", action: next },
+                ],
+                title: "🔥 Paso Crucial",
+                text: "Para empezar a operar, necesitarás una wallet. ¡Dale click a este botón para generar una en un segundo! (El tour continuará después)",
             }
         ];
+    };
 
-        if (!hasWallets) {
-            // FLOW A: User Sigue Sin Wallet (New User)
-            return [
-                ...baseSteps,
-                {
-                    id: "generate-wallet",
-                    attachTo: { element: "#tour-generate-wallet", on: "top" },
-                    buttons: [
-                        { classes: "shepherd-button-secondary", text: "Atrás", action: tour.back },
-                        { classes: "shepherd-button-primary", text: "Siguiente", action: tour.next },
-                    ],
-                    title: "1. Crea tu Identidad",
-                    text: "No existes en la blockchain hasta que tienes una wallet. Genera una dirección multichain única en un clic.",
-                },
-                {
-                    id: "profile-intro",
-                    attachTo: { element: "#tour-profile", on: "left" },
-                    buttons: [
-                        { classes: "shepherd-button-secondary", text: "Atrás", action: tour.back },
-                        { classes: "shepherd-button-primary", text: "Siguiente", action: tour.next },
-                    ],
-                    title: "2. Tu Nivel de Degen",
-                    text: "Aquí verás tus estadísticas, medallas y APY promedio. ¡Sube de nivel usando la app!",
-                },
-                {
-                    id: "ctf-teaser",
-                    attachTo: { element: "#tour-action-ctf", on: "bottom" },
-                    buttons: [
-                        { classes: "shepherd-button-secondary", text: "Atrás", action: tour.back },
-                        { classes: "shepherd-button-primary", text: "Finalizar", action: tour.next },
-                    ],
-                    title: "3. Capture The Flag",
-                    text: "Para los hackers: completa retos en modo CTF y gana recompensas reales. Pero primero, ¡genera esa wallet!",
-                }
-            ];
-        } else {
-            // FLOW B: Power User (Has Wallets)
-            return [
-                ...baseSteps,
-                {
-                    id: "hub-intro",
-                    attachTo: { element: "#main-wallet-actions", on: "right" },
-                    buttons: [
-                        { classes: "shepherd-button-secondary", text: "Atrás", action: tour.back },
-                        { classes: "shepherd-button-primary", text: "Siguiente", action: tour.next },
-                    ],
-                    title: "🔥 Tu Centro de Mando",
-                    text: "Desde aquí controlas todo: Generar nuevas keys, Enviar crypto y realizar Puentes entre blockchains.",
-                },
-                {
-                    id: "send-action",
-                    attachTo: { element: "#tour-send-money", on: "left" },
-                    buttons: [
-                        { classes: "shepherd-button-secondary", text: "Atrás", action: tour.back },
-                        { classes: "shepherd-button-primary", text: "Siguiente", action: tour.next },
-                    ],
-                    title: "Enviar es Fácil",
-                    text: "Olvídate de comisiones ocultas. Envía USDC o tokens nativos a cualquier dirección instantáneamente.",
-                },
-                {
-                    id: "bridge-action",
-                    attachTo: { element: "#tour-bridge", on: "left" },
-                    buttons: [
-                        { classes: "shepherd-button-secondary", text: "Atrás", action: tour.back },
-                        { classes: "shepherd-button-primary", text: "Siguiente", action: tour.next },
-                    ],
-                    title: "Bridge Sin Dolor",
-                    text: "¿Tienes fondos en Polygon y los quieres en Base? Usa nuestro Bridge y se mueven en segundos.",
-                },
-                {
-                    id: "top-actions-receive",
-                    attachTo: { element: "#tour-action-receive", on: "bottom" },
-                    buttons: [
-                        { classes: "shepherd-button-secondary", text: "Atrás", action: tour.back },
-                        { classes: "shepherd-button-primary", text: "Siguiente", action: tour.next },
-                    ],
-                    title: "Recibe Pagos",
-                    text: "Comparte tu QR o dirección pública para recibir depósitos de cualquiera.",
-                },
-                {
-                    id: "wallets-list",
-                    attachTo: { element: "#wallets-list", on: "top" },
-                    buttons: [
-                        { classes: "shepherd-button-secondary", text: "Atrás", action: tour.back },
-                        { classes: "shepherd-button-primary", text: "Siguiente", action: tour.next },
-                    ],
-                    title: "Tus Billeteras",
-                    text: "Tu colección de addresses. Desliza para verlas todas. Cada tarjeta es una cuenta independiente.",
-                },
-                {
-                    id: "wallet-copy",
-                    attachTo: { element: ".tour-copy-address", on: "bottom" },
-                    buttons: [
-                        { classes: "shepherd-button-secondary", text: "Atrás", action: tour.back },
-                        { classes: "shepherd-button-primary", text: "¡A darle!", action: tour.next },
-                    ],
-                    title: "Copiar Rápido",
-                    text: "Usa este botón para copiar tu dirección al portapapeles al instante. ¡Sin rodeos!",
-                }
-            ];
+    // 2. WALLET TOUR (Triggered ONLY when user has wallets)
+    const getWalletSteps = (tour: Tour) => {
+        const next = () => tour.next();
+        const back = () => tour.back();
+
+        return [
+            {
+                id: "wallet-success",
+                attachTo: { element: "#wallets-list", on: "top" },
+                buttons: [
+                    { classes: "shepherd-button-primary", text: "Ver Billetera", action: next },
+                ],
+                cancelIcon: { enabled: true },
+                title: "✅ ¡Wallet Creada!",
+                text: "¡Felicidades! Ahora tienes una identidad en la blockchain. Veamos qué puedes hacer con ella.",
+            },
+            {
+                id: "hub-intro",
+                attachTo: { element: "#main-wallet-actions", on: "right" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "Panel de Control",
+                text: "Estos son tus superpoderes: Generar más keys, Enviar crypto y usar el Bridge.",
+            },
+            {
+                id: "send-action-main",
+                attachTo: { element: "#tour-send-money", on: "left" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "Enviar",
+                text: "Envía USDC o tokens a cualquier dirección al instante.",
+            },
+            {
+                id: "bridge-action",
+                attachTo: { element: "#tour-bridge", on: "left" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "Bridge",
+                text: "Mueve activos entre chains (Base, Polygon, Stellar) sin complicaciones.",
+            },
+            {
+                id: "wallet-copy",
+                attachTo: { element: ".tour-copy-address", on: "bottom" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "Copiar Address",
+                text: "Haz click aquí para copiar tu dirección y compartirla para recibir fondos.",
+            },
+            {
+                id: "wallet-delete",
+                attachTo: { element: ".tour-delete-wallet", on: "left" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "¡Listo!", action: next },
+                ],
+                title: "Gestión",
+                text: "Si ya no necesitas ver esta wallet, puedes quitarla con el botón rojo.",
+            }
+        ];
+    };
+
+
+    // --- LAUNCHER LOGIC ---
+
+    const startTour = (type: "INTRO" | "WALLET") => {
+        console.log(`Starting Tour Phase: ${type}`);
+
+        if (tourRef.current) {
+            tourRef.current.cancel();
         }
+
+        // @ts-ignore
+        const newTour = new Shepherd.Tour({
+            ...tourOptions,
+        });
+
+        const steps = type === "INTRO" ? getIntroSteps(newTour) : getWalletSteps(newTour);
+        newTour.addSteps(steps);
+
+        const markSeen = () => {
+            console.log(`Phase ${type} completed.`);
+            localStorage.setItem(type === "INTRO" ? KEY_INTRO : KEY_WALLET, "true");
+        };
+
+        newTour.on("complete", markSeen);
+        newTour.on("cancel", markSeen);
+
+        tourRef.current = newTour;
+        newTour.start();
     };
 
     useEffect(() => {
         if (typeof window === "undefined") return;
 
-        // Check if user has seen the tour
-        const hasSeenTour = localStorage.getItem(STORAGE_KEY);
+        const seenIntro = localStorage.getItem(KEY_INTRO);
+        const seenWallet = localStorage.getItem(KEY_WALLET);
 
-        // Always initialize/re-initialize if not seen (or if state changed significantly, though we want to respect 'seen')
-        // Ideally, if a user generates a wallet, they might move to Flow B? 
-        // For now, let's just stick to "If they haven't finished a tour, show the relevant one".
+        console.log(`Tour Check v12: Intro=${seenIntro}, WalletTour=${seenWallet}, HasWallets=${hasWallets}`);
 
-        if (!hasSeenTour) {
-            startTour();
+        // Scenarios:
+
+        // 1. Initial Intro (No previous intro seen)
+        if (!seenIntro) {
+            const timer = setTimeout(() => startTour("INTRO"), 500);
+            return () => clearTimeout(timer);
         }
 
-        return () => {
-            if (tourRef.current && tourRef.current.isActive()) {
-                tourRef.current.cancel();
-            }
-        };
+        // 2. Wallet Tour (Seen intro, has wallets, but hasn't seen wallet tour)
+        // This triggers when user adds their first wallet OR if they are an old user logging in
+        if (seenIntro && hasWallets && !seenWallet) {
+            const timer = setTimeout(() => startTour("WALLET"), 500);
+            return () => clearTimeout(timer);
+        }
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasWallets]); // Re-run if wallet state changes significantly (e.g. they add a wallet)
+    }, [hasWallets]); // Reacts to wallet changes!
 
-    const startTour = () => {
-        if (tourRef.current) {
-            tourRef.current.cancel(); // Cancel existing if any
-        }
-
-        // @ts-ignore -- Shepherd type compatibility
-        tourRef.current = new Shepherd.Tour({
-            ...tourOptions,
-        });
-
-        const tour = tourRef.current;
-
-        // Add steps after creation so we can bind 'tour' actions
-        tour.addSteps(getSteps(tour));
-
-        const markSeen = () => {
-            localStorage.setItem(STORAGE_KEY, "true");
-        };
-
-        tour.on("complete", markSeen);
-        tour.on("cancel", markSeen);
-
-        // Slight delay to ensure DOM is ready
-        setTimeout(() => {
-            if (!tour.isActive()) {
-                tour.start();
-            }
-        }, 1000);
-    };
-
-    return null; // Hidden component (logic only)
+    return null;
 }

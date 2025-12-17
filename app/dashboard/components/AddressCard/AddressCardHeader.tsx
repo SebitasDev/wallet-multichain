@@ -84,6 +84,7 @@ export const AddressCardHeader = ({
                 </Box>
 
                 <IconButton
+                    className="tour-delete-wallet" // Targeted by Shepherd tour
                     size="small"
                     sx={{
                         color: "#000000",
