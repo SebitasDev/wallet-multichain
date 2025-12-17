@@ -21,7 +21,8 @@ import { Keypair } from "stellar-sdk";
 import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
 import { base, polygon } from "viem/chains";
 import { useXOPayer } from "@/app/dashboard/hooks/useXOPayer";
-import { useXOWalletManager } from "@/app/dashboard/hooks/useXOWalletManager";
+import { useXOWalletManager } from "./useXOWalletManager";
+
 
 // =====================
 //  NETWORK CONFIG
@@ -75,7 +76,7 @@ export const XOContractsProvider = ({
     password: string;
 }) => {
     const [address, setAddress] = useState<string | null>(null);
-    const [selectedChain] = useState<AvailableChains>("polygon");
+    const [selectedChain] = useState<AvailableChains>("base");
     const [isUsingXO, setIsUsingXO] = useState(false);
 
     const xoProviderRef = useRef<any>(null);

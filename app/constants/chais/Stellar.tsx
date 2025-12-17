@@ -14,7 +14,14 @@ export const STELLAR = {
     chipColor: "#000000",
     crossChainInformation: {
         supportCCTP: false,
-        supportCirclePaymaster: false
+        supportCirclePaymaster: false,
+        nearIntentInformation: {
+            support: true,
+            assetsId: [
+                { assetId: "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu", name: "USDC", decimals: 6 }
+            ],
+            needMemo: true
+        }
     },
     aproxFromFee: isDevelopment ? 0.003 : 0.0028
 }
