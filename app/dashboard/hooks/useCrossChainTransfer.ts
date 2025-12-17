@@ -10,6 +10,7 @@ import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { STELLAR } from "@/app/constants/chais/Stellar";
+import { log } from "console";
 
 // Types
 export const STELLAR_CHAIN_KEY = "Stellar";
@@ -177,6 +178,8 @@ export const useCrossChainTransfer = () => {
         try {
             let result;
 
+            console.log(data);
+
             if (data.sourceChain === data.destChain) {
                 result = await transferDirect(
                     data.amount,
@@ -184,6 +187,8 @@ export const useCrossChainTransfer = () => {
                     data.recipient as Address
                 );
             } else {
+                console.log("LLEGamos aqui");
+
                 result = await transferCrossChain(
                     data.amount,
                     data.sourceChain,

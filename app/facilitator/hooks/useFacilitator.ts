@@ -25,6 +25,7 @@ import {
     SettleResponse
 } from "@/app/facilitator/types";
 import { Address } from "abitype";
+import { log } from "console";
 
 const FACILITATOR_ADDRESS = process.env.NEXT_PUBLIC_FACILITATOR_ADDRESS as Address;
 
@@ -189,7 +190,6 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         paymentPayload: FacilitatorPaymentPayload,
         sourceChain: FacilitatorChainKey,
         amount: string,
-        recipient?: Address,
         crossChainConfig?: CrossChainConfig
     ): Promise<SettleResponse> => {
         const response = await fetch("/api/facilitator/settle", {
@@ -199,7 +199,7 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
                 paymentPayload,
                 sourceChain,
                 amount,
-                recipient,
+                recipient: crossChainConfig?.mintRecipient,
                 crossChainConfig
             })
         });
@@ -211,7 +211,6 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
     const transfer = useCallback(async ({
         amount,
         sourceChain,
-        recipient,
         crossChainConfig
     }: TransferParams): Promise<SettleResponse> => {
         setIsLoading(true);
@@ -246,7 +245,6 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
                 paymentPayload,
                 sourceChain,
                 amountAtomicStr,
-                recipient,
                 crossChainConfig
             );
 
@@ -291,6 +289,7 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         mintRecipient: Address
     ): Promise<SettleResponse> => {
         const destConfig = FACILITATOR_NETWORKS[destinationChain];
+        console.log("Yo recibo dinero", mintRecipient);
         return transfer({
             amount,
             sourceChain,
