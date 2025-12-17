@@ -6,11 +6,17 @@ import "dotenv/config";
 OpenAPI.BASE = 'https://1click.chaindefuser.com';
 OpenAPI.TOKEN = process.env.ONE_CLICK_JWT;
 
-const originAsset = "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near";
-const destinationAsset = "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu";
-const amount = "300000"; // 0.3 USDC
-const senderAddress = "0xF2dc6F3d0dd5ED6E9A794ea5914C85d6012b25A9";
-const recipientAddress = "GCXWKC7KWZU7C7IJUM2P5PO2PAFMJAKSDELEUPGXSB7KKPS25KVSQXZA"; // User requested SAME sender as recipient
+const originAsset = "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu";
+const destinationAsset = "nep245:v2_1.omni.hot.tg:10_A2ewyUyDp6qsue1jqZsGypkCxRJ";
+const amount = "5000000"; // 0.3 USDC
+const senderAddress = "GAV3SG6KAKMZQ67KQTUYFAKEXXZGFX3I22764CCFJAJTZR5QETBUEFVL";
+const recipientAddress = "0xF2dc6F3d0dd5ED6E9A794ea5914C85d6012b25A9";
+
+//const originAsset = "nep245:v2_1.omni.hot.tg:10_A2ewyUyDp6qsue1jqZsGypkCxRJ";
+//const destinationAsset = "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu";
+//const amount = "5000000"; // 0.3 USDC
+//const senderAddress = "0xF2dc6F3d0dd5ED6E9A794ea5914C85d6012b25A9";
+//const recipientAddress = "GAV3SG6KAKMZQ67KQTUYFAKEXXZGFX3I22764CCFJAJTZR5QETBUEFVL";
 
 async function testQuoteSender() {
     console.log(">>> [Test Quote] Requesting Quote with Sender as Recipient...");
@@ -23,6 +29,7 @@ async function testQuoteSender() {
             slippageTolerance: 100,
             originAsset,
             depositType: QuoteRequest.depositType.ORIGIN_CHAIN,
+            depositMode: 'MEMO' as any,
             destinationAsset,
             amount,
             refundTo: senderAddress,
@@ -30,7 +37,7 @@ async function testQuoteSender() {
             recipient: recipientAddress,
             recipientType: QuoteRequest.recipientType.DESTINATION_CHAIN,
             deadline: new Date(Date.now() + 3 * 60 * 1000).toISOString(),
-            referral: "multichain-wallet",
+            referral: "1llet",
             quoteWaitingTimeMs: 5000,
         };
 

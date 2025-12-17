@@ -1,4 +1,4 @@
-import {STELLAR} from "@/app/constants/chais";
+import { STELLAR } from "@/app/constants/chais";
 import { Horizon } from "stellar-sdk";
 
 export const getStellarUSDCBalance = async (
