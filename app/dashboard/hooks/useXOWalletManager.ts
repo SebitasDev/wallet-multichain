@@ -3,6 +3,7 @@ import { Keypair } from "stellar-sdk";
 import { mnemonicToSeedSync, validateMnemonic } from "@scure/bip39";
 import { wordlist } from "@scure/bip39/wordlists/english";
 import { sha256 } from "ethereum-cryptography/sha256";
+import { derivePath } from "ed25519-hd-key";
 import { toast } from "react-toastify";
 import { encryptPrivateKey, generateSalt } from "@/app/utils/cripto";
 import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
@@ -36,10 +37,10 @@ export const useXOWalletManager = ({
         // 1. Derive EVM Wallet (Standard BIP44)
         const evmWallet = Wallet.fromPhrase(trimmed);
 
-        // 2. Derive Stellar Wallet (Deterministic: SHA256(Seed) -> Ed25519)
+        // 2. Derive Stellar Wallet (Standard SEP-0005: m/44'/148'/0')
         const seed = mnemonicToSeedSync(trimmed);
-        const stellarSeed = sha256(seed); // 32 bytes deterministic seed
-        const stellarKeypair = Keypair.fromRawEd25519Seed(Buffer.from(stellarSeed));
+        const { key } = derivePath("m/44'/148'/0'", Buffer.from(seed).toString('hex'));
+        const stellarKeypair = Keypair.fromRawEd25519Seed(key);
 
         // 3. Encrypt Keys
         const salt = generateSalt();

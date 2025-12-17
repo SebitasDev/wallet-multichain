@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
 
         // Setup facilitator account and clients
         const facilitatorAccount = privateKeyToAccount(FACILITATOR_PRIVATE_KEY);
-        const facilitatorAddress = facilitatorAccount.address;
 
         const walletClient = createWalletClient({
             account: facilitatorAccount,
@@ -113,7 +112,7 @@ export async function POST(request: NextRequest) {
                 amount: amountStr,
                 sourceChain,
                 recipientStellar,
-                facilitatorAddress
+                userSenderAddress: authorization.from.toString()
             });
             console.log(">>> [Stellar Bridge] Quote Received. Deposit Address:", quoteResult.depositAddress);
         } catch (err) {
