@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
             });
 
             // Step 3: Execute CCTP depositForBurn
-            const mintRecipient = addressToBytes32(crossChainConfig.mintRecipient);
+            const mintRecipient = addressToBytes32(recipient);
 
             // Calculate maxFee (1% of amount, min 200 = 0.0002 USDC)
             const maxFee = amountBigInt > BigInt(100)
