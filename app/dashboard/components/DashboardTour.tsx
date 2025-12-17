@@ -169,6 +169,7 @@ export function DashboardTour() {
         });
 
         const steps = type === "INTRO" ? getIntroSteps(newTour) : getWalletSteps(newTour);
+        // @ts-ignore
         newTour.addSteps(steps);
 
         const markSeen = () => {
