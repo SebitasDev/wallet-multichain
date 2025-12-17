@@ -10,6 +10,8 @@ import { ActiveWallet } from "@/app/dashboard/hooks/useHeroBanner";
 import { Dispatch, SetStateAction, useState } from "react";
 import { LoadWalletModal } from "../LoadWalletModal";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import { useXOContracts } from "../../hooks/useXOConnect";
 
 interface HeroBannerMainWalletProps {
     activeWallet: ActiveWallet;
@@ -27,6 +29,7 @@ export const HeroBannerMainWallet = ({
     xoClientAlias
 }: HeroBannerMainWalletProps) => {
     const [loadWalletOpen, setLoadWalletOpen] = useState(false);
+    const { resetWallet, isUsingXO } = useXOContracts();
 
     return (
         <>
@@ -64,6 +67,30 @@ export const HeroBannerMainWallet = ({
                 >
                     <FileUploadIcon sx={{ fontSize: 16, mr: 0.5 }} />
                     IMPORTAR
+                </IconButton>
+
+                <IconButton
+                    onClick={() => {
+                        const msg = isUsingXO
+                            ? "¿Estás seguro? Se generará una NUEVA wallet de Stellar (tu conexión EVM actual se mantendrá)."
+                            : "⚠️ ¿RESET TOTAL? Se borrará tu wallet actual y se generará una nueva (EVM + Stellar). Asegúrate de tener respaldo si te importa.";
+
+                        if (window.confirm(msg)) {
+                            resetWallet();
+                        }
+                    }}
+                    sx={{
+                        background: "#ffffff",
+                        border: "2px solid #000000",
+                        borderRadius: 2,
+                        px: 1, // Smaller padding for icon-only button
+                        "&:hover": {
+                            background: "#FF4444", // Danger Red
+                            color: "white"
+                        },
+                    }}
+                >
+                    <RestartAltIcon sx={{ fontSize: 20 }} />
                 </IconButton>
 
                 <IconButton

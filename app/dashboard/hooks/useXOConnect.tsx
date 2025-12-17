@@ -11,31 +11,23 @@ import React, {
 import { useEmbedded } from "@/app/dashboard/hooks/embebed";
 import { toast } from "react-toastify";
 import { Wallet } from "ethers";
-import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
-import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
-
 import {
     decryptPrivateKey,
     encryptPrivateKey,
     generateSalt,
 } from "@/app/utils/cripto";
-import { createPaymentHeader } from "x402/client";
-import { privateKeyToAccount } from "viem/accounts";
-import { createWalletClient, custom, publicActions } from "viem";
-import { base, polygon } from "viem/chains";
-import { Address } from "abitype";
 import { Keypair } from "stellar-sdk";
 import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
-import { mnemonicToSeedSync, validateMnemonic } from "@scure/bip39";
-import { wordlist } from "@scure/bip39/wordlists/english";
-import { sha256 } from "ethereum-cryptography/sha256";
+import { base, polygon } from "viem/chains";
+import { useXOPayer } from "@/app/dashboard/hooks/useXOPayer";
+import { useXOWalletManager } from "@/app/dashboard/hooks/useXOWalletManager";
 
 // =====================
 //  NETWORK CONFIG
 // =====================
 
-const NETWORKS = {
+export const NETWORKS = {
     base: {
         network: "base" as const,
         chain: base,
@@ -56,7 +48,7 @@ const NETWORKS = {
     },
 };
 
-type AvailableChains = keyof typeof NETWORKS;
+export type AvailableChains = keyof typeof NETWORKS;
 
 interface XOContractsContextType {
     connect: () => Promise<void>;
@@ -70,6 +62,7 @@ interface XOContractsContextType {
         targetChain: AvailableChains
     ) => Promise<{ success: boolean; txHash?: string; error?: string }>;
     loadWallet: (mnemonic: string, password: string) => Promise<void>;
+    resetWallet: () => Promise<void>;
 }
 
 const XOContractsContext = createContext<XOContractsContextType | null>(null);
@@ -101,6 +94,15 @@ export const XOContractsProvider = ({
         !!mainWallet.encryptedPrivateKey &&
         !!mainWallet.salt &&
         !!mainWallet.iv;
+
+    // Sub-hooks
+    const { payX402 } = useXOPayer({ isUsingXO, xoProviderRef, address, password });
+    const { loadWallet, resetWallet } = useXOWalletManager({
+        password,
+        isUsingXO,
+        setAddress,
+        setIsUsingXO
+    });
 
     // ======================
     //  INIT (SINGLE RUN)
@@ -152,7 +154,7 @@ export const XOContractsProvider = ({
     };
 
     // ======================
-    //  LOCAL WALLET
+    //  LOCAL WALLET (Init)
     // ======================
     const generateLocalOrLoad = async () => {
         if (!hydrated || !password) return;
@@ -175,9 +177,8 @@ export const XOContractsProvider = ({
             }
         }
 
-        // === CREATE NEW WALLET ===
+        // Create New Wallet
         const wallet = Wallet.createRandom();
-
         const keypair = Keypair.random();
         const secret = keypair.secret();
 
@@ -219,196 +220,6 @@ export const XOContractsProvider = ({
         toast.info(`Wallet local generada: ${wallet.address}`);
     };
 
-    // ======================
-    //  LOAD WALLET (IMPORT)
-    // ======================
-    const loadWallet = async (mnemonic: string, password: string) => {
-        const trimmed = mnemonic.trim();
-        if (!validateMnemonic(trimmed, wordlist)) {
-            throw new Error("Frase semilla inválida");
-        }
-
-        // 1. Derive EVM Wallet (Standard BIP44)
-        const evmWallet = Wallet.fromPhrase(trimmed);
-
-        // 2. Derive Stellar Wallet (Deterministic: SHA256(Seed) -> Ed25519)
-        const seed = mnemonicToSeedSync(trimmed);
-        const stellarSeed = sha256(seed); // 32 bytes deterministic seed
-        const stellarKeypair = Keypair.fromRawEd25519Seed(Buffer.from(stellarSeed));
-
-        // 3. Encrypt Keys
-        const salt = generateSalt();
-        const { encrypted: encryptedEVM, iv } = await encryptPrivateKey(
-            evmWallet.privateKey,
-            password,
-            salt
-        );
-
-        const { encrypted: encryptedStellar } = await encryptPrivateKey(
-            stellarKeypair.secret(),
-            password,
-            salt
-        );
-
-        // 4. Update Store
-        // Check if we are using XO (Embedded) to decide if we overwrite EVM or just add Stellar
-        if (isUsingXO) {
-            // HYBRID MODE: XO handles EVM, we only import Stellar
-            const currentMainWallet = useXOWalletStore.getState().mainWallet;
-
-            setMainWallet({
-                ...currentMainWallet, // Keep existing EVM data (even if null/empty, we don't want to replace with this new one if user intends to use XO)
-                addressStellar: stellarKeypair.publicKey(),
-                encryptedPrivateKeyStellar: encryptedStellar,
-                // We must update salt/iv if we encrypt with new password? 
-                // Actually, if we are in Hybrid mode, the 'password' provided is primarily for this Stellar import.
-                // If mainWallet already had valid EVM keys encrypted with SAME password, we are fine.
-                // If it had different password, we might break EVM decryption if we overwrite salt/iv.
-                // However, the prompt implies "Connect with XO" -> "Import Stellar".
-                // We should assume the user acts on the "active" session.
-                // For simplicity and safety in this specific "Stellar Only" request:
-                salt,
-                iv,
-            });
-
-            toast.success(`Wallet Stellar importada: ${stellarKeypair.publicKey().slice(0, 6)}...`);
-            // DO NOT switch setIsUsingXO(false) -> We stay in XO mode for EVM
-        } else {
-            // STANDARD MODE: Full Import (EVM + Stellar) replacing everything
-            setMainWallet({
-                address: evmWallet.address,
-                addressStellar: stellarKeypair.publicKey(),
-                encryptedPrivateKey: encryptedEVM,
-                encryptedPrivateKeyStellar: encryptedStellar,
-                salt,
-                iv,
-            });
-
-            // 5. Set Active
-            setAddress(evmWallet.address);
-            setIsUsingXO(false); // Switch to local wallet
-        }
-
-        // 6. Ensure Trustline (Non-blocking) & Auto-Fund with Friendbot
-        const fundAndTrust = async () => {
-            // Try to fund with Friendbot first (Testnet only)
-            try {
-                // Check if account exists first to avoid unnecessary funding
-                await fetch(`https://horizon-testnet.stellar.org/accounts/${stellarKeypair.publicKey()}`)
-                    .then(res => { if (!res.ok) throw new Error("Not found"); });
-            } catch {
-                // Account not found, so let's fund it!
-                toast.info("Activando cuenta Stellar (Friendbot)...");
-                try {
-                    await fetch(`https://friendbot.stellar.org?addr=${stellarKeypair.publicKey()}`);
-                    toast.success("Cuenta Stellar activada con 10,000 XLM");
-                } catch (e) {
-                    console.error("Friendbot error:", e);
-                }
-            }
-
-            // Now create trustline
-            createUSDCTrustline({
-                stellarAddress: stellarKeypair.publicKey(),
-                secret: stellarKeypair.secret(),
-            }).catch(err => {
-                // Ignore 404 if funding failed or other minor issues
-                if (err?.response?.status === 404 || err?.message?.includes("404")) return;
-                console.error("Trustline setup warning:", err);
-            });
-        };
-
-        fundAndTrust();
-
-        // 7. Sync Password Store (CRITICAL FIX)
-        // Update the global session password so other components can decrypt the new wallet immediately.
-        useWalletPasswordStore.getState().setCurrentPassword(password);
-        await useWalletPasswordStore.getState().setPassword(password);
-    };
-
-    // ======================
-    //  PAY X402
-    // ======================
-    const payX402 = async (
-        amount: string,
-        recipientAddress: string,
-        targetChain: AvailableChains
-    ) => {
-        try {
-            const networkConfig = NETWORKS[targetChain];
-            const amountAtomic = (parseFloat(amount) * 1_000_000).toString();
-
-            let paymentHeader: string;
-
-            if (isUsingXO && xoProviderRef.current) {
-                const walletClient = createWalletClient({
-                    chain: networkConfig.chain,
-                    transport: custom(xoProviderRef.current),
-                    account: address as `0x${string}`,
-                }).extend(publicActions);
-
-                paymentHeader = await createPaymentHeader(walletClient as any, 1, {
-                    scheme: "exact",
-                    network: networkConfig.network,
-                    maxAmountRequired: amountAtomic,
-                    resource: "https://facilitator.ultravioletadao.xyz",
-                    description: "x402 Payment",
-                    mimeType: "application/json",
-                    payTo: recipientAddress as `0x${string}`,
-                    maxTimeoutSeconds: 300,
-                    asset: networkConfig.usdc,
-                    extra: {
-                        name: networkConfig.usdcName,
-                        version: networkConfig.usdcVersion,
-                    },
-                });
-            } else {
-                const pk = await decryptPrivateKey(
-                    mainWallet.encryptedPrivateKey!,
-                    password,
-                    mainWallet.salt!,
-                    mainWallet.iv!
-                );
-
-                const account = privateKeyToAccount(pk as Address);
-
-                paymentHeader = await createPaymentHeader(account, 1, {
-                    scheme: "exact",
-                    network: networkConfig.network,
-                    maxAmountRequired: amountAtomic,
-                    resource: "https://facilitator.ultravioletadao.xyz",
-                    description: "x402 Payment",
-                    mimeType: "application/json",
-                    payTo: recipientAddress as `0x${string}`,
-                    maxTimeoutSeconds: 300,
-                    asset: networkConfig.usdc,
-                    extra: {
-                        name: networkConfig.usdcName,
-                        version: networkConfig.usdcVersion,
-                    },
-                });
-            }
-
-            const res = await fetch("/api/x402-pay", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    paymentHeader,
-                    recipientAddress,
-                    amount: amountAtomic,
-                    network: networkConfig.network,
-                }),
-            });
-
-            const result = await res.json();
-            if (!res.ok) throw new Error(result.error);
-
-            return { success: true, txHash: result.transaction };
-        } catch (err: any) {
-            return { success: false, error: err.message };
-        }
-    };
-
     const currentNetwork = NETWORKS[selectedChain];
 
     return (
@@ -421,6 +232,7 @@ export const XOContractsProvider = ({
                 currentNetwork,
                 payX402,
                 loadWallet,
+                resetWallet,
             }}
         >
             {children}
