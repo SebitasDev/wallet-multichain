@@ -16,6 +16,7 @@ export function HeroBanner() {
         totalFees,
         hasCalculatedTotal,
         handleRefreshBalances,
+        handleRefreshMainWallet,
     } = useHeroBanner();
 
     return (
@@ -41,6 +42,8 @@ export function HeroBanner() {
                 burnedBalances={burnedBalances}
                 burnedAddresses={burnedAddresses}
                 xoClientAlias={xoClient?.alias}
+                isRefreshing={isRefreshing}
+                onRefresh={handleRefreshMainWallet}
             />
 
             <HeroBannerTotalBalance

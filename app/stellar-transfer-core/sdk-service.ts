@@ -1,38 +1,32 @@
 import { OpenAPI, OneClickService, QuoteRequest } from '@defuse-protocol/one-click-sdk-typescript';
-import { Address } from "abitype";
+import { STELLAR } from '../constants/chais';
 
 // Initialize API
 OpenAPI.BASE = 'https://1click.chaindefuser.com';
-OpenAPI.TOKEN = process.env.ONE_CLICK_JWT; // Optional, strict type checking might fail if undefined but SDK handles it
+OpenAPI.TOKEN = process.env.ONE_CLICK_JWT;
 
 export const SOURCE_TOKENS: Record<string, string> = {
     "Base": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
     "Polygon": "nep141:polygon-0x3c499c542cef5e3811e1192ce70d8cc03d5c3359.omft.near",
 };
 
-// User provided Asset ID for Stellar USDC (via Omni/Hot bridge representation)
-const STELLAR_ASSET_ID = "nep245:v2_1.omni.hot.tg:10_359RPSJVdTxwTJT9TyGssr2rFoWo";
-
 export async function getOneClickQuote({
     amount,
     sourceChain,
     recipientStellar,
-    facilitatorAddress
+    userSenderAddress,
 }: {
     amount: string;
     sourceChain: string;
     recipientStellar: string;
-    facilitatorAddress: string; // The "sender" for the 1-click swap is the Facilitator
+    userSenderAddress: string;
 }) {
 
     const originAsset = SOURCE_TOKENS[sourceChain];
     if (!originAsset) throw new Error(`Unsupported source chain for 1-Click: ${sourceChain}`);
 
-    const destinationAsset = STELLAR_ASSET_ID;
+    const destinationAsset = STELLAR.crossChainInformation.nearIntentInformation.assetsId[0].assetId;
 
-    // Determine decimal adjustment? 
-    // The SDK expects amount in smallest unit. 
-    // USDC is 6 decimals.
     const amountAtomic = Math.floor(parseFloat(amount) * 1_000_000).toString();
 
     const quoteRequest: QuoteRequest = {
@@ -41,14 +35,15 @@ export async function getOneClickQuote({
         slippageTolerance: 100, // 1%
         originAsset,
         depositType: QuoteRequest.depositType.ORIGIN_CHAIN,
+        //depositMode: STELLAR.crossChainInformation.nearIntentInformation.needMemo ? ('MEMO' as any) : undefined,
         destinationAsset,
         amount: amountAtomic,
-        refundTo: facilitatorAddress, // If it fails, refund to facilitator (who holds the user's funds)
+        refundTo: userSenderAddress,
         refundType: QuoteRequest.refundType.ORIGIN_CHAIN,
         recipient: recipientStellar,
         recipientType: QuoteRequest.recipientType.DESTINATION_CHAIN,
-        deadline: new Date(Date.now() + 3 * 60 * 1000).toISOString(),
-        referral: "multichain-wallet",
+        deadline: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        referral: "1llet",
         quoteWaitingTimeMs: 5000,
     };
 
@@ -86,7 +81,6 @@ export async function submitTxHash(txHash: string, depositAddress: string) {
         return true;
     } catch (error) {
         console.error(">>> [1-Click SDK] Error submitting TX Hash:", error);
-        // We don't throw here to avoid failing the whole request if just the notification fails
         return false;
     }
 }
