@@ -8,7 +8,7 @@ export function Footer({ lang }: { lang: Language }) {
                 <Grid container spacing={4}>
                     <Grid size={{ xs: 12, md: 4 }}>
                         <Typography fontWeight={900} fontSize={24} color="#ffffff" mb={2}>
-                            MultiChain Wallet
+                            1llet
                         </Typography>
                         <Typography color="#cccccc" fontWeight={600} fontSize={14} lineHeight={1.6}>
                             {translate(footerCopy.description, lang)}

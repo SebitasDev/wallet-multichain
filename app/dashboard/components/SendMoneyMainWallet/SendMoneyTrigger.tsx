@@ -9,6 +9,7 @@ export const SendMoneyTrigger = ({ openModal, disabled }: SendMoneyTriggerProps)
     return (
         <Button
             variant="contained"
+            id="tour-send-money"
             onClick={openModal}
             disabled={disabled}
             sx={{

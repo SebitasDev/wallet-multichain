@@ -8,6 +8,7 @@ export const GenerateWalletButtonTrigger = ({ onClick }: GenerateWalletButtonTri
     return (
         <Button
             variant="contained"
+            id="tour-generate-wallet"
             onClick={onClick}
             sx={{
                 textTransform: "none",

@@ -67,6 +67,7 @@ export const AddressCardInfo = ({
                             transform: "scale(1.05)",
                         },
                     }}
+                    className="tour-copy-address"
                 >
                     <ContentCopyIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
                 </IconButton>

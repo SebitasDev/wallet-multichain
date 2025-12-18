@@ -5,6 +5,7 @@ export const TopBarProfile = () => {
         <Stack direction="row" spacing={2} alignItems="center">
             {/* Avatar */}
             <Avatar
+                id="tour-profile"
                 src="https://i.postimg.cc/0jx6tjVZ/photo-5033044889268063043-y.jpg"
                 sx={{
                     width: 54,
