@@ -59,7 +59,47 @@ export function DashboardTour() {
                     { classes: "shepherd-button-primary", text: "Siguiente", action: next },
                 ],
                 title: "Importar o Crear",
-                text: "Aquí podrás conectar tus wallets existentes (Metamask, Phantom, etc).",
+                text: "Aquí podrás conectar tus wallets existentes.",
+            },
+            {
+                id: "topbar-send",
+                attachTo: { element: "#tour-action-send", on: "bottom" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "ENVIAR RÁPIDO",
+                text: "Acceso directo para enviar fondos desde cualquier parte.",
+            },
+            {
+                id: "topbar-receive",
+                attachTo: { element: "#tour-action-receive", on: "bottom" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "RECIBIR",
+                text: "Muestra tu código QR y dirección para recibir pagos al instante.",
+            },
+            {
+                id: "main-reload",
+                attachTo: { element: "#tour-main-reload", on: "left" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "ACTUALIZAR",
+                text: "Refresca tus balances on-chain manualmente si lo necesitas.",
+            },
+            {
+                id: "main-import",
+                attachTo: { element: "#tour-main-import", on: "left" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "IMPORTAR",
+                text: "Trae tus otras wallets a 1llet usando tu Private Key o Seed.",
             },
             {
                 id: "profile-stats",
@@ -100,6 +140,7 @@ export function DashboardTour() {
                 title: "✅ ¡Wallet Creada!",
                 text: "¡Felicidades! Ahora tienes una identidad en la blockchain. Veamos qué puedes hacer con ella.",
             },
+
             {
                 id: "hub-intro",
                 attachTo: { element: "#main-wallet-actions", on: "right" },
