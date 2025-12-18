@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@account-abstraction/sdk": "^0.6.0",
+    "@blend-capital/blend-sdk": "^3.2.1",
     "@circle-fin/adapter-viem-v2": "^1.1.1",
     "@circle-fin/bridge-kit": "^1.1.2",
     "@defuse-protocol/one-click-sdk-typescript": "^0.1.15",

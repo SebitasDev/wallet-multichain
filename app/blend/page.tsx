@@ -1,0 +1,17 @@
+
+"use client";
+
+import { Box } from "@mui/material";
+import { BlendLending } from "@/app/dashboard/components/BlendLending";
+import { TopBar } from "@/app/dashboard/components/TopBar";
+
+export default function BlendPage() {
+    return (
+        <Box sx={{ minHeight: "100vh", bgcolor: "#fff" }}>
+            <TopBar />
+            <Box sx={{ pt: 4 }}>
+                <BlendLending />
+            </Box>
+        </Box>
+    );
+}
