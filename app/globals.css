@@ -318,3 +318,15 @@ body {
     display: none !important;
     /* Hide arrow for cleaner brutist look */
 }
+
+.shepherd-cancel-icon {
+    color: #ff4444 !important;
+    opacity: 1 !important;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+}
+
+.shepherd-cancel-icon:hover {
+    color: #ff0000 !important;
+    opacity: 0.8 !important;
+}

@@ -10,6 +10,7 @@ export const LoadWalletButton = () => {
     return (
         <>
             <Button
+                id="tour-load-wallet"
                 variant="outlined"
                 onClick={() => setOpen(true)}
                 startIcon={<FileUploadIcon />}

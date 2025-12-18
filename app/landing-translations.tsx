@@ -189,7 +189,7 @@ export const faqs = [
 ];
 
 export const heroContent = {
-    badge: { es: "🚀 Multichain Wallet", en: "🚀 Multichain Wallet" },
+    badge: { es: "🚀 1llet", en: "🚀 1llet" },
     title: { es: "Tu hub multi-chain definitivo", en: "Your ultimate multi-chain hub" },
     subtitle: {
         es: "Gestiona todas tus wallets, envía USDC entre chains sin bridges, optimiza rutas automáticamente y mantén todo seguro con cifrado local.",
@@ -250,7 +250,7 @@ export const sectionTitles = {
 
 export const comparisonHeaders = {
     feature: { es: "Característica", en: "Feature" },
-    us: "MultiChain Wallet",
+    us: "1llet",
     others: { es: "Otros", en: "Others" },
 };
 
