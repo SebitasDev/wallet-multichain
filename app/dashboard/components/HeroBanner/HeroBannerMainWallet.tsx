@@ -10,18 +10,9 @@ import { ActiveWallet } from "@/app/dashboard/hooks/useHeroBanner";
 import { Dispatch, SetStateAction, useState } from "react";
 import { LoadWalletModal } from "../LoadWalletModal";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { useXOContracts } from "../../hooks/useXOConnect";
-import { PasswordModal } from "../../components/PasswordModal";
-import { ExportWalletModal } from "../../components/ExportWalletModal";
-import { useXOWalletStore } from "@/app/store/useXOWalletStore";
-import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
-import { decryptPrivateKey } from "@/app/utils/cripto";
-import { toast } from "react-toastify";
-import CloseIcon from '@mui/icons-material/Close'; // Used if adding a close button to PasswordModal, but for now we rely on external state or maybe I need to update PasswordModal later.
-
 
 interface HeroBannerMainWalletProps {
     activeWallet: ActiveWallet;
@@ -43,15 +34,7 @@ export const HeroBannerMainWallet = ({
     onRefresh
 }: HeroBannerMainWalletProps) => {
     const [loadWalletOpen, setLoadWalletOpen] = useState(false);
-
-    // EXPORT WALLET STATES
-    const [passwordModalOpen, setPasswordModalOpen] = useState(false);
-    const [exportModalOpen, setExportModalOpen] = useState(false);
-    const [exportData, setExportData] = useState("");
-    const [exportType, setExportType] = useState<"mnemonic" | "privateKey">("mnemonic");
-
     const { resetWallet, isUsingXO } = useXOContracts();
-
     const canRefresh = isUsingXO || !!burnedAddresses[activeWallet];
 
     return (
@@ -66,9 +49,7 @@ export const HeroBannerMainWallet = ({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-
                     background: "#ffffff",
-                    zIndex: 2,
                 }}
             >
                 {activeWallet === "EVM" ? (<EthIcon />) : (<StellarIcon />)}
@@ -93,25 +74,6 @@ export const HeroBannerMainWallet = ({
                 >
                     <FileUploadIcon sx={{ fontSize: 16, mr: 0.5 }} />
                     IMPORTAR
-                </IconButton>
-
-                <IconButton
-                    id="tour-main-export"
-                    onClick={() => setPasswordModalOpen(true)}
-                    sx={{
-                        background: "#ffffff",
-                        border: "2px solid #000000",
-                        borderRadius: 2,
-                        px: 1.5,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        "&:hover": {
-                            background: "#00DC8C",
-                        },
-                    }}
-                >
-                    <FileDownloadIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                    EXPORTAR
                 </IconButton>
 
                 <IconButton
@@ -160,86 +122,7 @@ export const HeroBannerMainWallet = ({
                 </IconButton>
             </Box>
 
-
-
             <LoadWalletModal open={loadWalletOpen} onClose={() => setLoadWalletOpen(false)} />
-
-            <PasswordModal
-                open={passwordModalOpen}
-                mode="unlock"
-                onSuccess={async () => {
-                    // 1. Get password
-                    const { currentPassword } = useWalletPasswordStore.getState();
-                    const { mainWallet } = useXOWalletStore.getState();
-
-                    if (!currentPassword || !mainWallet) {
-                        toast.error("Error: No se encontró la información de la wallet.");
-                        setPasswordModalOpen(false);
-                        return;
-                    }
-
-                    try {
-                        // 2. Try to decrypt Mnemonic first
-                        if (mainWallet.encryptedMnemonic && mainWallet.salt && mainWallet.iv) {
-                            try {
-                                const mnemonic = await decryptPrivateKey(
-                                    mainWallet.encryptedMnemonic,
-                                    currentPassword,
-                                    mainWallet.salt,
-                                    mainWallet.iv
-                                );
-                                if (mnemonic) {
-                                    setExportData(mnemonic);
-                                    setExportType("mnemonic");
-                                    setPasswordModalOpen(false);
-                                    setExportModalOpen(true);
-                                    return;
-                                }
-                            } catch (e) {
-                                console.warn("Could not decrypt mnemonic, falling back to private key", e);
-                            }
-                        }
-
-                        // 3. Fallback: Decrypt Private Key of Active Wallet
-                        let encryptedKey = null;
-                        if (activeWallet === "EVM") encryptedKey = mainWallet.encryptedPrivateKey;
-                        else encryptedKey = mainWallet.encryptedPrivateKeyStellar;
-
-                        if (encryptedKey && mainWallet.salt && mainWallet.iv) {
-                            const pk = await decryptPrivateKey(
-                                encryptedKey,
-                                currentPassword,
-                                mainWallet.salt,
-                                mainWallet.iv
-                            );
-                            setExportData(pk);
-                            setExportType("privateKey");
-                            setPasswordModalOpen(false);
-                            setExportModalOpen(true);
-                        } else {
-                            toast.error("No se encontró clave privada para esta wallet.");
-                            setPasswordModalOpen(false);
-                        }
-
-                    } catch (error) {
-                        console.error("Export error:", error);
-                        toast.error("Contraseña incorrecta o error al desencriptar.");
-                        // Keep modal open to retry? Or close? 
-                        // Usually PasswordModal handles "incorrect password" nicely internally? 
-                        // Wait, PasswordModal calls onSuccess ONLY if logic inside it passes.
-                        // So if we are here, password IS correct. The error would be in decrypt data.
-                        setPasswordModalOpen(false);
-                    }
-                }}
-                onClose={() => setPasswordModalOpen(false)}
-            />
-
-            <ExportWalletModal
-                open={exportModalOpen}
-                onClose={() => setExportModalOpen(false)}
-                data={exportData}
-                type={exportType}
-            />
 
             {/* MAIN WALLET SECTION */}
             <Box
