@@ -96,33 +96,6 @@ export default function Dashboard() {
                     <GenerateWalletButton />
                     <SendMoneyMainWallet />
                     <CrossChainTransferModal />
-
-                    {/* Botón Blend */}
-                    <Box
-                        component="a"
-                        href="/blend"
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 1,
-                            width: "100%",
-                            p: 2,
-                            bgcolor: "#000",
-                            color: "#fff",
-                            borderRadius: 2,
-                            textDecoration: "none",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                            "&:hover": {
-                                transform: "translateY(-2px)",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
-                            }
-                        }}
-                    >
-                        <Box sx={{ fontSize: 20 }}>🏦</Box>
-                        <Box sx={{ fontWeight: 700 }}>Blend Lending</Box>
-                    </Box>
                 </Box>
             </Box>
 
