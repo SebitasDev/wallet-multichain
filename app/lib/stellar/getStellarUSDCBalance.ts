@@ -3,7 +3,7 @@ import { Horizon } from "stellar-sdk";
 
 export const getStellarUSDCBalance = async (
     stellarAddress: string
-): Promise<number> => {
+): Promise<number | null> => {
     const server = new Horizon.Server(STELLAR.serverURL);
 
     const account = await server.loadAccount(stellarAddress);
@@ -15,5 +15,5 @@ export const getStellarUSDCBalance = async (
             b.asset_issuer === STELLAR.usdc
     );
 
-    return balance ? Number(balance.balance) : 0;
+    return balance ? Number(balance.balance) : null;
 };
