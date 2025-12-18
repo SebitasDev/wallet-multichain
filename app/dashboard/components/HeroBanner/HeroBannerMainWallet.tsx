@@ -58,6 +58,7 @@ export const HeroBannerMainWallet = ({
             {/* TOGGLE WALLET BUTTON & LOAD WALLET */}
             <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1, gap: 1 }}>
                 <IconButton
+                    id="tour-main-import"
                     onClick={() => setLoadWalletOpen(true)}
                     sx={{
                         background: "#ffffff",
@@ -135,6 +136,7 @@ export const HeroBannerMainWallet = ({
                 }}
             >
                 <IconButton
+                    id="tour-main-reload"
                     onClick={onRefresh}
                     disabled={isRefreshing || !canRefresh}
                     sx={{
