@@ -7,6 +7,7 @@ interface WalletState {
         addressStellar: string | null;
         encryptedPrivateKey: string | null;
         encryptedPrivateKeyStellar: string | null;
+        encryptedMnemonic: string | null; // New field for recovery phrase
         salt: string | null;
         iv: string | null;
     };
@@ -27,7 +28,7 @@ interface WalletState {
 export const useXOWalletStore = create<WalletState>()(
     persist(
         (set) => ({
-            mainWallet: { address: null, addressStellar: null, encryptedPrivateKey: null, encryptedPrivateKeyStellar: null, salt: null, iv: null },
+            mainWallet: { address: null, addressStellar: null, encryptedPrivateKey: null, encryptedPrivateKeyStellar: null, encryptedMnemonic: null, salt: null, iv: null },
             xoWallet: { address: null },
             xoClient: null,
 

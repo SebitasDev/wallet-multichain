@@ -1,6 +1,6 @@
 import { Wallet } from "ethers";
 import { Keypair } from "stellar-sdk";
-import { mnemonicToSeedSync, validateMnemonic } from "@scure/bip39";
+import { mnemonicToSeedSync, validateMnemonic, generateMnemonic } from "@scure/bip39";
 import { wordlist } from "@scure/bip39/wordlists/english";
 import { sha256 } from "ethereum-cryptography/sha256";
 import { derivePath } from "ed25519-hd-key";
@@ -57,6 +57,14 @@ export const useXOWalletManager = ({
             iv
         );
 
+        // Encrypt Mnemonic
+        const { encrypted: encryptedMnemonic } = await encryptPrivateKey(
+            trimmed,
+            password,
+            salt,
+            iv
+        );
+
         // 4. Update Store
         if (isUsingXO) {
             // HYBRID MODE: XO handles EVM, we only import Stellar
@@ -66,6 +74,7 @@ export const useXOWalletManager = ({
                 ...currentMainWallet,
                 addressStellar: stellarKeypair.publicKey(),
                 encryptedPrivateKeyStellar: encryptedStellar,
+                encryptedMnemonic: encryptedMnemonic, // Store mnemonic
                 salt,
                 iv,
             });
@@ -79,6 +88,7 @@ export const useXOWalletManager = ({
                 addressStellar: stellarKeypair.publicKey(),
                 encryptedPrivateKey: encryptedEVM,
                 encryptedPrivateKeyStellar: encryptedStellar,
+                encryptedMnemonic: encryptedMnemonic, // Store mnemonic
                 salt,
                 iv,
             });
@@ -134,14 +144,28 @@ export const useXOWalletManager = ({
 
         if (isUsingXO) {
             // HYBRID RESET: Only Stellar
-            const keypair = Keypair.random();
+            const mnemonic = generateMnemonic(wordlist);
+            const seed = mnemonicToSeedSync(mnemonic);
+            const { key } = derivePath("m/44'/148'/0'", Buffer.from(seed).toString('hex'));
+            const keypair = Keypair.fromRawEd25519Seed(key);
             const secret = keypair.secret();
+
             const salt = generateSalt();
 
-            const { encrypted: encryptedStellar } = await encryptPrivateKey(
+            const { encrypted: encryptedStellar, iv } = await encryptPrivateKey(
                 secret,
                 effectivePassword,
                 salt
+            );
+
+            // Use same IV/Salt for Mnemonic to keep it simple in store (single field)
+            // Or if encryptPrivateKey generates new IV if not passed...
+            // We must pass the IV we just got to the next encryption if we want them to share `mainWallet.iv`.
+            const { encrypted: encryptedMnemonic } = await encryptPrivateKey(
+                mnemonic,
+                effectivePassword,
+                salt,
+                iv
             );
 
             const currentMainWallet = useXOWalletStore.getState().mainWallet;
@@ -149,6 +173,9 @@ export const useXOWalletManager = ({
                 ...currentMainWallet,
                 addressStellar: keypair.publicKey(),
                 encryptedPrivateKeyStellar: encryptedStellar,
+                encryptedMnemonic: encryptedMnemonic,
+                salt,
+                iv,
             });
 
             toast.info("Wallet Stellar reseteada. Activando...");
@@ -168,10 +195,20 @@ export const useXOWalletManager = ({
         } else {
             // FULL RESET
             const wallet = Wallet.createRandom();
-            const keypair = Keypair.random();
-            const secret = keypair.secret();
+            const mnemonic = wallet.mnemonic?.phrase;
+
+            if (!mnemonic) {
+                toast.error("Error generando mnemonic");
+                return;
+            }
+
+            const seed = mnemonicToSeedSync(mnemonic);
+            const { key } = derivePath("m/44'/148'/0'", Buffer.from(seed).toString('hex'));
+            const stellarKeypairDerived = Keypair.fromRawEd25519Seed(key);
+
             const salt = generateSalt();
 
+            // Encrypt EVM Key -> Get IV
             const { encrypted, iv } = await encryptPrivateKey(
                 wallet.privateKey,
                 effectivePassword,
@@ -179,7 +216,14 @@ export const useXOWalletManager = ({
             );
 
             const { encrypted: encryptedStellar } = await encryptPrivateKey(
-                secret,
+                stellarKeypairDerived.secret(),
+                effectivePassword,
+                salt,
+                iv
+            );
+
+            const { encrypted: encryptedMnemonic } = await encryptPrivateKey(
+                mnemonic,
                 effectivePassword,
                 salt,
                 iv
@@ -187,23 +231,24 @@ export const useXOWalletManager = ({
 
             setMainWallet({
                 address: wallet.address,
-                addressStellar: keypair.publicKey(),
+                addressStellar: stellarKeypairDerived.publicKey(),
                 encryptedPrivateKey: encrypted,
                 encryptedPrivateKeyStellar: encryptedStellar,
+                encryptedMnemonic: encryptedMnemonic,
                 salt,
                 iv,
             });
 
             setAddress(wallet.address);
-            toast.success("Wallet totalmente reseteada");
+            toast.success("Wallet reseteada (Unificada EVM/Stellar)");
 
             try {
-                await fetch(`https://friendbot.stellar.org?addr=${keypair.publicKey()}`);
+                await fetch(`https://friendbot.stellar.org?addr=${stellarKeypairDerived.publicKey()}`);
             } catch { }
 
             await createUSDCTrustline({
-                stellarAddress: keypair.publicKey(),
-                secret,
+                stellarAddress: stellarKeypairDerived.publicKey(),
+                secret: stellarKeypairDerived.secret(),
             }).catch(e => console.error(e));
         }
     };
