@@ -53,7 +53,8 @@ export const useXOWalletManager = ({
         const { encrypted: encryptedStellar } = await encryptPrivateKey(
             stellarKeypair.secret(),
             password,
-            salt
+            salt,
+            iv
         );
 
         // 4. Update Store
@@ -176,7 +177,8 @@ export const useXOWalletManager = ({
             const { encrypted: encryptedStellar } = await encryptPrivateKey(
                 secret,
                 password,
-                salt
+                salt,
+                iv
             );
 
             setMainWallet({
