@@ -306,8 +306,8 @@ export const footerCopy = {
         },
     ],
     copyright: {
-        es: "© 2025 MultiChain Wallet. Hecho con 💜 para la comunidad cripto.",
-        en: "© 2025 MultiChain Wallet. Built with 💜 for the crypto community.",
+        es: "© 2025 1llet. Hecho con 💜 para criptobros.",
+        en: "© 2025 1llet. Built with 💜 for cryptobros.",
     },
 };
 
