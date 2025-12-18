@@ -104,12 +104,18 @@ export const useXOWalletManager = ({
                 await fetch(`https://horizon-testnet.stellar.org/accounts/${stellarKeypair.publicKey()}`)
                     .then(res => { if (!res.ok) throw new Error("Not found"); });
             } catch {
-                toast.info("Activando cuenta Stellar (Friendbot)...");
-                try {
-                    await fetch(`https://friendbot.stellar.org?addr=${stellarKeypair.publicKey()}`);
-                    toast.success("Cuenta Stellar activada con 10,000 XLM");
-                } catch (e) {
-                    console.error("Friendbot error:", e);
+                const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
+                if (isDevelopment) {
+                    toast.info("Activando cuenta Stellar (Friendbot)...");
+                    try {
+                        await fetch(`https://friendbot.stellar.org?addr=${stellarKeypair.publicKey()}`);
+                        toast.success("Cuenta Stellar activada con 10,000 XLM");
+                    } catch (e) {
+                        console.error("Friendbot error:", e);
+                    }
+                } else {
+                    // Mainnet: User must fund manually
+                    console.log("Mainnet: Skipping Friendbot. User must fund account.");
                 }
             }
 
@@ -180,11 +186,16 @@ export const useXOWalletManager = ({
 
             toast.info("Wallet Stellar reseteada. Activando...");
 
-            try {
-                await fetch(`https://friendbot.stellar.org?addr=${keypair.publicKey()}`);
-                toast.success("Nueva cuenta Stellar activada (Friendbot)");
-            } catch {
-                toast.warning("No se pudo activar con Friendbot");
+            const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
+            if (isDevelopment) {
+                try {
+                    await fetch(`https://friendbot.stellar.org?addr=${keypair.publicKey()}`);
+                    toast.success("Nueva cuenta Stellar activada (Friendbot)");
+                } catch {
+                    toast.warning("No se pudo activar con Friendbot");
+                }
+            } else {
+                toast.info("MAINNET: Debes enviar XLM a tu cuenta para activarla.");
             }
 
             await createUSDCTrustline({
@@ -242,9 +253,12 @@ export const useXOWalletManager = ({
             setAddress(wallet.address);
             toast.success("Wallet reseteada (Unificada EVM/Stellar)");
 
-            try {
-                await fetch(`https://friendbot.stellar.org?addr=${stellarKeypairDerived.publicKey()}`);
-            } catch { }
+            const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
+            if (isDevelopment) {
+                try {
+                    await fetch(`https://friendbot.stellar.org?addr=${stellarKeypairDerived.publicKey()}`);
+                } catch { }
+            }
 
             await createUSDCTrustline({
                 stellarAddress: stellarKeypairDerived.publicKey(),

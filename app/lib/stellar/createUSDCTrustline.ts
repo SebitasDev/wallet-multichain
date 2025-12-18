@@ -6,12 +6,12 @@ import {
     TransactionBuilder,
     BASE_FEE,
 } from "stellar-sdk";
-import {STELLAR} from "@/app/constants/chais";
+import { STELLAR } from "@/app/constants/chais";
 
 export const createUSDCTrustline = async ({
-                                              stellarAddress,
-                                              secret,
-                                          }: {
+    stellarAddress,
+    secret,
+}: {
     stellarAddress: string;
     secret: string;
 }) => {
@@ -35,7 +35,18 @@ export const createUSDCTrustline = async ({
 
     tx.sign(keypair);
 
-    console.log("token agregado",tx)
+    console.log("token agregado", tx);
 
-    await server.submitTransaction(tx);
+    try {
+        await server.submitTransaction(tx);
+    } catch (error: any) {
+        // Extract useful Stellar error codes
+        const resultCodes = error.response?.data?.extras?.result_codes;
+        if (resultCodes) {
+            console.error("Stellar Trustline Detail Error:", JSON.stringify(resultCodes, null, 2));
+            // Throw a more descriptive error that the UI can show
+            throw new Error(`Stellar Error: ${JSON.stringify(resultCodes)}`);
+        }
+        throw error;
+    }
 };
