@@ -8,9 +8,10 @@ type PasswordModalProps = {
     open: boolean;
     mode: "create" | "unlock";
     onSuccess: () => void;
+    onClose?: () => void;
 };
 
-export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => {
+export const PasswordModal = ({ open, mode, onSuccess, onClose }: PasswordModalProps) => {
     const {
         password,
         setPassword,
@@ -25,7 +26,7 @@ export const PasswordModal = ({ open, mode, onSuccess }: PasswordModalProps) => 
     } = usePasswordModal({ mode, onSuccess });
 
     return (
-        <Modal open={open}>
+        <Modal open={open} onClose={onClose}>
             <Box
                 sx={{
                     position: "fixed",
