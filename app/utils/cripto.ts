@@ -17,14 +17,20 @@ export const decryptSeed = (cipher: string, password: string): string | null => 
 export async function encryptPrivateKey(
     privateKey: string,
     password: string,
-    salt: string
+    salt: string,
+    providedIv?: string
 ) {
     const key = await deriveKey(password, salt);
 
-    const iv = crypto.getRandomValues(new Uint8Array(12));
+    let iv: Uint8Array;
+    if (providedIv) {
+        iv = Uint8Array.from(atob(providedIv), c => c.charCodeAt(0));
+    } else {
+        iv = crypto.getRandomValues(new Uint8Array(12));
+    }
 
     const encrypted = await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv },
+        { name: "AES-GCM", iv: iv as any },
         key,
         new TextEncoder().encode(privateKey)
     );

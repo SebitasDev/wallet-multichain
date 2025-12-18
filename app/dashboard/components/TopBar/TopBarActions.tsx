@@ -119,10 +119,9 @@ export const TopBarActions = ({ onSend, onReceive, onAdd, onSavings, onCTF }: To
                 </Typography>
             </Button>
 
-            {/* SAVINGS */}
+            {/* SAVINGS / BLEND */}
             <Button
                 id="tour-action-savings"
-                disabled={true}
                 onClick={onSavings}
                 sx={{
                     width: 90,
@@ -148,7 +147,7 @@ export const TopBarActions = ({ onSend, onReceive, onAdd, onSavings, onCTF }: To
             >
                 <SavingsIcon sx={{ fontSize: 28, color: "#000000" }} />
                 <Typography sx={{ fontSize: 14, fontWeight: 600, textAlign: "center" }}>
-                    Savings
+                    Yield
                 </Typography>
             </Button>
 

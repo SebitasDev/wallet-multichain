@@ -14,7 +14,7 @@ export function Providers(props: { children: ReactNode }) {
         <WagmiProvider config={config}>
             <QueryClientProvider client={queryClient}>
                 {props.children}
-                <ToastContainer position="top-right" theme="dark" />
+                <ToastContainer position="top-right" theme="light" />
             </QueryClientProvider>
         </WagmiProvider>
     );

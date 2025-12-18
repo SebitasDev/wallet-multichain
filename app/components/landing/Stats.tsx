@@ -16,6 +16,11 @@ export function Stats({ lang }: { lang: Language }) {
                                     border: "3px solid #000000",
                                     borderRadius: 3,
                                     boxShadow: "4px 4px 0px #000000",
+                                    height: "100%",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    justifyContent: "center",
+                                    alignItems: "center",
                                 }}
                             >
                                 <Typography
