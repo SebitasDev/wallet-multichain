@@ -33,6 +33,7 @@ export const usePasswordModal = ({ mode, onSuccess }: UsePasswordModalProps) => 
         try {
             if (mode === "create") {
                 await setPasswordStore(password);
+                setCurrentPassword(password);
                 onSuccess();
                 return;
             }
