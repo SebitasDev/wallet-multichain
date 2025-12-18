@@ -3,6 +3,7 @@ import { Box, Button, CircularProgress, Typography } from "@mui/material";
 import Link from "next/link";
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { toast } from "react-toastify";
 import { useBlend } from "../hooks/useBlend";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
@@ -36,10 +37,18 @@ export const BlendLending = () => {
             return;
         }
 
-        if (type === "deposit") {
-            await deposit(amount);
-        } else {
-            await withdraw(amount);
+        try {
+            if (type === "deposit") {
+                await deposit(amount);
+                toast.success(`Depósito de ${amount} USDC exitoso`);
+            } else {
+                await withdraw(amount);
+                toast.success(`Retiro de ${amount} USDC exitoso`);
+            }
+        } catch (error: any) {
+            console.error("Action failed:", error);
+            // Display friendly error message
+            toast.error(error.message || "Ocurrió un error inesperado");
         }
     };
 
@@ -117,7 +126,6 @@ export const BlendLending = () => {
                             fontSize: { xs: 20, md: 24 },
                             textTransform: "uppercase",
                             letterSpacing: 1,
-                            mb: 2,
                         }}
                     >
                         Wallet no detectada

@@ -2,8 +2,6 @@ import { useState } from "react";
 import { Box, Button, Typography, TextField, CircularProgress, InputAdornment } from "@mui/material";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
 
 interface BlendActionFormProps {
     balance: number;
@@ -15,7 +13,6 @@ interface BlendActionFormProps {
 export const BlendActionForm = ({ balance, invested, loadingTx, onAction }: BlendActionFormProps) => {
     const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
     const [amount, setAmount] = useState("");
-    const [message, setMessage] = useState<{ type: "success" | "error", text: string } | null>(null);
 
     const handleMax = () => {
         const val = mode === "deposit" ? balance : invested;
@@ -23,15 +20,13 @@ export const BlendActionForm = ({ balance, invested, loadingTx, onAction }: Blen
     };
 
     const handleSubmit = async () => {
-        setMessage(null);
         if (!amount || Number(amount) <= 0) return;
 
         try {
             await onAction(Number(amount), mode);
-            setMessage({ type: "success", text: `${mode === "deposit" ? "Depósito" : "Retiro"} exitoso!` });
             setAmount("");
         } catch (error) {
-            setMessage({ type: "error", text: "Error en la transacción" });
+            // Error handling is done by parent component via Toast
         }
     };
 
@@ -162,31 +157,7 @@ export const BlendActionForm = ({ balance, invested, loadingTx, onAction }: Blen
                 />
             </Box>
 
-            {/* Message */}
-            {message && (
-                <Box
-                    sx={{
-                        mb: 3,
-                        p: 2,
-                        border: "3px solid #000",
-                        borderRadius: 3,
-                        bgcolor: message.type === "success" ? "#00DC8C" : "#f5f5f5",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
-                        boxShadow: "4px 4px 0px #000",
-                    }}
-                >
-                    {message.type === "success" ? (
-                        <CheckCircleIcon sx={{ color: "#000" }} />
-                    ) : (
-                        <ErrorIcon sx={{ color: "#000" }} />
-                    )}
-                    <Typography sx={{ fontWeight: 800, color: "#000" }}>
-                        {message.text}
-                    </Typography>
-                </Box>
-            )}
+            {/* Remove local message rendering */}
 
             {/* Submit Button */}
             <Button

@@ -63,7 +63,7 @@ export const BlendHeader = ({ address }: BlendHeaderProps) => {
                             lineHeight: 1.1,
                         }}
                     >
-                        Blend Lending
+                        Yield Farming
                     </Typography>
                     <Typography
                         sx={{

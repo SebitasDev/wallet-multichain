@@ -102,13 +102,14 @@ export class BlendService {
             .build();
 
         // 3. Prepare (Simulate)
-        console.log("Simulating transaction (prepareTransaction)...");
         let preparedTx;
         try {
             preparedTx = await this.sorobanServer.prepareTransaction(tx);
-            console.log("Simulation successful. Footprint added. Suggested Fee:", preparedTx.fee);
-        } catch (e) {
-            console.error("Simulation threw error:", e);
+        } catch (e: any) {
+            console.error("Simulation failed:", e);
+            if (e.message?.includes("Error(Contract, #10)") || e.message?.includes("resulting balance is not within the allowed range")) {
+                throw new Error("Fondos insuficientes. Verifica que tienes USDC y XLM para el gas.");
+            }
             throw e;
         }
 
@@ -116,17 +117,21 @@ export class BlendService {
         preparedTx.sign(signer);
 
         // 5. Send
-        console.log("Sending transaction (sendTransaction)...");
         const response = await this.sorobanServer.sendTransaction(preparedTx);
-        console.log("Send response FULL JSON:", JSON.stringify(response, null, 2));
 
         if (response.status !== "PENDING") {
             // Soroban RPC can return ERROR synchronously for simulation failures
             if (response.status === "ERROR") {
                 // @ts-ignore
-                console.error("Transaction rejected by RPC. Error details:", response.error);
+                const errDetail = response.error?.message || JSON.stringify(response.error);
+                console.error("Transaction rejected by RPC:", errDetail);
+
+                // Check for specific error codes in the response if available
+                if (JSON.stringify(response).includes("Error(Contract, #10)")) {
+                    throw new Error("Fondos insuficientes. Verifica que tienes USDC y XLM para el gas.");
+                }
             }
-            throw new Error(`Transaction failed with status: ${response.status}`);
+            throw new Error(`La transacción falló. Estado: ${response.status}`);
         }
 
         // 6. Poll for results
