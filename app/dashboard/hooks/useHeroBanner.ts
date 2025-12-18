@@ -3,8 +3,11 @@ import { toast } from "react-toastify";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
+import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
+import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
+import { decryptPrivateKey } from "@/app/utils/cripto";
 import { Address } from "viem";
 
 export type ActiveWallet = "EVM" | "STELLAR";
@@ -36,7 +39,32 @@ export const useHeroBanner = () => {
         if (mainAddressStellar) {
             try {
                 const balance = await getStellarUSDCBalance(mainAddressStellar);
-                setStellarUSDCBalance(balance);
+
+                if (balance === null) {
+                    // Trustline missing! Check if we can fix it.
+                    const { currentPassword } = useWalletPasswordStore.getState();
+                    const { encryptedPrivateKeyStellar, salt, iv } = useXOWalletStore.getState().mainWallet;
+
+                    if (currentPassword && encryptedPrivateKeyStellar && salt && iv) {
+                        try {
+                            console.log("Auto-creating missing USDC Trustline...");
+                            const secret = await decryptPrivateKey(encryptedPrivateKeyStellar, currentPassword, salt, iv);
+                            await createUSDCTrustline({ stellarAddress: mainAddressStellar, secret });
+                            toast.success("Trustline USDC creada automáticamente");
+
+                            // Retry fetch
+                            const newBalance = await getStellarUSDCBalance(mainAddressStellar);
+                            setStellarUSDCBalance(newBalance || 0);
+                        } catch (err) {
+                            console.error("Failed to auto-create trustline", err);
+                            setStellarUSDCBalance(0);
+                        }
+                    } else {
+                        setStellarUSDCBalance(0);
+                    }
+                } else {
+                    setStellarUSDCBalance(balance);
+                }
             } catch (error: any) {
                 if (error?.response?.status === 404 || error?.message?.includes("404")) {
                     setStellarUSDCBalance(0);
