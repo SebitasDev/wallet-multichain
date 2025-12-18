@@ -123,7 +123,11 @@ export const useXOWalletManager = ({
     //  RESET WALLET
     // ======================
     const resetWallet = async () => {
-        if (!password) {
+        // Fallback to store password if prop is missing/stale
+        const currentPwd = useWalletPasswordStore.getState().currentPassword;
+        const effectivePassword = password || currentPwd;
+
+        if (!effectivePassword) {
             toast.error("Error de sesión: No hay contraseña activa");
             return;
         }
@@ -136,7 +140,7 @@ export const useXOWalletManager = ({
 
             const { encrypted: encryptedStellar } = await encryptPrivateKey(
                 secret,
-                password,
+                effectivePassword,
                 salt
             );
 
@@ -170,13 +174,13 @@ export const useXOWalletManager = ({
 
             const { encrypted, iv } = await encryptPrivateKey(
                 wallet.privateKey,
-                password,
+                effectivePassword,
                 salt
             );
 
             const { encrypted: encryptedStellar } = await encryptPrivateKey(
                 secret,
-                password,
+                effectivePassword,
                 salt,
                 iv
             );
