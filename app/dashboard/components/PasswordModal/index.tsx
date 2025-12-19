@@ -9,9 +9,11 @@ type PasswordModalProps = {
     mode: "create" | "unlock";
     onSuccess: () => void;
     onClose?: () => void;
+    title?: string;
+    description?: string;
 };
 
-export const PasswordModal = ({ open, mode, onSuccess, onClose }: PasswordModalProps) => {
+export const PasswordModal = ({ open, mode, onSuccess, onClose, title, description }: PasswordModalProps) => {
     const {
         password,
         setPassword,
@@ -63,7 +65,7 @@ export const PasswordModal = ({ open, mode, onSuccess, onClose }: PasswordModalP
                         },
                     }}
                 >
-                    <PasswordModalHeader mode={mode} />
+                    <PasswordModalHeader mode={mode} title={title} description={description} onClose={onClose} />
 
                     <Stack spacing={2.5}>
                         <PasswordModalForm

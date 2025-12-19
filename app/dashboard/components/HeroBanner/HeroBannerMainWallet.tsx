@@ -49,14 +49,85 @@ export const HeroBannerMainWallet = ({
     const [exportModalOpen, setExportModalOpen] = useState(false);
     const [exportData, setExportData] = useState("");
     const [exportType, setExportType] = useState<"mnemonic" | "privateKey">("mnemonic");
+    const [authAction, setAuthAction] = useState<"export" | "reset" | null>(null);
 
     const { resetWallet, isUsingXO } = useXOContracts();
 
     const canRefresh = isUsingXO || !!burnedAddresses[activeWallet];
 
+    const handleAuthSuccess = async () => {
+        // 1. Get password
+        const { currentPassword } = useWalletPasswordStore.getState();
+
+        if (authAction === "reset") {
+            // Perform Reset
+            setPasswordModalOpen(false);
+            resetWallet();
+            return;
+        }
+
+        // Default: Export Logic
+        const { mainWallet } = useXOWalletStore.getState();
+
+        if (!currentPassword || !mainWallet) {
+            toast.error("Error: No se encontró la información de la wallet.");
+            setPasswordModalOpen(false);
+            return;
+        }
+
+        try {
+            // 2. Try to decrypt Mnemonic first
+            if (mainWallet.encryptedMnemonic && mainWallet.salt && mainWallet.iv) {
+                try {
+                    const mnemonic = await decryptPrivateKey(
+                        mainWallet.encryptedMnemonic,
+                        currentPassword,
+                        mainWallet.salt,
+                        mainWallet.iv
+                    );
+                    if (mnemonic) {
+                        setExportData(mnemonic);
+                        setExportType("mnemonic");
+                        setPasswordModalOpen(false);
+                        setExportModalOpen(true);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn("Could not decrypt mnemonic, falling back to private key", e);
+                }
+            }
+
+            // 3. Fallback: Decrypt Private Key of Active Wallet
+            let encryptedKey = null;
+            if (activeWallet === "EVM") encryptedKey = mainWallet.encryptedPrivateKey;
+            else encryptedKey = mainWallet.encryptedPrivateKeyStellar;
+
+            if (encryptedKey && mainWallet.salt && mainWallet.iv) {
+                const pk = await decryptPrivateKey(
+                    encryptedKey,
+                    currentPassword,
+                    mainWallet.salt,
+                    mainWallet.iv
+                );
+                setExportData(pk);
+                setExportType("privateKey");
+                setPasswordModalOpen(false);
+                setExportModalOpen(true);
+            } else {
+                toast.error("No se encontró clave privada para esta wallet.");
+                setPasswordModalOpen(false);
+            }
+
+        } catch (error) {
+            console.error("Export error:", error);
+            toast.error("Contraseña incorrecta o error al desencriptar.");
+            setPasswordModalOpen(false);
+        }
+    };
+
     return (
         <>
-            <Box
+            <Box /* ... existing icon box ... */
                 sx={{
                     position: "absolute",
                     top: 10,
@@ -79,6 +150,7 @@ export const HeroBannerMainWallet = ({
                 <IconButton
                     id="tour-main-import"
                     onClick={() => setLoadWalletOpen(true)}
+                    /* ... sx props ... */
                     sx={{
                         background: "#ffffff",
                         border: "2px solid #000000",
@@ -97,7 +169,11 @@ export const HeroBannerMainWallet = ({
 
                 <IconButton
                     id="tour-main-export"
-                    onClick={() => setPasswordModalOpen(true)}
+                    onClick={() => {
+                        setAuthAction("export");
+                        setPasswordModalOpen(true);
+                    }}
+                    /* ... sx props ... */
                     sx={{
                         background: "#ffffff",
                         border: "2px solid #000000",
@@ -116,26 +192,24 @@ export const HeroBannerMainWallet = ({
 
                 <IconButton
                     onClick={() => {
-                        const msg = isUsingXO
-                            ? "¿Estás seguro? Se generará una NUEVA wallet de Stellar (tu conexión EVM actual se mantendrá)."
-                            : "⚠️ ¿RESET TOTAL? Se borrará tu wallet actual y se generará una nueva (EVM + Stellar). Asegúrate de tener respaldo si te importa.";
-
-                        if (window.confirm(msg)) {
-                            resetWallet();
-                        }
+                        setAuthAction("reset");
+                        setPasswordModalOpen(true);
                     }}
                     sx={{
                         background: "#ffffff",
                         border: "2px solid #000000",
                         borderRadius: 2,
-                        px: 1, // Smaller padding for icon-only button
+                        px: 1.5,
+                        fontSize: 11,
+                        fontWeight: 700,
                         "&:hover": {
                             background: "#FF4444", // Danger Red
                             color: "white"
                         },
                     }}
                 >
-                    <RestartAltIcon sx={{ fontSize: 20 }} />
+                    <RestartAltIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                    RESETEAR
                 </IconButton>
 
                 <IconButton
@@ -144,6 +218,7 @@ export const HeroBannerMainWallet = ({
                             prev === "EVM" ? "STELLAR" : "EVM"
                         )
                     }
+                    /* ... sx props ... */
                     sx={{
                         background: "#ffffff",
                         border: "2px solid #000000",
@@ -167,70 +242,9 @@ export const HeroBannerMainWallet = ({
             <PasswordModal
                 open={passwordModalOpen}
                 mode="unlock"
-                onSuccess={async () => {
-                    // 1. Get password
-                    const { currentPassword } = useWalletPasswordStore.getState();
-                    const { mainWallet } = useXOWalletStore.getState();
-
-                    if (!currentPassword || !mainWallet) {
-                        toast.error("Error: No se encontró la información de la wallet.");
-                        setPasswordModalOpen(false);
-                        return;
-                    }
-
-                    try {
-                        // 2. Try to decrypt Mnemonic first
-                        if (mainWallet.encryptedMnemonic && mainWallet.salt && mainWallet.iv) {
-                            try {
-                                const mnemonic = await decryptPrivateKey(
-                                    mainWallet.encryptedMnemonic,
-                                    currentPassword,
-                                    mainWallet.salt,
-                                    mainWallet.iv
-                                );
-                                if (mnemonic) {
-                                    setExportData(mnemonic);
-                                    setExportType("mnemonic");
-                                    setPasswordModalOpen(false);
-                                    setExportModalOpen(true);
-                                    return;
-                                }
-                            } catch (e) {
-                                console.warn("Could not decrypt mnemonic, falling back to private key", e);
-                            }
-                        }
-
-                        // 3. Fallback: Decrypt Private Key of Active Wallet
-                        let encryptedKey = null;
-                        if (activeWallet === "EVM") encryptedKey = mainWallet.encryptedPrivateKey;
-                        else encryptedKey = mainWallet.encryptedPrivateKeyStellar;
-
-                        if (encryptedKey && mainWallet.salt && mainWallet.iv) {
-                            const pk = await decryptPrivateKey(
-                                encryptedKey,
-                                currentPassword,
-                                mainWallet.salt,
-                                mainWallet.iv
-                            );
-                            setExportData(pk);
-                            setExportType("privateKey");
-                            setPasswordModalOpen(false);
-                            setExportModalOpen(true);
-                        } else {
-                            toast.error("No se encontró clave privada para esta wallet.");
-                            setPasswordModalOpen(false);
-                        }
-
-                    } catch (error) {
-                        console.error("Export error:", error);
-                        toast.error("Contraseña incorrecta o error al desencriptar.");
-                        // Keep modal open to retry? Or close? 
-                        // Usually PasswordModal handles "incorrect password" nicely internally? 
-                        // Wait, PasswordModal calls onSuccess ONLY if logic inside it passes.
-                        // So if we are here, password IS correct. The error would be in decrypt data.
-                        setPasswordModalOpen(false);
-                    }
-                }}
+                title={authAction === "reset" ? "Nueva Wallet" : undefined}
+                description={authAction === "reset" ? "Ingresa tu contraseña. Se generarán nuevas llaves (EVM + Stellar). ¡Respalda las actuales antes!" : undefined}
+                onSuccess={handleAuthSuccess}
                 onClose={() => setPasswordModalOpen(false)}
             />
 

@@ -1,11 +1,21 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, IconButton } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import CloseIcon from "@mui/icons-material/Close";
 
 interface PasswordModalHeaderProps {
     mode: "create" | "unlock";
+    title?: string;
+    description?: string;
+    onClose?: () => void;
 }
 
-export const PasswordModalHeader = ({ mode }: PasswordModalHeaderProps) => {
+export const PasswordModalHeader = ({ mode, title, description, onClose }: PasswordModalHeaderProps) => {
+    // Default values based on mode
+    const defaultTitle = mode === "create" ? "Crea tu contraseña" : "Ingresa tu contraseña";
+    const defaultDesc = mode === "create"
+        ? "Protege tus wallets con una contraseña segura"
+        : "Desbloquea tu sesión para continuar";
+
     return (
         <Box
             sx={{
@@ -15,6 +25,7 @@ export const PasswordModalHeader = ({ mode }: PasswordModalHeaderProps) => {
                 mb: 3,
                 pb: 2.5,
                 borderBottom: "3px solid #000000",
+                position: "relative" // Ensure relative positioning for absolute children if needed, though flex handles it well
             }}
         >
             <Box
@@ -44,7 +55,7 @@ export const PasswordModalHeader = ({ mode }: PasswordModalHeaderProps) => {
                         mb: 0.5
                     }}
                 >
-                    {mode === "create" ? "Crea tu contraseña" : "Ingresa tu contraseña"}
+                    {title || defaultTitle}
                 </Typography>
                 <Typography
                     variant="body2"
@@ -54,12 +65,25 @@ export const PasswordModalHeader = ({ mode }: PasswordModalHeaderProps) => {
                         fontSize: { xs: 12, md: 13 }
                     }}
                 >
-                    {mode === "create"
-                        ? "Protege tus wallets con una contraseña segura"
-                        : "Desbloquea tu sesión para continuar"
-                    }
+                    {description || defaultDesc}
                 </Typography>
             </Box>
+
+            {/* Close Button */}
+            {onClose && (
+                <IconButton
+                    onClick={onClose}
+                    sx={{
+                        position: "absolute",
+                        top: -12,
+                        right: -12,
+                        color: "#999",
+                        "&:hover": { color: "#000" }
+                    }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            )}
         </Box>
     );
 };

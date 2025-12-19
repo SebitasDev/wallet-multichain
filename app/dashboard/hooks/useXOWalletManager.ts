@@ -204,7 +204,7 @@ export const useXOWalletManager = ({
             }).catch(e => console.error(e));
 
         } else {
-            // FULL RESET
+            // FULL RESET: Generate NEW WALLET (Key Rotation)
             const wallet = Wallet.createRandom();
             const mnemonic = wallet.mnemonic?.phrase;
 
@@ -219,7 +219,6 @@ export const useXOWalletManager = ({
 
             const salt = generateSalt();
 
-            // Encrypt EVM Key -> Get IV
             const { encrypted, iv } = await encryptPrivateKey(
                 wallet.privateKey,
                 effectivePassword,
@@ -251,7 +250,7 @@ export const useXOWalletManager = ({
             });
 
             setAddress(wallet.address);
-            toast.success("Wallet reseteada (Unificada EVM/Stellar)");
+            toast.success("Nueva Wallet Generada (EVM + Stellar)");
 
             const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
             if (isDevelopment) {
@@ -267,5 +266,19 @@ export const useXOWalletManager = ({
         }
     };
 
-    return { loadWallet, resetWallet };
+    const factoryReset = () => {
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            toast.success("Borrando todos los datos...");
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } catch (e) {
+            console.error("Error clearing storage", e);
+            window.location.reload();
+        }
+    };
+
+    return { loadWallet, resetWallet, factoryReset };
 };
