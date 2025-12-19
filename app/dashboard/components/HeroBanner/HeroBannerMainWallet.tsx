@@ -10,9 +10,18 @@ import { ActiveWallet } from "@/app/dashboard/hooks/useHeroBanner";
 import { Dispatch, SetStateAction, useState } from "react";
 import { LoadWalletModal } from "../LoadWalletModal";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { useXOContracts } from "../../hooks/useXOConnect";
+import { PasswordModal } from "../../components/PasswordModal";
+import { ExportWalletModal } from "../../components/ExportWalletModal";
+import { useXOWalletStore } from "@/app/store/useXOWalletStore";
+import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+import { decryptPrivateKey } from "@/app/utils/cripto";
+import { toast } from "react-toastify";
+import CloseIcon from '@mui/icons-material/Close'; // Used if adding a close button to PasswordModal, but for now we rely on external state or maybe I need to update PasswordModal later.
+
 
 interface HeroBannerMainWalletProps {
     activeWallet: ActiveWallet;
@@ -34,12 +43,91 @@ export const HeroBannerMainWallet = ({
     onRefresh
 }: HeroBannerMainWalletProps) => {
     const [loadWalletOpen, setLoadWalletOpen] = useState(false);
+
+    // EXPORT WALLET STATES
+    const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+    const [exportModalOpen, setExportModalOpen] = useState(false);
+    const [exportData, setExportData] = useState("");
+    const [exportType, setExportType] = useState<"mnemonic" | "privateKey">("mnemonic");
+    const [authAction, setAuthAction] = useState<"export" | "reset" | null>(null);
+
     const { resetWallet, isUsingXO } = useXOContracts();
+
     const canRefresh = isUsingXO || !!burnedAddresses[activeWallet];
+
+    const handleAuthSuccess = async () => {
+        // 1. Get password
+        const { currentPassword } = useWalletPasswordStore.getState();
+
+        if (authAction === "reset") {
+            // Perform Reset
+            setPasswordModalOpen(false);
+            resetWallet();
+            return;
+        }
+
+        // Default: Export Logic
+        const { mainWallet } = useXOWalletStore.getState();
+
+        if (!currentPassword || !mainWallet) {
+            toast.error("Error: No se encontró la información de la wallet.");
+            setPasswordModalOpen(false);
+            return;
+        }
+
+        try {
+            // 2. Try to decrypt Mnemonic first
+            if (mainWallet.encryptedMnemonic && mainWallet.salt && mainWallet.iv) {
+                try {
+                    const mnemonic = await decryptPrivateKey(
+                        mainWallet.encryptedMnemonic,
+                        currentPassword,
+                        mainWallet.salt,
+                        mainWallet.iv
+                    );
+                    if (mnemonic) {
+                        setExportData(mnemonic);
+                        setExportType("mnemonic");
+                        setPasswordModalOpen(false);
+                        setExportModalOpen(true);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn("Could not decrypt mnemonic, falling back to private key", e);
+                }
+            }
+
+            // 3. Fallback: Decrypt Private Key of Active Wallet
+            let encryptedKey = null;
+            if (activeWallet === "EVM") encryptedKey = mainWallet.encryptedPrivateKey;
+            else encryptedKey = mainWallet.encryptedPrivateKeyStellar;
+
+            if (encryptedKey && mainWallet.salt && mainWallet.iv) {
+                const pk = await decryptPrivateKey(
+                    encryptedKey,
+                    currentPassword,
+                    mainWallet.salt,
+                    mainWallet.iv
+                );
+                setExportData(pk);
+                setExportType("privateKey");
+                setPasswordModalOpen(false);
+                setExportModalOpen(true);
+            } else {
+                toast.error("No se encontró clave privada para esta wallet.");
+                setPasswordModalOpen(false);
+            }
+
+        } catch (error) {
+            console.error("Export error:", error);
+            toast.error("Contraseña incorrecta o error al desencriptar.");
+            setPasswordModalOpen(false);
+        }
+    };
 
     return (
         <>
-            <Box
+            <Box /* ... existing icon box ... */
                 sx={{
                     position: "absolute",
                     top: 10,
@@ -49,7 +137,9 @@ export const HeroBannerMainWallet = ({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+
                     background: "#ffffff",
+                    zIndex: 2,
                 }}
             >
                 {activeWallet === "EVM" ? (<EthIcon />) : (<StellarIcon />)}
@@ -60,6 +150,7 @@ export const HeroBannerMainWallet = ({
                 <IconButton
                     id="tour-main-import"
                     onClick={() => setLoadWalletOpen(true)}
+                    /* ... sx props ... */
                     sx={{
                         background: "#ffffff",
                         border: "2px solid #000000",
@@ -77,27 +168,48 @@ export const HeroBannerMainWallet = ({
                 </IconButton>
 
                 <IconButton
+                    id="tour-main-export"
                     onClick={() => {
-                        const msg = isUsingXO
-                            ? "¿Estás seguro? Se generará una NUEVA wallet de Stellar (tu conexión EVM actual se mantendrá)."
-                            : "⚠️ ¿RESET TOTAL? Se borrará tu wallet actual y se generará una nueva (EVM + Stellar). Asegúrate de tener respaldo si te importa.";
+                        setAuthAction("export");
+                        setPasswordModalOpen(true);
+                    }}
+                    /* ... sx props ... */
+                    sx={{
+                        background: "#ffffff",
+                        border: "2px solid #000000",
+                        borderRadius: 2,
+                        px: 1.5,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        "&:hover": {
+                            background: "#00DC8C",
+                        },
+                    }}
+                >
+                    <FileDownloadIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                    EXPORTAR
+                </IconButton>
 
-                        if (window.confirm(msg)) {
-                            resetWallet();
-                        }
+                <IconButton
+                    onClick={() => {
+                        setAuthAction("reset");
+                        setPasswordModalOpen(true);
                     }}
                     sx={{
                         background: "#ffffff",
                         border: "2px solid #000000",
                         borderRadius: 2,
-                        px: 1, // Smaller padding for icon-only button
+                        px: 1.5,
+                        fontSize: 11,
+                        fontWeight: 700,
                         "&:hover": {
                             background: "#FF4444", // Danger Red
                             color: "white"
                         },
                     }}
                 >
-                    <RestartAltIcon sx={{ fontSize: 20 }} />
+                    <RestartAltIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                    RESETEAR
                 </IconButton>
 
                 <IconButton
@@ -106,6 +218,7 @@ export const HeroBannerMainWallet = ({
                             prev === "EVM" ? "STELLAR" : "EVM"
                         )
                     }
+                    /* ... sx props ... */
                     sx={{
                         background: "#ffffff",
                         border: "2px solid #000000",
@@ -122,7 +235,25 @@ export const HeroBannerMainWallet = ({
                 </IconButton>
             </Box>
 
+
+
             <LoadWalletModal open={loadWalletOpen} onClose={() => setLoadWalletOpen(false)} />
+
+            <PasswordModal
+                open={passwordModalOpen}
+                mode="unlock"
+                title={authAction === "reset" ? "Nueva Wallet" : undefined}
+                description={authAction === "reset" ? "Ingresa tu contraseña. Se generarán nuevas llaves (EVM + Stellar). ¡Respalda las actuales antes!" : undefined}
+                onSuccess={handleAuthSuccess}
+                onClose={() => setPasswordModalOpen(false)}
+            />
+
+            <ExportWalletModal
+                open={exportModalOpen}
+                onClose={() => setExportModalOpen(false)}
+                data={exportData}
+                type={exportType}
+            />
 
             {/* MAIN WALLET SECTION */}
             <Box
