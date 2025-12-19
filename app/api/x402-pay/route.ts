@@ -106,7 +106,11 @@ export async function POST(request: NextRequest) {
             body: JSON.stringify({
                 x402Version: paymentPayload.x402Version,
                 paymentPayload,
-                paymentRequirements
+                paymentRequirements,
+                // Add required fields for settlement
+                recipient: recipientAddress,
+                amount: amount,
+                sourceChain: paymentNetwork
             })
         });
 

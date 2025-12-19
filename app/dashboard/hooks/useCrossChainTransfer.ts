@@ -187,8 +187,6 @@ export const useCrossChainTransfer = () => {
                     data.recipient as Address
                 );
             } else {
-                console.log("LLEGamos aqui");
-
                 result = await transferCrossChain(
                     data.amount,
                     data.sourceChain,
