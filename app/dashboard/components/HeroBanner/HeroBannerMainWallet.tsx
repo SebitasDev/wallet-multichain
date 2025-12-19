@@ -146,7 +146,20 @@ export const HeroBannerMainWallet = ({
             </Box>
 
             {/* TOGGLE WALLET BUTTON & LOAD WALLET */}
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1, gap: 1 }}>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexWrap: "wrap", // Allow wrapping
+                    justifyContent: { xs: "space-between", sm: "flex-end" }, // Space out on mobile/tablet
+                    mb: 1,
+                    gap: 1,
+                    "& > button": {
+                        flex: { xs: "1 1 45%", sm: "initial" }, // Near 50% width on mobile, auto on desktop
+                        minWidth: "auto",
+                        whiteSpace: "nowrap" // Prevent text wrapping inside button
+                    }
+                }}
+            >
                 <IconButton
                     id="tour-main-import"
                     onClick={() => setLoadWalletOpen(true)}
