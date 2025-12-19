@@ -190,7 +190,8 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         paymentPayload: FacilitatorPaymentPayload,
         sourceChain: FacilitatorChainKey,
         amount: string,
-        crossChainConfig?: CrossChainConfig
+        crossChainConfig?: CrossChainConfig,
+        recipient?: Address // Add recipient argument
     ): Promise<SettleResponse> => {
         const response = await fetch("/api/facilitator/settle", {
             method: "POST",
@@ -199,7 +200,8 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
                 paymentPayload,
                 sourceChain,
                 amount,
-                recipient: crossChainConfig?.mintRecipient,
+                // Use explicit recipient (same-chain) or mintRecipient (cross-chain)
+                recipient: recipient || crossChainConfig?.mintRecipient,
                 crossChainConfig
             })
         });
@@ -211,7 +213,8 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
     const transfer = useCallback(async ({
         amount,
         sourceChain,
-        crossChainConfig
+        crossChainConfig,
+        recipient // Destructure recipient
     }: TransferParams): Promise<SettleResponse> => {
         setIsLoading(true);
         setError(null);
@@ -245,7 +248,8 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
                 paymentPayload,
                 sourceChain,
                 amountAtomicStr,
-                crossChainConfig
+                crossChainConfig,
+                recipient // Pass recipient to settle
             );
 
             if (!settleResult.success) {
