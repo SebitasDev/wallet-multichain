@@ -16,12 +16,16 @@ export async function getOneClickQuote({
     destinationChain,
     recipientStellar,
     userSenderAddress,
+    destinationToken,
+    options
 }: {
     amount: string;
     sourceChain: string;
     destinationChain: string;
     recipientStellar?: string;
     userSenderAddress: string;
+    destinationToken?: string;
+    options?: { dry?: boolean };
 }) {
 
     const originAsset = sourceChain === "Stellar"
@@ -30,17 +34,28 @@ export async function getOneClickQuote({
 
     if (!originAsset) throw new Error(`Unsupported source chain for 1-Click: ${sourceChain}`);
 
-    const destinationAsset = destinationChain === "Stellar"
-        ? STELLAR.crossChainInformation.nearIntentInformation.assetsId[0].assetId
-        : SOURCE_TOKENS[destinationChain];
+    // XLM Asset ID for Stellar
+    const XLM_ASSET_ID = "nep245:v2_1.omni.hot.tg:1100_111bzQBB5v7AhLyPMDwS8uJgQV24KaAPXtwyVWu2KXbbfQU6NXRCz";
+
+    let destinationAsset = SOURCE_TOKENS[destinationChain];
+
+    if (destinationChain === "Stellar") {
+        if (recipientStellar === "XLM" || (destinationToken === "XLM")) {
+            destinationAsset = XLM_ASSET_ID;
+        } else {
+            destinationAsset = STELLAR.crossChainInformation.nearIntentInformation.assetsId[0].assetId;
+        }
+    }
 
     if (!destinationAsset) throw new Error(`Unsupported destination chain: ${destinationChain}`);
 
     const decimals = sourceChain === "Stellar" ? 7 : 6;
     const amountAtomic = Math.floor(parseFloat(amount) * Math.pow(10, decimals)).toString();
 
+    const isDry = options?.dry ?? false;
+
     const quoteRequest: QuoteRequest = {
-        dry: false,
+        dry: isDry,
         swapType: QuoteRequest.swapType.EXACT_INPUT,
         slippageTolerance: 100, // 1%
         originAsset,
@@ -62,14 +77,14 @@ export async function getOneClickQuote({
     try {
         const quote = await OneClickService.getQuote(quoteRequest);
 
-        if (!quote.quote?.depositAddress) {
+        if (!isDry && !quote.quote?.depositAddress) {
             throw new Error("No deposit address returned from 1-Click Quote");
         }
 
         return {
             quote,
-            depositAddress: quote.quote.depositAddress,
-            estimatedOutput: quote.quote.amountOutFormatted
+            depositAddress: quote.quote?.depositAddress || "",
+            estimatedOutput: quote.quote?.amountOutFormatted || "0"
         };
     } catch (error: any) {
         console.error(">>> [1-Click SDK] Quote Error Raw:", error);
