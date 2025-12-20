@@ -8,7 +8,10 @@ import {
     Stack,
     Box,
     Alert,
+    Typography,
+    IconButton,
 } from "@mui/material";
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 import { useCrossChainTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/useCrossChainTransfer";
 import { TransferHeader } from "./TransferHeader";
@@ -19,7 +22,8 @@ import { TransferSummary } from "./TransferSummary";
 import { SubmitButton } from "./SubmitButton";
 import { FacilitatorChainKey } from "@/app/facilitator";
 
-const SOURCE_CHAIN_OPTIONS: FacilitatorChainKey[] = [
+const SOURCE_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[] = [
+    STELLAR_CHAIN_KEY,
     "Base",
     "Polygon",
     "Arbitrum",
@@ -28,8 +32,7 @@ const SOURCE_CHAIN_OPTIONS: FacilitatorChainKey[] = [
 ];
 
 const DESTINATION_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[] = [
-    ...SOURCE_CHAIN_OPTIONS,
-    STELLAR_CHAIN_KEY
+    ...SOURCE_CHAIN_OPTIONS
 ];
 
 export const CrossChainTransferModal = () => {

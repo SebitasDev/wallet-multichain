@@ -8,7 +8,7 @@ OpenAPI.TOKEN = process.env.ONE_CLICK_JWT;
 
 const originAsset = "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu";
 const destinationAsset = "nep245:v2_1.omni.hot.tg:10_A2ewyUyDp6qsue1jqZsGypkCxRJ";
-const amount = "5000000"; // 0.3 USDC
+const amount = "2000000"; // 0.3 USDC
 const senderAddress = "GAV3SG6KAKMZQ67KQTUYFAKEXXZGFX3I22764CCFJAJTZR5QETBUEFVL";
 const recipientAddress = "0xF2dc6F3d0dd5ED6E9A794ea5914C85d6012b25A9";
 

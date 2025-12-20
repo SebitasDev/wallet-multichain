@@ -18,6 +18,7 @@ import PolygonIcon from "@/app/components/atoms/PolygonIcon";
 import { UnichainIcon } from "@/app/components/atoms/UnichainIcon";
 import { AvalancheIcon } from "@/app/components/atoms/AvalancheIcon";
 import { WorldChainIcon } from "@/app/components/atoms/WorldChainIcon";
+import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 
 export type Language = "es" | "en";
 
@@ -32,7 +33,7 @@ export const translateValue = (value: string | LocalizedString, lang: Language) 
 export const features = [
     {
         title: { es: "Multi-chain sin fricción", en: "Frictionless multi-chain" },
-        desc: { es: "Gestiona direcciones, tokens y balances en 6+ chains desde un solo panel unificado.", en: "Manage addresses, tokens, and balances on 6+ chains from one unified dashboard." },
+        desc: { es: "Gestiona direcciones, tokens y balances en 6+ chains (EVM y no-EVM) desde un solo panel unificado.", en: "Manage addresses, tokens, and balances on 6+ chains (EVM & non-EVM) from one unified dashboard." },
         icon: <RocketLaunchIcon />,
         color: "#7852FF",
     },
@@ -41,6 +42,12 @@ export const features = [
         desc: { es: "Envía USDC entre chains usando CCTP de Circle con fees mínimas y sin bridges tradicionales.", en: "Send USDC across chains using Circle's CCTP with minimal fees and no legacy bridges." },
         icon: <CompareArrowsIcon />,
         color: "#FF007A",
+    },
+    {
+        title: { es: "Rendimientos del 12-15%", en: "12-15% APY Yields" },
+        desc: { es: "Haz crecer tus ahorros en dólares con tasas líderes del mercado. Sin bloqueos, retira tu liquidez cuando quieras.", en: "Grow your dollar savings with market-leading rates. No lock-ups, withdraw your liquidity whenever you want." },
+        icon: <TrendingUpIcon />,
+        color: "#00C853",
     },
     {
         title: { es: "Onboarding instantáneo", en: "Instant onboarding" },
@@ -74,6 +81,7 @@ export const chains = [
     { name: "Optimism", icon: <OPIcon />, color: "#FF0420" },
     { name: "Polygon", icon: <PolygonIcon />, color: "#8247E5" },
     { name: "Unichain", icon: <UnichainIcon />, color: "#FF007A" },
+    { name: "Stellar", icon: <StellarIcon />, color: "#000000" },
     { name: "Avalanche", icon: <AvalancheIcon />, color: "#E84142" },
     { name: "World Chain", icon: <WorldChainIcon />, color: "#FBDA0F" },
 ];
@@ -130,6 +138,11 @@ export const useCases = [
 
 export const comparison = [
     {
+        feature: { es: "Rendimientos en dólares", en: "Dollar Yields" },
+        us: { es: "12% - 15%", en: "12% - 15%" },
+        others: { es: "0.5% - 4%", en: "0.5% - 4%" },
+    },
+    {
         feature: { es: "Wallets multi-chain", en: "Multi-chain wallets" },
         us: true,
         others: { es: "Limitado", en: "Limited" },
@@ -149,11 +162,7 @@ export const comparison = [
         us: true,
         others: false,
     },
-    {
-        feature: { es: "Open source", en: "Open source" },
-        us: true,
-        others: { es: "Varía", en: "Varies" },
-    },
+
     {
         feature: { es: "Sin fees ocultas", en: "No hidden fees" },
         us: true,
@@ -190,7 +199,7 @@ export const faqs = [
 
 export const heroContent = {
     badge: { es: "🚀 1llet", en: "🚀 1llet" },
-    title: { es: "Tu hub multi-chain definitivo", en: "Your ultimate multi-chain hub" },
+    title: { es: "Domina el mundo multi-chain. La única wallet que necesitas.", en: "Master the multi-chain world. The only wallet you need." },
     subtitle: {
         es: "Gestiona todas tus wallets, envía USDC entre chains sin bridges, optimiza rutas automáticamente y mantén todo seguro con cifrado local.",
         en: "Manage all your wallets, send USDC across chains without bridges, auto-optimize routes, and keep everything secure with local encryption.",
@@ -199,6 +208,7 @@ export const heroContent = {
     secondaryCta: { es: "Ver características", en: "See features" },
     cardTitle: { es: "Lo que puedes hacer", en: "What you can do" },
     cardItems: [
+        { es: "Gana 12-15% anual en dólares", en: "Earn 12-15% APY on dollars" },
         { es: "Ver balances en 6+ chains unificados", en: "View balances across 6+ chains in one place" },
         { es: "Enviar USDC cross-chain con CCTP", en: "Send USDC cross-chain with CCTP" },
         { es: "Optimizar rutas automáticamente", en: "Auto-optimize transfer routes" },
@@ -240,7 +250,7 @@ export const sectionTitles = {
     },
     chains: {
         label: { es: "Ecosistema", en: "Ecosystem" },
-        title: { es: "Soportamos las mejores L2s", en: "We support the best L2s" },
+        title: { es: "Soportamos las mejores EVM y no-EVM", en: "We support the best EVM and non-EVM" },
     },
     faq: {
         label: { es: "Preguntas frecuentes", en: "FAQ" },

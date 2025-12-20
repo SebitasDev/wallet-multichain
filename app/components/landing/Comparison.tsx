@@ -1,6 +1,6 @@
 import { Box, Card, Container, Grid, Typography } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { Language, translate, translateValue, comparison, sectionTitles, comparisonHeaders } from "@/app/landing-translations";
+import { Language, translate, translateValue, comparison, sectionTitles, comparisonHeaders, LocalizedString } from "@/app/landing-translations";
 import { SectionTitle } from "./SectionTitle";
 
 export function Comparison({ lang }: { lang: Language }) {
@@ -69,7 +69,7 @@ export function Comparison({ lang }: { lang: Language }) {
                                             <CheckCircleIcon sx={{ color: "#00DC8C", fontSize: 28 }} />
                                         ) : (
                                             <Typography fontWeight={700} color="#000000">
-                                                {item.us}
+                                                {translateValue(item.us as LocalizedString, lang)}
                                             </Typography>
                                         )}
                                     </Grid>
