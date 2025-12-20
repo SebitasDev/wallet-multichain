@@ -25,6 +25,7 @@ export type FormValues = {
 export const useCrossChainTransfer = () => {
     const [open, setOpen] = useState(false);
     const [privateKey, setPrivateKey] = useState<`0x${string}` | null>(null);
+    const [stellarPrivateKey, setStellarPrivateKey] = useState<string | null>(null);
     const [provider, setProvider] = useState<any>(null);
 
     const { address, isUsingXO } = useXOContracts();
@@ -56,6 +57,18 @@ export const useCrossChainTransfer = () => {
                         mainWallet.iv!
                     );
                     setPrivateKey(pk as `0x${string}`);
+
+                    let pkStellar: string | null = null;
+                    if (mainWallet.encryptedPrivateKeyStellar) {
+                        pkStellar = await decryptPrivateKey(
+                            mainWallet.encryptedPrivateKeyStellar,
+                            currentPassword,
+                            mainWallet.salt!,
+                            mainWallet.iv!
+                        );
+                        setStellarPrivateKey(pkStellar);
+                    }
+
                     console.log(">>> Private key local cargada para firmar");
                 } catch (e) {
                     console.error("Error decrypting private key:", e);
@@ -69,6 +82,7 @@ export const useCrossChainTransfer = () => {
         transferCrossChain,
         transferDirect,
         transferStellar,
+        transferFromStellar,
         getFee,
         getTotalWithFee,
         isLoading,
@@ -76,6 +90,7 @@ export const useCrossChainTransfer = () => {
     } = useFacilitator({
         provider: provider || undefined,
         privateKey: !provider ? privateKey || undefined : undefined,
+        stellarPrivateKey: stellarPrivateKey || undefined,
         userAddress: address as Address,
     });
 
@@ -101,11 +116,15 @@ export const useCrossChainTransfer = () => {
             return 0;
         }
 
-        if (watchDestChain === STELLAR_CHAIN_KEY) {
+        if ((watchDestChain as string) === STELLAR_CHAIN_KEY) {
             return 0.001; // Testing minimum for 1-Click Bridge
         }
 
-        const sourceConfig = NETWORKS[watchSourceChain];
+        if ((watchSourceChain as string) === STELLAR_CHAIN_KEY) {
+            return 0.23; // Minimum for Stellar source
+        }
+
+        const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
         return sourceConfig?.aproxFromFee || 0;
     }, [watchSourceChain, watchDestChain]);
 
@@ -124,11 +143,14 @@ export const useCrossChainTransfer = () => {
 
     const fee = useMemo(() => {
         if (!watchAmount) return "0.00";
-        if (watchDestChain === STELLAR_CHAIN_KEY) {
+        if ((watchDestChain as string) === STELLAR_CHAIN_KEY) {
             return STELLAR.aproxFromFee.toString();
         }
+        if ((watchSourceChain as string) === STELLAR_CHAIN_KEY) {
+            return "0.01"; // Fixed Facilitator Fee
+        }
         return getFee();
-    }, [watchAmount, watchDestChain, getFee]);
+    }, [watchAmount, watchDestChain, watchSourceChain, getFee]);
 
     const total = watchAmount ? getTotalWithFee(watchAmount) : "0.00";
 
@@ -150,8 +172,36 @@ export const useCrossChainTransfer = () => {
             return;
         }
 
-        // Stellar Logic
-        if (data.destChain === STELLAR_CHAIN_KEY) {
+        // Stellar Source Logic (Stellar -> EVM)
+        // Stellar Source Logic (Stellar -> EVM)
+        if ((data.sourceChain as string) === STELLAR_CHAIN_KEY) {
+            toast.info("Procesando transfer automático desde Stellar...");
+            try {
+                // Add fee to amount so the facilitator receives (Amount + Fee) and bridges (Amount)
+                // e.g. Input: 0.23 -> Send 0.24 -> Facilitator keeps 0.01 -> Bridges 0.23
+                const amountWithFee = (parseFloat(data.amount) + 0.01).toFixed(6);
+
+                const result = await transferFromStellar(
+                    amountWithFee,
+                    data.destChain as FacilitatorChainKey,
+                    data.recipient
+                );
+
+                if (result.success) {
+                    toast.success(`Transfer automático desde Stellar exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
+                    closeModal();
+                } else {
+                    toast.error(`Error Stellar: ${result.errorReason}`);
+                }
+            } catch (err) {
+                console.error(err);
+                toast.error("Error al procesar el transfer desde Stellar");
+            }
+            return;
+        }
+
+        // Stellar Destination Logic (EVM -> Stellar)
+        if ((data.destChain as string) === STELLAR_CHAIN_KEY) {
             toast.info("Firmando autorización para Stellar...");
             try {
                 const result = await transferStellar(

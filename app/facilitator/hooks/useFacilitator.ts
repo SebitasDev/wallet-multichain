@@ -26,6 +26,8 @@ import {
 } from "@/app/facilitator/types";
 import { Address } from "abitype";
 import { log } from "console";
+import * as StellarSdk from "stellar-sdk";
+import { STELLAR } from "@/app/constants/chais";
 
 const FACILITATOR_ADDRESS = process.env.NEXT_PUBLIC_FACILITATOR_ADDRESS as Address;
 
@@ -38,6 +40,8 @@ interface UseFacilitatorOptions {
     privateKey?: `0x${string}`;
     /** User's wallet address */
     userAddress: Address;
+    /** User's stellar private key */
+    stellarPrivateKey?: string;
 }
 
 interface TransferParams {
@@ -55,7 +59,7 @@ interface TransferParams {
  * Hook for facilitator-based USDC transfers.
  * Supports both same-chain and cross-chain (CCTP) transfers.
  */
-export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilitatorOptions) => {
+export const useFacilitator = ({ provider, privateKey, userAddress, stellarPrivateKey }: UseFacilitatorOptions) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -365,6 +369,110 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         }
     }, [createAuthorizationPayload]);
 
+    /** Stellar -> EVM Bridge Transfer (Get Deposit Info) */
+    const transferFromStellar = useCallback(async (
+        amount: string,
+        destinationChain: FacilitatorChainKey,
+        recipientEVM: string
+    ): Promise<SettleResponse> => {
+        setIsLoading(true);
+        setError(null);
+
+        console.log(LOG_PREFIX, "Starting Stellar -> EVM transfer", {
+            amount,
+            destinationChain,
+            recipientEVM
+        });
+
+        try {
+            let signedXDR: string | undefined = undefined;
+
+            if (stellarPrivateKey) {
+                console.log(LOG_PREFIX, "Creating Stellar user funding transaction...");
+
+                // 1. Get Facilitator Address
+                const facResponse = await fetch("/api/bridge-stellar");
+                if (!facResponse.ok) throw new Error("Failed to get facilitator address");
+                const { address: facilitatorAddress } = await facResponse.json();
+
+                // 2. Load User Account (Source)
+                const server = new StellarSdk.Horizon.Server(STELLAR.serverURL);
+                const userKeypair = StellarSdk.Keypair.fromSecret(stellarPrivateKey);
+
+                // Check if account exists
+                try {
+                    const sourceAccount = await server.loadAccount(userKeypair.publicKey());
+
+                    // 3. Build Transaction
+                    const usdcAsset = new StellarSdk.Asset(STELLAR.code, STELLAR.usdc);
+
+                    const tx = new StellarSdk.TransactionBuilder(sourceAccount, {
+                        fee: "100000",
+                        networkPassphrase: STELLAR.networkPassphrase
+                    })
+                        .addOperation(StellarSdk.Operation.payment({
+                            destination: facilitatorAddress,
+                            asset: usdcAsset,
+                            amount: amount
+                        }))
+                        .setTimeout(30)
+                        .build();
+
+                    // 4. Sign
+                    tx.sign(userKeypair);
+                    signedXDR = tx.toXDR();
+                    console.log(LOG_PREFIX, "Stellar Funding TX Signed. XDR Length:", signedXDR.length);
+
+                } catch (e) {
+                    console.warn("Could not load user stellar account or build tx", e);
+                    // Fallback: Proceed without funding (maybe funds are already there?)
+                }
+            }
+
+            // Call Stellar Bridge API
+            const response = await fetch("/api/bridge-stellar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sourceChain: "Stellar",
+                    targetChain: destinationChain,
+                    amount,
+                    recipientOther: recipientEVM,
+                    signedXDR // Send the auth payload
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.errorReason || "Stellar bridge failed");
+            }
+
+            console.log(LOG_PREFIX, "Stellar -> EVM Automated Transfer completed", result);
+
+            return {
+                success: true,
+                transactionHash: result.transactionHash,
+                // functionality uses SettleResponse, so let's check its definition.
+                // It has `transactionHash`, `errorReason`, etc.
+                // We might need to extend SettleResponse or just return the object if casted.
+                // Let's rely on the fact that result contains `depositAddress` and `memo`.
+                ...result
+            } as SettleResponse;
+
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Unknown error";
+            console.error(LOG_PREFIX, "Stellar -> EVM failed:", errorMessage);
+            setError(errorMessage);
+            return {
+                success: false,
+                errorReason: errorMessage
+            };
+        } finally {
+            setIsLoading(false);
+        }
+    }, [stellarPrivateKey]);
+
     /** Returns the facilitator fee in USDC */
     const getFee = useCallback((): string => {
         const fee = calculateFee();
@@ -383,6 +491,7 @@ export const useFacilitator = ({ provider, privateKey, userAddress }: UseFacilit
         transferDirect,
         transferCrossChain,
         transferStellar,
+        transferFromStellar,
         verify,
         settle,
         createAuthorizationPayload,

@@ -13,21 +13,31 @@ export const SOURCE_TOKENS: Record<string, string> = {
 export async function getOneClickQuote({
     amount,
     sourceChain,
+    destinationChain,
     recipientStellar,
     userSenderAddress,
 }: {
     amount: string;
     sourceChain: string;
-    recipientStellar: string;
+    destinationChain: string;
+    recipientStellar?: string;
     userSenderAddress: string;
 }) {
 
-    const originAsset = SOURCE_TOKENS[sourceChain];
+    const originAsset = sourceChain === "Stellar"
+        ? STELLAR.crossChainInformation.nearIntentInformation.assetsId[0].assetId
+        : SOURCE_TOKENS[sourceChain];
+
     if (!originAsset) throw new Error(`Unsupported source chain for 1-Click: ${sourceChain}`);
 
-    const destinationAsset = STELLAR.crossChainInformation.nearIntentInformation.assetsId[0].assetId;
+    const destinationAsset = destinationChain === "Stellar"
+        ? STELLAR.crossChainInformation.nearIntentInformation.assetsId[0].assetId
+        : SOURCE_TOKENS[destinationChain];
 
-    const amountAtomic = Math.floor(parseFloat(amount) * 1_000_000).toString();
+    if (!destinationAsset) throw new Error(`Unsupported destination chain: ${destinationChain}`);
+
+    const decimals = sourceChain === "Stellar" ? 7 : 6;
+    const amountAtomic = Math.floor(parseFloat(amount) * Math.pow(10, decimals)).toString();
 
     const quoteRequest: QuoteRequest = {
         dry: false,
@@ -35,12 +45,12 @@ export async function getOneClickQuote({
         slippageTolerance: 100, // 1%
         originAsset,
         depositType: QuoteRequest.depositType.ORIGIN_CHAIN,
-        //depositMode: STELLAR.crossChainInformation.nearIntentInformation.needMemo ? ('MEMO' as any) : undefined,
+        depositMode: sourceChain === "Stellar" ? QuoteRequest.depositMode.MEMO : undefined,
         destinationAsset,
         amount: amountAtomic,
         refundTo: userSenderAddress,
         refundType: QuoteRequest.refundType.ORIGIN_CHAIN,
-        recipient: recipientStellar,
+        recipient: recipientStellar || userSenderAddress, // recipient is actually the destination address
         recipientType: QuoteRequest.recipientType.DESTINATION_CHAIN,
         deadline: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
         referral: "1llet",
