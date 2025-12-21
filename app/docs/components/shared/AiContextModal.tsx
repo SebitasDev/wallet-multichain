@@ -88,6 +88,7 @@ PROTOCOL RULES:
    - If amount < 0.08, API returns 400 Error.
    - The user receives: (Amount Sent - 0.05 USDC).
    - Do NOT send 0.08 to receive 0.03. Send intended amount + 0.05.
+3. TIME: Funds typically arrive within 2 minutes (Max).
 `;
 
         if (type === 'usdc-xlm') {
