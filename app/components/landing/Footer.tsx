@@ -1,4 +1,5 @@
 import { Box, Container, Grid, Stack, Typography } from "@mui/material";
+import Link from "next/link";
 import { Language, translate, footerCopy } from "@/app/landing-translations";
 
 export function Footer({ lang }: { lang: Language }) {
@@ -21,9 +22,16 @@ export function Footer({ lang }: { lang: Language }) {
                             </Typography>
                             <Stack spacing={1}>
                                 {section.links.map((link) => (
-                                    <Typography key={link.es} color="#cccccc" fontWeight={600} fontSize={14}>
-                                        {translate(link, lang)}
-                                    </Typography>
+                                    <Link key={link.label.es} href={link.href} style={{ textDecoration: "none" }}>
+                                        <Typography
+                                            color="#cccccc"
+                                            fontWeight={600}
+                                            fontSize={14}
+                                            sx={{ "&:hover": { color: "#ffffff", textDecoration: "underline" } }}
+                                        >
+                                            {translate(link.label, lang)}
+                                        </Typography>
+                                    </Link>
                                 ))}
                             </Stack>
                         </Grid>

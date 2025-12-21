@@ -267,8 +267,8 @@ await fetch("${baseUrl}/api/bridge/stellar/xlm", {
                 </Typography>
                 <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
                     {language === 'en'
-                        ? "The fee covers the cost of gasless execution (EIP-3009) and bridge routing."
-                        : "La comisión cubre el costo de la ejecución gasless (EIP-3009) y el enrutamiento del bridge."}
+                        ? "The fee covers the cost of gasless execution (EIP-3009) and bridge routing. Funds typically arrive within 2 minutes."
+                        : "La comisión cubre el costo de la ejecución gasless (EIP-3009) y el enrutamiento del bridge. Los fondos suelen llegar en 2 minutos."}
                 </Typography>
             </Box>
 
@@ -317,6 +317,6 @@ await fetch("${baseUrl}/api/bridge/stellar/xlm", {
                 type="usdc-xlm"
                 baseUrl={baseUrl}
             />
-        </Box>
+        </Box >
     );
 }
