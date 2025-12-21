@@ -51,6 +51,7 @@ const CONTENT = {
 
 export default function UsdcToUsdcSection({ language, baseUrl }: DocsContentProps) {
     const [implMode, setImplMode] = useState<ImplementationMode>('privateKey');
+    const [signingChain, setSigningChain] = useState<'evm' | 'stellar'>('evm');
     const [aiModalOpen, setAiModalOpen] = useState(false);
 
     const t = CONTENT[language];
@@ -196,6 +197,43 @@ await fetch("${baseUrl}/api/bridge/stellar/usdc", {
   "transactionHash": "0x..." // EVM Transaction Hash
 }`;
 
+    const snippetStellarSigning = `import * as StellarSdk from "stellar-sdk";
+
+// 1. Setup
+const server = new StellarSdk.Horizon.Server("https://horizon.stellar.org");
+const sourceKeypair = StellarSdk.Keypair.fromSecret("S..."); // User Secret
+
+// 2. Load Account
+const account = await server.loadAccount(sourceKeypair.publicKey());
+const usdcAsset = new StellarSdk.Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN");
+
+// 3. Build Transaction (User -> Facilitator)
+const transaction = new StellarSdk.TransactionBuilder(account, {
+    fee: "100000",
+    networkPassphrase: "Public Global Stellar Network ; September 2015"
+})
+    .addOperation(StellarSdk.Operation.payment({
+        destination: "G...", // FACILITATOR_STELLAR_ADDRESS
+        asset: usdcAsset,
+        amount: "10.5"
+    }))
+    .setTimeout(30)
+    .build();
+
+// 4. Sign & Export XDR
+transaction.sign(sourceKeypair);
+const signedXDR = transaction.toEnvelope().toXDR().toString("base64");
+
+// 5. Submit to API
+const payload = {
+    sourceChain: "Stellar",
+    targetChain: "Base",
+    amount: "10.5",
+    recipientOther: "0x...", // EVM Recipient
+    signedXDR: signedXDR
+};
+// POST to ${baseUrl}/api/bridge/stellar/usdc`;
+
     // ... (existing imports)
 
     return (
@@ -277,28 +315,57 @@ await fetch("${baseUrl}/api/bridge/stellar/usdc", {
             <CodeBlock code={snippetConfig} label="GET /api/bridge/stellar" />
 
             {/* Step 2 */}
-            <Typography variant="h6" fontWeight={700} gutterBottom>{t.step2}</Typography>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+                {t.step2}
+            </Typography>
 
-            <ToggleButtonGroup
-                color="primary"
-                value={implMode}
-                exclusive
-                onChange={(e, next) => next && setImplMode(next)}
-                size="small"
-                sx={{ mb: 2 }}
-            >
-                <ToggleButton value="privateKey" sx={{ fontWeight: "bold" }}>
-                    {t.modeKey}
-                </ToggleButton>
-                <ToggleButton value="wallet" sx={{ fontWeight: "bold" }}>
-                    {t.modeWallet}
-                </ToggleButton>
-            </ToggleButtonGroup>
+            <Box sx={{ mb: 2 }}>
+                <ToggleButtonGroup
+                    value={signingChain}
+                    exclusive
+                    onChange={(e, next) => next && setSigningChain(next)}
+                    size="small"
+                    sx={{ mb: 2, display: "block" }}
+                >
+                    <ToggleButton value="evm" sx={{ fontWeight: "bold", px: 3 }}>
+                        EVM (Base)
+                    </ToggleButton>
+                    <ToggleButton value="stellar" sx={{ fontWeight: "bold", px: 3 }}>
+                        Stellar
+                    </ToggleButton>
+                </ToggleButtonGroup>
 
-            <CodeBlock
-                code={implMode === 'wallet' ? snippetViemWallet : snippetViemKey}
-                label={implMode === 'wallet' ? "Viem (Browser / Metamask)" : "Viem (Script)"}
-            />
+                {signingChain === 'evm' ? (
+                    <>
+                        <ToggleButtonGroup
+                            color="primary"
+                            value={implMode}
+                            exclusive
+                            onChange={(e, next) => next && setImplMode(next)}
+                            size="small"
+                            sx={{ mb: 2 }}
+                        >
+                            <ToggleButton value="privateKey" sx={{ fontWeight: "bold" }}>
+                                {t.modeKey}
+                            </ToggleButton>
+                            <ToggleButton value="wallet" sx={{ fontWeight: "bold" }}>
+                                {t.modeWallet}
+                            </ToggleButton>
+                        </ToggleButtonGroup>
+
+                        <CodeBlock
+                            code={implMode === 'wallet' ? snippetViemWallet : snippetViemKey}
+                            label={implMode === 'wallet' ? "Viem (Browser / Metamask)" : "Viem (Script)"}
+                        />
+                    </>
+                ) : (
+                    <CodeBlock
+                        code={snippetStellarSigning}
+                        label="Stellar SDK (Node/Browser)"
+                    />
+                )}
+            </Box>
+
 
             {/* Step 3 */}
             <Typography variant="h6" fontWeight={700} gutterBottom>{t.step3}</Typography>

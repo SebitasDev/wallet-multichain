@@ -68,6 +68,38 @@ const signature = await walletClient.signTypedData({
 // Use 'signature' in paymentPayload
 `;
 
+        const stellarSignatureCode = `
+// --- STELLAR SIGNING (COPY-PASTE) ---
+import * as StellarSdk from "stellar-sdk";
+
+// 1. Setup (Server safe)
+const server = new StellarSdk.Horizon.Server("https://horizon.stellar.org");
+const sourceKeypair = StellarSdk.Keypair.fromSecret("S..."); // User Private Key
+
+// 2. Load Account & Build Transaction
+const account = await server.loadAccount(sourceKeypair.publicKey());
+const usdcAsset = new StellarSdk.Asset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN");
+
+// 3. Create Transaction (Payment to Facilitator)
+const transaction = new StellarSdk.TransactionBuilder(account, {
+    fee: "100000",
+    networkPassphrase: "Public Global Stellar Network ; September 2015"
+})
+    .addOperation(StellarSdk.Operation.payment({
+        destination: "G...", // FACILITATOR_STELLAR_ADDRESS (from Step 1)
+        asset: usdcAsset,
+        amount: "10.5" 
+    }))
+    .setTimeout(30)
+    .build();
+
+// 4. Sign & Convert to XDR
+transaction.sign(sourceKeypair);
+const signedXDR = transaction.toEnvelope().toXDR().toString("base64");
+
+// Use 'signedXDR' in the API payload
+`;
+
         const commonHeader = `
 CONTEXT FOR AI AGENT:
 You are implementing a bridge using the 1LLET Protocol API.
@@ -157,6 +189,8 @@ interface StellarBridgePayload {
   recipientOther: string; // "0x..." EVM address
   signedXDR: string; // User Signed Transaction XDR (User -> Facilitator)
 }
+
+${stellarSignatureCode}
 
 FLOW:
 1. User signs Stellar Transaction (PaymentOp: User -> Facilitator Public Key).
