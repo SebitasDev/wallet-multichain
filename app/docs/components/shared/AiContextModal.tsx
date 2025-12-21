@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 interface AiContextModalProps {
     open: boolean;
     onClose: () => void;
-    type: 'usdc-xlm' | 'usdc-usdc' | 'quote';
+    type: 'usdc-xlm' | 'usdc-usdc' | 'quote' | 'gasless';
     baseUrl: string;
 }
 
@@ -114,13 +114,7 @@ RESPONSE:
   "evmAddress": "0x..."     // Use for EVM -> Stellar (User authorizes this address)
 }
 
-PROTOCOL RULES:
-1. FEE: 0.05 USDC Protocol Fee.
-2. MINIMUM AMOUNT: 0.08 USDC (Strictly Enforced).
-   - If amount < 0.08, API returns 400 Error.
-   - The user receives: (Amount Sent - 0.05 USDC).
-   - Do NOT send 0.08 to receive 0.03. Send intended amount + 0.05.
-3. TIME: Funds typically arrive within 2 minutes (Max).
+// Rules removed from common header to support variable fees
 `;
 
         if (type === 'usdc-xlm') {
@@ -231,6 +225,54 @@ interface QuoteResponse {
 NOTES:
 - Use this to show the user "You will receive X" before they sign.
 - Returns 400 if amount < minAmount.
+`;
+        }
+
+        if (type === 'gasless') {
+            return `${commonHeader}
+ENDPOINT: POST /api/pay/gasless
+PURPOSE: Send USDC to another address on the SAME chain without holding gas tokens.
+
+FEES:
+- Protocol Fee: 0.02 USDC.
+- Minimum Amount: 0.2 USDC.
+
+SUPPORTED CHAINS:
+1. Base (EVM)
+2. Stellar
+
+--- CHAIN 1: BASE (EVM) ---
+PAYLOAD SCHEMA:
+{
+    chain: "base",
+    amount: number,
+    recipient: string, // 0x...
+    payload: {
+        authorization: { ... }, // EIP-3009 TransferWithAuthorization struct
+        signature: string       // Hex string
+    }
+}
+
+${signatureCode}
+
+--- CHAIN 2: STELLAR ---
+PAYLOAD SCHEMA:
+{
+    chain: "stellar",
+    amount: "string",       // e.g. "10.0" (Stellar uses strings)
+    recipient: string,      // G...
+    payload: {
+        signedXDR: string   // Base64 XDR of Payment Op (User -> Facilitator)
+    }
+}
+
+${stellarSignatureCode}
+
+FLOW:
+1. User signs transfer to Facilitator.
+2. API receives payload.
+3. Facilitator deducts 0.02 USDC fee.
+4. Facilitator pushes remaining funds to 'recipient'.
 `;
         }
     };

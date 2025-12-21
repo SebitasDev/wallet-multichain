@@ -61,6 +61,18 @@ export default function DocsSidebar({ language, currentSection, onSectionChange 
                             />
                         </ListItemButton>
 
+                        {/* GASLESS PAY UTILITY */}
+                        <ListItemButton
+                            selected={currentSection === 'gasless'}
+                            onClick={() => onSectionChange('gasless')}
+                            sx={{ pl: 4, borderLeft: currentSection === 'gasless' ? "4px solid #1976d2" : "4px solid transparent" }}
+                        >
+                            <ListItemText
+                                primary="Utility: Gasless Pay"
+                                primaryTypographyProps={{ fontSize: 13, fontWeight: currentSection === 'gasless' ? 700 : 500 }}
+                            />
+                        </ListItemButton>
+
                         <Divider sx={{ my: 1, mx: 2 }} />
 
                         {/* STELLAR SUB-GROUP */}
@@ -71,24 +83,24 @@ export default function DocsSidebar({ language, currentSection, onSectionChange 
                             <AccordionDetails sx={{ p: 0 }}>
                                 <List disablePadding>
                                     <ListItemButton
-                                        selected={currentSection === 'usdc-xlm'}
-                                        onClick={() => onSectionChange('usdc-xlm')}
-                                        sx={{ pl: 4, borderLeft: currentSection === 'usdc-xlm' ? "4px solid #1976d2" : "4px solid transparent" }}
+                                        selected={currentSection === 'bridge-stellar-xlm'}
+                                        onClick={() => onSectionChange('bridge-stellar-xlm')}
+                                        sx={{ pl: 4, borderLeft: currentSection === 'bridge-stellar-xlm' ? "4px solid #1976d2" : "4px solid transparent" }}
                                     >
                                         <ListItemText
                                             primary="USDC → XLM"
-                                            primaryTypographyProps={{ fontSize: 13, fontWeight: currentSection === 'usdc-xlm' ? 700 : 500 }}
+                                            primaryTypographyProps={{ fontSize: 13, fontWeight: currentSection === 'bridge-stellar-xlm' ? 700 : 500 }}
                                         />
                                     </ListItemButton>
                                     {/* Placeholder for next endpoint */}
                                     <ListItemButton
-                                        selected={currentSection === 'usdc-usdc'}
-                                        onClick={() => onSectionChange('usdc-usdc')}
-                                        sx={{ pl: 4, borderLeft: currentSection === 'usdc-usdc' ? "4px solid #1976d2" : "4px solid transparent" }}
+                                        selected={currentSection === 'bridge-stellar-usdc'}
+                                        onClick={() => onSectionChange('bridge-stellar-usdc')}
+                                        sx={{ pl: 4, borderLeft: currentSection === 'bridge-stellar-usdc' ? "4px solid #1976d2" : "4px solid transparent" }}
                                     >
                                         <ListItemText
                                             primary="USDC ↔ USDC"
-                                            primaryTypographyProps={{ fontSize: 13, fontWeight: currentSection === 'usdc-usdc' ? 700 : 500 }}
+                                            primaryTypographyProps={{ fontSize: 13, fontWeight: currentSection === 'bridge-stellar-usdc' ? 700 : 500 }}
                                         />
                                     </ListItemButton>
                                 </List>
@@ -100,7 +112,7 @@ export default function DocsSidebar({ language, currentSection, onSectionChange 
 
                 <Divider />
 
-                <ListItemButton onClick={() => onSectionChange('intro')}>
+                <ListItemButton onClick={() => onSectionChange('introduction')}>
                     <ListItemText primary={language === 'en' ? "Introduction" : "Introducción"} />
                 </ListItemButton>
             </Paper>
