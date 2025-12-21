@@ -18,10 +18,11 @@ import IntroSection from "./components/intro/IntroSection";
 import UsdcToXlmSection from "./components/bridge/stellar/UsdcToXlmSection";
 import UsdcToUsdcSection from "./components/bridge/stellar/UsdcToUsdcSection";
 import QuoteSection from "./components/bridge/quote/QuoteSection";
+import GaslessPaySection from "./components/bridge/gasless/GaslessPaySection";
 
 export default function DocsPage() {
     const [language, setLanguage] = useState<Language>('en');
-    const [section, setSection] = useState<SectionKey>('usdc-xlm');
+    const [section, setSection] = useState<SectionKey>('bridge-stellar-xlm');
     const [baseUrl, setBaseUrl] = useState("");
 
     useEffect(() => {
@@ -76,21 +77,14 @@ export default function DocsPage() {
                             boxShadow: "6px 6px 0px #000"
                         }}>
 
-                            {section === 'intro' && (
+                            {section === 'introduction' && (
                                 <IntroSection language={language} baseUrl={baseUrl} />
                             )}
 
-                            {section === 'usdc-xlm' && (
-                                <UsdcToXlmSection language={language} baseUrl={baseUrl} />
-                            )}
-
-                            {section === 'usdc-usdc' && (
-                                <UsdcToUsdcSection language={language} baseUrl={baseUrl} />
-                            )}
-
-                            {section === 'quote' && (
-                                <QuoteSection language={language} baseUrl={baseUrl} />
-                            )}
+                            {section === 'bridge-stellar-xlm' && <UsdcToXlmSection language={language} baseUrl={baseUrl} />}
+                            {section === 'bridge-stellar-usdc' && <UsdcToUsdcSection language={language} baseUrl={baseUrl} />}
+                            {section === 'quote' && <QuoteSection language={language} baseUrl={baseUrl} />}
+                            {section === 'gasless' && <GaslessPaySection language={language} baseUrl={baseUrl} />}
 
                         </Paper>
                     </Box>
