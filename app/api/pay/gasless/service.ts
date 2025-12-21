@@ -37,27 +37,30 @@ export type GaslessPayResponse = {
     pullHash?: string; // For audit
 };
 
-// --- LOGIC: EVM (Base) Gasless Transfer ---
 export async function processEvmGaslessPay(params: GaslessPayParams): Promise<GaslessPayResponse> {
     const { chain, amountStr, recipient, payload } = params;
 
     if (!FACILITATOR_PRIVATE_KEY) throw new Error("Facilitator private key not configured");
 
-    const networkConfig = FACILITATOR_NETWORKS[chain as FacilitatorChainKey];
-    if (!networkConfig) throw new Error(`Unsupported EVM chain: ${chain}`);
+    // Case-insensitive match for chain key (e.g. "base" -> "Base")
+    const chainKey = Object.keys(FACILITATOR_NETWORKS).find(
+        key => key.toLowerCase() === chain.toLowerCase()
+    ) as FacilitatorChainKey | undefined;
+
+    if (!chainKey) throw new Error(`Unsupported EVM chain: ${chain}`);
+
+    const networkConfig = FACILITATOR_NETWORKS[chainKey];
 
     const { authorization, signature } = payload;
     if (!authorization || !signature) throw new Error("Missing authorization or signature in payload");
 
-    // Fee Logic
-    // Fee: 0.02 USDC, Min: 0.2 USDC
     const FEE_AMOUNT = 0.02 * 1_000_000;
-    const MIN_AMOUNT = 0.2 * 1_000_000;
+    const MIN_AMOUNT = 0.02 * 1_000_000;
 
     const amountBigInt = BigInt(authorization.value);
 
-    if (amountBigInt < BigInt(MIN_AMOUNT)) {
-        throw new Error(`Amount too low. Minimum required: 0.2 USDC`);
+    if (amountBigInt <= BigInt(MIN_AMOUNT)) {
+        throw new Error(`Amount too low. Must be greater than 0.02 USDC`);
     }
 
     // Setup clients
@@ -76,7 +79,6 @@ export async function processEvmGaslessPay(params: GaslessPayParams): Promise<Ga
 
     console.log(`>>> [Gasless Pay EVM] Step 1: Pull Funds from ${authorization.from}...`);
 
-    // Step 1: Pull Funds (User -> Facilitator)
     const pullHash = await walletClient.writeContract({
         chain: networkConfig.chain,
         address: networkConfig.usdc,
@@ -94,15 +96,11 @@ export async function processEvmGaslessPay(params: GaslessPayParams): Promise<Ga
             s
         ]
     });
-    console.log(">>> [Gasless Pay EVM] Pull TX:", pullHash);
+    console.log(">>> [EVM] Pull TX:", pullHash);
 
     const pullReceipt = await publicClient.waitForTransactionReceipt({ hash: pullHash });
     if (pullReceipt.status !== "success") throw new Error("Pull transaction failed");
 
-    // Step 2: Push Funds (Facilitator -> Recipient)
-    console.log(`>>> [Gasless Pay EVM] Step 2: Push Funds to ${recipient}...`);
-
-    // Deduct fee
     const amountToSend = amountBigInt - BigInt(FEE_AMOUNT);
     if (amountToSend <= BigInt(0)) throw new Error("Amount after fee is zero or negative");
 
@@ -124,7 +122,6 @@ export async function processEvmGaslessPay(params: GaslessPayParams): Promise<Ga
     };
 }
 
-// --- LOGIC: Stellar Gasless Transfer ---
 export async function processStellarGaslessPay(params: GaslessPayParams): Promise<GaslessPayResponse> {
     const { amountStr, recipient, payload } = params;
     const signedXDR = payload.signedXDR;
@@ -133,13 +130,11 @@ export async function processStellarGaslessPay(params: GaslessPayParams): Promis
         throw new Error("Missing Signed XDR for Stellar transaction");
     }
 
-    // Fee Logic
-    // Fee: 0.02 USDC, Min: 0.2 USDC
     const FEE_AMOUNT = 0.02;
-    const MIN_AMOUNT = 0.2;
+    const MIN_AMOUNT = 0.02;
 
-    if (parseFloat(amountStr) < MIN_AMOUNT) {
-        throw new Error(`Amount too low. Minimum required: 0.2 USDC`);
+    if (parseFloat(amountStr) <= MIN_AMOUNT) {
+        throw new Error(`Amount too low. Must be greater than 0.02 USDC`);
     }
 
     console.log(">>> [Gasless Pay Stellar] Processing request...");
@@ -147,33 +142,22 @@ export async function processStellarGaslessPay(params: GaslessPayParams): Promis
     const server = new StellarSdk.Horizon.Server(STELLAR.serverURL);
     const facilitatorKeypair = getFacilitatorStellarKeypair();
 
-    // 1. Submit User's Funding Transaction (Pull)
-    console.log(">>> [Gasless Pay Stellar] Submitting User Funding TX (XDR)...");
     let fundingHash = "";
     try {
         const tx = StellarSdk.TransactionBuilder.fromXDR(signedXDR, STELLAR.networkPassphrase);
-        // Verify amount in tx matches usage if needed, but for now relying on what we received
-        // Ideally we decode tx to verify amount
-
         const fundingResult = await server.submitTransaction(tx);
         fundingHash = fundingResult.hash;
-        console.log(">>> [Gasless Pay Stellar] Funding TX Success:", fundingHash);
+        console.log(">>> [Stellar] Funding TX Success:", fundingHash);
     } catch (e: any) {
         const errorMsg = e.response?.data?.extras?.result_codes?.operations?.[0] || e.message;
         console.error(">>> [Gasless Pay Stellar] Funding TX Failed:", e.response?.data?.extras?.result_codes || e.message);
         throw new Error("Failed to pull funds from user: " + errorMsg);
     }
 
-    // 2. Facilitator executes Push (Facilitator -> Recipient)
-    console.log(`>>> [Gasless Pay Stellar] Pushing funds to ${recipient}...`);
-
-    // Verify recipient address validity? (StellarSdk checks this loosely on build)
-
     const account = await server.loadAccount(facilitatorKeypair.publicKey());
     const usdcAsset = new StellarSdk.Asset(STELLAR.code, STELLAR.usdc);
 
-    // Calculate net amount
-    const netAmount = (parseFloat(amountStr) - FEE_AMOUNT).toFixed(7); // Stellar precision check
+    const netAmount = (parseFloat(amountStr) - FEE_AMOUNT).toFixed(7);
 
     const transaction = new StellarSdk.TransactionBuilder(account, {
         fee: "100000",
