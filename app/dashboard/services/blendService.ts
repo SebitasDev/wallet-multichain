@@ -1,4 +1,4 @@
-import { Horizon, rpc, TransactionBuilder, xdr } from "stellar-sdk";
+import { Horizon, rpc, TransactionBuilder, xdr, Asset, Operation } from "stellar-sdk";
 import {
     PoolContractV2,
     PoolV2,
@@ -12,6 +12,7 @@ export interface BlendData {
     invested: number;
     apy: number;
     timestamp: number;
+    hasTrustline: boolean;
 }
 
 export class BlendService {
@@ -23,7 +24,7 @@ export class BlendService {
         this.horizonServer = new Horizon.Server(BLEND_CONFIG.STELLAR_RPC);
     }
 
-    async getBlendData(stellarAddress: string): Promise<BlendData> {
+    async getBlendData(stellarAddress: string, assetId: string, assetIssuer: string, assetCode: string): Promise<BlendData> {
         // 1. Fetch Pool Data
         const network = {
             rpc: BLEND_CONFIG.SOROBAN_RPC,
@@ -32,7 +33,7 @@ export class BlendService {
         };
 
         const pool = await PoolV2.load(network, BLEND_CONFIG.POOL_ID);
-        const reserve = pool.reserves.get(BLEND_CONFIG.USDC_ASSET_ID);
+        const reserve = pool.reserves.get(assetId);
 
         let supplyApy = 0;
         if (reserve) {
@@ -59,7 +60,7 @@ export class BlendService {
         // 3. Wallet Balance (USDC) from Horizon
         const account = await this.horizonServer.loadAccount(stellarAddress);
         const usdcBalanceLine = account.balances.find((b: any) =>
-            b.asset_code === "USDC" && b.asset_issuer === BLEND_CONFIG.USDC_ISSUER
+            b.asset_code === assetCode && b.asset_issuer === assetIssuer
         );
         const balance = usdcBalanceLine ? Number(usdcBalanceLine.balance) : 0;
 
@@ -68,16 +69,17 @@ export class BlendService {
             invested: investedFormatted,
             apy: Number(supplyApy.toFixed(2)),
             timestamp: pool.timestamp,
+            hasTrustline: !!usdcBalanceLine
         };
     }
 
-    async submitTransaction(signer: any, amount: number, type: "deposit" | "withdraw"): Promise<any> {
+    async submitTransaction(signer: any, amount: number, type: "deposit" | "withdraw", assetId: string): Promise<any> {
         const poolContract = new PoolContractV2(BLEND_CONFIG.POOL_ID);
 
         const request = {
             amount: BigInt(Math.floor(amount * 10_000_000)),
             request_type: type === "deposit" ? RequestType.SupplyCollateral : RequestType.WithdrawCollateral,
-            address: BLEND_CONFIG.USDC_ASSET_ID,
+            address: assetId,
         };
 
         // Get operation XDR from SDK
@@ -193,6 +195,48 @@ export class BlendService {
         }
 
         return result;
+    }
+
+    async createTrustline(signer: any, assetId: string, assetIssuer: string, assetCode: string): Promise<any> {
+        console.log(`Creating trustline for ${assetCode}...`);
+
+        try {
+            const account = await this.horizonServer.loadAccount(signer.publicKey());
+            const asset = new Asset(assetCode, assetIssuer);
+
+            const tx = new TransactionBuilder(account, {
+                fee: "100000",
+                networkPassphrase: BLEND_CONFIG.NETWORK_PASSPHRASE,
+            })
+                .addOperation(Operation.changeTrust({
+                    asset: asset,
+                }))
+                .setTimeout(30)
+                .build();
+
+            // Sign
+            tx.sign(signer);
+
+            // Send via Horizon (standard for classic ops)
+            console.log("Submitting trustline tx to Horizon...");
+            const result = await this.horizonServer.submitTransaction(tx);
+            console.log("Trustline created successfully:", result);
+            return result;
+        } catch (e: any) {
+            console.error("Trustline creation failed:", e);
+            if (e.response?.data?.extras?.result_codes) {
+                const codes = e.response.data.extras.result_codes;
+                console.error("Horizon Error Codes:", codes);
+                const opCode = codes.operations?.[0] || codes.transaction;
+
+                if (opCode === "op_low_reserve") {
+                    throw new Error("No tienes suficiente XLM (Reserva mínima). Deposita más XLM para activar este activo.");
+                }
+
+                throw new Error(`Error Stellar: ${opCode}`);
+            }
+            throw new Error(e.message || "Falló la creación del Trustline");
+        }
     }
 }
 
