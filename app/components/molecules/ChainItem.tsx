@@ -49,6 +49,8 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
     }, [wallets, address, chainId]);
 
     const formattedBalance = (Math.floor(Number(balance) * 100) / 100).toFixed(2);
+    // Use 6 decimals for detailed token view to show dust/exact amounts
+    const detailsBalance = Number(balance).toFixed(6);
 
     return (
         <>
@@ -206,7 +208,7 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
                                         fontSize: { xs: 11, sm: 12 }
                                     }}
                                 >
-                                    Balance: {formattedBalance}
+                                    Balance: {detailsBalance}
                                 </Typography>
                             </Box>
 

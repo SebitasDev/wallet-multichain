@@ -146,7 +146,8 @@ export const SendMoneyModalRoute = (
                                                     const chainKey = CHAIN_ID_TO_KEY[c.id];
                                                     const fee = chainKey ? (NETWORKS[chainKey as ChainKey]?.crossChainInformation?.circleInformation?.aproxFromFee || 0) : 0;
                                                     return acc + c.amount + fee;
-                                                }, 0) + 0.01
+                                                }, 0) + 0.01,
+                                                6
                                             )}
                                         </Typography>
                                     </Box>
@@ -216,7 +217,8 @@ export const SendMoneyModalRoute = (
                                                             r.amount +
                                                             ((CHAIN_ID_TO_KEY[r.id]
                                                                 ? (NETWORKS[CHAIN_ID_TO_KEY[r.id] as ChainKey]?.crossChainInformation?.circleInformation?.aproxFromFee || 0)
-                                                                : 0) || 0) + 0.01
+                                                                : 0) || 0) + 0.01,
+                                                            6
                                                         )}
                                                     </Typography>
                                                 </Stack>
@@ -268,7 +270,7 @@ export const SendMoneyModalRoute = (
                                                         letterSpacing: 0.5
                                                     }}
                                                 >
-                                                    Fee estimada: {formatCurrency(fee)}
+                                                    Fee estimada: {formatCurrency(fee, 6)}
                                                 </Typography>
                                             </Box>
                                         );
@@ -374,7 +376,7 @@ export const SendMoneyModalRoute = (
                         color="#000000"
                         sx={{ mb: 0.5 }}
                     >
-                        {formatCurrency((routeSummary?.targetAmount) ?? 0)}
+                        {formatCurrency((routeSummary?.targetAmount) ?? 0, 6)}
                     </Typography>
 
                     <Typography

@@ -58,7 +58,7 @@ export const approveAndBurn = async (
     // maxFee debe ser menor que el amount - usar 1% del monto o mínimo 100 (0.0001 USDC)
     // Si el monto es muy pequeño, usar 0 como maxFee
     const maxFee = amountAtomic > BigInt(100)
-        ? BigInt(Math.min(Number(amountAtomic) / 100, 5000)) // 1% del monto, máximo 0.005 USDC
+        ? BigInt(Math.floor(Math.min(Number(amountAtomic) / 100, 5000))) // 1% del monto, máximo 0.005 USDC
         : BigInt(0);
 
     console.log("Amount atomic:", amountAtomic.toString());

@@ -135,7 +135,7 @@ export const useHeroBanner = () => {
     };
 
     const totalAvailableBalance = getAllWalletsTotalBalance !== null
-        ? Math.max(0, getAllWalletsTotalBalance() - getTotalFees())
+        ? Math.max(0, getAllWalletsTotalBalance())
         : 0;
 
     return {

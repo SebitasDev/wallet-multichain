@@ -124,7 +124,7 @@ export const useSendMoneyModal = () => {
     });
 
 
-    const { control, handleSubmit, formState: { errors }, reset, watch } = useForm<SendForm>({
+    const { control, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<SendForm>({
         resolver: zodResolver(sendSchema),
         defaultValues: {
             toAddress: "",
@@ -379,10 +379,36 @@ export const useSendMoneyModal = () => {
         toast.success("Transacciones completados");
     };
 
-    const canSend = !!watch("toAddress") && !!watch("sendAmount") && !!watch("sendPassword");
+    const wallets = useWalletStore((state) => state.wallets);
+
+    const getOriginFee = (id: string) => {
+        const key = CHAIN_ID_TO_KEY[id] as ChainKey;
+        if (!key) return 0.003;
+        return NETWORKS[key]?.crossChainInformation?.circleInformation?.aproxFromFee || 0.003;
+    };
+
+    const maxSendAmount = wallets.reduce((total, wallet) => {
+        const walletTotal = wallet.chains.reduce((sum, chain) => {
+            const amount = Number(chain.amount);
+            const fee = getOriginFee(chain.chainId);
+            // Logic matching useFindBestRoute:
+            // Available = Amount - 0.01 (buffer) - Fee
+            const available = amount - 0.01 - fee;
+
+            return available > 0 ? sum + available : sum;
+        }, 0);
+        return total + walletTotal;
+    }, 0);
+
+    // Format to 6 decimals to match precision
+    const formattedMaxSendAmount = maxSendAmount > 0 ? parseFloat(maxSendAmount.toFixed(6)) : 0;
+
+    const currentSendAmount = Number(watch("sendAmount") || 0);
+    const isExceedingMax = currentSendAmount > formattedMaxSendAmount;
+
+    const canSend = !!watch("toAddress") && !!watch("sendAmount") && !!watch("sendPassword") && !isExceedingMax;
 
     const selected = NETWORKS[watch("sendChain") as ChainKey];
-
 
     return {
         sendLoading,
@@ -398,7 +424,10 @@ export const useSendMoneyModal = () => {
         setSendModal,
         routeReady,
         routeSummary,
-        setRouteSummary
+        setRouteSummary,
+        setValue,
+        maxSendAmount: formattedMaxSendAmount,
+        isExceedingMax
     }
 
 }

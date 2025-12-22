@@ -290,9 +290,22 @@ export const useWalletStore = create<WalletStore>()(
             getAllWalletsTotalBalance: () => {
                 const wallets = get().wallets;
 
-                // Sumar todos los amounts de todas las chains de todas las wallets
                 return wallets.reduce((walletAcc, wallet) => {
-                    const walletTotal = wallet.chains.reduce((chainAcc, c) => chainAcc + c.amount, 0);
+                    const walletTotal = wallet.chains.reduce((chainAcc, c) => {
+                        // Find network config to get the specific fee
+                        const networkConfig = Object.values(NETWORKS).find(
+                            (net) => net.evm?.chain.id.toString() === c.chainId
+                        );
+
+                        // Get fee from config, or default to 0.003 if not found/configured
+                        const fee = networkConfig?.crossChainInformation?.circleInformation?.aproxFromFee ?? 0.003;
+
+                        // Calculate usable amount: Balance - Buffer(0.01) - Fee
+                        // If negative, it contributes 0 to the total
+                        const usableAmount = Math.max(0, c.amount - 0.01 - fee);
+
+                        return chainAcc + usableAmount;
+                    }, 0);
                     return walletAcc + walletTotal;
                 }, 0);
             },
