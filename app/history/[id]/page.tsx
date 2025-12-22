@@ -5,14 +5,34 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LinkIcon from "@mui/icons-material/Link";
 import { useRouter, useParams } from "next/navigation";
 import React from "react";
-import { MOCK_TRANSACTIONS, CHAIN_LOGOS } from "../../lib/mockData";
+import { MOCK_TRANSACTIONS } from "../../lib/mockData";
+
+// Import Atom Icons
+import { BaseIcon } from "../../components/atoms/BaseIcon";
+import { OPIcon } from "../../components/atoms/OPIcon";
+import { EthIcon } from "../../components/atoms/EthIcon";
+import { ArbIcon } from "../../components/atoms/ArbIcon";
+import { PolygonIcon } from "../../components/atoms/PolygonIcon";
+import { AvalancheIcon } from "../../components/atoms/AvalancheIcon";
+
+
+// Mapping for Atom Icons
+const CHAIN_COMPONENTS: Record<string, React.ElementType> = {
+    "Base": BaseIcon,
+    "Optimism": OPIcon,
+    "Ethereum": EthIcon,
+    "Arbitrum": ArbIcon,
+    "Polygon": PolygonIcon,
+    "Avalanche": AvalancheIcon,
+    // Add others if available in atoms, e.g. Solana if added later
+};
 
 // HELPER: Component to render chain logo with fallback
 const ChainLogo = ({ chain }: { chain: string }) => {
-    const logoUrl = CHAIN_LOGOS[chain];
+    const IconComponent = CHAIN_COMPONENTS[chain];
 
-    if (logoUrl) {
-        return <Avatar src={logoUrl} sx={{ width: 16, height: 16 }} />;
+    if (IconComponent) {
+        return <IconComponent />;
     }
 
     // Fallback if logo not found
