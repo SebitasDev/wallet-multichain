@@ -54,6 +54,19 @@ export const useSendMoneyModal = () => {
     const { setSendModal, isOpen } = useSendMoneyStore();
     const [routeDetails, setRouteDetails] = useState<RouteDetail[]>([]);
 
+    const resolveChain = (chainId: string | number) => {
+        const id = String(chainId);
+
+        // Check if it's a key first (unlikely but possible based on usage)
+        if (id in NETWORKS) return NETWORKS[id as ChainKey];
+
+        const found = Object.values(NETWORKS).find(
+            (c) => String(c.evm?.chain.id) === id,
+        );
+
+        return found ?? { label: id.toUpperCase(), icon: null };
+    };
+
     useEffect(() => {
         if (!routeSummary) return;
 
@@ -82,7 +95,9 @@ export const useSendMoneyModal = () => {
         if (!e) return;
 
         if (e.type === "chain-step") {
-            const chainId = NETWORKS[e.payload.chain as ChainKey].chain.id.toString();
+            const chainId = NETWORKS[e.payload.chain as ChainKey]?.evm?.chain.id.toString();
+
+            if (!chainId) return;
 
             setRouteDetails(prev =>
                 prev.map(wallet =>
@@ -179,7 +194,9 @@ export const useSendMoneyModal = () => {
 
         const getWriter = (chainName: ChainKey) => {
             console.log("Getting client for chain:", chainName);
-            return getPrivateClientByNetworkName(NETWORKS[chainName].chain.id, account);
+            const chainId = NETWORKS[chainName]?.evm?.chain.id;
+            if (!chainId) throw new Error("Chain ID not found for " + chainName);
+            return getPrivateClientByNetworkName(chainId, account);
         };
 
         const transfer = async (
@@ -188,10 +205,18 @@ export const useSendMoneyModal = () => {
             amount: bigint,
             optionalPrivateKey?: string,
         ) => {
-            const token = NETWORKS[chainName].usdc;
+            const networkOk = NETWORKS[chainName];
+            if (!networkOk || !networkOk.evm) {
+                throw new Error(`Chain ${chainName} is not valid for EVM transfer`);
+            }
+
+            const token = networkOk.assets.find(a => a.name === "USDC")?.address;
+            const chainId = networkOk.evm.chain.id;
+
+            if (!token) throw new Error("USDC address not found");
 
             const client = optionalPrivateKey
-                ? getPrivateClientByNetworkName(NETWORKS[chainName].chain.id, privateKeyToAccount(optionalPrivateKey as Address))
+                ? getPrivateClientByNetworkName(chainId, privateKeyToAccount(optionalPrivateKey as Address))
                 : getWriter(chainName);
 
             console.log(`➡️ Transferring ${amount} on ${chainName} to ${to} using ${optionalPrivateKey ? "custom key" : "main account"}`);
@@ -290,14 +315,23 @@ export const useSendMoneyModal = () => {
                 const fromValidChain = CHAIN_ID_TO_KEY[chain.chainId] ?? "Base";
                 const normalizedAmount = BigInt(Math.floor(Math.max(Number(chain.amount), 0) * 1e6));
 
+                // Safe checks
+                const fromNet = NETWORKS[fromValidChain as ChainKey];
+                const toNet = NETWORKS[toValidChain as ChainKey];
+
+                if (!fromNet || !fromNet.evm || !toNet || !toNet.evm) {
+                    toast.error("Invalid chain for EVM transfer");
+                    continue;
+                }
+
                 if (fromValidChain === toValidChain) {
                     await transfer(fromValidChain, watch("toAddress"), normalizedAmount, unlocked);
 
                     transferBalance(
                         allocation.from as Address,
                         watch("toAddress") as Address,
-                        NETWORKS[fromValidChain].chain.id.toString(),
-                        NETWORKS[toValidChain].chain.id.toString(),
+                        fromNet.evm.chain.id.toString(),
+                        toNet.evm.chain.id.toString(),
                         Number(normalizedAmount) / 1e6
                     );
                 } else {
@@ -316,8 +350,8 @@ export const useSendMoneyModal = () => {
                     transferBalance(
                         allocation.from as Address,
                         watch("toAddress") as Address,
-                        NETWORKS[fromValidChain as ChainKey].chain.id.toString(),
-                        NETWORKS[toValidChain].chain.id.toString(),
+                        fromNet.evm.chain.id.toString(),
+                        toNet.evm.chain.id.toString(),
                         Number(normalizedAmount) / 1e6
                     );
                 }
@@ -346,18 +380,6 @@ export const useSendMoneyModal = () => {
     };
 
     const canSend = !!watch("toAddress") && !!watch("sendAmount") && !!watch("sendPassword");
-
-    const resolveChain = (chainId: string | number) => {
-        const id = String(chainId);
-
-        if (id in NETWORKS) return NETWORKS[id as ChainKey];
-
-        const found = Object.values(NETWORKS).find(
-            (c) => String(c.chain.id) === id,
-        );
-
-        return found ?? { label: id.toUpperCase(), icon: null };
-    };
 
     const selected = NETWORKS[watch("sendChain") as ChainKey];
 

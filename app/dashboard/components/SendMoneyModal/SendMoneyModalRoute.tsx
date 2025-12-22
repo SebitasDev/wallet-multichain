@@ -144,7 +144,7 @@ export const SendMoneyModalRoute = (
                                             {formatCurrency(
                                                 wallet.chains.reduce((acc: number, c: any) => {
                                                     const chainKey = CHAIN_ID_TO_KEY[c.id];
-                                                    const fee = chainKey ? NETWORKS[chainKey as ChainKey].aproxFromFee : 0;
+                                                    const fee = chainKey ? (NETWORKS[chainKey as ChainKey]?.crossChainInformation?.circleInformation?.aproxFromFee || 0) : 0;
                                                     return acc + c.amount + fee;
                                                 }, 0) + 0.01
                                             )}
@@ -155,8 +155,8 @@ export const SendMoneyModalRoute = (
                             <AccordionDetails sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: "#f5f5f5" }}>
                                 <Stack spacing={1.5}>
                                     {wallet.chains.map((r: any) => {
-                                        const network = Object.values(NETWORKS).find(n => n.chain.id.toString() === r.id);
-                                        const fee = (network?.aproxFromFee ?? 0) + 0.01;
+                                        const network = Object.values(NETWORKS).find(n => n.evm?.chain.id.toString() === r.id);
+                                        const fee = (network?.crossChainInformation.circleInformation?.aproxFromFee ?? 0) + 0.01;
                                         const statusMeta = STATUS_META[r.status as keyof typeof STATUS_META];
 
                                         return (
@@ -215,7 +215,7 @@ export const SendMoneyModalRoute = (
                                                         {formatCurrency(
                                                             r.amount +
                                                             ((CHAIN_ID_TO_KEY[r.id]
-                                                                ? NETWORKS[CHAIN_ID_TO_KEY[r.id] as ChainKey].aproxFromFee
+                                                                ? (NETWORKS[CHAIN_ID_TO_KEY[r.id] as ChainKey]?.crossChainInformation?.circleInformation?.aproxFromFee || 0)
                                                                 : 0) || 0) + 0.01
                                                         )}
                                                     </Typography>

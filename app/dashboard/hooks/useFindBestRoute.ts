@@ -8,12 +8,27 @@ export const useFindBestRoute = () => {
     const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
     async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string, optimize: boolean) {
-        const chainId = NETWORKS[sendChain as ChainKey].chain.id;
+        const sendNetwork = NETWORKS[sendChain as ChainKey];
+        if (!sendNetwork || !sendNetwork.evm) {
+            console.error(`Chain ${sendChain} not configured for EVM`);
+            return {
+                desiredAmount,
+                targetAmount: 0,
+                commission: 0,
+                totalFees: 0,
+                totalAmountTaken: 0,
+                remainingToCover: desiredAmount,
+                allocations: []
+            };
+        }
+
+        const chainId = sendNetwork.evm.chain.id;
 
         const getOriginFee = (id: string) => {
             const key = CHAIN_ID_TO_KEY[id] as keyof typeof NETWORKS;
             if (!key) return 0.003;
-            return NETWORKS[key].aproxFromFee;
+            // Access nested fee, default to 0.003 if missing
+            return NETWORKS[key].crossChainInformation.circleInformation?.aproxFromFee || 0.003;
         };
 
         const filteredWallets = wallets

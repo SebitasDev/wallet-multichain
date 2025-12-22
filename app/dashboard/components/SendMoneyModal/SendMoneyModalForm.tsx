@@ -71,7 +71,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading }: Props) => {
                                 },
                             }}
                         >
-                            {Object.entries(NETWORKS).map(([key, cfg]) => (
+                            {Object.entries(NETWORKS).filter(([k, cfg]) => !!cfg.evm).map(([key, cfg]) => (
                                 <MenuItem key={key} value={key}>
                                     <Stack direction="row" alignItems="center" spacing={1.5}>
                                         <Box sx={{

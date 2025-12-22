@@ -71,22 +71,30 @@ const buildFacilitatorNetworks = (): Record<FacilitatorChainKey, FacilitatorNetw
     for (const [key, config] of Object.entries(NETWORKS)) {
         const chainKey = key as FacilitatorChainKey;
 
+        // Skip non-EVM chains or chains without CCTP domain
+        if (!config.evm || !config.crossChainInformation.circleInformation?.cCTPInformation) continue;
+
+        const cctpInfo = config.crossChainInformation.circleInformation.cCTPInformation;
+
         // Determinar el nombre de USDC según la chain
         let usdcName = "USD Coin";
         if (chainKey === "Base" && isDev) {
             usdcName = "USDC"; // Base Sepolia usa "USDC"
         }
 
+        const usdcAddress = config.assets.find(a => a.name === "USDC")?.address;
+        if (!usdcAddress) continue; // Should have USDC
+
         result[chainKey] = {
-            chainId: config.chain.id,
-            chain: config.chain,
-            usdc: config.usdc,
+            chainId: config.evm.chain.id,
+            chain: config.evm.chain,
+            usdc: usdcAddress as Address,
             usdcName,
             usdcVersion: "2",
-            domain: config.domain,
+            domain: cctpInfo.domain,
             tokenMessenger,
             messageTransmitter,
-            rpcUrl: config.rpcUrl
+            rpcUrl: config.evm.rpcUrl || ""
         };
     }
 

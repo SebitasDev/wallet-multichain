@@ -33,7 +33,7 @@ export function calculateTotalFees(wallets: WalletInfo[]): number {
 
         if (chainKey && NETWORKS[chainKey as keyof typeof NETWORKS]) {
             const network = NETWORKS[chainKey as keyof typeof NETWORKS];
-            const chainFee = network.aproxFromFee;
+            const chainFee = network.crossChainInformation.circleInformation?.aproxFromFee || 0;
             const costForChain = chainFee + COMMISSION_PER_CHAIN;
 
             // Only charge if the user has enough balance to cover the cost

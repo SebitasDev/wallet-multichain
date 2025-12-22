@@ -13,7 +13,7 @@ import {
 import { usdcErc3009Abi } from "@/app/facilitator/usdcErc3009Abi";
 import { StellarBridgePayload, StellarBridgeResponse } from "@/app/stellar-transfer-core/config";
 import { getOneClickQuote, submitTxHash } from "@/app/stellar-transfer-core/sdk-service";
-import { STELLAR } from "@/app/constants/chais/Stellar"; // Conserve typo if existing, verified in next step
+import { STELLAR } from "@/app/constants/chais/Stellar";
 import * as StellarSdk from "stellar-sdk";
 
 const FACILITATOR_PRIVATE_KEY = process.env.FACILITATOR_PRIVATE_KEY as `0x${string}`;
@@ -39,8 +39,8 @@ export type BridgeServiceParams = {
 
 // --- LOGIC: Stellar -> EVM ---
 export async function processStellarToEvm(params: BridgeServiceParams): Promise<StellarBridgeResponse> {
-    const { amountStr, sourceChain, targetChain, recipientOther, signedXDR, fee } = params;
-    const destinationChain = targetChain || "Base";
+    const { amountStr, sourceChain, recipientOther, signedXDR, fee } = params;
+    const destinationChain = params.targetChain || "Base";
 
     if (!recipientOther) {
         throw new Error("Recipient address is required for Stellar -> EVM transfer");
@@ -52,12 +52,12 @@ export async function processStellarToEvm(params: BridgeServiceParams): Promise<
     console.log(">>> [Stellar Bridge USDC] Processing Stellar -> EVM request");
 
     try {
-        const server = new StellarSdk.Horizon.Server(STELLAR.serverURL);
+        const server = new StellarSdk.Horizon.Server(STELLAR.nonEvm!.serverURL!);
 
         // 1. Submit User's Funding Transaction
         console.log(">>> [Stellar Bridge USDC] Submitting User Funding TX (XDR)...");
         try {
-            const tx = StellarSdk.TransactionBuilder.fromXDR(signedXDR, STELLAR.networkPassphrase);
+            const tx = StellarSdk.TransactionBuilder.fromXDR(signedXDR, STELLAR.nonEvm!.networkPassphrase!);
             const fundingResult = await server.submitTransaction(tx);
             console.log(">>> [Stellar Bridge USDC] Funding TX Success:", fundingResult.hash);
         } catch (e: any) {
@@ -92,11 +92,13 @@ export async function processStellarToEvm(params: BridgeServiceParams): Promise<
 
         // Load Account & Build TX
         const account = await server.loadAccount(facilitatorAddress);
-        const usdcAsset = new StellarSdk.Asset(STELLAR.code, STELLAR.usdc);
+        const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address;
+        if (!usdcAddress) throw new Error("USDC address not found in STELLAR config");
+        const usdcAsset = new StellarSdk.Asset("USDC", usdcAddress);
 
         const transaction = new StellarSdk.TransactionBuilder(account, {
             fee: "100000",
-            networkPassphrase: STELLAR.networkPassphrase
+            networkPassphrase: STELLAR.nonEvm!.networkPassphrase!
         })
             .addOperation(StellarSdk.Operation.payment({
                 destination: depositAddress,

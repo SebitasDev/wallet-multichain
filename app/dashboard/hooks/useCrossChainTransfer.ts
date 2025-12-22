@@ -8,7 +8,7 @@ import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
-import { NETWORKS } from "@/app/constants/chainsInformation";
+import { NETWORKS, ChainKey } from "@/app/constants/chainsInformation";
 import { STELLAR } from "@/app/constants/chais/Stellar";
 import { log } from "console";
 
@@ -124,8 +124,9 @@ export const useCrossChainTransfer = () => {
             return 0.23; // Minimum for Stellar source
         }
 
+        // Safe access
         const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
-        return sourceConfig?.aproxFromFee || 0;
+        return sourceConfig?.crossChainInformation.circleInformation?.aproxFromFee || 0;
     }, [watchSourceChain, watchDestChain]);
 
     const isAmountValid = useMemo(() => {
@@ -144,7 +145,7 @@ export const useCrossChainTransfer = () => {
     const fee = useMemo(() => {
         if (!watchAmount) return "0.00";
         if ((watchDestChain as string) === STELLAR_CHAIN_KEY) {
-            return STELLAR.aproxFromFee.toString();
+            return NETWORKS.Stellar.crossChainInformation.circleInformation?.aproxFromFee?.toString() || "0";
         }
         if ((watchSourceChain as string) === STELLAR_CHAIN_KEY) {
             return "0.01"; // Fixed Facilitator Fee
@@ -172,7 +173,6 @@ export const useCrossChainTransfer = () => {
             return;
         }
 
-        // Stellar Source Logic (Stellar -> EVM)
         // Stellar Source Logic (Stellar -> EVM)
         if ((data.sourceChain as string) === STELLAR_CHAIN_KEY) {
             toast.info("Procesando transfer automático desde Stellar...");

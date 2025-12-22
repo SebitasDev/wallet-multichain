@@ -1,15 +1,15 @@
-import {Address} from "abitype";
-import {usdcAbi} from "@/app/cross-chain-core/usdcAbi";
-import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
-import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
-import {createAccount} from "@/app/cross-chain-core/clientFactory";
-import {createPaymaster} from "@/app/cross-chain-core/paymasterFactory";
-import {bundlerClientFactory} from "@/app/cross-chain-core/bundlerClientFactory";
-import {createRetrieveAttestation} from "@/app/cross-chain-core/retrieveAttestationFactory";
-import {ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
-import {getTokenMessenger} from "@/app/facilitator/config";
-import {tokenMessengerAbi} from "@/app/facilitator/cctpAbi";
-import {createPublicClient, http, maxUint256} from "viem";
+import { Address } from "abitype";
+import { usdcAbi } from "@/app/cross-chain-core/usdcAbi";
+import { toUSDCBigInt } from "@/app/utils/toUSDCBigInt";
+import { createAuthorization } from "@/app/cross-chain-core/autorizationFactory";
+import { createAccount } from "@/app/cross-chain-core/clientFactory";
+import { createPaymaster } from "@/app/cross-chain-core/paymasterFactory";
+import { bundlerClientFactory } from "@/app/cross-chain-core/bundlerClientFactory";
+import { createRetrieveAttestation } from "@/app/cross-chain-core/retrieveAttestationFactory";
+import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
+import { getTokenMessenger } from "@/app/facilitator/config";
+import { tokenMessengerAbi } from "@/app/facilitator/cctpAbi";
+import { createPublicClient, http, maxUint256 } from "viem";
 
 export const approveAndBurn = async (
     privateKey: Address,
@@ -19,14 +19,25 @@ export const approveAndBurn = async (
     fromChain: ChainKey
 ) => {
 
+    const network = NETWORKS[fromChain];
+    const evmConfig = network.evm;
+
+    if (!evmConfig) {
+        throw new Error(`Chain ${fromChain} is not configured for EVM operations`);
+    }
+
     const client = createPublicClient({
-        chain: NETWORKS[fromChain].chain,
-        transport: http(NETWORKS[fromChain].rpcUrl)
+        chain: evmConfig.chain,
+        transport: http(evmConfig.rpcUrl as string | undefined)
     });
 
     const account = await createAccount(client, privateKey)
 
-    const usdcAddress = NETWORKS[fromChain].usdc;
+    const usdcAddress = network.assets.find(a => a.name === "USDC")?.address as Address;
+    if (!usdcAddress) {
+        throw new Error("USDC address not found");
+    }
+
     const tokenMessenger = getTokenMessenger();
 
     const paymaster = await createPaymaster.getPaymasterData(usdcAddress, account.account, client)
@@ -107,7 +118,10 @@ export const approveAndBurn = async (
     const receiptApproveAndBurn = await bundlerClient.waitForUserOperationReceipt({ hash });
     console.log("Transaction hash en la blockchain de approve y burn:", receiptApproveAndBurn.receipt.transactionHash);
 
-    return  await createRetrieveAttestation(receiptApproveAndBurn.receipt.transactionHash, NETWORKS[fromChain].domain.toString())
+    const domainStr = network.crossChainInformation.circleInformation?.cCTPInformation?.domain.toString();
+    if (!domainStr) throw new Error("CCTP Domain not found");
+
+    return await createRetrieveAttestation(receiptApproveAndBurn.receipt.transactionHash, domainStr);
 
 
 }
