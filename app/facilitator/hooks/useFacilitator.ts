@@ -396,7 +396,10 @@ export const useFacilitator = ({ provider, privateKey, userAddress, stellarPriva
                 const { address: facilitatorAddress } = await facResponse.json();
 
                 // 2. Load User Account (Source)
-                const server = new StellarSdk.Horizon.Server(STELLAR.serverURL);
+                const serverUrl = STELLAR.nonEvm?.serverURL;
+                if (!serverUrl) throw new Error("Stellar server URL not configured");
+                const server = new StellarSdk.Horizon.Server(serverUrl);
+
                 const userKeypair = StellarSdk.Keypair.fromSecret(stellarPrivateKey);
 
                 // Check if account exists
@@ -404,11 +407,16 @@ export const useFacilitator = ({ provider, privateKey, userAddress, stellarPriva
                     const sourceAccount = await server.loadAccount(userKeypair.publicKey());
 
                     // 3. Build Transaction
-                    const usdcAsset = new StellarSdk.Asset(STELLAR.code, STELLAR.usdc);
+                    const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address;
+                    if (!usdcAddress) throw new Error("USDC address not found");
+                    const usdcAsset = new StellarSdk.Asset("USDC", usdcAddress);
+
+                    const passphrase = STELLAR.nonEvm?.networkPassphrase;
+                    if (!passphrase) throw new Error("Stellar passphrase not configured");
 
                     const tx = new StellarSdk.TransactionBuilder(sourceAccount, {
                         fee: "100000",
-                        networkPassphrase: STELLAR.networkPassphrase
+                        networkPassphrase: passphrase
                     })
                         .addOperation(StellarSdk.Operation.payment({
                             destination: facilitatorAddress,

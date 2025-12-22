@@ -13,9 +13,17 @@ export const crossChainTransfer = async (
     amount: string
 ) => {
     try {
+        const networkConfig = NETWORKS[toChain];
+        const evmConfig = networkConfig.evm;
+
+        if (!evmConfig) {
+            console.error(`Chain ${toChain} is not an EVM chain`);
+            return;
+        }
+
         const toClient = createPublicClient({
-            chain: NETWORKS[toChain].chain,
-            transport: http(NETWORKS[toChain].rpcUrl),
+            chain: evmConfig.chain,
+            transport: http(evmConfig.rpcUrl as string | undefined),
         });
 
         // Cuenta principal de destino
@@ -28,10 +36,18 @@ export const crossChainTransfer = async (
             wallet: toAccount.owner.address,
         });
 
+        // Domain is now nested in circleInformation -> cCTPInformation -> domain
+        const domain = networkConfig.crossChainInformation.circleInformation?.cCTPInformation?.domain;
+
+        if (domain === undefined) {
+            console.error(`CCTP Domain not found for chain ${toChain}`);
+            return;
+        }
+
         await approveAndBurn(
             privateKey,
             amount,
-            NETWORKS[toChain].domain,
+            domain,
             recipient,
             fromChain
         );

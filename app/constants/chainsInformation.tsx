@@ -1,4 +1,4 @@
-import {Address} from "abitype";
+import { Address } from "abitype";
 import {
     arbitrum,
     arbitrumSepolia, avalanche, avalancheFuji, base,
@@ -8,10 +8,10 @@ import {
     polygonAmoy, unichain,
     unichainSepolia, worldchain, worldchainSepolia
 } from "viem/chains";
-import {JSX} from "react";
+import { JSX } from "react";
 import z from "zod";
-import {polygon} from "wagmi/chains";
-import {ARBITRUM, AVALANCHE, BASE, OPTIMISM, POLYGON, UNICHAIN, WORLD_CHAIN} from "@/app/constants/chais";
+import { polygon } from "wagmi/chains";
+import { ARBITRUM, AVALANCHE, BASE, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN } from "@/app/constants/chais";
 
 export const ChainKeyEnum = z.enum([
     "Optimism",
@@ -20,26 +20,66 @@ export const ChainKeyEnum = z.enum([
     "Unichain",
     "Polygon",
     "Avalanche",
-    "WorldChain"
+    "WorldChain",
+    "Stellar"
 ]);
 
 export type ChainKey = z.infer<typeof ChainKeyEnum>;
 
-interface CrossChainInformation {
+interface NearIntentAsset {
+    assetId: string,
+    name: string,
+    decimals: number
+}
+
+interface NearIntentInformation {
+    support: boolean,
+    assetsId: NearIntentAsset[],
+    needMemo: boolean
+}
+
+interface CCTPInformation {
     supportCCTP: boolean;
+    domain: number;
+}
+
+export interface CircleInformation {
     supportCirclePaymaster: boolean;
+    cCTPInformation?: CCTPInformation;
+    aproxFromFee: number;
+}
+
+export interface CrossChainInformation {
+    circleInformation?: CircleInformation;
+    nearIntentInformation: NearIntentInformation | null;
+}
+
+export interface EvmInformation {
+    chain: any;
+    rpcUrl: string | null;
+}
+
+export interface NonEvmInformation {
+    networkPassphrase?: string;
+    serverURL?: string;
+}
+
+export interface Asset {
+    name: string;
+    decimals: number;
+    address?: Address | string;
 }
 
 export interface ChainConfig {
-    usdc: Address;
-    chain: any;
-    domain: number;
-    aproxFromFee: number;
     label: string;
     icon: JSX.Element;
-    rpcUrl: string;
     chipLabel: string;
     chipColor: string;
+    assets: Asset[];
+
+    evm?: EvmInformation;
+    nonEvm?: NonEvmInformation;
+
     crossChainInformation: CrossChainInformation;
 }
 
@@ -52,7 +92,8 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
     Unichain: UNICHAIN,
     Polygon: POLYGON,
     Avalanche: AVALANCHE,
-    WorldChain: WORLD_CHAIN
+    WorldChain: WORLD_CHAIN,
+    Stellar: STELLAR
 };
 
 export const CHAIN_ID_TO_KEY: Record<string, string> = {

@@ -15,7 +15,15 @@ export const createUSDCTrustline = async ({
     stellarAddress: string;
     secret: string;
 }) => {
-    const server = new Horizon.Server(STELLAR.serverURL);
+    const serverUrl = STELLAR.nonEvm?.serverURL;
+    const passphrase = STELLAR.nonEvm?.networkPassphrase;
+    const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address;
+
+    if (!serverUrl || !passphrase || !usdcAddress) {
+        throw new Error("Stellar configuration missing");
+    }
+
+    const server = new Horizon.Server(serverUrl);
 
     const keypair = Keypair.fromSecret(secret);
 
@@ -23,11 +31,11 @@ export const createUSDCTrustline = async ({
 
     const tx = new TransactionBuilder(account, {
         fee: BASE_FEE,
-        networkPassphrase: STELLAR.networkPassphrase,
+        networkPassphrase: passphrase,
     })
         .addOperation(
             Operation.changeTrust({
-                asset: new Asset(STELLAR.code, STELLAR.usdc),
+                asset: new Asset("USDC", usdcAddress),
             })
         )
         .setTimeout(30)

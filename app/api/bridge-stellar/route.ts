@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
             console.log(">>> [Stellar Bridge] Processing Stellar -> EVM request");
 
             try {
-                const server = new StellarSdk.Horizon.Server(STELLAR.serverURL);
+                const server = new StellarSdk.Horizon.Server(STELLAR.nonEvm!.serverURL!);
                 let facilitatorAddress = "";
 
                 // 1. Submit User's Funding Transaction (User -> Facilitator)
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
                 console.log(">>> [Stellar Bridge] Submitting User Funding TX (XDR)...");
                 try {
-                    const tx = StellarSdk.TransactionBuilder.fromXDR(body.signedXDR, STELLAR.networkPassphrase);
+                    const tx = StellarSdk.TransactionBuilder.fromXDR(body.signedXDR, STELLAR.nonEvm!.networkPassphrase!);
                     const fundingResult = await server.submitTransaction(tx);
                     console.log(">>> [Stellar Bridge] Funding TX Success:", fundingResult.hash);
                 } catch (e: any) {
@@ -135,11 +135,14 @@ export async function POST(request: NextRequest) {
 
                 // Build Transaction
                 // USDC Asset
-                const usdcAsset = new StellarSdk.Asset(STELLAR.code, STELLAR.usdc);
+                const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address;
+                if (!usdcAddress) throw new Error("USDC address not found in STELLAR config");
+
+                const usdcAsset = new StellarSdk.Asset("USDC", usdcAddress);
 
                 const transaction = new StellarSdk.TransactionBuilder(account, {
                     fee: "100000", // Standard fee
-                    networkPassphrase: STELLAR.networkPassphrase
+                    networkPassphrase: STELLAR.nonEvm!.networkPassphrase!
                 })
                     .addOperation(StellarSdk.Operation.payment({
                         destination: depositAddress,

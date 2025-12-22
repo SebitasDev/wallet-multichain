@@ -144,9 +144,10 @@ export const SendMoneyModalRoute = (
                                             {formatCurrency(
                                                 wallet.chains.reduce((acc: number, c: any) => {
                                                     const chainKey = CHAIN_ID_TO_KEY[c.id];
-                                                    const fee = chainKey ? NETWORKS[chainKey as ChainKey].aproxFromFee : 0;
+                                                    const fee = chainKey ? (NETWORKS[chainKey as ChainKey]?.crossChainInformation?.circleInformation?.aproxFromFee || 0) : 0;
                                                     return acc + c.amount + fee;
-                                                }, 0) + 0.01
+                                                }, 0) + 0.01,
+                                                6
                                             )}
                                         </Typography>
                                     </Box>
@@ -155,8 +156,8 @@ export const SendMoneyModalRoute = (
                             <AccordionDetails sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: "#f5f5f5" }}>
                                 <Stack spacing={1.5}>
                                     {wallet.chains.map((r: any) => {
-                                        const network = Object.values(NETWORKS).find(n => n.chain.id.toString() === r.id);
-                                        const fee = (network?.aproxFromFee ?? 0) + 0.01;
+                                        const network = Object.values(NETWORKS).find(n => n.evm?.chain.id.toString() === r.id);
+                                        const fee = (network?.crossChainInformation.circleInformation?.aproxFromFee ?? 0) + 0.01;
                                         const statusMeta = STATUS_META[r.status as keyof typeof STATUS_META];
 
                                         return (
@@ -215,8 +216,9 @@ export const SendMoneyModalRoute = (
                                                         {formatCurrency(
                                                             r.amount +
                                                             ((CHAIN_ID_TO_KEY[r.id]
-                                                                ? NETWORKS[CHAIN_ID_TO_KEY[r.id] as ChainKey].aproxFromFee
-                                                                : 0) || 0) + 0.01
+                                                                ? (NETWORKS[CHAIN_ID_TO_KEY[r.id] as ChainKey]?.crossChainInformation?.circleInformation?.aproxFromFee || 0)
+                                                                : 0) || 0) + 0.01,
+                                                            6
                                                         )}
                                                     </Typography>
                                                 </Stack>
@@ -268,7 +270,7 @@ export const SendMoneyModalRoute = (
                                                         letterSpacing: 0.5
                                                     }}
                                                 >
-                                                    Fee estimada: {formatCurrency(fee)}
+                                                    Fee estimada: {formatCurrency(fee, 6)}
                                                 </Typography>
                                             </Box>
                                         );
@@ -374,7 +376,7 @@ export const SendMoneyModalRoute = (
                         color="#000000"
                         sx={{ mb: 0.5 }}
                     >
-                        {formatCurrency((routeSummary?.targetAmount) ?? 0)}
+                        {formatCurrency((routeSummary?.targetAmount) ?? 0, 6)}
                     </Typography>
 
                     <Typography

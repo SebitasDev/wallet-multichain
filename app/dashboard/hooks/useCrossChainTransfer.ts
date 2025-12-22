@@ -7,10 +7,11 @@ import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+import { useWalletStore } from "@/app/store/useWalletsStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
-import { NETWORKS } from "@/app/constants/chainsInformation";
+import { NETWORKS, ChainKey } from "@/app/constants/chainsInformation";
 import { STELLAR } from "@/app/constants/chais/Stellar";
-import { log } from "console";
+import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
 
 // Types
 export const STELLAR_CHAIN_KEY = "Stellar";
@@ -124,16 +125,96 @@ export const useCrossChainTransfer = () => {
             return 0.23; // Minimum for Stellar source
         }
 
+        // Safe access
         const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
-        return sourceConfig?.aproxFromFee || 0;
+        return sourceConfig?.crossChainInformation.circleInformation?.aproxFromFee || 0;
     }, [watchSourceChain, watchDestChain]);
 
+    // Calculate Max Amount (Balance - 0.01)
+    const { wallets } = useWalletStore(); // Access wallets store
+
+    // We need to fetch the balance for the current chain
+    // Issue: wallets store is async/complex. 
+    // Simpler: Find the wallet and chain in the store synchronously.
+
+    // Calculate Max Amount (Balance - 0.01)
+    const [maxAmount, setMaxAmount] = useState(0);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchBalance = async () => {
+            if (!address) {
+                if (isMounted) setMaxAmount(0);
+                return;
+            }
+
+            // Stellar Logic
+            if ((watchSourceChain as string) === STELLAR_CHAIN_KEY) {
+                if (isMounted) setMaxAmount(0);
+                return;
+            }
+
+            // EVM Logic
+            const networkConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
+            if (!networkConfig || !networkConfig.evm) {
+                if (isMounted) setMaxAmount(0);
+                return;
+            }
+
+            const chainId = networkConfig.evm.chain.id.toString();
+
+            // 1. Child Wallet (Sync)
+            const wallet = wallets.find(w => w.address.toLowerCase() === address.toLowerCase());
+            if (wallet) {
+                const chainInfo = wallet.chains.find(c => c.chainId === chainId);
+                if (chainInfo) {
+                    const balance = chainInfo.amount;
+                    const max = balance - 0.01;
+                    // Use 6 decimals (USDC standard) to avoid rounding up errors on small amounts
+                    if (isMounted) setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
+                    return;
+                }
+            }
+
+            // 2. Main Wallet / External (Async)
+            try {
+                const usdcAddress = networkConfig.assets.find(a => a.name === "USDC")?.address;
+                if (usdcAddress) {
+                    const { balance } = await getBalanceFromChain(
+                        networkConfig.evm.chain,
+                        address as Address,
+                        usdcAddress as Address
+                    );
+                    const numBalance = Number(balance || 0);
+                    const max = numBalance - 0.01;
+                    // Use 6 decimals
+                    if (isMounted) setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
+                }
+            } catch (err) {
+                console.error("Error fetching max amount:", err);
+                if (isMounted) setMaxAmount(0);
+            }
+        };
+
+        fetchBalance();
+        return () => { isMounted = false; };
+    }, [address, wallets, watchSourceChain]);
+
     const isAmountValid = useMemo(() => {
-        if (!watchAmount || watchAmount.trim() === "") return true;
-        const amount = parseFloat(watchAmount);
+        const strAmount = watchAmount ? String(watchAmount) : "";
+        if (!strAmount || strAmount.trim() === "") return true;
+        const amount = parseFloat(strAmount);
         if (isNaN(amount)) return false;
         return amount >= minAmount;
     }, [watchAmount, minAmount]);
+
+    const isExceedingMax = useMemo(() => {
+        const strAmount = watchAmount ? String(watchAmount) : "";
+        if (!strAmount || strAmount.trim() === "") return false;
+        const amount = parseFloat(strAmount);
+        if (isNaN(amount)) return false;
+        return amount > maxAmount;
+    }, [watchAmount, maxAmount]);
 
     const openModal = () => setOpen(true);
     const closeModal = () => {
@@ -144,7 +225,7 @@ export const useCrossChainTransfer = () => {
     const fee = useMemo(() => {
         if (!watchAmount) return "0.00";
         if ((watchDestChain as string) === STELLAR_CHAIN_KEY) {
-            return STELLAR.aproxFromFee.toString();
+            return NETWORKS.Stellar.crossChainInformation.circleInformation?.aproxFromFee?.toString() || "0";
         }
         if ((watchSourceChain as string) === STELLAR_CHAIN_KEY) {
             return "0.01"; // Fixed Facilitator Fee
@@ -152,7 +233,19 @@ export const useCrossChainTransfer = () => {
         return getFee();
     }, [watchAmount, watchDestChain, watchSourceChain, getFee]);
 
-    const total = watchAmount ? getTotalWithFee(watchAmount) : "0.00";
+    // Recalculate total with precision for display
+    const total = useMemo(() => {
+        if (!watchAmount) return "0.00";
+        const amount = parseFloat(watchAmount);
+        const feeVal = parseFloat(fee);
+        if (isNaN(amount) || isNaN(feeVal)) return "0.00";
+        // Use high precision for display
+        return (amount + feeVal).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 6,
+            useGrouping: false // No commas for cleaner raw value or keep them? User wants precision.
+        });
+    }, [watchAmount, fee]);
 
     const onSubmit = async (data: FormValues) => {
         if (!address) {
@@ -172,7 +265,11 @@ export const useCrossChainTransfer = () => {
             return;
         }
 
-        // Stellar Source Logic (Stellar -> EVM)
+        if (amount > maxAmount) {
+            toast.error(`El monto excede tu balance disponible (${maxAmount} USDC)`);
+            return;
+        }
+
         // Stellar Source Logic (Stellar -> EVM)
         if ((data.sourceChain as string) === STELLAR_CHAIN_KEY) {
             toast.info("Procesando transfer automático desde Stellar...");
@@ -277,6 +374,8 @@ export const useCrossChainTransfer = () => {
         isCrossChain,
         minAmount,
         isAmountValid,
+        isExceedingMax,
+        maxAmount,
 
         // Computed
         fee,

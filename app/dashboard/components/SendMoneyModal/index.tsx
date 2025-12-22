@@ -8,7 +8,8 @@ import { SendMoneyModalActions } from "./SendMoneyModalActions";
 export const SendMoneyModal = () => {
     const {
         sendLoading, control, handleSubmit, errors, handleOnSend, handleOnConfirm,
-        canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary,
+        canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary, setValue,
+        maxSendAmount, isExceedingMax
     } = useSendMoneyModal();
 
     return (
@@ -38,6 +39,9 @@ export const SendMoneyModal = () => {
                         control={control}
                         sendLoading={sendLoading}
                         errors={errors}
+                        setValue={setValue}
+                        maxSendAmount={maxSendAmount}
+                        isExceedingMax={isExceedingMax}
                     />
                 ) : (
                     <SendMoneyModalRoute

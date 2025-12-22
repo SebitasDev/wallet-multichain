@@ -6,6 +6,7 @@ import {
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { formatCurrency } from "@/app/utils/formatCurrency";
+import { SplitBalance } from "./SplitBalance";
 import { formatFeeAmount } from "@/app/utils/calculateFees";
 
 interface HeroBannerTotalBalanceProps {
@@ -86,19 +87,23 @@ export const HeroBannerTotalBalance = ({
                 Balance Disponible (Hijas)
             </Typography>
 
-            <Typography
+            <Box
                 sx={{
-                    fontSize: { xs: 26, sm: 32, md: 36 },
-                    fontWeight: 900,
-                    lineHeight: 1,
-                    color: "#000000",
                     mb: 1.5,
+                    display: "flex",
+                    justifyContent: "center"
                 }}
             >
-                {hasCalculatedTotal
-                    ? formatCurrency(totalAvailableBalance)
-                    : "--"}
-            </Typography>
+                {hasCalculatedTotal ? (
+                    <SplitBalance
+                        amount={totalAvailableBalance}
+                        mainFontSize={{ xs: 26, sm: 32, md: 36 }}
+                        smallFontSize={{ xs: 16, sm: 18, md: 22 }}
+                    />
+                ) : (
+                    "--"
+                )}
+            </Box>
 
             {/* FEES DISPLAY */}
             <Box

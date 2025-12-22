@@ -22,17 +22,17 @@ export const SUSDC_VAULT_ADDRESSES: Record<SavingsChainKey, Address> = {
  * USDC token addresses per chain (from existing config)
  */
 export const USDC_ADDRESSES: Record<SavingsChainKey, Address> = {
-    Base: NETWORKS.Base.usdc,
-    Optimism: NETWORKS.Optimism.usdc,
-    Arbitrum: NETWORKS.Arbitrum.usdc,
-    Unichain: NETWORKS.Unichain.usdc,
+    Base: NETWORKS.Base.assets.find(a => a.name === 'USDC')?.address as Address,
+    Optimism: NETWORKS.Optimism.assets.find(a => a.name === 'USDC')?.address as Address,
+    Arbitrum: NETWORKS.Arbitrum.assets.find(a => a.name === 'USDC')?.address as Address,
+    Unichain: NETWORKS.Unichain.assets.find(a => a.name === 'USDC')?.address as Address,
 };
 
 /**
  * Chain configuration for savings operations
  */
 export interface SavingsChainConfig {
-    chain: (typeof NETWORKS)[ChainKey]["chain"];
+    chain: any;
     rpcUrl: string;
     usdc: Address;
     sUsdcVault: Address;
@@ -46,12 +46,18 @@ export interface SavingsChainConfig {
  */
 export function getSavingsChainConfig(chainKey: SavingsChainKey): SavingsChainConfig {
     const networkConfig = NETWORKS[chainKey];
+
+    // Assume EVM for savings chains
+    if (!networkConfig.evm) {
+        throw new Error(`Chain ${chainKey} is not configured for EVM`);
+    }
+
     return {
-        chain: networkConfig.chain,
-        rpcUrl: networkConfig.rpcUrl,
+        chain: networkConfig.evm.chain,
+        rpcUrl: networkConfig.evm.rpcUrl || "",
         usdc: USDC_ADDRESSES[chainKey],
         sUsdcVault: SUSDC_VAULT_ADDRESSES[chainKey],
-        chainId: networkConfig.chain.id,
+        chainId: networkConfig.evm.chain.id,
         label: networkConfig.label,
         chipColor: networkConfig.chipColor,
     };

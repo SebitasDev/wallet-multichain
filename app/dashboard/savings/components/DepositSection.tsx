@@ -48,9 +48,9 @@ export function DepositSection({ walletAddress, wallet, password, onOpenConfirmM
         if (!wallet) return "0.00";
 
         const chainConfig = NETWORKS[selectedChain as ChainKey];
-        if (!chainConfig) return "0.00";
+        if (!chainConfig || !chainConfig.evm) return "0.00";
 
-        const chainId = chainConfig.chain.id.toString();
+        const chainId = chainConfig.evm.chain.id.toString();
         const chainInfo = wallet.chains.find(c => c.chainId === chainId);
 
         if (!chainInfo) return "0.00";

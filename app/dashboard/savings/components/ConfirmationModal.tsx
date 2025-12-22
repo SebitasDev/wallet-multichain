@@ -34,6 +34,7 @@ export function ConfirmationModal({
 }: ConfirmationModalProps) {
     const chainConfig = getSavingsChainConfig(chain);
     const networkConfig = NETWORKS[chain];
+    const fee = networkConfig.crossChainInformation.circleInformation?.aproxFromFee || 0;
 
     const getChainIcon = () => {
         return networkConfig.icon;
@@ -169,7 +170,7 @@ export function ConfirmationModal({
                 >
                     <Typography sx={{ fontWeight: 700, fontSize: 13 }}>Est. Gas:</Typography>
                     <Typography sx={{ fontWeight: 900, fontSize: 14 }}>
-                        ~{networkConfig.aproxFromFee} {networkConfig.chipLabel}
+                        ~{fee} {networkConfig.chipLabel}
                     </Typography>
                 </Box>
 
