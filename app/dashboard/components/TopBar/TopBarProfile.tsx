@@ -7,12 +7,15 @@ import { useXOContracts } from "../../hooks/useXOConnect";
 import { PasswordModal } from "../PasswordModal"; // Import PasswordModal
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { toast } from "react-toastify";
+import HistoryIcon from '@mui/icons-material/History';
+import { useRouter } from "next/navigation";
 
 export const TopBarProfile = () => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [passwordModalOpen, setPasswordModalOpen] = useState(false); // Modal State
     const open = Boolean(anchorEl);
     const { factoryReset } = useXOContracts();
+    const router = useRouter();
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -83,6 +86,12 @@ export const TopBarProfile = () => {
                                 <PersonIcon fontSize="small" sx={{ color: "black" }} />
                             </ListItemIcon>
                             <ListItemText primary="Perfil" primaryTypographyProps={{ fontWeight: 700 }} />
+                        </MenuItem>
+                        <MenuItem onClick={() => { handleClose(); router.push("/history"); }}>
+                            <ListItemIcon>
+                                <HistoryIcon fontSize="small" sx={{ color: "#000" }} />
+                            </ListItemIcon>
+                            <ListItemText primary="Historial" primaryTypographyProps={{ fontWeight: 700 }} />
                         </MenuItem>
                         <MenuItem onClick={handleClose}>
                             <ListItemIcon>
