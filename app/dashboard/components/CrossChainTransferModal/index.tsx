@@ -50,6 +50,8 @@ export const CrossChainTransferModal = () => {
         isCrossChain,
         minAmount,
         isAmountValid,
+        maxAmount,
+        isExceedingMax,
 
         fee,
         total,
@@ -159,6 +161,8 @@ export const CrossChainTransferModal = () => {
                             minAmount={minAmount}
                             watchAmount={watchAmount}
                             isAmountValid={isAmountValid}
+                            maxAmount={maxAmount}
+                            isExceedingMax={isExceedingMax}
                         />
 
                         <TransferSummary
@@ -168,7 +172,7 @@ export const CrossChainTransferModal = () => {
                             isCrossChain={isCrossChain}
                         />
 
-                        {!isAmountValid && watchAmount && (
+                        {!isAmountValid && watchAmount && !isExceedingMax && (
                             <Alert
                                 severity="warning"
                                 sx={{
@@ -238,7 +242,7 @@ export const CrossChainTransferModal = () => {
                     <SubmitButton
                         onClick={onSubmit}
                         isLoading={isLoading}
-                        isDisabled={isLoading || !watchAmount || !isAmountValid}
+                        isDisabled={isLoading || !watchAmount || !isAmountValid || isExceedingMax}
                     />
                 </DialogActions>
             </Dialog>

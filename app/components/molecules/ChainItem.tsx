@@ -27,7 +27,14 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
     const [open, setOpen] = useState(false);
 
     const config = NETWORKS[chainKey];
-    const chainId = config.chain.id.toString();
+    // This component seems to be built for EVM chains or needs adaptation for Stellar
+    // For now assuming EVM or handling gracefully if evm missing?
+    // But 'chainId' is required for finding wallet chain info.
+    // If Stellar, chainId logic needs update (Stellar doesn't use number ID in same way?)
+    // In useWalletsStore we used 'unknown' for non-evm.
+    // If config.evm is missing, we might blank out or check nonEvm.
+    const chainId = config.evm?.chain.id.toString() || "unknown"; // Handle non-EVM
+
 
     // Obtener todas las wallets y calcular el balance
     const wallets = useWalletStore((state) => state.wallets);
@@ -42,6 +49,8 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
     }, [wallets, address, chainId]);
 
     const formattedBalance = (Math.floor(Number(balance) * 100) / 100).toFixed(2);
+    // Use 6 decimals for detailed token view to show dust/exact amounts
+    const detailsBalance = Number(balance).toFixed(6);
 
     return (
         <>
@@ -199,7 +208,7 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
                                         fontSize: { xs: 11, sm: 12 }
                                     }}
                                 >
-                                    Balance: {formattedBalance}
+                                    Balance: {detailsBalance}
                                 </Typography>
                             </Box>
 

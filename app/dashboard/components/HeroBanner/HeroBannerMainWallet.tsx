@@ -4,6 +4,7 @@ import {
     IconButton,
 } from "@mui/material";
 import { formatCurrency } from "@/app/utils/formatCurrency";
+import { SplitBalance } from "./SplitBalance";
 import { EthIcon } from "@/app/components/atoms/EthIcon";
 import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { ActiveWallet } from "@/app/dashboard/hooks/useHeroBanner";
@@ -323,17 +324,13 @@ export const HeroBannerMainWallet = ({
                         : ""}
                 </Typography>
 
-                <Typography
-                    sx={{
-                        fontSize: { xs: 32, sm: 38, md: 44 },
-                        fontWeight: 900,
-                        lineHeight: 1,
-                        color: "#000000",
-                        mb: 1.5,
-                    }}
-                >
-                    {formatCurrency(burnedBalances[activeWallet])}
-                </Typography>
+                <Box sx={{ mb: 1.5 }}>
+                    <SplitBalance
+                        amount={burnedBalances[activeWallet]}
+                        mainFontSize={{ xs: 32, sm: 38, md: 44 }}
+                        smallFontSize={{ xs: 20, sm: 24, md: 28 }}
+                    />
+                </Box>
 
                 <Box
                     sx={{

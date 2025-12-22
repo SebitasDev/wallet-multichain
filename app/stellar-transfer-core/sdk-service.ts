@@ -29,7 +29,7 @@ export async function getOneClickQuote({
 }) {
 
     const originAsset = sourceChain === "Stellar"
-        ? STELLAR.crossChainInformation.nearIntentInformation.assetsId[0].assetId
+        ? STELLAR.crossChainInformation.nearIntentInformation?.assetsId[0].assetId || ""
         : SOURCE_TOKENS[sourceChain];
 
     if (!originAsset) throw new Error(`Unsupported source chain for 1-Click: ${sourceChain}`);
@@ -43,7 +43,7 @@ export async function getOneClickQuote({
         if (recipientStellar === "XLM" || (destinationToken === "XLM")) {
             destinationAsset = XLM_ASSET_ID;
         } else {
-            destinationAsset = STELLAR.crossChainInformation.nearIntentInformation.assetsId[0].assetId;
+            destinationAsset = STELLAR.crossChainInformation.nearIntentInformation?.assetsId[0].assetId || "";
         }
     }
 

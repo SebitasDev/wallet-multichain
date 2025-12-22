@@ -139,12 +139,20 @@ export async function processStellarGaslessPay(params: GaslessPayParams): Promis
 
     console.log(">>> [Gasless Pay Stellar] Processing request...");
 
-    const server = new StellarSdk.Horizon.Server(STELLAR.serverURL);
+    const serverUrl = STELLAR.nonEvm?.serverURL;
+    const passphrase = STELLAR.nonEvm?.networkPassphrase;
+    const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address;
+
+    if (!serverUrl || !passphrase || !usdcAddress) {
+        throw new Error("Stellar configuration missing");
+    }
+
+    const server = new StellarSdk.Horizon.Server(serverUrl);
     const facilitatorKeypair = getFacilitatorStellarKeypair();
 
     let fundingHash = "";
     try {
-        const tx = StellarSdk.TransactionBuilder.fromXDR(signedXDR, STELLAR.networkPassphrase);
+        const tx = StellarSdk.TransactionBuilder.fromXDR(signedXDR, passphrase);
         const fundingResult = await server.submitTransaction(tx);
         fundingHash = fundingResult.hash;
         console.log(">>> [Stellar] Funding TX Success:", fundingHash);
@@ -155,13 +163,13 @@ export async function processStellarGaslessPay(params: GaslessPayParams): Promis
     }
 
     const account = await server.loadAccount(facilitatorKeypair.publicKey());
-    const usdcAsset = new StellarSdk.Asset(STELLAR.code, STELLAR.usdc);
+    const usdcAsset = new StellarSdk.Asset("USDC", usdcAddress);
 
     const netAmount = (parseFloat(amountStr) - FEE_AMOUNT).toFixed(7);
 
     const transaction = new StellarSdk.TransactionBuilder(account, {
         fee: "100000",
-        networkPassphrase: STELLAR.networkPassphrase
+        networkPassphrase: passphrase
     })
         .addOperation(StellarSdk.Operation.payment({
             destination: recipient,

@@ -6,12 +6,12 @@ const clientCache: Record<string, any> = {};
 export function getClient(chainId: number) {
     if (clientCache[chainId]) return clientCache[chainId];
 
-    const network = Object.values(NETWORKS).find(n => n.chain.id === chainId);
-    if (!network) throw new Error("Network not found");
+    const network = Object.values(NETWORKS).find(n => n.evm?.chain.id === chainId);
+    if (!network || !network.evm) throw new Error("Network not found");
 
     clientCache[chainId] = createPublicClient({
-        chain: network.chain,
-        transport: http(network.rpcUrl),
+        chain: network.evm.chain,
+        transport: http(network.evm.rpcUrl as string | undefined),
     });
 
     return clientCache[chainId];

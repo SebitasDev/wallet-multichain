@@ -1,14 +1,13 @@
-
-import {createAccount} from "@/app/cross-chain-core/clientFactory";
-import {Address} from "abitype";
-import {createPaymaster} from "@/app/cross-chain-core/paymasterFactory";
-import {bundlerClientFactory} from "@/app/cross-chain-core/bundlerClientFactory";
-import {usdcAbi} from "@/app/cross-chain-core/usdcAbi";
-import {createPublicClient, http} from "viem";
-import {createAuthorization} from "@/app/cross-chain-core/autorizationFactory";
-import {ChainKey, NETWORKS} from "@/app/constants/chainsInformation";
-import {toUSDCBigInt} from "@/app/utils/toUSDCBigInt";
-import {approveAndBurn} from "@/app/cross-chain-core/functions/approveAndBurn";
+import { createAccount } from "@/app/cross-chain-core/clientFactory";
+import { Address } from "abitype";
+import { createPaymaster } from "@/app/cross-chain-core/paymasterFactory";
+import { bundlerClientFactory } from "@/app/cross-chain-core/bundlerClientFactory";
+import { usdcAbi } from "@/app/cross-chain-core/usdcAbi";
+import { createPublicClient, http } from "viem";
+import { createAuthorization } from "@/app/cross-chain-core/autorizationFactory";
+import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
+import { toUSDCBigInt } from "@/app/utils/toUSDCBigInt";
+import { approveAndBurn } from "@/app/cross-chain-core/functions/approveAndBurn";
 import bridgeEmitter from "@/app/lib/bridgeEmitter";
 
 export const crossChainTransferTestnet = async (
@@ -19,11 +18,23 @@ export const crossChainTransferTestnet = async (
     amount: string
 ) => {
     try {
-        const usdcAddressTo = NETWORKS[toChain].usdc;
+        const network = NETWORKS[toChain];
+        const evmConfig = network.evm;
+
+        if (!evmConfig) {
+            console.error(`Chain ${toChain} is not EVM compatible for this testnet transfer`);
+            return;
+        }
+
+        const usdcAddressTo = network.assets.find(a => a.name === "USDC")?.address as Address;
+        if (!usdcAddressTo) {
+            console.error(`USDC Address not found for ${toChain}`);
+            return;
+        }
 
         const toClient = createPublicClient({
-            chain: NETWORKS[toChain].chain,
-            transport: http()
+            chain: evmConfig.chain,
+            transport: http() // Assuming default transport or derived from config if needed, previously was http()
         });
 
         const toAccount = await createAccount(toClient, privateKey)
@@ -48,10 +59,16 @@ export const crossChainTransferTestnet = async (
             wallet: toAccount.owner.address,
         });
 
+        const domain = network.crossChainInformation.circleInformation?.cCTPInformation?.domain;
+        if (domain === undefined) {
+            console.error("Domain not found");
+            return;
+        }
+
         const attestation = await approveAndBurn(
             privateKey,
             amount,
-            NETWORKS[toChain].domain,
+            domain,
             recipient,
             fromChain
         )
@@ -68,6 +85,8 @@ export const crossChainTransferTestnet = async (
 
             const authorizationSupplier = await createAuthorization(toAccountSupplier.owner, toClient, toAccountSupplier.account)
 
+            const fee = network.crossChainInformation.circleInformation?.aproxFromFee || 0;
+
             const hashSupplierUser = await bundlerClientToSupplier.sendUserOperation({
                 account: toAccountSupplier.account,
                 calls: [
@@ -75,7 +94,7 @@ export const crossChainTransferTestnet = async (
                         to: usdcAddressTo,
                         abi: usdcAbi,
                         functionName: "transfer",
-                        args: [toAccount.account.address, toUSDCBigInt(NETWORKS[toChain].aproxFromFee)],
+                        args: [toAccount.account.address, toUSDCBigInt(fee)],
                     },
                 ],
                 authorization: authorizationSupplier
@@ -146,32 +165,6 @@ export const crossChainTransferTestnet = async (
                 ],
                 authorization: auth
             });
-
-            /*const hashMintGas = await bundlerClientTo.estimateUserOperationGas({
-                account: toAccount.account,
-                calls: [
-                    {
-                        to: transmitter,
-                        abi: [
-                            {
-                                type: "function",
-                                name: "receiveMessage",
-                                stateMutability: "nonpayable",
-                                inputs: [
-                                    { name: "message", type: "bytes" },
-                                    { name: "attestation", type: "bytes" },
-                                ],
-                                outputs: [],
-                            },
-                        ],
-                        functionName: "receiveMessage",
-                        args: [approveAndBurnAttestation.message, approveAndBurnAttestation.attestation],
-                    },
-                ],
-                authorization: aut
-            });
-
-            console.log("Transaction hash para supplier aprox gas", hashMintGas);*/
 
             console.log("UserOperation hash mint:", hashMint);
 

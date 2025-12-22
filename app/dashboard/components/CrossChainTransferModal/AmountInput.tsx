@@ -8,6 +8,8 @@ type AmountInputProps = {
     minAmount: number;
     watchAmount: string;
     isAmountValid: boolean;
+    maxAmount: number;
+    isExceedingMax?: boolean;
 };
 
 export const AmountInput = ({
@@ -15,7 +17,9 @@ export const AmountInput = ({
     isCrossChain,
     minAmount,
     watchAmount,
-    isAmountValid
+    isAmountValid,
+    maxAmount,
+    isExceedingMax
 }: AmountInputProps) => (
     <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
@@ -46,6 +50,25 @@ export const AmountInput = ({
                     Mínimo: {minAmount} USDC
                 </Typography>
             )}
+            <Typography
+                fontSize={11}
+                fontWeight={700}
+                sx={{
+                    color: "#ff4444",
+                    bgcolor: "rgba(255, 68, 68, 0.1)",
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 1,
+                    border: "1px solid #ff4444",
+                    ml: 1,
+                    cursor: "pointer"
+                }}
+                onClick={() => {
+                    control.register("amount").onChange({ target: { value: maxAmount, name: "amount" } });
+                }}
+            >
+                Máx: {maxAmount} USDC
+            </Typography>
         </Stack>
         <Controller
             control={control}
@@ -60,17 +83,21 @@ export const AmountInput = ({
                         step: "0.0001"
                     }}
                     {...field}
-                    error={!isAmountValid && !!watchAmount}
+                    error={(!isAmountValid || isExceedingMax) && !!watchAmount}
                     helperText={
-                        !isAmountValid && watchAmount
-                            ? `El monto debe ser al menos ${minAmount} USDC`
+                        watchAmount
+                            ? isExceedingMax
+                                ? `Excede tu balance disponible (${maxAmount} USDC)`
+                                : !isAmountValid
+                                    ? `El monto debe ser al menos ${minAmount} USDC`
+                                    : ""
                             : ""
                     }
                     InputProps={{
                         sx: {
                             borderRadius: 2,
                             background: "#f5f5f5",
-                            border: !isAmountValid && watchAmount
+                            border: (!isAmountValid || isExceedingMax) && watchAmount
                                 ? "2px solid #ff4444"
                                 : "2px solid #000000",
                             fontWeight: 700,
@@ -88,10 +115,11 @@ export const AmountInput = ({
                             fontWeight: 600,
                             fontSize: 12,
                             ml: 0.5,
+                            color: "#ff4444"
                         }
                     }}
                 />
             )}
         />
-    </Box>
+    </Box >
 );

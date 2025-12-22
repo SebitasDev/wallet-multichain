@@ -1,4 +1,4 @@
-import { Control, Controller, FieldErrors } from "react-hook-form";
+import { Control, Controller, FieldErrors, UseFormSetValue } from "react-hook-form";
 import {
     MenuItem,
     Stack,
@@ -22,9 +22,12 @@ type Props = {
     control: Control<FormValues>;
     errors: FieldErrors<FormValues>;
     sendLoading: boolean;
+    setValue: UseFormSetValue<FormValues>;
+    maxSendAmount: number;
+    isExceedingMax: boolean;
 };
 
-export const SendMoneyModalForm = ({ control, errors, sendLoading }: Props) => {
+export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, maxSendAmount, isExceedingMax }: Props) => {
     return (
         <Stack spacing={2.5}>
             {/* CHAIN DESTINO */}
@@ -71,7 +74,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading }: Props) => {
                                 },
                             }}
                         >
-                            {Object.entries(NETWORKS).map(([key, cfg]) => (
+                            {Object.entries(NETWORKS).filter(([k, cfg]) => !!cfg.evm).map(([key, cfg]) => (
                                 <MenuItem key={key} value={key}>
                                     <Stack direction="row" alignItems="center" spacing={1.5}>
                                         <Box sx={{
@@ -147,18 +150,37 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading }: Props) => {
 
             {/* MONTO */}
             <Box>
-                <Typography
-                    fontWeight={700}
-                    fontSize={13}
-                    sx={{
-                        mb: 1,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.5,
-                        color: "#666666"
-                    }}
-                >
-                    Monto (USDC)
-                </Typography>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Typography
+                        fontWeight={700}
+                        fontSize={13}
+                        sx={{
+                            textTransform: "uppercase",
+                            letterSpacing: 0.5,
+                            color: "#666666"
+                        }}
+                    >
+                        Monto (USDC)
+                    </Typography>
+                    <Typography
+                        fontSize={11}
+                        fontWeight={700}
+                        sx={{
+                            color: "#ff4444",
+                            bgcolor: "rgba(255, 68, 68, 0.1)",
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: 1,
+                            border: "1px solid #ff4444",
+                            cursor: "pointer"
+                        }}
+                        onClick={() => {
+                            setValue("sendAmount", maxSendAmount.toString(), { shouldValidate: true });
+                        }}
+                    >
+                        Máx: {maxSendAmount} USDC
+                    </Typography>
+                </Stack>
                 <Controller
                     control={control}
                     name="sendAmount"
@@ -171,13 +193,13 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading }: Props) => {
                             inputProps={{ min: 0, step: "0.0001" }}
                             disabled={sendLoading}
                             {...field}
-                            error={!!errors.sendAmount}
-                            helperText={errors.sendAmount?.message}
+                            error={!!errors.sendAmount || isExceedingMax}
+                            helperText={errors.sendAmount?.message || (isExceedingMax ? "Monto excede el máximo disponible" : "")}
                             InputProps={{
                                 sx: {
                                     borderRadius: 2,
                                     background: "#f5f5f5",
-                                    border: "2px solid #000000",
+                                    border: isExceedingMax ? "2px solid #ff4444" : "2px solid #000000",
                                     fontWeight: 700,
                                     fontSize: 16,
                                     "&:hover": {

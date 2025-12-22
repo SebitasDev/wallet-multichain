@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
-import { NETWORKS } from "@/app/constants/chainsInformation";
+
 
 export type FormValues = {
     chain: string;

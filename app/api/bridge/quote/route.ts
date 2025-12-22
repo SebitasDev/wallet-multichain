@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOneClickQuote } from "@/app/stellar-transfer-core/sdk-service";
+import {PlatformFess} from "@/app/constants/platformFess";
 
 export async function POST(request: NextRequest) {
     try {
@@ -14,13 +15,11 @@ export async function POST(request: NextRequest) {
 
         const amountNum = parseFloat(amount);
         const IS_DEV = process.env.NODE_ENV === 'development';
-        const FEE = IS_DEV ? 0 : 0.05;
+        const FEE = IS_DEV ? PlatformFess.DEV : PlatformFess.EVM_TO_OTHER;
 
         let bridgeMin = 0.03;
 
-        // Update Minimums Logic
         if (sourceChain === "Stellar") {
-            // Stellar -> EVM: Higher minimum (0.25) + Fee
             bridgeMin = 0.25;
         }
 
@@ -37,18 +36,11 @@ export async function POST(request: NextRequest) {
 
         const netAmountBridged = (amountNum - FEE).toFixed(6);
 
-        // Call 1-Click with Dry Run
-        // Use dummy addresses for quote estimation if not provided, 
-        // assuming 1-Click validatlon allows standard formats.
-        // EVM dummy: "0x0000000000000000000000000000000000000000"
-        // Stellar dummy: "G..." (we'll see if it validates strictly or just format)
-
         const dummyEvm = "0x0000000000000000000000000000000000000000";
         // Stellar dummy (Random valid public key)
         const dummyStellar = "GB7BDSZU2Y27LYNLJLVEGW5TIVYQ6362DS5QZ5F6S27S227227227AAA";
 
         const sender = sourceChain === "Stellar" ? dummyStellar : dummyEvm;
-        // If target is Stellar and we want XLM, we pass XLM token logic inside service
 
         const quoteResult = await getOneClickQuote({
             amount: netAmountBridged,

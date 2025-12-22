@@ -4,16 +4,27 @@ import { Horizon } from "stellar-sdk";
 export const getStellarUSDCBalance = async (
     stellarAddress: string
 ): Promise<number | null> => {
-    const server = new Horizon.Server(STELLAR.serverURL);
+    const serverUrl = STELLAR.nonEvm?.serverURL;
+    if (!serverUrl) throw new Error("Stellar server URL not configured");
 
-    const account = await server.loadAccount(stellarAddress);
+    const server = new Horizon.Server(serverUrl);
 
-    const balance = account.balances.find(
-        (b: any) =>
-            b.asset_type === "credit_alphanum4" &&
-            b.asset_code === STELLAR.code &&
-            b.asset_issuer === STELLAR.usdc
-    );
+    try {
+        const account = await server.loadAccount(stellarAddress);
+        const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address;
 
-    return balance ? Number(balance.balance) : null;
+        if (!usdcAddress) return null;
+
+        const balance = account.balances.find(
+            (b: any) =>
+                b.asset_type === "credit_alphanum4" &&
+                b.asset_code === "USDC" &&
+                b.asset_issuer === usdcAddress
+        );
+
+        return balance ? Number(balance.balance) : 0;
+    } catch (e) {
+        console.error("Error fetching Stellar balance:", e);
+        return null;
+    }
 };
