@@ -11,8 +11,8 @@ import { MOCK_TRANSACTIONS } from "../../lib/mockData";
 import { BaseIcon } from "../../components/atoms/BaseIcon";
 import { OPIcon } from "../../components/atoms/OPIcon";
 import { EthIcon } from "../../components/atoms/EthIcon";
-import { ArbIcon } from "../../components/atoms/ArbIcon";
-import { PolygonIcon } from "../../components/atoms/PolygonIcon";
+import ArbIcon from "../../components/atoms/ArbIcon";
+import PolygonIcon from "../../components/atoms/PolygonIcon";
 import { AvalancheIcon } from "../../components/atoms/AvalancheIcon";
 
 
