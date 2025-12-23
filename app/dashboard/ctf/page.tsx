@@ -67,7 +67,7 @@ export default function CTFPage() {
                         Captura la Bandera
                     </Typography>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Edición Scroll Sepolia
+                        Edición Polygon Mainnet
                     </Typography>
                 </Box>
                 <FlagIcon sx={{ fontSize: 60 }} />

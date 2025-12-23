@@ -62,8 +62,10 @@ export default function DashboardLayout({
             {!askPassword && (
                 <EmbeddedProvider>
                     <XOContractsProvider password={currentPassword!}>
-                        {children}
-                        <ToastContainerCustom />
+                        <>
+                            {children}
+                            <ToastContainerCustom />
+                        </>
                     </XOContractsProvider>
                 </EmbeddedProvider>
             )}
