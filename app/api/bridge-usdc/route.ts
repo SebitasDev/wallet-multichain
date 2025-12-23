@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import {crossChainTransfer} from "@/app/cross-chain-core/crossChainTransfer";
-import {crossChainTransferTestnet} from "@/app/cross-chain-core/crossChainTransferTestnet";
+import {crossChainTransfer} from "@/app/cross-chain-core/circleCCTP/crossChainTransfer";
+import {crossChainTransferTestnet} from "@/app/cross-chain-core/circleCCTP/crossChainTransferTestnet";
 
 export async function POST(req: NextRequest) {
     const { amount, fromChain, toChain, privateKey, recipient } = await req.json();

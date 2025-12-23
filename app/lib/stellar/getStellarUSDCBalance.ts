@@ -1,11 +1,15 @@
 import { STELLAR } from "@/app/constants/chais";
 import { Horizon } from "stellar-sdk";
+import {toast} from "react-toastify";
 
 export const getStellarUSDCBalance = async (
     stellarAddress: string
 ): Promise<number | null> => {
     const serverUrl = STELLAR.nonEvm?.serverURL;
-    if (!serverUrl) throw new Error("Stellar server URL not configured");
+    if (!serverUrl) {
+        toast.error("Server URL is missing");
+        throw new Error("Stellar server URL not configured");
+    }
 
     const server = new Horizon.Server(serverUrl);
 
@@ -24,7 +28,7 @@ export const getStellarUSDCBalance = async (
 
         return balance ? Number(balance.balance) : 0;
     } catch (e) {
-        console.error("Error fetching Stellar balance:", e);
+        toast.error(`Error fetching Stellar balance:: ${JSON.stringify(e)}`);
         return null;
     }
 };

@@ -13,11 +13,11 @@ import { privateKeyToAccount } from "viem/accounts";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { getPrivateClientByNetworkName } from "@/app/utils/getClientByNetworkName";
-import { createAccount } from "@/app/cross-chain-core/clientFactory";
-import { createPaymaster } from "@/app/cross-chain-core/paymasterFactory";
-import { bundlerClientFactory } from "@/app/cross-chain-core/bundlerClientFactory";
-import { createAuthorization } from "@/app/cross-chain-core/autorizationFactory";
-import { usdcAbi } from "@/app/cross-chain-core/usdcAbi";
+import { createAccount } from "@/app/cross-chain-core/circleCCTP/clientFactory";
+import { createPaymaster } from "@/app/cross-chain-core/circleCCTP/paymasterFactory";
+import { bundlerClientFactory } from "@/app/cross-chain-core/circleCCTP/bundlerClientFactory";
+import { createAuthorization } from "@/app/cross-chain-core/circleCCTP/autorizationFactory";
+import { usdcAbi } from "@/app/cross-chain-core/circleCCTP/usdcAbi";
 import { toUSDCBigInt } from "@/app/utils/toUSDCBigInt";
 import { useBridgeUsdcStream } from "@/app/dashboard/hooks/useBridgeUsdcStream";
 

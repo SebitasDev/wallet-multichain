@@ -1,14 +1,14 @@
-import { createAccount } from "@/app/cross-chain-core/clientFactory";
+import { createAccount } from "@/app/cross-chain-core/circleCCTP/clientFactory";
 import { Address } from "abitype";
-import { createPaymaster } from "@/app/cross-chain-core/paymasterFactory";
-import { bundlerClientFactory } from "@/app/cross-chain-core/bundlerClientFactory";
-import { usdcAbi } from "@/app/cross-chain-core/usdcAbi";
+import { createPaymaster } from "@/app/cross-chain-core/circleCCTP/paymasterFactory";
+import { bundlerClientFactory } from "@/app/cross-chain-core/circleCCTP/bundlerClientFactory";
+import { usdcAbi } from "@/app/cross-chain-core/circleCCTP/usdcAbi";
 import { createPublicClient, http } from "viem";
-import { createAuthorization } from "@/app/cross-chain-core/autorizationFactory";
+import { createAuthorization } from "@/app/cross-chain-core/circleCCTP/autorizationFactory";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { toUSDCBigInt } from "@/app/utils/toUSDCBigInt";
-import { approveAndBurn } from "@/app/cross-chain-core/functions/approveAndBurn";
+import { approveAndBurn } from "@/app/cross-chain-core/circleCCTP/functions/approveAndBurn";
 import bridgeEmitter from "@/app/lib/bridgeEmitter";
 
 export const crossChainTransferTestnet = async (

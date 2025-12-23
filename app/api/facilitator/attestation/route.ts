@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRetrieveAttestation } from "@/app/cross-chain-core/retrieveAttestationFactory";
+import { createRetrieveAttestation } from "@/app/cross-chain-core/circleCCTP/retrieveAttestationFactory";
 import { FACILITATOR_NETWORKS, FacilitatorChainKey } from "@/app/facilitator/config";
 
 interface AttestationRequest {

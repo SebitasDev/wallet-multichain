@@ -8,10 +8,10 @@ import {
 } from "@/app/savings/config";
 import { erc4626VaultAbi, erc20Abi } from "@/app/savings/vaultAbi";
 import { DepositRequest, DepositResponse } from "@/app/savings/types";
-import { createAccount } from "@/app/cross-chain-core/clientFactory";
-import { createPaymaster } from "@/app/cross-chain-core/paymasterFactory";
-import { bundlerClientFactory } from "@/app/cross-chain-core/bundlerClientFactory";
-import { createAuthorization } from "@/app/cross-chain-core/autorizationFactory";
+import { createAccount } from "@/app/cross-chain-core/circleCCTP/clientFactory";
+import { createPaymaster } from "@/app/cross-chain-core/circleCCTP/paymasterFactory";
+import { bundlerClientFactory } from "@/app/cross-chain-core/circleCCTP/bundlerClientFactory";
+import { createAuthorization } from "@/app/cross-chain-core/circleCCTP/autorizationFactory";
 
 /**
  * POST /api/savings/deposit

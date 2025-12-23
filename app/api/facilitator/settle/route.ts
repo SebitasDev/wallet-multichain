@@ -16,7 +16,7 @@ import {
 import { usdcErc3009Abi } from "@/app/facilitator/usdcErc3009Abi";
 import { tokenMessengerAbi } from "@/app/facilitator/cctpAbi";
 import { SettleResponse } from "@/app/facilitator/types";
-import { createRetrieveAttestation } from "@/app/cross-chain-core/retrieveAttestationFactory";
+import { createRetrieveAttestation } from "@/app/cross-chain-core/circleCCTP/retrieveAttestationFactory";
 import { Address } from "abitype";
 
 const FACILITATOR_PRIVATE_KEY = process.env.FACILITATOR_PRIVATE_KEY as `0x${string}`;
