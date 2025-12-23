@@ -137,7 +137,31 @@ export async function processNearSettlement(
             console.log("[NearService] Pull Success:", pullHash);
 
             // A2. Push Funds (Transfer to Deposit Address)
+            // A2. Push Funds (Transfer to Deposit Address)
             console.log("[NearService] Step 2: Push to Bridge", depositAddress);
+
+            // Verify Balance with Retry (Handling RPC Lag)
+            let facilitatorBalance = BigInt(0);
+            const amountBigInt = BigInt(amountAtomic);
+            const maxRetries = 5;
+
+            for (let i = 0; i < maxRetries; i++) {
+                facilitatorBalance = await publicClient.readContract({
+                    address: networkConfig.usdc,
+                    abi: usdcErc3009Abi,
+                    functionName: "balanceOf",
+                    args: [facilitatorAccount.address]
+                }) as bigint;
+
+                if (facilitatorBalance >= amountBigInt) break;
+
+                console.log(`[NearService] Balance lag detected. Retrying ${i + 1}/${maxRetries}... (Has: ${facilitatorBalance}, Needs: ${amountBigInt})`);
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s
+            }
+
+            if (facilitatorBalance < amountBigInt) {
+                throw new Error(`Insufficient facilitator balance after retries. Has: ${facilitatorBalance}, Needs: ${amountBigInt}`);
+            }
 
             // Note: We are sending the full pulled amount. 
             // In a real facilitator, we might deduct a fee here if not handled by higher level logic.
