@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePublicClient } from "wagmi";
-import { parseEther, Address, createWalletClient, http, publicActions, parseEventLogs } from "viem";
+import { parseEther, Address, createWalletClient, http, publicActions, parseEventLogs, custom } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { scrollSepolia } from "viem/chains";
+import { polygon } from "viem/chains";
 
 import CTFFactoryABI from "../ctf/abis/CTFFactory.json";
 import CTFGameABI from "../ctf/abis/CTFGame.json";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
+import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
 
 // Deployed Address (Scroll Sepolia)
-const FACTORY_ADDRESS = "0x8a54B5EE985e9B81460b6EfF80dAdd507537A594";
+const FACTORY_ADDRESS = "0x18fA0850E4b4E7Fba2CF39E827Ed87d412b5406B";
 
 export interface GameData {
     address: Address;
@@ -40,6 +41,7 @@ export const useCTF = () => {
     // Internal Wallet Stores
     const mainWallet = useXOWalletStore((s) => s.mainWallet);
     const { currentPassword, encryptedPassword } = useWalletPasswordStore();
+    const { isUsingXO, provider: xoProvider, address: xoAddress } = useXOContracts();
 
     const [account, setAccount] = useState<Address | null>(null);
     const [walletClient, setWalletClient] = useState<any>(null);
@@ -70,18 +72,37 @@ export const useCTF = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Effect to handle wallet unlocking
+    // Effect to handle wallet unlocking (Local OR XO)
     useEffect(() => {
         const unlockWallet = async () => {
+            // Priority 1: XO Connect
+            if (isUsingXO && xoProvider && xoAddress) {
+                try {
+                    const client = createWalletClient({
+                        account: xoAddress as Address,
+                        chain: polygon,
+                        transport: custom(xoProvider) // Use XO Provider
+                    }).extend(publicActions);
+
+                    setAccount(xoAddress as Address);
+                    setWalletClient(client);
+                    setNeedsPassword(false);
+                    return;
+                } catch (e) {
+                    console.error("Failed to setup XO client", e);
+                }
+            }
+
+            // Priority 2: Local Wallet
             // If we don't have a main wallet set up, we can't do anything
             if (!mainWallet.address) return;
 
-            // If we already have a wallet client, we are good
-            if (walletClient) return;
+            // If we already have a wallet client, we are good (UNLESS we switched to XO, but hook re-runs)
+            if (walletClient && !isUsingXO) return;
 
             // If we have the encrypted PK but no password, we need the password
             if (mainWallet.encryptedPrivateKey && !currentPassword) {
-                setNeedsPassword(true);
+                if (!isUsingXO) setNeedsPassword(true); // Only ask password if not using XO
                 return;
             }
 
@@ -100,7 +121,7 @@ export const useCTF = () => {
                     const account = privateKeyToAccount(pk as `0x${string}`);
                     const client = createWalletClient({
                         account,
-                        chain: scrollSepolia,
+                        chain: polygon,
                         transport: http()
                     }).extend(publicActions);
 
@@ -117,7 +138,7 @@ export const useCTF = () => {
         };
 
         unlockWallet();
-    }, [mainWallet, currentPassword, walletClient]);
+    }, [mainWallet, currentPassword, walletClient, isUsingXO, xoProvider, xoAddress]);
 
     const fetchGames = useCallback(async (targetPage?: number) => {
         if (!publicClient || !FACTORY_ADDRESS) return;

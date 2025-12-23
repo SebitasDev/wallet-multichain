@@ -61,8 +61,10 @@ export default function YieldLayout({
             {!askPassword && (
                 <EmbeddedProvider>
                     <XOContractsProvider password={currentPassword!}>
-                        {children}
-                        <ToastContainerCustom />
+                        <>
+                            {children}
+                            <ToastContainerCustom />
+                        </>
                     </XOContractsProvider>
                 </EmbeddedProvider>
             )}
