@@ -131,8 +131,11 @@ export const XOContractsProvider = ({
             if (!isEmbedded) throw new Error("No XO Embedded");
 
             const provider = new XOConnectProvider({
-                rpcs: { ["0x2105"]: "https://mainnet.base.org" },
-                defaultChainId: "0x2105",
+                rpcs: {
+                    ["0x2105"]: "https://mainnet.base.org",
+                    ["0x89"]: "https://polygon-rpc.com"
+                },
+                defaultChainId: "0x89", // Default to Polygon for CTF as requested (or keep base? better to support both)
             });
 
             await provider.request({ method: "eth_requestAccounts" });

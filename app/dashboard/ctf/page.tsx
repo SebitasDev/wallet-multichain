@@ -118,7 +118,14 @@ export default function CTFPage() {
 
             {activeTab === "lobby" ? (
                 <>
-                    <Box sx={{ mb: 4, display: "flex", gap: 2, alignItems: "center" }}>
+                    <Box sx={{
+                        mb: 4,
+                        display: "flex",
+                        gap: 2,
+                        alignItems: "center",
+                        flexDirection: { xs: "column", md: "row" },
+                        width: "100%"
+                    }}>
                         {address && (
                             <>
                                 <Button
@@ -131,7 +138,8 @@ export default function CTFPage() {
                                         bgcolor: "#00DC8C",
                                         color: "black",
                                         fontWeight: "bold",
-                                        "&:hover": { bgcolor: "#00C27A" }
+                                        "&:hover": { bgcolor: "#00C27A" },
+                                        width: { xs: "100%", md: "auto" }
                                     }}
                                 >
                                     {loading ? "Creando..." : "Crear Nuevo Evento"}
@@ -150,7 +158,8 @@ export default function CTFPage() {
                                 boxShadow: "4px 4px 0px #000",
                                 color: "black",
                                 fontWeight: "bold",
-                                bgcolor: "white"
+                                bgcolor: "white",
+                                width: { xs: "100%", md: "auto" }
                             }}
                         >
                             Actualizar
