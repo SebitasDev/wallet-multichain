@@ -131,7 +131,7 @@ export const useSavingsStore = create<SavingsState>()(
 
                 // Calculate APY (simplified - would need more data for accurate calculation)
                 // For now, estimate based on Spark's ~4.5% SSR
-                const apy = "4.50";
+                const apy = "4.00";
 
                 return {
                     chain: position.chain,
@@ -166,7 +166,7 @@ export const useSavingsStore = create<SavingsState>()(
                 const totalEarnedClamped = totalEarned < BigInt(0) ? BigInt(0) : totalEarned;
 
                 // Weighted average APY (simplified)
-                const averageApy = positionCount > 0 ? "4.50" : "0.00";
+                const averageApy = positionCount > 0 ? "4.00" : "0.00";
 
                 return {
                     totalDeposited: formatUsdcAmount(totalDeposited),

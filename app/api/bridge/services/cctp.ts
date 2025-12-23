@@ -99,18 +99,29 @@ export async function processCCTPSettlement(
     const fee = calculateFee();
 
     // Verify Balances (Safety Check)
-    const facilitatorBalance = await publicClient.readContract({
-        address: networkConfig.usdc,
-        abi: usdcErc3009Abi,
-        functionName: "balanceOf",
-        args: [facilitatorAccount.address]
-    }) as bigint;
+    // Verify Balances (Safety Check) with Retry for RPC Consistency
+    let facilitatorBalance = BigInt(0);
+    const maxRetries = 5;
+
+    for (let i = 0; i < maxRetries; i++) {
+        facilitatorBalance = await publicClient.readContract({
+            address: networkConfig.usdc,
+            abi: usdcErc3009Abi,
+            functionName: "balanceOf",
+            args: [facilitatorAccount.address]
+        }) as bigint;
+
+        if (facilitatorBalance >= amountBigInt) break;
+
+        console.log(`[CCTP] Balance lag detected. Retrying ${i + 1}/${maxRetries}... (Has: ${facilitatorBalance}, Needs: ${amountBigInt})`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s
+    }
 
     if (facilitatorBalance < amountBigInt) {
         return {
             success: false,
             transactionHash: transferHash,
-            errorReason: `Insufficient facilitator balance. Has: ${facilitatorBalance}, Needs: ${amountBigInt}`
+            errorReason: `Insufficient facilitator balance after retries. Has: ${facilitatorBalance}, Needs: ${amountBigInt}`
         };
     }
 

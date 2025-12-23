@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
  * going forward, creating the visual effect of earnings incrementing.
  *
  * @param rawValue - The value from blockchain as BigInt string (6 decimals for USDC)
- * @param apy - Annual Percentage Yield as decimal (e.g. 0.045 for 4.5%)
+ * @param apy - Annual Percentage Yield as decimal (e.g. 0.04 for 4.00%)
  * @returns The animated value as a number
  */
 export function useStakingValue(
