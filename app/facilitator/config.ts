@@ -8,11 +8,8 @@ import { ChainKey } from "@/app/types/chain";
 
 const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
-// Comisión del facilitador (en USDC con 6 decimales)
-// 0.01 USDC = 10000 (6 decimales)
 export const FACILITATOR_FEE_USDC = BigInt(10000); // 0.01 USDC
 
-// Dirección que recibe las comisiones
 export const FEE_RECIPIENT: Address = process.env.FACILITATOR_FEE_RECIPIENT as Address || "0x0000000000000000000000000000000000000000";
 
 // ============================================

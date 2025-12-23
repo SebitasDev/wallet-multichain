@@ -1,6 +1,3 @@
-// ABI del TokenMessenger de Circle (CCTP V2)
-// https://developers.circle.com/stablecoins/evm-smart-contracts
-
 export const tokenMessengerAbi = [
     {
         inputs: [
@@ -45,7 +42,6 @@ export const tokenMessengerAbi = [
     }
 ] as const;
 
-// ABI del MessageTransmitter de Circle (para recibir mensajes)
 export const messageTransmitterAbi = [
     {
         inputs: [
