@@ -1,7 +1,8 @@
 import { createAccount } from "@/app/cross-chain-core/clientFactory";
 import { Address } from "abitype";
 import { createPublicClient, http } from "viem";
-import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
 import { approveAndBurn } from "@/app/cross-chain-core/functions/approveAndBurn";
 import bridgeEmitter from "@/app/lib/bridgeEmitter";
 

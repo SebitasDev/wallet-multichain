@@ -19,7 +19,8 @@ import {
     formatUsdcDisplay,
 } from "@/app/savings/config";
 import { useSavingsStore, fetchSavingsPositions } from "@/app/dashboard/store/useSavingsStore";
-import { NETWORKS, ChainKey } from "@/app/constants/chainsInformation";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
 import { WalletInfo, useWalletStore } from "@/app/store/useWalletsStore";
 
 interface DepositSectionProps {

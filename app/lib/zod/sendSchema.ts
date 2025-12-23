@@ -1,5 +1,5 @@
 import { z } from "zod";
-import {ChainKeyEnum} from "@/app/constants/chainsInformation";
+import { ChainKeyEnum } from "@/app/types/chain";
 
 export const sendSchema = z.object({
     toAddress: z.string().min(1, "Address requerida"),

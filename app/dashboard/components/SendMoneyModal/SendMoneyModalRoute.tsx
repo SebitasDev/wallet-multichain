@@ -1,7 +1,8 @@
 import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { formatCurrency } from "@/app/utils/formatCurrency";
-import { CHAIN_ID_TO_KEY, ChainConfig, ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
+import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainConfig, ChainKey } from "@/app/types/chain";
 import { AllocationSummary } from "@/app/dashboard/types";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import AutorenewIcon from "@mui/icons-material/Autorenew";

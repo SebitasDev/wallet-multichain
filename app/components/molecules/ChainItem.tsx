@@ -16,7 +16,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
 import { Address } from "abitype";
 import { useWalletStore } from "@/app/store/useWalletsStore";
-import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
 
 interface IChainItemProps {
     address: Address;

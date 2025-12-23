@@ -1,5 +1,6 @@
 import { Address } from "abitype";
-import { CHAIN_ID_TO_KEY, ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
+import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 
 export const useFindBestRoute = () => {

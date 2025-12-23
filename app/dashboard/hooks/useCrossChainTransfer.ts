@@ -9,7 +9,8 @@ import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
-import { NETWORKS, ChainKey } from "@/app/constants/chainsInformation";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
 import { STELLAR } from "@/app/constants/chais/Stellar";
 import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
 

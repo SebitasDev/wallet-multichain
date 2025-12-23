@@ -1,7 +1,7 @@
 import { unichain, unichainSepolia } from "viem/chains";
 import { UnichainIcon } from "@/app/components/atoms/UnichainIcon";
 import { Address } from "abitype";
-import { ChainConfig } from "@/app/constants/chainsInformation";
+import { ChainConfig } from "@/app/types/chain";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 

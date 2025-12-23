@@ -1,7 +1,7 @@
 import { base, baseSepolia } from "viem/chains";
 import { BaseIcon } from "@/app/components/atoms/BaseIcon";
 import { Address } from "abitype";
-import { ChainConfig } from "@/app/constants/chainsInformation";
+import { ChainConfig } from "@/app/types/chain";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 

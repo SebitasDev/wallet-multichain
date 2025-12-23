@@ -1,5 +1,6 @@
 import { Address } from "abitype";
-import { NETWORKS, ChainKey } from "@/app/constants/chainsInformation";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
 
 // ============================================
 // CONFIGURACIÓN DEL FACILITADOR

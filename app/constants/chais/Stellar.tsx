@@ -1,6 +1,6 @@
 import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { Networks } from "stellar-sdk";
-import { ChainConfig } from "@/app/constants/chainsInformation";
+import { ChainConfig } from "@/app/types/chain";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 

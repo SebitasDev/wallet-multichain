@@ -5,7 +5,8 @@ import { bundlerClientFactory } from "@/app/cross-chain-core/bundlerClientFactor
 import { usdcAbi } from "@/app/cross-chain-core/usdcAbi";
 import { createPublicClient, http } from "viem";
 import { createAuthorization } from "@/app/cross-chain-core/autorizationFactory";
-import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
 import { toUSDCBigInt } from "@/app/utils/toUSDCBigInt";
 import { approveAndBurn } from "@/app/cross-chain-core/functions/approveAndBurn";
 import bridgeEmitter from "@/app/lib/bridgeEmitter";
