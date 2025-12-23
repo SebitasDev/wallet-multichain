@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
 
             // Calculate maxFee (1% of amount, min 200 = 0.0002 USDC)
             const maxFee = amountBigInt > BigInt(100)
-                ? BigInt(Math.max(Number(amountBigInt) / 100, 200))
+                ? BigInt(Math.floor(Math.max(Number(amountBigInt) / 100, 200)))
                 : BigInt(200);
 
             console.log("[Facilitator] depositForBurn args:", {

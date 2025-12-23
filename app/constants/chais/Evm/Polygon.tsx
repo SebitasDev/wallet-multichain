@@ -29,7 +29,7 @@ export const POLYGON: ChainConfig = {
                 supportCCTP: true,
                 domain: 7,
             },
-            aproxFromFee: isDevelopment ? 0.03 : 0.0035,
+            aproxFromFee: isDevelopment ? 0.03 : 0.02,
         },
         nearIntentInformation: {
             support: true,
