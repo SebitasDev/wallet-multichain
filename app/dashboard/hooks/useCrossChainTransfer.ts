@@ -23,6 +23,7 @@ export type FormValues = {
     destChain: FacilitatorChainKey | typeof STELLAR_CHAIN_KEY;
     recipient: string;
     amount: string;
+    destToken: string;
 };
 
 export const useCrossChainTransfer = () => {
@@ -100,6 +101,7 @@ export const useCrossChainTransfer = () => {
             destChain: "Polygon",
             recipient: "",
             amount: "",
+            destToken: "USDC",
         },
     });
 
@@ -314,7 +316,8 @@ export const useCrossChainTransfer = () => {
                 amount: finalAmount,
                 sourceChain: data.sourceChain,
                 destinationChain: data.destChain as FacilitatorChainKey,
-                recipient: data.recipient
+                recipient: data.recipient,
+                destToken: data.destToken
             });
 
             if (result.success) {

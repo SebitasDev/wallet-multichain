@@ -28,7 +28,8 @@ export async function processNearSettlement(
     sourceChain: ChainKey,
     destChain: ChainKey,
     amount: string,
-    recipient: string
+    recipient: string,
+    destToken?: string
 ): Promise<SettleResponse> {
 
     const sourceConfig = NETWORKS[sourceChain];
@@ -48,6 +49,10 @@ export async function processNearSettlement(
     // 1. Resolve Assets from Config
     const sourceAsset = sourceConfig.crossChainInformation.nearIntentInformation?.assetsId[0]?.assetId;
     let destAsset = destConfig.crossChainInformation.nearIntentInformation?.assetsId[0]?.assetId;
+
+    if (destChain === "Stellar" && destToken === "XLM") {
+        destAsset = destConfig.crossChainInformation.nearIntentInformation?.assetsId[1]?.assetId;
+    }
 
     // Fallback for missing dest asset or specific overrides could go here
     if (!sourceAsset || !destAsset) {

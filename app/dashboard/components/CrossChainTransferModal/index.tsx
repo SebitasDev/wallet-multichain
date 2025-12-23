@@ -10,10 +10,13 @@ import {
     Alert,
     Typography,
     IconButton,
+    FormControlLabel,
+    Checkbox,
 } from "@mui/material";
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 import { useCrossChainTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/useCrossChainTransfer";
+import { Controller } from "react-hook-form";
 import { TransferHeader } from "./TransferHeader";
 import { ChainSelector } from "./ChainSelector";
 import { AmountInput } from "./AmountInput";
@@ -152,6 +155,36 @@ export const CrossChainTransferModal = () => {
                             control={control}
                             options={DESTINATION_CHAIN_OPTIONS}
                         />
+
+                        {watchDestChain === STELLAR_CHAIN_KEY && (
+                            <Box sx={{ px: 1 }}>
+                                <Controller
+                                    name="destToken"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={field.value === "XLM"}
+                                                    onChange={(e) => field.onChange(e.target.checked ? "XLM" : "USDC")}
+                                                    sx={{
+                                                        color: "#000000",
+                                                        "&.Mui-checked": {
+                                                            color: "#000000",
+                                                        },
+                                                    }}
+                                                />
+                                            }
+                                            label={
+                                                <Typography variant="body2" fontWeight={600}>
+                                                    Recibir Token Nativo (XLM)
+                                                </Typography>
+                                            }
+                                        />
+                                    )}
+                                />
+                            </Box>
+                        )}
 
                         <RecipientInput control={control} />
 

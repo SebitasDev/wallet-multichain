@@ -10,7 +10,8 @@ export const executeStellarBridgeTransfer = async (
     paymentPayload: FacilitatorPaymentPayload,
     sourceChain: FacilitatorChainKey,
     amount: string,
-    recipientStellar: string
+    recipientStellar: string,
+    destToken?: string
 ): Promise<SettleResponse> => {
     console.log(LOG_PREFIX, "Calling Smart Router API");
     const response = await fetch("/api/bridge/settle", {
@@ -21,7 +22,8 @@ export const executeStellarBridgeTransfer = async (
             sourceChain,
             destChain: "Stellar", // EVM -> Stellar
             amount,
-            recipient: recipientStellar
+            recipient: recipientStellar,
+            destToken
         })
     });
 

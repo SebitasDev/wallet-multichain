@@ -54,12 +54,14 @@ export const useFacilitator = ({
         sourceChain,
         destinationChain,
         recipient,
+        destToken,
         overrideCredentials
     }: {
         amount: string,
         sourceChain: FacilitatorChainKey,
         destinationChain: FacilitatorChainKey,
         recipient: string, // Can be EVM Address or Stellar Address
+        destToken?: string,
         overrideCredentials?: {
             privateKey?: `0x${string}`;
             stellarPrivateKey?: string;
@@ -119,7 +121,8 @@ export const useFacilitator = ({
                     paymentPayload,
                     sourceChain,
                     amount,
-                    recipient
+                    recipient,
+                    destToken
                 );
             }
 
@@ -170,7 +173,8 @@ export const useFacilitator = ({
                         sourceChain,
                         destChain: destinationChain, // The router needs this to decide
                         amount: amount,
-                        recipient: recipient
+                        recipient: recipient,
+                        destToken: destToken
                     })
                 });
 
