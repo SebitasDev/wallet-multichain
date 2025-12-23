@@ -5,13 +5,16 @@
 export {
     FACILITATOR_FEE_USDC,
     FEE_RECIPIENT,
-    FACILITATOR_NETWORKS,
-    getNetworkByChainId,
     calculateFee,
     calculateTotalWithFee,
     type FacilitatorChainKey,
     type FacilitatorNetworkConfig
 } from "./config";
+
+export {
+    FACILITATOR_NETWORKS,
+    getNetworkByChainId
+} from "./evm/config";
 
 // Tipos
 export type {
@@ -32,12 +35,12 @@ export {
     usdcErc3009Abi,
     TransferWithAuthorizationTypes,
     ReceiveWithAuthorizationTypes
-} from "./usdcErc3009Abi";
+} from "./evm/usdcErc3009Abi";
 
 export {
     tokenMessengerAbi,
     messageTransmitterAbi
-} from "./cctpAbi";
+} from "./evm/cctpAbi";
 
 // Hook del cliente
 export { useFacilitator } from "./hooks/useFacilitator";

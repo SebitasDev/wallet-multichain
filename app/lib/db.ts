@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = "mongodb+srv://camicarva119_db_user:IpgDASZioJfwNyKn@1llet.xmedplu.mongodb.net/";
+const MONGODB_URI = process.env.MONGODB_URI as string;
 
 if (!MONGODB_URI) {
     throw new Error(
@@ -8,11 +8,6 @@ if (!MONGODB_URI) {
     );
 }
 
-/**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections growing exponentially
- * during API Route usage.
- */
 let cached = (global as any).mongoose;
 
 if (!cached) {
@@ -36,7 +31,6 @@ async function connectDB() {
 
     try {
         cached.conn = await cached.promise;
-        console.log("Connected to MongoDB");
     } catch (e) {
         cached.promise = null;
         throw e;

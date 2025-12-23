@@ -8,7 +8,8 @@ import {
     FormControlLabel,
     Box
 } from "@mui/material";
-import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
 
 type FormValues = {
     toAddress: string;

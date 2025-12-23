@@ -1,14 +1,15 @@
 import { Address } from "abitype";
-import { usdcAbi } from "@/app/cross-chain-core/usdcAbi";
+import { usdcAbi } from "@/app/cross-chain-core/circleCCTP/usdcAbi";
 import { toUSDCBigInt } from "@/app/utils/toUSDCBigInt";
-import { createAuthorization } from "@/app/cross-chain-core/autorizationFactory";
-import { createAccount } from "@/app/cross-chain-core/clientFactory";
-import { createPaymaster } from "@/app/cross-chain-core/paymasterFactory";
-import { bundlerClientFactory } from "@/app/cross-chain-core/bundlerClientFactory";
-import { createRetrieveAttestation } from "@/app/cross-chain-core/retrieveAttestationFactory";
-import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
-import { getTokenMessenger } from "@/app/facilitator/config";
-import { tokenMessengerAbi } from "@/app/facilitator/cctpAbi";
+import { createAuthorization } from "@/app/cross-chain-core/circleCCTP/autorizationFactory";
+import { createAccount } from "@/app/cross-chain-core/circleCCTP/clientFactory";
+import { createPaymaster } from "@/app/cross-chain-core/circleCCTP/paymasterFactory";
+import { bundlerClientFactory } from "@/app/cross-chain-core/circleCCTP/bundlerClientFactory";
+import { createRetrieveAttestation } from "@/app/cross-chain-core/circleCCTP/retrieveAttestationFactory";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
+import { getTokenMessenger } from "@/app/facilitator/evm/config";
+import { tokenMessengerAbi } from "@/app/facilitator/evm/cctpAbi";
 import { createPublicClient, http, maxUint256 } from "viem";
 
 export const approveAndBurn = async (

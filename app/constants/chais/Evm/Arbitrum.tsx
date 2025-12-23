@@ -1,7 +1,7 @@
-import {arbitrum, arbitrumSepolia} from "viem/chains";
+import { arbitrum, arbitrumSepolia } from "viem/chains";
 import ArbIcon from "@/app/components/atoms/ArbIcon";
-import {Address} from "abitype";
-import {ChainConfig} from "@/app/constants/chainsInformation";
+import { Address } from "abitype";
+import { ChainConfig } from "@/app/types/chain";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 

@@ -1,26 +1,3 @@
-
-export const CHAIN_LOGOS: Record<string, string> = {
-    // Layer 2s
-    "Base": "https://avatars.githubusercontent.com/u/108554348?s=200&v=4",
-    "Optimism": "https://assets.coingecko.com/coins/images/25244/small/Optimism.png?1660904599",
-    "Arbitrum": "https://avatars.githubusercontent.com/u/89987034?s=200&v=4",
-    "Polygon": "https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png?1624446912",
-    "ZkSync": "https://assets.coingecko.com/coins/images/24683/small/zksync.png?1647414980",
-    "Starknet": "https://assets.coingecko.com/coins/images/27989/small/starknet.png?1667823377",
-
-    // Layer 1s
-    "Ethereum": "https://assets.coingecko.com/coins/images/279/small/ethereum.png?1595348880",
-    "Bitcoin": "https://assets.coingecko.com/coins/images/1/small/bitcoin.png?1547033579",
-    "Solana": "https://assets.coingecko.com/coins/images/4128/small/solana.png?1640133422",
-    "BSC": "https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png?1547034615",
-    "Avalanche": "https://assets.coingecko.com/coins/images/12559/small/coin-round-red.png?1604021818",
-    "Fantom": "https://assets.coingecko.com/coins/images/4001/small/Fantom.png?1558015016",
-
-    // Testnets / Others
-    "Sepolia": "https://assets.coingecko.com/coins/images/279/small/ethereum.png?1595348880",
-    "Goerli": "https://assets.coingecko.com/coins/images/279/small/ethereum.png?1595348880",
-};
-
 export const MOCK_TRANSACTIONS = [
     {
         id: "tx-uuid-1234-5678",

@@ -1,5 +1,5 @@
 import { Address } from "abitype";
-import { TransferWithAuthorizationTypes } from "@/app/facilitator/usdcErc3009Abi"; // Reuse ABI from facilitator
+import { TransferWithAuthorizationTypes } from "@/app/facilitator/evm/usdcErc3009Abi"; // Reuse ABI from facilitator
 
 // Re-export common types
 export { TransferWithAuthorizationTypes };

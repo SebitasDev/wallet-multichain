@@ -2,7 +2,7 @@ import { polygonAmoy } from "viem/chains";
 import { polygon } from "wagmi/chains";
 import PolygonIcon from "@/app/components/atoms/PolygonIcon";
 import { Address } from "abitype";
-import { ChainConfig } from "@/app/constants/chainsInformation";
+import { ChainConfig } from "@/app/types/chain";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 

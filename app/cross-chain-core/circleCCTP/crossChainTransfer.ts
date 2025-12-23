@@ -1,8 +1,9 @@
-import { createAccount } from "@/app/cross-chain-core/clientFactory";
+import { createAccount } from "@/app/cross-chain-core/circleCCTP/clientFactory";
 import { Address } from "abitype";
 import { createPublicClient, http } from "viem";
-import { ChainKey, NETWORKS } from "@/app/constants/chainsInformation";
-import { approveAndBurn } from "@/app/cross-chain-core/functions/approveAndBurn";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
+import { approveAndBurn } from "@/app/cross-chain-core/circleCCTP/functions/approveAndBurn";
 import bridgeEmitter from "@/app/lib/bridgeEmitter";
 
 export const crossChainTransfer = async (

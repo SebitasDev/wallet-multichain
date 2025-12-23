@@ -8,10 +8,10 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
-    FACILITATOR_NETWORKS,
     FacilitatorChainKey,
 } from "@/app/facilitator/config";
-import { usdcErc3009Abi } from "@/app/facilitator/usdcErc3009Abi";
+import { FACILITATOR_NETWORKS } from "@/app/facilitator/evm/config";
+import { usdcErc3009Abi } from "@/app/facilitator/evm/usdcErc3009Abi";
 import { StellarBridgePayload, StellarBridgeResponse } from "@/app/stellar-transfer-core/config";
 import { getOneClickQuote, submitTxHash } from "@/app/stellar-transfer-core/sdk-service";
 import * as StellarSdk from "stellar-sdk";

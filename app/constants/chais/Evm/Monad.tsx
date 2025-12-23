@@ -5,7 +5,7 @@ import { ChainConfig } from "@/app/types/chain";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
-export const AVALANCHE: ChainConfig = {
+export const Monad: ChainConfig = {
     assets: [
         {
             name: "USDC",
@@ -17,16 +17,16 @@ export const AVALANCHE: ChainConfig = {
         chain: isDevelopment ? avalancheFuji : avalanche,
         rpcUrl: isDevelopment ? avalancheFuji.rpcUrls.default.http[0] : avalanche.rpcUrls.default.http[0],
     },
-    label: "Avalanche",
+    label: "Monad",
     icon: <AvalancheIcon />,
-    chipLabel: "AVAX",
+    chipLabel: "MON",
     chipColor: "#E84142",
     crossChainInformation: {
         circleInformation: {
-            supportCirclePaymaster: true,
+            supportCirclePaymaster: false,
             cCTPInformation: {
-                supportCCTP: true,
-                domain: 1,
+                supportCCTP: false,
+                domain: 0,
             },
             aproxFromFee: isDevelopment ? 10000 : 10000,
         },
@@ -34,7 +34,7 @@ export const AVALANCHE: ChainConfig = {
             support: true,
             assetsId: [
                 {
-                    assetId: "nep245:v2_1.omni.hot.tg:43114_3atVJH3r5c4GqiSYmg9fECvjc47o",
+                    assetId: "nep245:v2_1.omni.hot.tg:143_2dmLwYWkCQKyTjeUPAsGJuiVLbFx",
                     name: "USDC",
                     decimals: 6
                 }
