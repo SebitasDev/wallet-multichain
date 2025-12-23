@@ -330,6 +330,7 @@ export const HeroBannerMainWallet = ({
                         mainFontSize={{ xs: 32, sm: 38, md: 44 }}
                         smallFontSize={{ xs: 20, sm: 24, md: 28 }}
                     />
+
                 </Box>
 
                 <Box

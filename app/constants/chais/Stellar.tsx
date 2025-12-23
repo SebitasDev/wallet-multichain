@@ -29,7 +29,7 @@ export const STELLAR: ChainConfig = {
             support: true,
             assetsId: [
                 { assetId: "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu", name: "USDC", decimals: 6 },
-                { assetId: "nep245:v2_1.omni.hot.tg:1100_111bzQBB5v7AhLyPMDwS8uJgQV24KaAPXtwyVWu2KXbbfQU6NXRCz", name: "USDC", decimals: 6 }
+                { assetId: "nep245:v2_1.omni.hot.tg:1100_111bzQBB5v7AhLyPMDwS8uJgQV24KaAPXtwyVWu2KXbbfQU6NXRCz", name: "XLM", decimals: 6 }
             ],
             needMemo: true
         }
