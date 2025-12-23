@@ -258,7 +258,7 @@ export function DepositSection({ walletAddress, wallet, password, onOpenConfirmM
                         Current APY:
                     </Typography>
                     <Typography sx={{ fontSize: 18, fontWeight: 900, color: "#000000" }}>
-                        ~4.50%
+                        ~4.00%
                     </Typography>
                 </Box>
 

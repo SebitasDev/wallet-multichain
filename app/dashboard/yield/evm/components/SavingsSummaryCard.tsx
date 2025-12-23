@@ -16,7 +16,7 @@ const StatBox = ({
     color = "#000000",
     isPositive = false,
     isAnimated = false,
-    apy = "4.50",
+    apy = "4.00",
     isPercentage = false,
     loading = false,
 }: {
@@ -145,7 +145,7 @@ export function SavingsSummaryCard() {
                             color: "#000000",
                         }}
                     >
-                        Your Savings Overview
+                        Earn ~4% on your idle USDC
                     </Typography>
                     <Typography
                         sx={{

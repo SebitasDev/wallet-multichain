@@ -195,7 +195,7 @@ export function ConfirmationModal({
                         }}
                     >
                         {type === "deposit"
-                            ? "Your USDC will be deposited into Spark.fi sUSDC vault and will earn ~4.50% APY"
+                            ? "Your USDC will be deposited into Spark.fi sUSDC vault and will earn ~4.00% APY"
                             : "Your sUSDC shares will be converted back to USDC and sent to your wallet"}
                     </Typography>
                 </Box>

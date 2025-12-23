@@ -44,7 +44,7 @@ export const SplitBalance = ({
                     color: "#000000",
                 }}
             >
-                {mainPart}
+                Earn up to 4% APY with Spark
             </Typography>
             {smallPart && (
                 <Typography

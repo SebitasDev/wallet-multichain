@@ -21,11 +21,13 @@ export function DistributionChart() {
     );
 
     const chartData = positionsWithEarnings.map((position) => {
-        const value = parseFloat(position.currentValue.replace(/[^0-9.]/g, ""));
-        const percentage = totalValue > 0 ? (value / totalValue) * 100 : 0;
+        // Use raw value for precision, fallback to 0 if missing
+        const rawValue = position.currentValueRaw ? parseFloat(position.currentValueRaw) / 1e6 : 0;
+        const percentage = totalValue > 0 ? (rawValue / totalValue) * 100 : 0;
+
         return {
             chain: position.chain,
-            value,
+            value: rawValue,
             percentage,
             color: getSavingsChainConfig(position.chain).chipColor,
         };
@@ -268,6 +270,10 @@ function generateConicGradient(
     data: { chain: string; percentage: number; color: string }[]
 ): string {
     if (data.length === 0) return "#f5f5f5";
+
+    // specific check: if all percentages are 0, return grey
+    const totalPercentage = data.reduce((sum, item) => sum + item.percentage, 0);
+    if (totalPercentage === 0) return "#f5f5f5";
 
     let currentAngle = 0;
     const segments: string[] = [];

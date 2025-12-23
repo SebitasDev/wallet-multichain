@@ -6,7 +6,7 @@ import { useStakingValue } from "../hooks/useStakingValue";
 interface AnimatedValueProps {
     /** Raw value as BigInt string from blockchain (6 decimals for USDC) */
     rawValue: string;
-    /** APY as percentage string (e.g. "4.50") */
+    /** APY as percentage string (e.g. "4.00") */
     apy: string;
     /** Number of decimal places to show (default: 12 like Spark) */
     decimals?: number;
@@ -32,7 +32,7 @@ export function AnimatedValue({
     showPlusSign = false,
     sx,
 }: AnimatedValueProps) {
-    // Parse APY to decimal (4.50% -> 0.045)
+    // Parse APY to decimal (4.00% -> 0.04)
     const apyDecimal = parseFloat(apy) / 100;
 
     // Get the animated value (already converted to number)
