@@ -26,6 +26,10 @@ export interface SignatureComponents {
 export interface FacilitatorPaymentPayload {
     authorization: TransferAuthorization;
     signature: `0x${string}`;
+    sourceChain?: FacilitatorChainKey;
+    domainName?: string;
+    domainVersion?: string;
+    signedXDR?: string;
 }
 
 // Configuración de cross-chain
@@ -92,4 +96,17 @@ export interface CrossChainStatus {
         attestation: `0x${string}`;
     };
     error?: string;
+}
+export interface UseFacilitatorOptions {
+    provider?: any;
+    privateKey?: `0x${string}`;
+    stellarPrivateKey?: string;
+    userAddress: Address;
+}
+
+export interface TransferParams {
+    amount: string;
+    sourceChain: FacilitatorChainKey;
+    crossChainConfig?: CrossChainConfig;
+    recipient?: Address; // Required for direct, Optional (but usually needed) for CCTP if different from mintRecipient
 }

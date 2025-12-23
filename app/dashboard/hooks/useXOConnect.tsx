@@ -65,6 +65,7 @@ interface XOContractsContextType {
     loadWallet: (mnemonic: string, password: string) => Promise<void>;
     resetWallet: () => Promise<void>;
     factoryReset: () => void;
+    provider: any; // Exposed for Facilitator usage
 }
 
 const XOContractsContext = createContext<XOContractsContextType | null>(null);
@@ -236,6 +237,7 @@ export const XOContractsProvider = ({
                 loadWallet,
                 resetWallet,
                 factoryReset,
+                provider: xoProviderRef.current
             }}
         >
             {children}

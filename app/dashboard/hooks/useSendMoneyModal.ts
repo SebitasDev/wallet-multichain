@@ -8,18 +8,11 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useSessionWalletStore } from "@/app/store/useSessionWalletStore";
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { toast } from "react-toastify";
-import { Address, createPublicClient, http } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { Address } from "viem";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
-import { getPrivateClientByNetworkName } from "@/app/utils/getClientByNetworkName";
-import { createAccount } from "@/app/cross-chain-core/circleCCTP/clientFactory";
-import { createPaymaster } from "@/app/cross-chain-core/circleCCTP/paymasterFactory";
-import { bundlerClientFactory } from "@/app/cross-chain-core/circleCCTP/bundlerClientFactory";
-import { createAuthorization } from "@/app/cross-chain-core/circleCCTP/autorizationFactory";
-import { usdcAbi } from "@/app/cross-chain-core/circleCCTP/usdcAbi";
-import { toUSDCBigInt } from "@/app/utils/toUSDCBigInt";
 import { useBridgeUsdcStream } from "@/app/dashboard/hooks/useBridgeUsdcStream";
+import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 
 export type RouteStatus =
     | "idle"
@@ -183,138 +176,35 @@ export const useSendMoneyModal = () => {
         }
     };
 
-    const handleOnConfirm = async () => {
-        console.log("🔹 Starting handleOnTest");
+    // Note: useFacilitator expects a base config. We can init with defaults or connection state.
+    // For the LOOP, we will use the `overrideCredentials` param we added to `executeTransfer`.
+    const { executeTransfer } = useFacilitator({
+        userAddress: "0x0000000000000000000000000000000000000000", // Dummy init, will override
+    });
 
-        //change this
-        const account = privateKeyToAccount("0x2817cf84953d5d6283c479ce478bb91c50e21eb7fef347b25a60e7b7708a71dc" as Address);
-        console.log("Account:", account.address);
+
+    const handleOnConfirm = async () => {
+        console.log("🔹 Starting handleOnConfirm (Refactored)");
 
         const toValidChain = (watch("sendChain") in NETWORKS ? watch("sendChain") : "Base") as ChainKey;
-        console.log("Destination chain:", toValidChain);
+        const recipient = watch("toAddress");
 
-        const getWriter = (chainName: ChainKey) => {
-            console.log("Getting client for chain:", chainName);
-            const chainId = NETWORKS[chainName]?.evm?.chain.id;
-            if (!chainId) throw new Error("Chain ID not found for " + chainName);
-            return getPrivateClientByNetworkName(chainId, account);
-        };
+        console.log("Destination:", toValidChain, recipient);
 
-        const transfer = async (
-            chainName: ChainKey,
-            to: string,
-            amount: bigint,
-            optionalPrivateKey?: string,
-        ) => {
-            const networkOk = NETWORKS[chainName];
-            if (!networkOk || !networkOk.evm) {
-                throw new Error(`Chain ${chainName} is not valid for EVM transfer`);
-            }
-
-            const token = networkOk.assets.find(a => a.name === "USDC")?.address;
-            const chainId = networkOk.evm.chain.id;
-
-            if (!token) throw new Error("USDC address not found");
-
-            const client = optionalPrivateKey
-                ? getPrivateClientByNetworkName(chainId, privateKeyToAccount(optionalPrivateKey as Address))
-                : getWriter(chainName);
-
-            console.log(`➡️ Transferring ${amount} on ${chainName} to ${to} using ${optionalPrivateKey ? "custom key" : "main account"}`);
-
-            const toClient = createPublicClient({
-                chain: client.chain,
-                transport: http()
-            });
-
-            const toAccount = await createAccount(toClient, optionalPrivateKey as Address)
-
-            setRouteDetails?.((prev: any) =>
-                prev.map((wallet: any) =>
-                    wallet.wallet.toLowerCase() === toAccount.owner.address.toLowerCase()
-                        ? {
-                            ...wallet,
-                            chains: wallet.chains.map((c: any) =>
-                                c.id.toString() === client.chain.id.toString()
-                                    ? {
-                                        ...c,
-                                        status: "transfer",
-                                        message: "Transfiriendo...",
-                                    }
-                                    : c
-                            ),
-                        }
-                        : wallet
-                )
-            );
-
-            const paymasterTo =
-                await createPaymaster.getPaymasterData(token as Address, toAccount.account, toClient)
-
-            const bundlerClientTo = bundlerClientFactory({
-                account: toAccount.account,
-                client: toClient,
-                paymaster: {
-                    getPaymasterData: async () => paymasterTo,
-                },
-            });
-
-            const authorization = await createAuthorization(toAccount.owner, toClient, toAccount.account)
-
-            const hash = await bundlerClientTo.sendUserOperation({
-                account: toAccount.account,
-                calls: [
-                    {
-                        to: token as Address,
-                        abi: usdcAbi,
-                        functionName: "approve",
-                        args: [process.env.NEXT_PUBLIC_ENVIROMENT === "development" ? "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA" : "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d", toUSDCBigInt(10000),],
-                    },
-                    {
-                        to: token as Address,
-                        abi: usdcAbi,
-                        functionName: "transfer",
-                        args: [to, amount],
-                    }
-                ],
-                authorization: authorization,
-            });
-
-            console.log("operation transfer", hash);
-
-            const receiptSuply = await bundlerClientTo.waitForUserOperationReceipt({ hash: hash });
-            console.log("Transaction realizada", receiptSuply.receipt.transactionHash);
-
-            setRouteDetails?.((prev: any) =>
-                prev.map((wallet: any) =>
-                    wallet.wallet.toLowerCase() === toAccount.owner.address.toLowerCase()
-                        ? {
-                            ...wallet,
-                            chains: wallet.chains.map((c: any) =>
-                                c.id.toString() === client.chain.id.toString()
-                                    ? {
-                                        ...c,
-                                        status: "done",
-                                        message: "Transferencia finalizada",
-                                    }
-                                    : c
-                            ),
-                        }
-                        : wallet
-                )
-            );
-
-            return hash;
-        };
-
-        console.log("🔹 Starting main allocation loop");
-
+        // Loop Allocations
         for (const allocation of routeSummary!.allocations) {
-            const unlocked = await unlockWallet(allocation.from, watch("sendPassword"));
+
+            // 1. Unlock Wallet (Get Private Key)
+            const unlockedKey = await unlockWallet(allocation.from, watch("sendPassword"));
+            if (!unlockedKey) {
+                toast.error(`No se pudo desbloquear la wallet ${allocation.from}`);
+                continue;
+            }
 
             for (const chain of allocation.chains) {
                 const fromValidChain = CHAIN_ID_TO_KEY[chain.chainId] ?? "Base";
-                const normalizedAmount = BigInt(Math.floor(Math.max(Number(chain.amount), 0) * 1e6));
+                const amountFloat = Number(chain.amount);
+                const amountString = amountFloat.toString(); // executeTransfer expects string
 
                 // Safe checks
                 const fromNet = NETWORKS[fromValidChain as ChainKey];
@@ -325,59 +215,89 @@ export const useSendMoneyModal = () => {
                     continue;
                 }
 
-                if (fromValidChain === toValidChain) {
-                    await transfer(fromValidChain, watch("toAddress"), normalizedAmount, unlocked);
+                // Update UI Status
+                setRouteDetails(prev =>
+                    prev.map(wallet =>
+                        wallet.wallet.toLowerCase() === allocation.from.toLowerCase()
+                            ? {
+                                ...wallet,
+                                chains: wallet.chains.map(c =>
+                                    c.id.toString() === chain.chainId.toString()
+                                        ? { ...c, status: "starting", message: "Iniciando..." }
+                                        : c
+                                )
+                            }
+                            : wallet
+                    )
+                );
 
-                    transferBalance(
-                        allocation.from as Address,
-                        watch("toAddress") as Address,
-                        fromNet.evm.chain.id.toString(),
-                        toNet.evm.chain.id.toString(),
-                        Number(normalizedAmount) / 1e6
-                    );
-                } else {
-                    await fetch("/api/bridge-usdc", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            amount: Number(normalizedAmount) / 1e6,
-                            fromChain: fromValidChain,
-                            toChain: toValidChain,
-                            recipient: watch("toAddress"),
-                            privateKey: unlocked,
-                        }),
+                try {
+                    // EXECUTE UNIFIED TRANSFER
+                    // This handles Same-Chain (Gasless) AND Cross-Chain (CCTP) automatically via Smart Router
+
+                    const result = await executeTransfer({
+                        amount: amountString,
+                        sourceChain: fromValidChain as FacilitatorChainKey,
+                        destinationChain: toValidChain as FacilitatorChainKey,
+                        recipient: recipient,
+                        overrideCredentials: {
+                            privateKey: unlockedKey as `0x${string}`,
+                            userAddress: allocation.from as Address
+                        }
                     });
 
-                    transferBalance(
-                        allocation.from as Address,
-                        watch("toAddress") as Address,
-                        fromNet.evm.chain.id.toString(),
-                        toNet.evm.chain.id.toString(),
-                        Number(normalizedAmount) / 1e6
+                    if (result.success) {
+                        // Update UI Success
+                        setRouteDetails(prev =>
+                            prev.map(wallet =>
+                                wallet.wallet.toLowerCase() === allocation.from.toLowerCase()
+                                    ? {
+                                        ...wallet,
+                                        chains: wallet.chains.map(c =>
+                                            c.id.toString() === chain.chainId.toString()
+                                                ? { ...c, status: "done", message: "Completado" }
+                                                : c
+                                        )
+                                    }
+                                    : wallet
+                            )
+                        );
+
+                        // Update Balance Store (Simulated)
+                        transferBalance(
+                            allocation.from as Address,
+                            recipient as Address,
+                            fromNet.evm.chain.id.toString(),
+                            toNet.evm.chain.id.toString(),
+                            amountFloat
+                        );
+
+                    } else {
+                        throw new Error(result.errorReason);
+                    }
+
+                } catch (e: any) {
+                    console.error("Transfer error:", e);
+                    setRouteDetails(prev =>
+                        prev.map(wallet =>
+                            wallet.wallet.toLowerCase() === allocation.from.toLowerCase()
+                                ? {
+                                    ...wallet,
+                                    chains: wallet.chains.map(c =>
+                                        c.id.toString() === chain.chainId.toString()
+                                            ? { ...c, status: "error", message: e.message || "Error" }
+                                            : c
+                                    )
+                                }
+                                : wallet
+                        )
                     );
                 }
             }
         }
 
-
-        /*console.log("🔹All allocations processed, sending final transfer to destination");
-
-        const totalChains = routeSummary!.allocations.reduce((acc, a) => acc + a.chains.length, 0);
-
-        // Sumar todos los montos originales
-        const totalAmountRaw = routeSummary!.allocations
-            .flatMap(a => a.chains.map(c => c.amount))
-            .reduce((acc, n) => acc + n, 0);
-
-        // Restar 0.01 por cada chain solo para el envío final
-        const adjustedTotal = Math.max(totalAmountRaw - 0.01 * totalChains, 0);
-
-        const finalAmount = parseUnits(adjustedTotal.toFixed(6), 6);
-        console.log(`Original: ${totalAmountRaw}, Chains: ${totalChains}, Ajustado: ${adjustedTotal}`);
-
-        await transfer(toValidChain, toAddress, finalAmount);*/
         console.log("✅ Final transfer completed");
-        toast.success("Transacciones completados");
+        toast.success("Transacciones completadas");
     };
 
     const wallets = useWalletStore((state) => state.wallets);

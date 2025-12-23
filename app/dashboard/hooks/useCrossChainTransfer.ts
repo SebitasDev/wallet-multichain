@@ -81,10 +81,7 @@ export const useCrossChainTransfer = () => {
     }, [isUsingXO, mainWallet, currentPassword]);
 
     const {
-        transferCrossChain,
-        transferDirect,
-        transferStellar,
-        transferFromStellar,
+        executeTransfer,
         getFee,
         getTotalWithFee,
         isLoading,
@@ -271,77 +268,31 @@ export const useCrossChainTransfer = () => {
             return;
         }
 
-        // Stellar Source Logic (Stellar -> EVM)
-        if ((data.sourceChain as string) === STELLAR_CHAIN_KEY) {
-            toast.info("Procesando transfer automático desde Stellar...");
-            try {
-                // Add fee to amount so the facilitator receives (Amount + Fee) and bridges (Amount)
-                // e.g. Input: 0.23 -> Send 0.24 -> Facilitator keeps 0.01 -> Bridges 0.23
-                const amountWithFee = (parseFloat(data.amount) + 0.01).toFixed(6);
 
-                const result = await transferFromStellar(
-                    amountWithFee,
-                    data.destChain as FacilitatorChainKey,
-                    data.recipient
-                );
-
-                if (result.success) {
-                    toast.success(`Transfer automático desde Stellar exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
-                    closeModal();
-                } else {
-                    toast.error(`Error Stellar: ${result.errorReason}`);
-                }
-            } catch (err) {
-                console.error(err);
-                toast.error("Error al procesar el transfer desde Stellar");
-            }
-            return;
-        }
-
-        // Stellar Destination Logic (EVM -> Stellar)
-        if ((data.destChain as string) === STELLAR_CHAIN_KEY) {
-            toast.info("Firmando autorización para Stellar...");
-            try {
-                const result = await transferStellar(
-                    data.amount,
-                    data.sourceChain,
-                    data.recipient
-                );
-
-                if (result.success) {
-                    toast.success(`Transfer a Stellar exitoso! TX EVM: ${result.transactionHash?.slice(0, 10)}...`);
-                    closeModal();
-                } else {
-                    toast.error(`Error Stellar: ${result.errorReason}`);
-                }
-            } catch (err) {
-                console.error(err);
-                toast.error("Error al procesar el transfer a Stellar");
-            }
-            return;
-        }
-
+        // Unified Transfer Call
         toast.info("Firmando autorización...");
+        // Add minimal Stellar fee logic if Source is Stellar (wrapper handled in hook, but fee addition logic was here)
+        // Hook expects RAW amount input for Stellar -> EVM?
+        // Let's keep the hook clean and handle fee details inside logic if possible, OR pass the 'amount' as user input.
+        // User logic: "Input: 0.23 -> Send 0.24 -> Facilitator keeps 0.01 -> Bridges 0.23"
+        // Let's pass the raw amount the user wants to BRIDGE, and let the hook handle internal fee logic/addition if needed.
+        // HOWEVER, previous code calculated `amountWithFee` and passed IT to the function.
+        // To be safe, let's keep the fee addition here for Stellar Source.
+
+        let finalAmount = data.amount;
+        if ((data.sourceChain as string) === STELLAR_CHAIN_KEY) {
+            finalAmount = (parseFloat(data.amount) + 0.01).toFixed(6);
+        }
 
         try {
-            let result;
+            console.log("Submitting unified transfer:", data);
 
-            console.log(data);
-
-            if (data.sourceChain === data.destChain) {
-                result = await transferDirect(
-                    data.amount,
-                    data.sourceChain,
-                    data.recipient as Address
-                );
-            } else {
-                result = await transferCrossChain(
-                    data.amount,
-                    data.sourceChain,
-                    data.destChain as FacilitatorChainKey,
-                    data.recipient as Address
-                );
-            }
+            const result = await executeTransfer({
+                amount: finalAmount,
+                sourceChain: data.sourceChain,
+                destinationChain: data.destChain as FacilitatorChainKey,
+                recipient: data.recipient
+            });
 
             if (result.success) {
                 toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
@@ -350,7 +301,7 @@ export const useCrossChainTransfer = () => {
                 }
                 closeModal();
             } else {
-                toast.error(`Error: ${result.errorReason}`);
+                toast.error(`Error: ${result.errorReason || "Unknown Error"}`);
             }
         } catch (err) {
             console.error(err);

@@ -8,8 +8,8 @@ import { bundlerClientFactory } from "@/app/cross-chain-core/circleCCTP/bundlerC
 import { createRetrieveAttestation } from "@/app/cross-chain-core/circleCCTP/retrieveAttestationFactory";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
-import { getTokenMessenger } from "@/app/facilitator/config";
-import { tokenMessengerAbi } from "@/app/facilitator/cctpAbi";
+import { getTokenMessenger } from "@/app/facilitator/evm/config";
+import { tokenMessengerAbi } from "@/app/facilitator/evm/cctpAbi";
 import { createPublicClient, http, maxUint256 } from "viem";
 
 export const approveAndBurn = async (

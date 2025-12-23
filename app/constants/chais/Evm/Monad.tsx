@@ -1,0 +1,45 @@
+import { avalanche, avalancheFuji } from "viem/chains";
+import { AvalancheIcon } from "@/app/components/atoms/AvalancheIcon";
+import { Address } from "abitype";
+import { ChainConfig } from "@/app/types/chain";
+
+const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
+
+export const Monad: ChainConfig = {
+    assets: [
+        {
+            name: "USDC",
+            decimals: 6,
+            address: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address
+        }
+    ],
+    evm: {
+        chain: isDevelopment ? avalancheFuji : avalanche,
+        rpcUrl: isDevelopment ? avalancheFuji.rpcUrls.default.http[0] : avalanche.rpcUrls.default.http[0],
+    },
+    label: "Monad",
+    icon: <AvalancheIcon />,
+    chipLabel: "MON",
+    chipColor: "#E84142",
+    crossChainInformation: {
+        circleInformation: {
+            supportCirclePaymaster: false,
+            cCTPInformation: {
+                supportCCTP: false,
+                domain: 0,
+            },
+            aproxFromFee: isDevelopment ? 10000 : 10000,
+        },
+        nearIntentInformation: {
+            support: true,
+            assetsId: [
+                {
+                    assetId: "nep245:v2_1.omni.hot.tg:143_2dmLwYWkCQKyTjeUPAsGJuiVLbFx",
+                    name: "USDC",
+                    decimals: 6
+                }
+            ],
+            needMemo: false
+        }
+    }
+}
