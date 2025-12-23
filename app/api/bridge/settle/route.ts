@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
             console.error("[SmartRouter] Failed to parse JSON body:", e);
             return NextResponse.json({ success: false, errorReason: "Invalid JSON body" }, { status: 400 });
         }
-        const { paymentPayload, sourceChain, destChain, recipient, amount } = body;
+        const { paymentPayload, sourceChain, destChain, recipient, amount, destToken } = body;
+
 
         console.log(`[SmartRouter] Request: ${sourceChain} -> ${destChain}`, { amount });
 
@@ -97,7 +98,8 @@ export async function POST(request: NextRequest) {
                 sourceChain as ChainKey,
                 destChain as ChainKey,
                 amount,
-                recipient
+                recipient,
+                destToken
             );
             return NextResponse.json(result);
         }
