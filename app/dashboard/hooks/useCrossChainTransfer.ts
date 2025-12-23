@@ -13,6 +13,7 @@ import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { STELLAR } from "@/app/constants/chais/Stellar";
 import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
+import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 
 // Types
 export const STELLAR_CHAIN_KEY = "Stellar";
@@ -148,7 +149,29 @@ export const useCrossChainTransfer = () => {
 
             // Stellar Logic
             if ((watchSourceChain as string) === STELLAR_CHAIN_KEY) {
-                if (isMounted) setMaxAmount(0);
+                if (!stellarPrivateKey) {
+                    if (isMounted) setMaxAmount(0);
+                    return;
+                }
+
+                try {
+                    const { Keypair } = await import("stellar-sdk");
+                    const keypair = Keypair.fromSecret(stellarPrivateKey);
+                    const publicKey = keypair.publicKey();
+
+                    const balance = await getStellarUSDCBalance(publicKey);
+
+                    if (balance !== null) {
+                        const max = balance - 0.01;
+                        if (isMounted) setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
+                    } else {
+                        if (isMounted) setMaxAmount(0);
+                    }
+
+                } catch (e) {
+                    console.error("Error fetching Stellar balance:", e);
+                    if (isMounted) setMaxAmount(0);
+                }
                 return;
             }
 
