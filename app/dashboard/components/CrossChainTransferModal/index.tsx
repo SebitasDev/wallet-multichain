@@ -271,6 +271,24 @@ export const CrossChainTransferModal = () => {
                             </Alert>
                         )}
 
+                        {simulation.error && (
+                            <Alert
+                                severity="error"
+                                sx={{
+                                    border: "2px solid #ff4444",
+                                    borderRadius: 2,
+                                    bgcolor: "rgba(255, 68, 68, 0.1)",
+                                    color: "#000000",
+                                    fontWeight: 600,
+                                    "& .MuiAlert-icon": {
+                                        color: "#ff4444"
+                                    }
+                                }}
+                            >
+                                {simulation.error}
+                            </Alert>
+                        )}
+
                         {!isAmountValid && watchAmount && !isExceedingMax && (
                             <Alert
                                 severity="warning"
