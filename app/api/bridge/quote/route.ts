@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
         const IS_DEV = process.env.NODE_ENV === 'development';
         const FEE = IS_DEV ? PlatformFess.DEV : PlatformFess.EVM_TO_OTHER;
 
-        let bridgeMin = 0.03;
+        let bridgeMin = 0.001;
 
         if (sourceChain === "Stellar") {
             bridgeMin = 0.25;
