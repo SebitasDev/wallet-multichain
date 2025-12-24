@@ -432,6 +432,69 @@ export const useCrossChainTransfer = () => {
         }
     };
 
+    // Simulation State
+    const [simulation, setSimulation] = useState<{
+        estimated: string;
+        error: string | null;
+        done: boolean;
+        loading: boolean;
+        netAmount?: number;
+    }>({ estimated: "", error: null, done: false, loading: false });
+
+    // Reset simulation when inputs change
+    useEffect(() => {
+        setSimulation({ estimated: "", error: null, done: false, loading: false });
+    }, [watchAmount, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken]);
+
+    const simulateTransfer = async () => {
+        if (!watchAmount || isNaN(parseFloat(watchAmount))) {
+            toast.error("Ingresa un monto válido");
+            return;
+        }
+
+        setSimulation(prev => ({ ...prev, loading: true, error: null, done: false }));
+        try {
+            const res = await fetch("/api/bridge/quote", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sourceChain: watchSourceChain,
+                    targetChain: watchDestChain,
+                    amount: watchAmount,
+                    token: watchDestToken
+                })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setSimulation({
+                    estimated: data.estimatedReceived,
+                    netAmount: data.netAmountBridged,
+                    error: null,
+                    done: true,
+                    loading: false
+                });
+            } else {
+                setSimulation({
+                    estimated: "",
+                    error: data.error || "Error al simular",
+                    done: true,
+                    loading: false
+                });
+                toast.error(data.error || "Error al simular");
+            }
+        } catch (e) {
+            console.error("Simulation error:", e);
+            setSimulation({
+                estimated: "",
+                error: "Error de conexión",
+                done: true,
+                loading: false
+            });
+            toast.error("Error al conectar con el servidor");
+        }
+    };
+
     return {
         open,
         address,
@@ -451,9 +514,11 @@ export const useCrossChainTransfer = () => {
         isAmountValid,
         isExceedingMax,
         maxAmount,
-        balance, // Export balance
+        balance,
         fee,
         total,
+        simulation, // Export simulation state
+        simulateTransfer, // Export simulation function
         openModal,
         closeModal,
         onSubmit: handleSubmit(onSubmit),
