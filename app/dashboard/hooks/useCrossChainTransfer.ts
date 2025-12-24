@@ -495,6 +495,23 @@ export const useCrossChainTransfer = () => {
         }
     };
 
+    const isCCTPRoute = useMemo(() => {
+        if (!isCrossChain) return false;
+        if (watchSourceChain === "Stellar" || watchDestChain === "Stellar") return false;
+
+        const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
+        const destConfig = NETWORKS[watchDestChain as keyof typeof NETWORKS];
+
+        if (!sourceConfig || !destConfig) return false;
+
+        if (watchSourceToken !== "USDC" || watchDestToken !== "USDC") return false;
+
+        const sourceCCTP = sourceConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
+        const destCCTP = destConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
+
+        return !!(sourceCCTP && destCCTP);
+    }, [watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, isCrossChain]);
+
     return {
         open,
         address,
@@ -510,6 +527,7 @@ export const useCrossChainTransfer = () => {
         watchSourceToken,
         watchDestToken,
         isCrossChain,
+        isCCTPRoute,
         minAmount,
         isAmountValid,
         isExceedingMax,
@@ -517,8 +535,8 @@ export const useCrossChainTransfer = () => {
         balance,
         fee,
         total,
-        simulation, // Export simulation state
-        simulateTransfer, // Export simulation function
+        simulation,
+        simulateTransfer,
         openModal,
         closeModal,
         onSubmit: handleSubmit(onSubmit),
