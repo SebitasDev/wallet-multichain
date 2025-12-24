@@ -37,7 +37,8 @@ export const POLYGON: ChainConfig = {
                 {
                     assetId: "nep245:v2_1.omni.hot.tg:137_qiStmoQJDQPTebaPjgx5VBxZv6L",
                     name: "USDC",
-                    decimals: 6
+                    decimals: 6,
+                    icon: <PolygonIcon/>
                 }
             ],
             needMemo: false

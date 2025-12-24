@@ -19,7 +19,8 @@ export type ChainKey = z.infer<typeof ChainKeyEnum>;
 export interface NearIntentAsset {
     assetId: string,
     name: string,
-    decimals: number
+    decimals: number,
+    icon: JSX.Element
 }
 
 export interface NearIntentInformation {

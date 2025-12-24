@@ -2,6 +2,7 @@ import { arbitrum, arbitrumSepolia } from "viem/chains";
 import ArbIcon from "@/app/components/atoms/ArbIcon";
 import { Address } from "abitype";
 import { ChainConfig } from "@/app/types/chain";
+import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
@@ -36,7 +37,8 @@ export const ARBITRUM: ChainConfig = {
                 {
                     assetId: "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near",
                     name: "USDC",
-                    decimals: 6
+                    decimals: 6,
+                    icon: <UsdcIcon/>
                 }
             ],
             needMemo: false

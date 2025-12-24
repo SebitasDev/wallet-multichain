@@ -5,7 +5,7 @@ import { UNICHAIN } from "@/app/constants/chais/Evm/Unichain";
 import { POLYGON } from "@/app/constants/chais/Evm/Polygon";
 import { AVALANCHE } from "@/app/constants/chais/Evm/Avalanche";
 import { WORLD_CHAIN } from "@/app/constants/chais/Evm/WorldChain";
-import { STELLAR } from "@/app/constants/chais/Stellar";
+import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
 import { Monad } from "./Evm/Monad";
 
 export {

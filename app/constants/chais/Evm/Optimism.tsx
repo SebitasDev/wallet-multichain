@@ -2,6 +2,7 @@ import { optimism, optimismSepolia } from "viem/chains";
 import { OPIcon } from "@/app/components/atoms/OPIcon";
 import { Address } from "abitype";
 import { ChainConfig } from "@/app/types/chain";
+import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
@@ -36,7 +37,8 @@ export const OPTIMISM: ChainConfig = {
                 {
                     assetId: "nep245:v2_1.omni.hot.tg:10_A2ewyUyDp6qsue1jqZsGypkCxRJ",
                     name: "USDC",
-                    decimals: 6
+                    decimals: 6,
+                    icon: <UsdcIcon/>
                 }
             ],
             needMemo: false
