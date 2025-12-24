@@ -56,8 +56,11 @@ export const CrossChainTransferModal = () => {
         balance,
         isExceedingMax,
 
-        fee,
         total,
+        fee,
+        // Simulation
+        simulation,
+        simulateTransfer,
 
         openModal,
         closeModal,
@@ -250,6 +253,24 @@ export const CrossChainTransferModal = () => {
                             token={watchSourceToken} // Pass dynamic token
                         />
 
+                        {simulation.done && !simulation.error && (
+                            <Alert
+                                severity="success"
+                                sx={{
+                                    border: "2px solid #00DC8C",
+                                    borderRadius: 2,
+                                    bgcolor: "rgba(0, 220, 140, 0.1)",
+                                    color: "#000000",
+                                    fontWeight: 600,
+                                    "& .MuiAlert-icon": {
+                                        color: "#00DC8C"
+                                    }
+                                }}
+                            >
+                                Recibirás aproximadamente: <strong>{simulation.estimated} {watchDestToken}</strong>
+                            </Alert>
+                        )}
+
                         {!isAmountValid && watchAmount && !isExceedingMax && (
                             <Alert
                                 severity="warning"
@@ -309,7 +330,7 @@ export const CrossChainTransferModal = () => {
                 <DialogActions sx={{ p: 3, gap: 2, background: "#ffffff" }}>
                     <Button
                         onClick={closeModal}
-                        disabled={isLoading}
+                        disabled={isLoading || simulation.loading}
                         sx={{
                             flex: 1,
                             textTransform: "none",
@@ -335,11 +356,46 @@ export const CrossChainTransferModal = () => {
                         Cancelar
                     </Button>
 
-                    <SubmitButton
-                        onClick={onSubmit}
-                        isLoading={isLoading}
-                        isDisabled={isLoading || !watchAmount || !isAmountValid || isExceedingMax || !!routeError}
-                    />
+                    {!simulation.done ? (
+                        <Button
+                            variant="contained"
+                            onClick={simulateTransfer}
+                            disabled={!watchAmount || !isAmountValid || isExceedingMax || !!routeError || simulation.loading}
+                            sx={{
+                                flex: 1,
+                                textTransform: "none",
+                                borderRadius: 3,
+                                py: 1.4,
+                                fontWeight: 800,
+                                fontSize: 15,
+                                background: "#00DC8C",
+                                color: "white",
+                                border: "3px solid #000000",
+                                boxShadow: "4px 4px 0px #000000",
+                                transition: "all 0.2s",
+                                "&:hover": {
+                                    background: "#00CC7C",
+                                    transform: "translate(2px, 2px)",
+                                    boxShadow: "2px 2px 0px #000000",
+                                },
+                                "&:disabled": {
+                                    background: "#cccccc",
+                                    color: "#666666",
+                                    border: "3px solid #999999",
+                                    boxShadow: "none",
+                                    transform: "none",
+                                },
+                            }}
+                        >
+                            {simulation.loading ? "Simulando..." : "Simular"}
+                        </Button>
+                    ) : (
+                        <SubmitButton
+                            onClick={onSubmit}
+                            isLoading={isLoading}
+                            isDisabled={isLoading || !simulation.done || !!simulation.error}
+                        />
+                    )}
                 </DialogActions>
             </Dialog>
         </>
