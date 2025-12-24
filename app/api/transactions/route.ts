@@ -26,3 +26,32 @@ export async function POST(req: Request) {
         );
     }
 }
+
+export async function GET(req: Request) {
+    try {
+        await connectDB();
+        const { searchParams } = new URL(req.url);
+        const address = searchParams.get('address');
+        const limit = parseInt(searchParams.get('limit') || '20');
+
+        if (!address) {
+            return NextResponse.json(
+                { success: false, error: "Address is required" },
+                { status: 400 }
+            );
+        }
+
+        const transactions = await TransactionModel.find({ fromAddress: address })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+
+        return NextResponse.json({ success: true, transactions });
+    } catch (error: any) {
+        console.error("Error fetching transactions:", error);
+        return NextResponse.json(
+            { success: false, error: error.message || "Internal Server Error" },
+            { status: 500 }
+        );
+    }
+}

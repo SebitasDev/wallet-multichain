@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Typography, IconButton, Card, CardActionArea, Chip, Avatar } from "@mui/material";
+import { Box, Typography, IconButton, Card, CardActionArea, Chip, Avatar, CircularProgress } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CallMadeIcon from "@mui/icons-material/CallMade";
 import CallReceivedIcon from "@mui/icons-material/CallReceived";
@@ -9,7 +9,7 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import CloseIcon from "@mui/icons-material/Close";
 import LinkIcon from "@mui/icons-material/Link";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     ResponsiveContainer,
     BarChart,
@@ -18,8 +18,7 @@ import {
     YAxis,
     Tooltip
 } from "recharts";
-
-import { MOCK_TRANSACTIONS } from "../lib/mockData";
+import { format } from "date-fns";
 
 // Import Atom Icons locally for the Detail view
 import { BaseIcon } from "../components/atoms/BaseIcon";
@@ -28,20 +27,18 @@ import { EthIcon } from "../components/atoms/EthIcon";
 import ArbIcon from "../components/atoms/ArbIcon";
 import PolygonIcon from "../components/atoms/PolygonIcon";
 import { AvalancheIcon } from "../components/atoms/AvalancheIcon";
+import { BnbIcon } from "../components/atoms/BnbIcon";
+import { StellarIcon } from "../components/atoms/StellarIcon";
+import { MonadIcon } from "../components/atoms/MonadIcon";
+import { UnichainIcon } from "../components/atoms/UnichainIcon";
+import { WorldChainIcon } from "../components/atoms/WorldChainIcon";
+import { UsdcIcon } from "../components/atoms/UsdcIcon";
+import { UsdtIcon } from "../components/atoms/UsdtIcon";
+import { useXOWalletStore } from "../store/useXOWalletStore";
 
 // ----------------------------------------------------------------------
 // DATA & CONFIG
 // ----------------------------------------------------------------------
-
-const DAILY_SPEND_DATA = [
-    { name: 'Lun', value: 120 },
-    { name: 'Mar', value: 45 },
-    { name: 'Mie', value: 200 },
-    { name: 'Jue', value: 80 },
-    { name: 'Vie', value: 150 },
-    { name: 'Sab', value: 300 },
-    { name: 'Dom', value: 90 },
-];
 
 const CHAIN_COMPONENTS: Record<string, React.ElementType> = {
     "Base": BaseIcon,
@@ -50,6 +47,14 @@ const CHAIN_COMPONENTS: Record<string, React.ElementType> = {
     "Arbitrum": ArbIcon,
     "Polygon": PolygonIcon,
     "Avalanche": AvalancheIcon,
+    "BNB": BnbIcon,
+    "Binance": BnbIcon,
+    "Binance Smart Chain": BnbIcon,
+    "BSC": BnbIcon,
+    "Stellar": StellarIcon,
+    "Monad": MonadIcon,
+    "Unichain": UnichainIcon,
+    "World Chain": WorldChainIcon,
 };
 
 // ----------------------------------------------------------------------
@@ -130,12 +135,18 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                             >
                                 <CloseIcon sx={{ color: "#000", fontWeight: "bold", fontSize: 14 }} />
                             </IconButton>
-                            <Typography variant="h4" fontWeight={900}>
-                                ${transaction.amount.toLocaleString()}
-                            </Typography>
-                            <Typography variant="caption" fontWeight={700} color="#666">
-                                {transaction.token}
-                            </Typography>
+                            <Box display="flex" alignItems="center" justifyContent="flex-end" gap={1}>
+                                <Typography variant="h4" fontWeight={900}>
+                                    ${transaction.amount.toLocaleString()}
+                                </Typography>
+                                <Box display="flex" alignItems="center" gap={0.25} flexDirection="column" mt={1.5}>
+                                    {transaction.token === 'USDC' && <UsdcIcon />}
+                                    {transaction.token === 'USDT' && <UsdtIcon />}
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10}>
+                                        {transaction.token}
+                                    </Typography>
+                                </Box>
+                            </Box>
                         </Box>
                     </Box>
 
@@ -166,12 +177,15 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                 <Typography fontWeight={700} fontSize={13}>{transaction.chainTo}</Typography>
                             </Box>
                         </Box>
-                        <Box>
-                            <Typography variant="caption" fontWeight={700} color="#666" fontSize={10}>HASH</Typography>
-                            <Typography fontWeight={700} sx={{ wordBreak: "break-all", fontFamily: "monospace", fontSize: 11 }}>
-                                {transaction.txHash.slice(0, 8)}...
-                            </Typography>
-                        </Box>
+                        {transaction.txHash && (
+                            <Box>
+                                <Typography variant="caption" fontWeight={700} color="#666" fontSize={10}>HASH</Typography>
+                                <Typography fontWeight={700} sx={{ wordBreak: "break-all", fontFamily: "monospace", fontSize: 11 }}>
+                                    {transaction.txHash}
+                                </Typography>
+                            </Box>
+                        )}
+
                     </Box>
                 </Box>
 
@@ -185,32 +199,22 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                         </Box>
                         <Box>
                             {(() => {
-                                // Flatten all steps for the view logic
-                                const allSteps = transaction.route.flatMap((routeItem: any, idx: number) =>
-                                    routeItem.chains.map((chain: any, cIdx: number) => ({
-                                        ...chain,
-                                        groupIndex: idx,
-                                        cumulativeIndex: transaction.route.slice(0, idx).reduce((acc: number, item: any) => acc + (item.chains?.length || 0), 0) + cIdx + 1
-                                    }))
-                                );
+                                // For current route logic, it's a simple list of steps. 
+                                // We might need to adapt if the model changes to groups of chains.
+                                // The backend returns: route: [{ chainName, amount, status, txHash }]
+                                // The UI expects: routeItem: { chains: [...] } structure OR we adapt here.
 
-                                const visibleSteps = isExpanded ? allSteps : allSteps.slice(0, 5);
+                                // Adapting BACKEND format to UI logic or simplifying UI logic.
+                                // Let's simplify UI logic for now as the backend structure is flat for now (or simple list)
+
+                                const steps = transaction.route;
+                                const visibleSteps = isExpanded ? steps : steps.slice(0, 5);
 
                                 return (
                                     <>
-                                        {visibleSteps.map((step: any, flatIndex: number) => {
-                                            // Check if we need a group separator (border)
-                                            // We draw a border IF:
-                                            // 1. It is NOT the last item in the list
-                                            // 2. The NEXT item belongs to a DIFFERENT group
-                                            const showGroupBorder = flatIndex < visibleSteps.length - 1 && step.groupIndex !== visibleSteps[flatIndex + 1].groupIndex;
-
-                                            // Also, if this is the very last VISIBLE item, but NOT the last ACTUAL item (collapsed state), we might want a visual cue?
-                                            // Actually, standard list border is fine.
-
+                                        {visibleSteps.map((step: any, index: number) => {
                                             return (
-                                                <Box key={flatIndex} sx={{ borderBottom: showGroupBorder ? "2px solid #000" : "1px solid #eee" }}>
-                                                    {/* Note: I changed inner borders to lighter line, and only group borders to black line for clarity */}
+                                                <Box key={index} sx={{ borderBottom: "1px solid #eee" }}>
                                                     <Box sx={{ p: 1.5, display: "flex", alignItems: "flex-start", justifyContent: "space-between", "&:hover": { bgcolor: "#fff9c4" } }}>
                                                         <Box display="flex" alignItems="flex-start" gap={1.5}>
                                                             {/* Step Number */}
@@ -228,24 +232,32 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                                                     mt: 0.5
                                                                 }}
                                                             >
-                                                                {step.cumulativeIndex}
+                                                                {index + 1}
                                                             </Box>
 
                                                             {/* Content */}
                                                             <Box display="flex" gap={1}>
-                                                                <Box mt={0.5}><ChainLogo chain={step.name} /></Box>
+                                                                <Box mt={0.5}><ChainLogo chain={step.chainName} /></Box>
                                                                 <Box>
                                                                     <Typography fontWeight={800} fontSize={14} sx={{ lineHeight: 1.2 }}>
-                                                                        {step.name}
+                                                                        {step.chainName}
                                                                     </Typography>
                                                                     <Typography variant="caption" fontWeight={600} fontFamily="monospace" color="#666" fontSize={10} sx={{ display: "block", lineHeight: 1.2 }}>
-                                                                        {step.txHash.slice(0, 12)}...
+                                                                        {step.txHash || 'N/A'}
                                                                     </Typography>
                                                                 </Box>
                                                             </Box>
                                                         </Box>
                                                         <Box textAlign="right">
-                                                            <Typography fontWeight={800} fontSize={14}>${step.amount}</Typography>
+                                                            <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
+                                                                <Typography fontWeight={800} fontSize={14}>${step.amount}</Typography>
+                                                                {step.assetOrigin && (
+                                                                    <>
+                                                                        {step.assetOrigin === 'USDC' && <UsdcIcon />}
+                                                                        {step.assetOrigin === 'USDT' && <UsdtIcon />}
+                                                                    </>
+                                                                )}
+                                                            </Box>
                                                             <Chip
                                                                 label={step.status}
                                                                 size="small"
@@ -265,7 +277,7 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                         })}
 
                                         {/* Toggle Button */}
-                                        {allSteps.length > 5 && (
+                                        {steps.length > 5 && (
                                             <Box sx={{ p: 2, textAlign: "center", borderTop: "2px solid #000" }}>
                                                 <Typography
                                                     onClick={() => setIsExpanded(!isExpanded)}
@@ -278,7 +290,7 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                                         "&:hover": { color: "#555" }
                                                     }}
                                                 >
-                                                    {isExpanded ? "Ver menos" : `Ver más (+${allSteps.length - 5})`}
+                                                    {isExpanded ? "Ver menos" : `Ver más (+${steps.length - 5})`}
                                                 </Typography>
                                             </Box>
                                         )}
@@ -299,22 +311,83 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
 
 export default function HistoryListPage() {
     const router = useRouter();
+    const { mainWallet } = useXOWalletStore();
     const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
     const [isHistoryExpanded, setIsHistoryExpanded] = useState(false); // State for main list expansion
 
-    // Derived Metrics from MOCK_TRANSACTIONS
-    const totalSends = MOCK_TRANSACTIONS.filter(tx => tx.type === "SEND").length;
-    const totalFees = MOCK_TRANSACTIONS.reduce((acc, tx) => acc + (tx.fee || 0), 0);
-    const maxSent = Math.max(...MOCK_TRANSACTIONS.filter(tx => tx.type === "SEND").map(tx => tx.amount), 0);
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const tokenCounts = MOCK_TRANSACTIONS.reduce((acc: any, tx) => {
+    const address = mainWallet?.address;
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (!address) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/transactions?address=${address}`);
+                const data = await res.json();
+                if (data.success) {
+                    // Map API data to UI format
+                    const mapped = data.transactions.map((tx: any) => ({
+                        id: tx.id,
+                        type: "SEND", // Infer type if possible, for now default to SEND as that's what we support
+                        date: format(new Date(tx.createdAt), "dd MMM yyyy, HH:mm"),
+                        amount: tx.totalAmount,
+                        token: tx.tokenSymbol || "USDC",
+                        status: tx.status,
+                        from: tx.fromAddress,
+                        to: tx.toAddress || "Unknown",
+                        addressFrom: tx.fromAddress,
+                        addressTo: tx.toAddress || "Unknown",
+                        chainTo: tx.destinationChain || "Unknown",
+                        txHash: tx.route?.[0]?.txHash || "",
+                        fee: 0, // Not stored in main object yet, maybe infer diff?
+                        route: tx.route
+                    }));
+                    setTransactions(mapped);
+                }
+            } catch (error) {
+                console.error("Failed to fetch history", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHistory();
+    }, [address]);
+
+
+    // Derived Metrics 
+    const totalSends = transactions.length;
+    // Mocking daily data for now as we don't have enough real data for a chart
+    const DAILY_SPEND_DATA = [
+        { name: 'Lun', value: 0 },
+        { name: 'Mar', value: 0 },
+        { name: 'Mie', value: 0 },
+        { name: 'Jue', value: 0 },
+        { name: 'Vie', value: 0 },
+        { name: 'Sab', value: 0 },
+        { name: 'Dom', value: 0 },
+    ];
+
+    // Update chart with real totals if available? For now keep placeholder or simple sum.
+    const totalVolume = transactions.reduce((acc, tx) => acc + (tx.amount || 0), 0);
+    const maxSent = transactions.length > 0 ? Math.max(...transactions.map(tx => tx.amount)) : 0;
+
+    const tokenCounts = transactions.reduce((acc: any, tx) => {
         acc[tx.token] = (acc[tx.token] || 0) + 1;
         return acc;
     }, {});
-    const mostUsedToken = Object.keys(tokenCounts).reduce((a, b) => tokenCounts[a] > tokenCounts[b] ? a : b, "N/A");
+    const mostUsedToken = Object.keys(tokenCounts).length > 0
+        ? Object.keys(tokenCounts).reduce((a, b) => tokenCounts[a] > tokenCounts[b] ? a : b)
+        : "N/A";
 
     // Helper to find selected tx
-    const selectedTx = MOCK_TRANSACTIONS.find(t => t.id === selectedTxId);
+    const selectedTx = transactions.find(t => t.id === selectedTxId);
 
     return (
         <Box sx={{ minHeight: "100vh", bgcolor: "#f0f0f0", display: "flex", flexDirection: "column" }}>
@@ -343,101 +416,116 @@ export default function HistoryListPage() {
                                 Historial
                             </Typography>
                         </Box>
-                        <Box display="flex" flexDirection="column" gap={2} sx={{
-                            pr: 1,
-                            pb: 2
-                        }}>
-                            {(isHistoryExpanded ? MOCK_TRANSACTIONS : MOCK_TRANSACTIONS.slice(0, 5)).map((tx) => (
-                                <Card
-                                    key={tx.id}
-                                    sx={{
-                                        flexShrink: 0, // Prevent shrinking
-                                        border: selectedTxId === tx.id ? "4px solid #000" : "3px solid #000",
-                                        borderRadius: 3,
-                                        bgcolor: selectedTxId === tx.id ? "#fff9c4" : "#fff", // Highlight selected
-                                        boxShadow: selectedTxId === tx.id ? "2px 2px 0px #000" : "4px 4px 0px #000", // "Pressed" effect if selected
-                                        transform: selectedTxId === tx.id ? "translate(2px, 2px)" : "none",
-                                        transition: "all 0.1s",
-                                        "&:hover": {
-                                            transform: selectedTxId === tx.id ? "translate(2px, 2px)" : "translate(-2px, -2px)",
-                                            boxShadow: selectedTxId === tx.id ? "2px 2px 0px #000" : "6px 6px 0px #000"
-                                        }
-                                    }}
-                                >
-                                    <CardActionArea
-                                        onClick={() => setSelectedTxId(tx.id)}
-                                        sx={{ p: 2.5 }}
-                                    >
-                                        <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
-                                            {/* Left: Icon + Info */}
-                                            <Box display="flex" alignItems="center" gap={2} flex={1} overflow="hidden" minWidth={0}>
-                                                <Box
-                                                    sx={{
-                                                        width: 52, height: 52,
-                                                        minWidth: 52, // Prevent shrinking
-                                                        borderRadius: 2,
-                                                        border: "2.5px solid #000",
-                                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                                        bgcolor: tx.type === "SEND" ? "#FF90E8" : tx.type === "RECEIVE" ? "#00DC8C" : "#FFD700"
-                                                    }}
-                                                >
-                                                    {tx.type === "SEND" && <CallMadeIcon sx={{ color: "#000", fontSize: 28 }} />}
-                                                    {tx.type === "RECEIVE" && <CallReceivedIcon sx={{ color: "#000", fontSize: 28 }} />}
-                                                    {tx.type === "SAVINGS" && <Typography fontSize={24}>🏦</Typography>}
-                                                </Box>
-                                                <Box flex={1} overflow="hidden" minWidth={0}>
-                                                    <Typography fontWeight={900} fontSize={18} noWrap sx={{ lineHeight: 1.2, mb: 0.5 }}>
-                                                        {tx.type === "SEND" ? "Envío" : tx.type === "RECEIVE" ? "Recibido" : "Yield Deposit"}
-                                                    </Typography>
-                                                    <Typography variant="body2" fontWeight={700} color="#666" noWrap sx={{ lineHeight: 1.2 }}>
-                                                        {tx.date} • {tx.type === "SEND" ? tx.to : tx.from || tx.to}
-                                                    </Typography>
-                                                </Box>
-                                            </Box>
 
-                                            {/* Right: Amount + Status */}
-                                            <Box textAlign="right" flexShrink={0} ml={2}>
-                                                <Typography fontWeight={900} fontSize={18} color={tx.type === "SEND" ? "#000" : "#008a57"}>
-                                                    {tx.type === "SEND" ? "-" : "+"}${tx.amount} {tx.token}
-                                                </Typography>
-                                                <Chip
-                                                    label={tx.status}
-                                                    size="small"
-                                                    sx={{
-                                                        height: 24,
-                                                        fontSize: 11,
-                                                        fontWeight: 900,
-                                                        border: "2px solid #000",
-                                                        bgcolor: tx.status === "SUCCESS" ? "#fff" : tx.status === "FAILED" ? "#FF2E2E" : "#FFF59D",
-                                                        color: tx.status === "FAILED" ? "#fff" : "#000",
-                                                        mt: 0.5
-                                                    }}
-                                                />
-                                            </Box>
-                                        </Box>
-                                    </CardActionArea>
-                                </Card>
-                            ))}
-
-                            {/* History Toggle Button */}
-                            {MOCK_TRANSACTIONS.length > 5 && (
-                                <Box sx={{ textAlign: "center", py: 2 }}>
-                                    <Typography
-                                        onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                        {loading ? (
+                            <Box display="flex" justifyContent="center" p={4}>
+                                <CircularProgress sx={{ color: "#000" }} />
+                            </Box>
+                        ) : (
+                            <Box display="flex" flexDirection="column" gap={2} sx={{
+                                pr: 1,
+                                pb: 2
+                            }}>
+                                {transactions.length === 0 && (
+                                    <Typography variant="body1" textAlign="center" color="text.secondary">No hay transacciones aún.</Typography>
+                                )}
+                                {(isHistoryExpanded ? transactions : transactions.slice(0, 5)).map((tx) => (
+                                    <Card
+                                        key={tx.id}
                                         sx={{
-                                            cursor: "pointer",
-                                            fontWeight: 900,
-                                            textTransform: "uppercase",
-                                            fontSize: 14,
-                                            textDecoration: "underline",
-                                            "&:hover": { color: "#555" }
+                                            flexShrink: 0, // Prevent shrinking
+                                            border: selectedTxId === tx.id ? "4px solid #000" : "3px solid #000",
+                                            borderRadius: 3,
+                                            // Dynamic Background based on Action when selected
+                                            bgcolor: selectedTxId === tx.id
+                                                ? "#fff9c4" // Standard Yellow highlight for all
+                                                : "#fff",
+                                            boxShadow: selectedTxId === tx.id ? "2px 2px 0px #000" : "4px 4px 0px #000", // "Pressed" effect if selected
+                                            transform: selectedTxId === tx.id ? "translate(2px, 2px)" : "none",
+                                            transition: "all 0.1s",
+                                            "&:hover": {
+                                                transform: selectedTxId === tx.id ? "translate(2px, 2px)" : "translate(-2px, -2px)",
+                                                boxShadow: selectedTxId === tx.id ? "2px 2px 0px #000" : "6px 6px 0px #000"
+                                            }
                                         }}
                                     >
-                                        {isHistoryExpanded ? "Ver menos" : `Ver más (+${MOCK_TRANSACTIONS.length - 5})`}
-                                    </Typography>
-                                </Box>
-                            )}
-                        </Box>
+                                        <CardActionArea
+                                            onClick={() => setSelectedTxId(tx.id)}
+                                            sx={{ p: 2.5 }}
+                                        >
+                                            <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
+                                                {/* Left: Icon + Info */}
+                                                <Box display="flex" alignItems="center" gap={2} flex={1} overflow="hidden" minWidth={0}>
+                                                    <Box
+                                                        sx={{
+                                                            width: 52, height: 52,
+                                                            minWidth: 52, // Prevent shrinking
+                                                            borderRadius: 2,
+                                                            border: "2.5px solid #000",
+                                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                                            // Send = Orange, Receive = Green, Savings = Yellow
+                                                            bgcolor: tx.type === "SEND" ? "#FFAB40" : tx.type === "RECEIVE" ? "#00DC8C" : "#FFD700"
+                                                        }}
+                                                    >
+                                                        {tx.type === "SEND" && <CallMadeIcon sx={{ color: "#000", fontSize: 28 }} />}
+                                                        {tx.type === "RECEIVE" && <CallReceivedIcon sx={{ color: "#000", fontSize: 28 }} />}
+                                                        {tx.type === "SAVINGS" && <Typography fontSize={24}>🏦</Typography>}
+                                                    </Box>
+                                                    <Box flex={1} overflow="hidden" minWidth={0}>
+                                                        <Typography fontWeight={900} fontSize={18} noWrap sx={{ lineHeight: 1.2, mb: 0.5 }}>
+                                                            {tx.type === "SEND" ? "Envío" : tx.type === "RECEIVE" ? "Recibido" : "Yield Deposit"}
+                                                        </Typography>
+                                                        <Typography variant="body2" fontWeight={700} color="#666" noWrap sx={{ lineHeight: 1.2 }}>
+                                                            {tx.date} • {tx.type === "SEND" ? tx.to : tx.from || tx.to}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+
+                                                {/* Right: Amount + Status */}
+                                                <Box textAlign="right" flexShrink={0} ml={2}>
+                                                    <Typography fontWeight={900} fontSize={18} color={tx.type === "SEND" ? "#000" : "#008a57"}>
+                                                        {tx.type === "SEND" ? "-" : "+"}${tx.amount} {tx.token}
+                                                    </Typography>
+                                                    <Chip
+                                                        label={tx.status}
+                                                        size="small"
+                                                        sx={{
+                                                            height: 24,
+                                                            fontSize: 11,
+                                                            fontWeight: 900,
+                                                            border: "2px solid #000",
+                                                            bgcolor: tx.status === "SUCCESS" ? "#00DC8C" : tx.status === "FAILED" ? "#FF2E2E" : "#FFF59D",
+                                                            color: tx.status === "FAILED" ? "#fff" : "#000",
+                                                            mt: 0.5
+                                                        }}
+                                                    />
+                                                </Box>
+                                            </Box>
+                                        </CardActionArea>
+                                    </Card>
+                                ))}
+
+                                {/* History Toggle Button */}
+                                {transactions.length > 5 && (
+                                    <Box sx={{ textAlign: "center", py: 2 }}>
+                                        <Typography
+                                            onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                                            sx={{
+                                                cursor: "pointer",
+                                                fontWeight: 900,
+                                                textTransform: "uppercase",
+                                                fontSize: 14,
+                                                textDecoration: "underline",
+                                                "&:hover": { color: "#555" }
+                                            }}
+                                        >
+                                            {isHistoryExpanded ? "Ver menos" : `Ver más (+${transactions.length - 5})`}
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Box>
+                        )}
+
                     </Box>
 
                     {/* DIVIDER LINE (Visible only on Desktop) */}
@@ -475,8 +563,8 @@ export default function HistoryListPage() {
                                             <Typography variant="h5" fontWeight={900}>{totalSends}</Typography>
                                         </Box>
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                            <Typography variant="caption" fontWeight={700} color="#666">FEE PAGADO</Typography>
-                                            <Typography variant="h5" fontWeight={900}>${totalFees.toFixed(2)}</Typography>
+                                            <Typography variant="caption" fontWeight={700} color="#666">VOLUMEN TOTAL</Typography>
+                                            <Typography variant="h5" fontWeight={900}>${totalVolume.toLocaleString()}</Typography>
                                         </Box>
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
                                             <Typography variant="caption" fontWeight={700} color="#666">TOP COIN</Typography>

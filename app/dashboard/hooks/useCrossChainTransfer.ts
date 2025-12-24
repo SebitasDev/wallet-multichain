@@ -435,6 +435,7 @@ export const useCrossChainTransfer = () => {
                             {
                                 chainName: data.sourceChain, // Source chain as requested
                                 amount: amount,
+                                assetOrigin: data.sourceToken, // Use sourceToken for outgoing asset
                                 status: "PENDING",
                                 txHash: result.transactionHash
                             }

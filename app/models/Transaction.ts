@@ -3,6 +3,7 @@ import { Schema, model, models } from 'mongoose';
 const RouteSchema = new Schema({
     chainName: { type: String, required: true },
     amount: { type: Number, required: true },
+    assetOrigin: { type: String }, // Renamed from tokenSymbol
     status: { type: String, enum: ['SUCCESS', 'PENDING', 'FAILED'], required: true },
     txHash: { type: String }
 }, { _id: false });
@@ -15,7 +16,7 @@ const TransactionSchema = new Schema({
     totalAmount: { type: Number, required: true },
     status: { type: String, enum: ['SUCCESS', 'PENDING', 'FAILED'], required: true },
     route: [RouteSchema],
-    createdAt: { type: Number, required: true }, // Timestamp
+    createdAt: { type: Number, required: true, index: true }, // Timestamp
     tokenSymbol: { type: String },
     decimals: { type: Number }
 }, {
