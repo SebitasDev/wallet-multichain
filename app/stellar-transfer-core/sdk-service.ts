@@ -5,9 +5,28 @@ import { STELLAR } from '../constants/chais';
 OpenAPI.BASE = 'https://1click.chaindefuser.com';
 OpenAPI.TOKEN = process.env.ONE_CLICK_JWT;
 
-export const SOURCE_TOKENS: Record<string, string> = {
-    "Base": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
-    "Polygon": "nep141:polygon-0x3c499c542cef5e3811e1192ce70d8cc03d5c3359.omft.near",
+import { NETWORKS } from '@/app/constants/chainsInformation';
+import { ChainKey } from '@/app/types/chain';
+
+// Helper to get asset ID from NETWORKS config
+const getAssetId = (chainName: string, tokenName: string = "USDC") => {
+    if (chainName === "Stellar" && tokenName === "XLM") {
+        return "nep245:v2_1.omni.hot.tg:1100_111bzQBB5v7AhLyPMDwS8uJgQV24KaAPXtwyVWu2KXbbfQU6NXRCz";
+    }
+
+    const config = NETWORKS[chainName as ChainKey];
+    // Special handling for Stellar config which is separate or integrated depending on version
+    if (chainName === "Stellar" && !config) {
+        return STELLAR.crossChainInformation.nearIntentInformation?.assetsId[0].assetId;
+    }
+
+    if (!config) return undefined;
+
+    const assetInfo = config.crossChainInformation.nearIntentInformation?.assetsId.find(
+        (a) => a.name === tokenName
+    ) || config.crossChainInformation.nearIntentInformation?.assetsId[0]; // Fallback to first (usually USDC)
+
+    return assetInfo?.assetId;
 };
 
 export async function getOneClickQuote({
@@ -17,6 +36,7 @@ export async function getOneClickQuote({
     recipientStellar,
     userSenderAddress,
     destinationToken,
+    sourceToken, // Add sourceToken support
     options
 }: {
     amount: string;
@@ -25,29 +45,17 @@ export async function getOneClickQuote({
     recipientStellar?: string;
     userSenderAddress: string;
     destinationToken?: string;
+    sourceToken?: string;
     options?: { dry?: boolean };
 }) {
 
-    const originAsset = sourceChain === "Stellar"
-        ? STELLAR.crossChainInformation.nearIntentInformation?.assetsId[0].assetId || ""
-        : SOURCE_TOKENS[sourceChain];
+    const originAsset = getAssetId(sourceChain, sourceToken);
 
-    if (!originAsset) throw new Error(`Unsupported source chain for 1-Click: ${sourceChain}`);
+    if (!originAsset) throw new Error(`Unsupported source chain or token: ${sourceChain} (${sourceToken || 'Default'})`);
 
-    // XLM Asset ID for Stellar
-    const XLM_ASSET_ID = "nep245:v2_1.omni.hot.tg:1100_111bzQBB5v7AhLyPMDwS8uJgQV24KaAPXtwyVWu2KXbbfQU6NXRCz";
+    const destinationAsset = getAssetId(destinationChain, destinationToken);
 
-    let destinationAsset = SOURCE_TOKENS[destinationChain];
-
-    if (destinationChain === "Stellar") {
-        if (recipientStellar === "XLM" || (destinationToken === "XLM")) {
-            destinationAsset = XLM_ASSET_ID;
-        } else {
-            destinationAsset = STELLAR.crossChainInformation.nearIntentInformation?.assetsId[0].assetId || "";
-        }
-    }
-
-    if (!destinationAsset) throw new Error(`Unsupported destination chain: ${destinationChain}`);
+    if (!destinationAsset) throw new Error(`Unsupported destination chain or token: ${destinationChain} (${destinationToken || 'Default'})`);
 
     const decimals = sourceChain === "Stellar" ? 7 : 6;
     const amountAtomic = Math.floor(parseFloat(amount) * Math.pow(10, decimals)).toString();

@@ -1,7 +1,9 @@
-import { avalanche, avalancheFuji } from "viem/chains";
+import { avalanche, avalancheFuji, monad, monadTestnet } from "viem/chains";
 import { AvalancheIcon } from "@/app/components/atoms/AvalancheIcon";
 import { Address } from "abitype";
 import { ChainConfig } from "@/app/types/chain";
+import { MonadIcon } from "@/app/components/atoms/MonadIcon";
+import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
@@ -10,15 +12,16 @@ export const Monad: ChainConfig = {
         {
             name: "USDC",
             decimals: 6,
-            address: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address
+            address: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address,
+            icon: <UsdcIcon />
         }
     ],
     evm: {
-        chain: isDevelopment ? avalancheFuji : avalanche,
-        rpcUrl: isDevelopment ? avalancheFuji.rpcUrls.default.http[0] : avalanche.rpcUrls.default.http[0],
+        chain: isDevelopment ? monadTestnet : monad,
+        rpcUrl: isDevelopment ? monadTestnet.rpcUrls.default.http[0] : monad.rpcUrls.default.http[0],
     },
     label: "Monad",
-    icon: <AvalancheIcon />,
+    icon: <MonadIcon />,
     chipLabel: "MON",
     chipColor: "#E84142",
     crossChainInformation: {
@@ -28,7 +31,7 @@ export const Monad: ChainConfig = {
                 supportCCTP: false,
                 domain: 0,
             },
-            aproxFromFee: isDevelopment ? 10000 : 10000,
+            aproxFromFee: isDevelopment ? 0.001 : 0.001,
         },
         nearIntentInformation: {
             support: true,

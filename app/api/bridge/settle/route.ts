@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
             console.error("[SmartRouter] Failed to parse JSON body:", e);
             return NextResponse.json({ success: false, errorReason: "Invalid JSON body" }, { status: 400 });
         }
-        const { paymentPayload, sourceChain, destChain, recipient, amount, destToken } = body;
+        const { paymentPayload, sourceChain, destChain, recipient, amount, destToken, sourceToken, senderAddress } = body;
 
 
-        console.log(`[SmartRouter] Request: ${sourceChain} -> ${destChain}`, { amount });
+        console.log(`[SmartRouter] Request: ${sourceChain} -> ${destChain}`, { amount, senderAddress, sourceToken, destToken });
 
         const sourceConfig = NETWORKS[sourceChain as ChainKey];
         const destConfig = NETWORKS[destChain as ChainKey];
@@ -55,7 +55,10 @@ export async function POST(request: NextRequest) {
         const sourceCCTP = sourceConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
         const destCCTP = destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
 
-        if (sourceCCTP && destCCTP) {
+        // Default to USDC if destToken is missing (backward compatibility)
+        const targetToken = destToken || "USDC";
+
+        if (sourceCCTP && destCCTP && targetToken === "USDC") {
             console.log("[SmartRouter] Routing to: CCTP Service");
 
             const destinationDomain = destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.domain;
@@ -99,7 +102,9 @@ export async function POST(request: NextRequest) {
                 destChain as ChainKey,
                 amount,
                 recipient,
-                destToken
+                destToken,
+                sourceToken,
+                senderAddress // Pass optional sender
             );
             return NextResponse.json(result);
         }

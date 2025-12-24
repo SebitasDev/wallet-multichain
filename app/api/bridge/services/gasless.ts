@@ -95,7 +95,7 @@ export async function processGaslessSettlement(
             address: networkConfig.usdc,
             abi: usdcErc3009Abi,
             functionName: "transfer",
-            args: [recipient, amountBigInt]
+            args: [recipient, amountBigInt - BigInt(10000)] // Deduct 0.01 USDC Fee
         });
 
         await publicClient.waitForTransactionReceipt({ hash: finalTransferHash });
