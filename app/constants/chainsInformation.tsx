@@ -8,7 +8,7 @@ import {
     unichainSepolia, worldchain, worldchainSepolia
 } from "viem/chains";
 import { polygon } from "wagmi/chains";
-import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN } from "@/app/constants/chais";
+import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN, BNB } from "@/app/constants/chais";
 import { ChainKey, ChainKeyEnum, ChainConfig } from "@/app/types/chain";
 
 export { ChainKeyEnum };
@@ -25,7 +25,8 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
     Avalanche: AVALANCHE,
     WorldChain: WORLD_CHAIN,
     Stellar: STELLAR,
-    Monad: Monad
+    Monad: Monad,
+    BNB: BNB
 };
 
 export const CHAIN_ID_TO_KEY: Record<string, string> = {

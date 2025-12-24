@@ -6,7 +6,8 @@ import { POLYGON } from "@/app/constants/chais/Evm/Polygon";
 import { AVALANCHE } from "@/app/constants/chais/Evm/Avalanche";
 import { WORLD_CHAIN } from "@/app/constants/chais/Evm/WorldChain";
 import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
-import { Monad } from "./Evm/Monad";
+import { Monad } from "@/app/constants/chais/Evm/Monad";
+import { BNB } from "@/app/constants/chais/Evm/Binance";
 
 export {
     OPTIMISM,
@@ -17,5 +18,6 @@ export {
     AVALANCHE,
     WORLD_CHAIN,
     STELLAR,
-    Monad
+    Monad,
+    BNB
 }
