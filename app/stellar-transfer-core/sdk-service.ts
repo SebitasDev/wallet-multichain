@@ -57,7 +57,19 @@ export async function getOneClickQuote({
 
     if (!destinationAsset) throw new Error(`Unsupported destination chain or token: ${destinationChain} (${destinationToken || 'Default'})`);
 
-    const decimals = sourceChain === "Stellar" ? 7 : 6;
+    let decimals = 6;
+    if (sourceChain === "Stellar") {
+        decimals = 7;
+    } else {
+        const config = NETWORKS[sourceChain as ChainKey];
+        if (config) {
+            const assetDesc = config.assets.find(a => a.name === (sourceToken || "USDC"));
+            if (assetDesc) {
+                decimals = assetDesc.decimals;
+            }
+        }
+    }
+
     const amountAtomic = Math.floor(parseFloat(amount) * Math.pow(10, decimals)).toString();
 
     const isDry = options?.dry ?? false;
@@ -97,7 +109,23 @@ export async function getOneClickQuote({
     } catch (error: any) {
         console.error(">>> [1-Click SDK] Quote Error Raw:", error);
         if (error.body && error.body.message) {
-            throw new Error(`1-Click API: ${error.body.message}`);
+            const msg = error.body.message;
+
+            // Parse "Amount is too low" error
+            if (msg.includes("try at least")) {
+                const match = msg.match(/try at least (\d+)/);
+                if (match && match[1]) {
+                    const minAtomic = parseInt(match[1]);
+                    // Use the same decimals logic as input (source chain)
+                    const minReadable = (minAtomic / Math.pow(10, decimals)).toFixed(6); // Keep it clean with 6 decimals max for display
+                    // Or better, removing trailing zeros
+                    const formatted = parseFloat(minReadable).toString();
+                    throw new Error(`Monto muy bajo para el puente. Intenta enviar al menos ${formatted} ${sourceToken || 'USDC'}`);
+                }
+            }
+
+            // Clean generic error
+            throw new Error(msg.replace("1-Click API: ", ""));
         }
         throw error;
     }
