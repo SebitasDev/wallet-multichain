@@ -24,6 +24,7 @@ import { RecipientInput } from "./RecipientInput";
 import { TransferSummary } from "./TransferSummary";
 import { SubmitButton } from "./SubmitButton";
 import { FacilitatorChainKey } from "@/app/facilitator";
+import { TokenSelector } from "./TokenSelector";
 
 const SOURCE_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[] = [
     STELLAR_CHAIN_KEY,
@@ -46,10 +47,14 @@ export const CrossChainTransferModal = () => {
         provider,
         isLoading,
         error,
+        routeError,
 
         form: { control },
         watchAmount,
         watchDestChain,
+        watchSourceChain, // Needed for TokenSelector
+        watchSourceToken,
+        watchDestToken, // unused directly in UI but good to have
         isCrossChain,
         minAmount,
         isAmountValid,
@@ -142,49 +147,91 @@ export const CrossChainTransferModal = () => {
                             autorización (gasless) y el facilitador ejecuta la TX.
                         </Alert>
 
-                        <ChainSelector
-                            label="Chain origen"
-                            name="sourceChain"
-                            control={control}
-                            options={SOURCE_CHAIN_OPTIONS}
-                        />
+                        <Stack spacing={1}>
+                            <Typography
+                                fontWeight={700}
+                                fontSize={13}
+                                sx={{
+                                    textTransform: "uppercase",
+                                    letterSpacing: 0.5,
+                                    color: "#666666"
+                                }}
+                            >
+                                Chain y Token de Origen
+                            </Typography>
+                            <Stack direction="row" spacing={0}>
+                                <Box sx={{ flex: 1.5 }}>
+                                    <ChainSelector
+                                        label="Chain origen"
+                                        name="sourceChain"
+                                        control={control}
+                                        options={SOURCE_CHAIN_OPTIONS}
+                                        hideLabel
+                                        inputSx={{
+                                            borderTopRightRadius: 0,
+                                            borderBottomRightRadius: 0,
+                                            borderRight: "none"
+                                        }}
+                                    />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <TokenSelector
+                                        label="Token origen"
+                                        name="sourceToken"
+                                        control={control}
+                                        chain={watchSourceChain}
+                                        hideLabel
+                                        inputSx={{
+                                            borderTopLeftRadius: 0,
+                                            borderBottomLeftRadius: 0
+                                        }}
+                                    />
+                                </Box>
+                            </Stack>
+                        </Stack>
 
-                        <ChainSelector
-                            label="Chain destino"
-                            name="destChain"
-                            control={control}
-                            options={DESTINATION_CHAIN_OPTIONS}
-                        />
-
-                        {watchDestChain === STELLAR_CHAIN_KEY && (
-                            <Box sx={{ px: 1 }}>
-                                <Controller
-                                    name="destToken"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <FormControlLabel
-                                            control={
-                                                <Checkbox
-                                                    checked={field.value === "XLM"}
-                                                    onChange={(e) => field.onChange(e.target.checked ? "XLM" : "USDC")}
-                                                    sx={{
-                                                        color: "#000000",
-                                                        "&.Mui-checked": {
-                                                            color: "#000000",
-                                                        },
-                                                    }}
-                                                />
-                                            }
-                                            label={
-                                                <Typography variant="body2" fontWeight={600}>
-                                                    Recibir Token Nativo (XLM)
-                                                </Typography>
-                                            }
-                                        />
-                                    )}
-                                />
-                            </Box>
-                        )}
+                        <Stack spacing={1}>
+                            <Typography
+                                fontWeight={700}
+                                fontSize={13}
+                                sx={{
+                                    textTransform: "uppercase",
+                                    letterSpacing: 0.5,
+                                    color: "#666666"
+                                }}
+                            >
+                                Chain y Token de Destino
+                            </Typography>
+                            <Stack direction="row" spacing={0}>
+                                <Box sx={{ flex: 1.5 }}>
+                                    <ChainSelector
+                                        label="Chain destino"
+                                        name="destChain"
+                                        control={control}
+                                        options={DESTINATION_CHAIN_OPTIONS}
+                                        hideLabel
+                                        inputSx={{
+                                            borderTopRightRadius: 0,
+                                            borderBottomRightRadius: 0,
+                                            borderRight: "none"
+                                        }}
+                                    />
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <TokenSelector
+                                        label="Token destino"
+                                        name="destToken"
+                                        control={control}
+                                        chain={watchDestChain}
+                                        hideLabel
+                                        inputSx={{
+                                            borderTopLeftRadius: 0,
+                                            borderBottomLeftRadius: 0
+                                        }}
+                                    />
+                                </Box>
+                            </Stack>
+                        </Stack>
 
                         <RecipientInput control={control} />
 
@@ -196,6 +243,7 @@ export const CrossChainTransferModal = () => {
                             isAmountValid={isAmountValid}
                             maxAmount={maxAmount}
                             isExceedingMax={isExceedingMax}
+                            token={watchSourceToken} // Pass dynamic token
                         />
 
                         <TransferSummary
@@ -203,6 +251,7 @@ export const CrossChainTransferModal = () => {
                             fee={fee}
                             total={total}
                             isCrossChain={isCrossChain}
+                            token={watchSourceToken} // Pass dynamic token
                         />
 
                         {!isAmountValid && watchAmount && !isExceedingMax && (
@@ -240,6 +289,24 @@ export const CrossChainTransferModal = () => {
                                 {error}
                             </Alert>
                         )}
+
+                        {routeError && (
+                            <Alert
+                                severity="error"
+                                sx={{
+                                    border: "2px solid #ff4444",
+                                    borderRadius: 2,
+                                    bgcolor: "rgba(255, 68, 68, 0.1)",
+                                    color: "#000000",
+                                    fontWeight: 600,
+                                    "& .MuiAlert-icon": {
+                                        color: "#ff4444"
+                                    }
+                                }}
+                            >
+                                {routeError}
+                            </Alert>
+                        )}
                     </Stack>
                 </DialogContent>
 
@@ -275,7 +342,7 @@ export const CrossChainTransferModal = () => {
                     <SubmitButton
                         onClick={onSubmit}
                         isLoading={isLoading}
-                        isDisabled={isLoading || !watchAmount || !isAmountValid || isExceedingMax}
+                        isDisabled={isLoading || !watchAmount || !isAmountValid || isExceedingMax || !!routeError}
                     />
                 </DialogActions>
             </Dialog>

@@ -29,7 +29,8 @@ export async function processNearSettlement(
     destChain: ChainKey,
     amount: string,
     recipient: string,
-    destToken?: string
+    destToken?: string,
+    sourceToken?: string
 ): Promise<SettleResponse> {
 
     const sourceConfig = NETWORKS[sourceChain];
@@ -47,8 +48,12 @@ export async function processNearSettlement(
     // We will check for Stellar Key later if source is Stellar
 
     // 1. Resolve Assets from Config
-    const sourceAsset = sourceConfig.crossChainInformation.nearIntentInformation?.assetsId[0]?.assetId;
+    let sourceAsset = sourceConfig.crossChainInformation.nearIntentInformation?.assetsId[0]?.assetId;
     let destAsset = destConfig.crossChainInformation.nearIntentInformation?.assetsId[0]?.assetId;
+
+    if (sourceChain === "Stellar" && sourceToken === "XLM") {
+        sourceAsset = sourceConfig.crossChainInformation.nearIntentInformation?.assetsId[1]?.assetId;
+    }
 
     if (destChain === "Stellar" && destToken === "XLM") {
         destAsset = destConfig.crossChainInformation.nearIntentInformation?.assetsId[1]?.assetId;
@@ -217,8 +222,17 @@ export async function processNearSettlement(
 
             // B2. Build Facilitator -> Bridge Transaction
             const facilitatorAccount = await server.loadAccount(facilitatorKeypair.publicKey());
-            const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address as string;
-            const usdcAsset = new StellarSdk.Asset("USDC", usdcAddress);
+
+            // Check if we are bridging Native XLM or USDC
+            const isNativeSource = sourceToken === "XLM";
+
+            let assetToSend: StellarSdk.Asset;
+            if (isNativeSource) {
+                assetToSend = StellarSdk.Asset.native();
+            } else {
+                const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address as string;
+                assetToSend = new StellarSdk.Asset("USDC", usdcAddress);
+            }
 
             const quoteData = quote.quote as any;
             const memoText = quoteData.depositMemo || quoteData.memo || "";
@@ -232,7 +246,7 @@ export async function processNearSettlement(
             })
                 .addOperation(StellarSdk.Operation.payment({
                     destination: depositAddress,
-                    asset: usdcAsset,
+                    asset: assetToSend,
                     amount: (parseInt(amountAtomic) / 10_000_000).toFixed(7) // Stellar uses string decimals
                 }))
                 .setTimeout(30);

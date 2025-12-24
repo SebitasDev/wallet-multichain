@@ -23,6 +23,7 @@ export type FormValues = {
     destChain: FacilitatorChainKey | typeof STELLAR_CHAIN_KEY;
     recipient: string;
     amount: string;
+    sourceToken: string;
     destToken: string;
 };
 
@@ -101,14 +102,26 @@ export const useCrossChainTransfer = () => {
             destChain: "Polygon",
             recipient: "",
             amount: "",
+            sourceToken: "USDC",
             destToken: "USDC",
         },
     });
 
-    const { watch, reset, handleSubmit } = form;
+    const { watch, reset, handleSubmit, setValue } = form; // Exposed setValue
     const watchAmount = watch("amount");
     const watchSourceChain = watch("sourceChain");
     const watchDestChain = watch("destChain");
+    const watchSourceToken = watch("sourceToken"); // Watch source token
+    const watchDestToken = watch("destToken");
+
+    // Reset tokens when chains change (optional, but good UX to avoid invalid states)
+    useEffect(() => {
+        setValue("sourceToken", "USDC");
+    }, [watchSourceChain, setValue]);
+
+    useEffect(() => {
+        setValue("destToken", "USDC");
+    }, [watchDestChain, setValue]);
 
     const isCrossChain = watchSourceChain !== watchDestChain;
 
@@ -119,26 +132,20 @@ export const useCrossChainTransfer = () => {
         }
 
         if ((watchDestChain as string) === STELLAR_CHAIN_KEY) {
-            return 0.001; // Testing minimum for 1-Click Bridge
+            return 0.001;
         }
 
+        // If sending XLM from Stellar, maybe different min? Keeping same for now.
         if ((watchSourceChain as string) === STELLAR_CHAIN_KEY) {
-            return 0.23; // Minimum for Stellar source
+            return 0.23;
         }
 
-        // Safe access
         const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
         return sourceConfig?.crossChainInformation.circleInformation?.aproxFromFee || 0;
     }, [watchSourceChain, watchDestChain]);
 
     // Calculate Max Amount (Balance - 0.01)
-    const { wallets } = useWalletStore(); // Access wallets store
-
-    // We need to fetch the balance for the current chain
-    // Issue: wallets store is async/complex. 
-    // Simpler: Find the wallet and chain in the store synchronously.
-
-    // Calculate Max Amount (Balance - 0.01)
+    const { wallets } = useWalletStore();
     const [maxAmount, setMaxAmount] = useState(0);
 
     useEffect(() => {
@@ -161,13 +168,25 @@ export const useCrossChainTransfer = () => {
                     const keypair = Keypair.fromSecret(stellarPrivateKey);
                     const publicKey = keypair.publicKey();
 
-                    const balance = await getStellarUSDCBalance(publicKey);
-
-                    if (balance !== null) {
-                        const max = balance - 0.01;
+                    // Check source token
+                    if (watchSourceToken === "XLM") {
+                        // Native XLM balance logic (Simplified: fetch account)
+                        const server = new (await import("stellar-sdk")).Horizon.Server("https://horizon.stellar.org");
+                        const account = await server.loadAccount(publicKey);
+                        const native = account.balances.find((b) => b.asset_type === "native");
+                        const balance = native ? parseFloat(native.balance) : 0;
+                        // Reserve 1 XLM for account + fee
+                        const max = balance - 1.1;
                         if (isMounted) setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
                     } else {
-                        if (isMounted) setMaxAmount(0);
+                        // USDC
+                        const balance = await getStellarUSDCBalance(publicKey);
+                        if (balance !== null) {
+                            const max = balance - 0.01;
+                            if (isMounted) setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
+                        } else {
+                            if (isMounted) setMaxAmount(0);
+                        }
                     }
 
                 } catch (e) {
@@ -184,33 +203,35 @@ export const useCrossChainTransfer = () => {
                 return;
             }
 
+            // Use Source Token to find address? For now, assuming USDC is primary.
+            // If user adds other tokens, we need to map name -> address in config.
+            // Current config `assets` array is best bet.
+
+            const tokenName = watchSourceToken || "USDC";
+            const assetInfo = networkConfig.assets.find(a => a.name === tokenName);
+            const tokenAddress = assetInfo?.address;
+
+            // ... (Existing logic primarily for USDC)
+            // If token is native (ETH/MATIC), need different logic.
+            // Assuming non-native for now based on 'assets' list usually being ERC20s like USDC.
+
             const chainId = networkConfig.evm.chain.id.toString();
 
             // 1. Child Wallet (Sync)
-            const wallet = wallets.find(w => w.address.toLowerCase() === address.toLowerCase());
-            if (wallet) {
-                const chainInfo = wallet.chains.find(c => c.chainId === chainId);
-                if (chainInfo) {
-                    const balance = chainInfo.amount;
-                    const max = balance - 0.01;
-                    // Use 6 decimals (USDC standard) to avoid rounding up errors on small amounts
-                    if (isMounted) setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
-                    return;
-                }
-            }
+            // ... (Logic assumes wallet.chains only tracks the main asset or pre-configured ones?)
+            // The `wallet.chains` structure likely tracks native. 
+            // `getBalanceFromChain` handles ERC20.
 
             // 2. Main Wallet / External (Async)
             try {
-                const usdcAddress = networkConfig.assets.find(a => a.name === "USDC")?.address;
-                if (usdcAddress) {
+                if (tokenAddress) {
                     const { balance } = await getBalanceFromChain(
                         networkConfig.evm.chain,
                         address as Address,
-                        usdcAddress as Address
+                        tokenAddress as Address
                     );
                     const numBalance = Number(balance || 0);
                     const max = numBalance - 0.01;
-                    // Use 6 decimals
                     if (isMounted) setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
                 }
             } catch (err) {
@@ -221,7 +242,67 @@ export const useCrossChainTransfer = () => {
 
         fetchBalance();
         return () => { isMounted = false; };
-    }, [address, wallets, watchSourceChain]);
+        fetchBalance();
+        return () => { isMounted = false; };
+    }, [address, wallets, watchSourceChain, watchSourceToken, stellarPrivateKey]);
+
+    // Route Validation
+    const routeError = useMemo(() => {
+        const getChainConfig = (key: string) => {
+            if (key === STELLAR_CHAIN_KEY) return STELLAR;
+            return NETWORKS[key as keyof typeof NETWORKS];
+        };
+
+        const sourceConfig = getChainConfig(watchSourceChain);
+        const destConfig = getChainConfig(watchDestChain);
+
+        if (!sourceConfig || !destConfig) return null;
+
+        const isSourceNonEvm = !!sourceConfig.nonEvm;
+        const isDestNonEvm = !!destConfig.nonEvm;
+
+        // Case 1: Heterogeneous Chains (EVM <-> Non-EVM)
+        // One is EVM, one is Non-EVM.
+        if (isSourceNonEvm !== isDestNonEvm) {
+            const evmConfig = isSourceNonEvm ? destConfig : sourceConfig;
+            const nonEvmConfig = isSourceNonEvm ? sourceConfig : destConfig;
+
+            // To bridge between EVM and Non-EVM (like Stellar), the EVM chain MUST support Near Intents (the bridge layer)
+            if (!evmConfig.crossChainInformation.nearIntentInformation?.support) {
+                return `Ruta no disponible: ${evmConfig.label} no tiene soporte para conectar con ${nonEvmConfig.label}`;
+            }
+            // Verify Non-EVM capability (e.g. Stellar matches)
+            if (!nonEvmConfig.crossChainInformation.nearIntentInformation?.support) {
+                return `Ruta no disponible: ${nonEvmConfig.label} no tiene soporte para puentes`;
+            }
+        }
+
+        // Case 2: Homogeneous EVM Chains (EVM <-> EVM)
+        if (!isSourceNonEvm && !isDestNonEvm) {
+            // USDC check (Primary use case)
+            if (watchSourceToken === 'USDC' && watchDestToken === 'USDC') {
+                const sourceCCTP = sourceConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
+                const destCCTP = destConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
+
+                // Priority 1: CCTP (Both must support it)
+                if (sourceCCTP && destCCTP) {
+                    return null; // Valid via CCTP
+                }
+
+                // Priority 2: Near Intents (Both must support it if CCTP fails)
+                const sourceNear = sourceConfig.crossChainInformation.nearIntentInformation?.support;
+                const destNear = destConfig.crossChainInformation.nearIntentInformation?.support;
+
+                if (sourceNear && destNear) {
+                    return null; // Valid via Near
+                }
+
+                return `Ruta no disponible para USDC: Se requiere que ambas chains (${sourceConfig.label} y ${destConfig.label}) soporten CCTP o Near Intents.`;
+            }
+        }
+
+        return null;
+    }, [watchSourceChain, watchDestChain, watchSourceToken, watchDestToken]);
 
     const isAmountValid = useMemo(() => {
         const strAmount = watchAmount ? String(watchAmount) : "";
@@ -246,15 +327,26 @@ export const useCrossChainTransfer = () => {
     };
 
     const fee = useMemo(() => {
+        // Waive fee in Development
+        if (process.env.NEXT_PUBLIC_ENVIROMENT === "development") {
+            return "0";
+        }
+
         if (!watchAmount) return "0.00";
-        if ((watchDestChain as string) === STELLAR_CHAIN_KEY) {
-            return NETWORKS.Stellar.crossChainInformation.circleInformation?.aproxFromFee?.toString() || "0";
+
+        // Same Chain
+        if (watchSourceChain === watchDestChain) {
+            // Different Token (Swap) -> 0.02
+            if (watchSourceToken !== watchDestToken) {
+                return "0.02";
+            }
+            // Same Token (Transfer) -> 0.01
+            return "0.01";
         }
-        if ((watchSourceChain as string) === STELLAR_CHAIN_KEY) {
-            return "0.01"; // Fixed Facilitator Fee
-        }
-        return getFee();
-    }, [watchAmount, watchDestChain, watchSourceChain, getFee]);
+
+        // Different Chain -> 0.02
+        return "0.02";
+    }, [watchAmount, watchDestChain, watchSourceChain, watchSourceToken, watchDestToken, getFee]);
 
     // Recalculate total with precision for display
     const total = useMemo(() => {
@@ -266,18 +358,30 @@ export const useCrossChainTransfer = () => {
         return (amount + feeVal).toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 6,
-            useGrouping: false // No commas for cleaner raw value or keep them? User wants precision.
+            useGrouping: false
         });
     }, [watchAmount, fee]);
 
     const onSubmit = async (data: FormValues) => {
         if (!address) {
             toast.error("No hay wallet conectada");
+            console.error("Wallet not connected");
             return;
         }
 
+        // Log wallet info for debugging
+        console.log("Wallet address for signing:", address);
+        console.log("Current mainWallet:", mainWallet);
+        console.log("Private key available:", !!privateKey);
+
         if (!data.recipient || !data.amount) {
             toast.error("Completa todos los campos");
+            return;
+        }
+
+        // Route Validation Block
+        if (routeError) {
+            toast.error(routeError);
             return;
         }
 
@@ -296,28 +400,25 @@ export const useCrossChainTransfer = () => {
 
         // Unified Transfer Call
         toast.info("Firmando autorización...");
-        // Add minimal Stellar fee logic if Source is Stellar (wrapper handled in hook, but fee addition logic was here)
-        // Hook expects RAW amount input for Stellar -> EVM?
-        // Let's keep the hook clean and handle fee details inside logic if possible, OR pass the 'amount' as user input.
-        // User logic: "Input: 0.23 -> Send 0.24 -> Facilitator keeps 0.01 -> Bridges 0.23"
-        // Let's pass the raw amount the user wants to BRIDGE, and let the hook handle internal fee logic/addition if needed.
-        // HOWEVER, previous code calculated `amountWithFee` and passed IT to the function.
-        // To be safe, let's keep the fee addition here for Stellar Source.
 
-        let finalAmount = data.amount;
-        if ((data.sourceChain as string) === STELLAR_CHAIN_KEY) {
-            finalAmount = (parseFloat(data.amount) + 0.01).toFixed(6);
-        }
+        // Calculate Total to Sign (Amount + Fee)
+        // User request: "lo que el usuario firme sea dependiendo eso + valor + fee aproximado"
+        const currentFee = parseFloat(fee);
+        const finalAmount = (amount + currentFee).toFixed(6);
+
+        console.log(`Preparing transfer: Amount=${amount} + Fee=${currentFee} = Total=${finalAmount}`);
 
         try {
-            console.log("Submitting unified transfer:", data);
+            console.log("Submitting unified transfer:", { ...data, finalAmount });
 
             const result = await executeTransfer({
-                amount: finalAmount,
+                amount: finalAmount, // Send total amount (incl. fee)
                 sourceChain: data.sourceChain,
                 destinationChain: data.destChain as FacilitatorChainKey,
                 recipient: data.recipient,
-                destToken: data.destToken
+                destToken: data.destToken,
+                sourceToken: data.sourceToken,
+                facilitatorFee: fee // Pass explicit fee
             });
 
             if (result.success) {
@@ -328,6 +429,7 @@ export const useCrossChainTransfer = () => {
                 closeModal();
             } else {
                 toast.error(`Error: ${result.errorReason || "Unknown Error"}`);
+                console.error("Transfer failed result:", result);
             }
         } catch (err) {
             console.error(err);
@@ -346,9 +448,12 @@ export const useCrossChainTransfer = () => {
 
         // Form
         form,
+        routeError, // Exposed validation error
         watchAmount,
         watchSourceChain,
         watchDestChain,
+        watchSourceToken,
+        watchDestToken,
         isCrossChain,
         minAmount,
         isAmountValid,

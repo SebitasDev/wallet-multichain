@@ -5,9 +5,10 @@ type TransferSummaryProps = {
     fee: string;
     total: string;
     isCrossChain: boolean;
+    token?: string;
 };
 
-export const TransferSummary = ({ watchAmount, fee, total, isCrossChain }: TransferSummaryProps) => {
+export const TransferSummary = ({ watchAmount, fee, total, isCrossChain, token = "USDC" }: TransferSummaryProps) => {
     if (!watchAmount || parseFloat(watchAmount) <= 0) return null;
 
     return (
@@ -25,7 +26,7 @@ export const TransferSummary = ({ watchAmount, fee, total, isCrossChain }: Trans
                         Monto:
                     </Typography>
                     <Typography fontWeight={700} fontSize={14}>
-                        {watchAmount} USDC
+                        {watchAmount} {token}
                     </Typography>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
@@ -33,7 +34,7 @@ export const TransferSummary = ({ watchAmount, fee, total, isCrossChain }: Trans
                         Fee facilitador:
                     </Typography>
                     <Typography color="#00DC8C" fontWeight={700} fontSize={14}>
-                        {fee} USDC
+                        {fee} {token}
                     </Typography>
                 </Stack>
                 <Box sx={{
@@ -46,7 +47,7 @@ export const TransferSummary = ({ watchAmount, fee, total, isCrossChain }: Trans
                             Total a firmar:
                         </Typography>
                         <Typography fontWeight={800} fontSize={15}>
-                            {total} USDC
+                            {total} {token}
                         </Typography>
                     </Stack>
                 </Box>

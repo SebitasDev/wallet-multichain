@@ -10,6 +10,7 @@ type AmountInputProps = {
     isAmountValid: boolean;
     maxAmount: number;
     isExceedingMax?: boolean;
+    token?: string; // Add optional token prop
 };
 
 export const AmountInput = ({
@@ -19,7 +20,8 @@ export const AmountInput = ({
     watchAmount,
     isAmountValid,
     maxAmount,
-    isExceedingMax
+    isExceedingMax,
+    token = "USDC" // Default to USDC if not provided
 }: AmountInputProps) => (
     <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
@@ -32,7 +34,7 @@ export const AmountInput = ({
                     color: "#666666"
                 }}
             >
-                Monto USDC
+                Monto {token}
             </Typography>
             {isCrossChain && (
                 <Typography
@@ -47,7 +49,7 @@ export const AmountInput = ({
                         border: "1px solid #00DC8C",
                     }}
                 >
-                    Mínimo: {minAmount} USDC
+                    Mínimo: {minAmount} {token}
                 </Typography>
             )}
             <Typography
@@ -67,7 +69,7 @@ export const AmountInput = ({
                     control.register("amount").onChange({ target: { value: maxAmount, name: "amount" } });
                 }}
             >
-                Máx: {maxAmount} USDC
+                Máx: {maxAmount} {token}
             </Typography>
         </Stack>
         <Controller
@@ -87,9 +89,9 @@ export const AmountInput = ({
                     helperText={
                         watchAmount
                             ? isExceedingMax
-                                ? `Excede tu balance disponible (${maxAmount} USDC)`
+                                ? `Excede tu balance disponible (${maxAmount} ${token})`
                                 : !isAmountValid
-                                    ? `El monto debe ser al menos ${minAmount} USDC`
+                                    ? `El monto debe ser al menos ${minAmount} ${token}`
                                     : ""
                             : ""
                     }

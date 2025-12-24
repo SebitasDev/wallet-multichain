@@ -20,7 +20,6 @@ export interface NearIntentAsset {
     assetId: string,
     name: string,
     decimals: number,
-    icon: JSX.Element
 }
 
 export interface NearIntentInformation {
@@ -59,6 +58,7 @@ export interface Asset {
     name: string;
     decimals: number;
     address?: Address | string;
+    icon?: JSX.Element;
 }
 
 export interface ChainConfig {

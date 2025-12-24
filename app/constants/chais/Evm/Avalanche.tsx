@@ -2,7 +2,7 @@ import { avalanche, avalancheFuji } from "viem/chains";
 import { AvalancheIcon } from "@/app/components/atoms/AvalancheIcon";
 import { Address } from "abitype";
 import { ChainConfig } from "@/app/types/chain";
-import {UsdcIcon} from "@/app/components/atoms/UsdcIcon";
+import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
@@ -11,7 +11,8 @@ export const AVALANCHE: ChainConfig = {
         {
             name: "USDC",
             decimals: 6,
-            address: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address
+            address: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address,
+            icon: <UsdcIcon />
         }
     ],
     evm: {
@@ -37,8 +38,7 @@ export const AVALANCHE: ChainConfig = {
                 {
                     assetId: "nep245:v2_1.omni.hot.tg:43114_3atVJH3r5c4GqiSYmg9fECvjc47o",
                     name: "USDC",
-                    decimals: 6,
-                    icon: <UsdcIcon/>
+                    decimals: 6
                 }
             ],
             needMemo: false

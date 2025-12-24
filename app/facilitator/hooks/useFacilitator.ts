@@ -17,7 +17,7 @@ import { NETWORKS } from "@/app/constants/chainsInformation";
 import { createAuthorizationPayload } from "../evm/functions/createAuthorization";
 import { verifyCCTP } from "../evm/functions/verifyCCTP";
 // Stellar Actions
-import { executeStellarBridgeTransfer, executeStellarToEvmTransfer } from "../non-evm/stellar/actions";
+import { executeStellarBridgeTransfer, executeStellarToEvmTransfer, executeStellarTransfer } from "../non-evm/stellar/actions";
 
 const LOG_PREFIX = "[useFacilitator]";
 
@@ -55,6 +55,8 @@ export const useFacilitator = ({
         destinationChain,
         recipient,
         destToken,
+        sourceToken,
+        facilitatorFee,
         overrideCredentials
     }: {
         amount: string,
@@ -62,6 +64,8 @@ export const useFacilitator = ({
         destinationChain: FacilitatorChainKey,
         recipient: string, // Can be EVM Address or Stellar Address
         destToken?: string,
+        sourceToken?: string,
+        facilitatorFee?: string, // Fee to deduct/pay to facilitator
         overrideCredentials?: {
             privateKey?: `0x${string}`;
             stellarPrivateKey?: string;
@@ -96,7 +100,8 @@ export const useFacilitator = ({
                     amount,
                     destinationChain, // Destination Chain Key
                     recipient,
-                    currentStellarKey // Use override or default
+                    currentStellarKey, // Use override or default
+                    sourceToken
                 );
                 // Standardize response if needed, but actions match SettleResponse
                 return result;
@@ -122,12 +127,28 @@ export const useFacilitator = ({
                     sourceChain,
                     amount,
                     recipient,
-                    destToken
+                    destToken,
+                    sourceToken
+                );
+            }
+
+            // D. Stellar -> Stellar (Swap/Transfer)
+            if (isStellarSource && isStellarDest) {
+                console.log(LOG_PREFIX, "Route: Stellar -> Stellar");
+                return await executeStellarTransfer(
+                    amount,
+                    recipient,
+                    currentStellarKey,
+                    sourceToken,
+                    destToken,
+                    facilitatorFee
                 );
             }
 
             // C. EVM -> EVM (Smart Router)
             if (!isStellarSource && !isStellarDest) {
+                // ... (Existing Logic)
+
                 console.log(LOG_PREFIX, "Route: EVM Smart Router");
 
                 const amountAtomic = BigInt(Math.floor(parseFloat(amount) * 1_000_000));
@@ -174,7 +195,8 @@ export const useFacilitator = ({
                         destChain: destinationChain, // The router needs this to decide
                         amount: amount,
                         recipient: recipient,
-                        destToken: destToken
+                        destToken: destToken,
+                        sourceToken: sourceToken
                     })
                 });
 

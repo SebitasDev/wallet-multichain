@@ -22,17 +22,6 @@ export const TransferHeader = ({ onClose, isLoading }: TransferHeaderProps) => (
             <Typography fontSize={18} fontWeight={800}>
                 Cross-Chain Transfer
             </Typography>
-            <Chip
-                label="CCTP"
-                size="small"
-                sx={{
-                    bgcolor: "#00DC8C",
-                    color: "#000000",
-                    fontWeight: 800,
-                    fontSize: 11,
-                    border: "2px solid #000000",
-                }}
-            />
         </Stack>
 
         <IconButton
