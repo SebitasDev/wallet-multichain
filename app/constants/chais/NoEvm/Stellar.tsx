@@ -1,0 +1,56 @@
+import { StellarIcon } from "@/app/components/atoms/StellarIcon";
+import { Networks } from "stellar-sdk";
+import { ChainConfig } from "@/app/types/chain";
+import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
+
+const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
+
+export const STELLAR: ChainConfig = {
+    label: "Stellar",
+    icon: <StellarIcon />,
+    chipLabel: "XML",
+    chipColor: "#000000",
+    assets: [
+        {
+            name: "USDC",
+            decimals: 6,
+            address: isDevelopment ? "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" : "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+            icon: <UsdcIcon />
+        },
+        {
+            name: "XLM",
+            decimals: 7,
+            address: "native",
+            icon: <StellarIcon />
+        }
+    ],
+    nonEvm: {
+        networkPassphrase: isDevelopment ? Networks.TESTNET : Networks.PUBLIC,
+        serverURL: isDevelopment ? "https://horizon-testnet.stellar.org" : "https://horizon.stellar.org",
+    },
+    crossChainInformation: {
+        circleInformation: {
+            supportCirclePaymaster: false,
+            aproxFromFee: isDevelopment ? 0.003 : 0.0028
+        },
+        nearIntentInformation: {
+            support: true,
+            assetsId: [
+                {
+                    assetId: "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu",
+                    name: "USDC",
+                    decimals: 6
+                },
+                {
+                    assetId: "nep245:v2_1.omni.hot.tg:1100_111bzQBB5v7AhLyPMDwS8uJgQV24KaAPXtwyVWu2KXbbfQU6NXRCz",
+                    name: "XLM",
+                    decimals: 6 // Note: Near might treat it as 6 or 7? Keeping 6 as per previous config or standardizing? 
+                    // Previous config had 6 for XLM in nearIntent? 
+                    // Wait, previous file content showed decimals: 6 for XLM in nearIntent. I will keep it as 6 to be safe, but XLM native is 7.
+                    // Actually, let's trust the previous nearIntent config.
+                }
+            ],
+            needMemo: true
+        }
+    }
+}

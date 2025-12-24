@@ -1,4 +1,4 @@
-import { Box, Typography, TextField, MenuItem, Stack } from "@mui/material";
+import { Box, Typography, TextField, MenuItem, Stack, SxProps } from "@mui/material";
 import { Controller, Control } from "react-hook-form";
 import { FormValues, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/useCrossChainTransfer";
 import { NETWORKS } from "@/app/constants/chainsInformation";
@@ -10,22 +10,26 @@ type ChainSelectorProps = {
     name: "sourceChain" | "destChain";
     control: Control<FormValues>;
     options: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[];
+    hideLabel?: boolean;
+    inputSx?: SxProps;
 };
 
-export const ChainSelector = ({ label, name, control, options }: ChainSelectorProps) => (
+export const ChainSelector = ({ label, name, control, options, hideLabel, inputSx }: ChainSelectorProps) => (
     <Box>
-        <Typography
-            fontWeight={700}
-            fontSize={13}
-            sx={{
-                mb: 1,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-                color: "#666666"
-            }}
-        >
-            {label}
-        </Typography>
+        {!hideLabel && (
+            <Typography
+                fontWeight={700}
+                fontSize={13}
+                sx={{
+                    mb: 1,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    color: "#666666"
+                }}
+            >
+                {label}
+            </Typography>
+        )}
         <Controller
             control={control}
             name={name}
@@ -45,7 +49,8 @@ export const ChainSelector = ({ label, name, control, options }: ChainSelectorPr
                             },
                             "&.Mui-focused": {
                                 background: "#ffffff",
-                            }
+                            },
+                            ...inputSx
                         }
                     }}
                 >

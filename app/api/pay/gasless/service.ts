@@ -11,7 +11,7 @@ import {
 } from "@/app/facilitator/config";
 import { FACILITATOR_NETWORKS } from "@/app/facilitator/evm/config";
 import { usdcErc3009Abi } from "@/app/facilitator/evm/usdcErc3009Abi";
-import { STELLAR } from "@/app/constants/chais/Stellar";
+import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
 import * as StellarSdk from "stellar-sdk";
 
 const FACILITATOR_PRIVATE_KEY = process.env.FACILITATOR_PRIVATE_KEY as `0x${string}`;

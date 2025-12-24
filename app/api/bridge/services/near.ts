@@ -14,7 +14,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { FACILITATOR_NETWORKS } from "@/app/facilitator/evm/config";
 import { FacilitatorChainKey } from "@/app/facilitator/config";
 import { usdcErc3009Abi } from "@/app/facilitator/evm/usdcErc3009Abi";
-import { STELLAR } from "@/app/constants/chais/Stellar";
+import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
 import * as StellarSdk from "stellar-sdk";
 
 // Initialize API
@@ -29,7 +29,9 @@ export async function processNearSettlement(
     destChain: ChainKey,
     amount: string,
     recipient: string,
-    destToken?: string
+    destToken?: string,
+    sourceToken?: string,
+    senderAddress?: string
 ): Promise<SettleResponse> {
 
     const sourceConfig = NETWORKS[sourceChain];
@@ -46,13 +48,20 @@ export async function processNearSettlement(
 
     // We will check for Stellar Key later if source is Stellar
 
-    // 1. Resolve Assets from Config
-    const sourceAsset = sourceConfig.crossChainInformation.nearIntentInformation?.assetsId[0]?.assetId;
-    let destAsset = destConfig.crossChainInformation.nearIntentInformation?.assetsId[0]?.assetId;
+    // 1. Resolve Assets from Config by matching Token Name
+    // sourceToken and destToken are passed from the frontend.
+    // If undefined, we default to the first asset (usually USDC).
 
-    if (destChain === "Stellar" && destToken === "XLM") {
-        destAsset = destConfig.crossChainInformation.nearIntentInformation?.assetsId[1]?.assetId;
-    }
+    const sourceAssetInfo = sourceConfig.crossChainInformation.nearIntentInformation?.assetsId.find(
+        (a) => a.name === (sourceToken || "USDC")
+    ) || sourceConfig.crossChainInformation.nearIntentInformation?.assetsId[0];
+
+    const destAssetInfo = destConfig.crossChainInformation.nearIntentInformation?.assetsId.find(
+        (a) => a.name === (destToken || "USDC")
+    ) || destConfig.crossChainInformation.nearIntentInformation?.assetsId[0];
+
+    const sourceAsset = sourceAssetInfo?.assetId;
+    const destAsset = destAssetInfo?.assetId;
 
     // Fallback for missing dest asset or specific overrides could go here
     if (!sourceAsset || !destAsset) {
@@ -63,9 +72,22 @@ export async function processNearSettlement(
     const decimals = sourceChain === "Stellar" ? 7 : 6;
 
     // Amount conversion
-    const amountAtomic = Math.floor(parseFloat(amount) * Math.pow(10, decimals)).toString();
+    const amountAtomicTotal = Math.floor(parseFloat(amount) * Math.pow(10, decimals));
+    // Deduct 0.02 Fee (20000 for 6 decimals, 200000 for 7 decimals)
+    const feeUnits = Math.floor(0.02 * Math.pow(10, decimals));
+    const amountAtomicNet = (amountAtomicTotal - feeUnits).toString();
 
-    const refundAddress = paymentPayload?.authorization.from || recipient;
+    // Safety check
+    if (BigInt(amountAtomicNet) <= 0) {
+        return { success: false, errorReason: "Amount too small to cover fees" };
+    }
+
+    // For Stellar, paymentPayload doesn't have authorization.from. 
+    // We prioritize the explicit senderAddress (Stellar) if available.
+    const refundAddress = senderAddress || paymentPayload?.authorization?.from || recipient;
+
+    // Note: if senderAddress is provided (for Stellar), it's the correct refund address.
+    // If EVM, authorization.from is the correct user address.
 
     try {
         console.log(`[NearService] Requesting Quote: ${sourceChain} -> ${destChain}`, { amount, sourceAsset, destAsset });
@@ -78,7 +100,7 @@ export async function processNearSettlement(
             depositType: QuoteRequest.depositType.ORIGIN_CHAIN,
             depositMode: sourceChain === "Stellar" ? QuoteRequest.depositMode.MEMO : undefined,
             destinationAsset: destAsset,
-            amount: amountAtomic,
+            amount: amountAtomicNet, // Use Net Amount (Total - Fee)
             refundTo: refundAddress,
             refundType: QuoteRequest.refundType.ORIGIN_CHAIN,
             recipient: recipient,
@@ -147,7 +169,7 @@ export async function processNearSettlement(
 
             // Verify Balance with Retry (Handling RPC Lag)
             let facilitatorBalance = BigInt(0);
-            const amountBigInt = BigInt(amountAtomic);
+            const amountBigInt = BigInt(amountAtomicTotal);
             const maxRetries = 5;
 
             for (let i = 0; i < maxRetries; i++) {
@@ -177,7 +199,7 @@ export async function processNearSettlement(
                 address: networkConfig.usdc,
                 abi: usdcErc3009Abi,
                 functionName: "transfer",
-                args: [depositAddress as Address, BigInt(amountAtomic)]
+                args: [depositAddress as Address, BigInt(amountAtomicNet)]
             });
             await publicClient.waitForTransactionReceipt({ hash: bridgeHash });
             console.log("[NearService] Push Success:", bridgeHash);
@@ -217,8 +239,17 @@ export async function processNearSettlement(
 
             // B2. Build Facilitator -> Bridge Transaction
             const facilitatorAccount = await server.loadAccount(facilitatorKeypair.publicKey());
-            const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address as string;
-            const usdcAsset = new StellarSdk.Asset("USDC", usdcAddress);
+
+            // Check if we are bridging Native XLM or USDC
+            const isNativeSource = sourceToken === "XLM";
+
+            let assetToSend: StellarSdk.Asset;
+            if (isNativeSource) {
+                assetToSend = StellarSdk.Asset.native();
+            } else {
+                const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address as string;
+                assetToSend = new StellarSdk.Asset("USDC", usdcAddress);
+            }
 
             const quoteData = quote.quote as any;
             const memoText = quoteData.depositMemo || quoteData.memo || "";
@@ -232,8 +263,8 @@ export async function processNearSettlement(
             })
                 .addOperation(StellarSdk.Operation.payment({
                     destination: depositAddress,
-                    asset: usdcAsset,
-                    amount: (parseInt(amountAtomic) / 10_000_000).toFixed(7) // Stellar uses string decimals
+                    asset: assetToSend,
+                    amount: (parseInt(amountAtomicNet) / 10_000_000).toFixed(7) // Stellar uses string decimals
                 }))
                 .setTimeout(30);
 
