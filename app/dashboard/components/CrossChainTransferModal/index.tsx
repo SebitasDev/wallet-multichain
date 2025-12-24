@@ -50,6 +50,7 @@ export const CrossChainTransferModal = () => {
         watchSourceToken,
         watchDestToken, // unused directly in UI but good to have
         isCrossChain,
+        isCCTPRoute,
         minAmount,
         isAmountValid,
         maxAmount,
@@ -374,7 +375,7 @@ export const CrossChainTransferModal = () => {
                         Cancelar
                     </Button>
 
-                    {!simulation.done ? (
+                    {!simulation.done && isCrossChain && !isCCTPRoute ? (
                         <Button
                             variant="contained"
                             onClick={simulateTransfer}
@@ -411,7 +412,7 @@ export const CrossChainTransferModal = () => {
                         <SubmitButton
                             onClick={onSubmit}
                             isLoading={isLoading}
-                            isDisabled={isLoading || !simulation.done || !!simulation.error}
+                            isDisabled={isLoading || (isCrossChain && !isCCTPRoute && (!simulation.done || !!simulation.error)) || !watchAmount || !isAmountValid || isExceedingMax || !!routeError}
                         />
                     )}
                 </DialogActions>
