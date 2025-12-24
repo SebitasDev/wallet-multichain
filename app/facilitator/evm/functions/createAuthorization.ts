@@ -36,6 +36,8 @@ export const createAuthorizationPayload = async (
 ): Promise<FacilitatorPaymentPayload> => {
     const networkConfig = FACILITATOR_NETWORKS[sourceChain];
     if (!networkConfig) throw new Error(`Unsupported chain: ${sourceChain}`);
+    if (!FACILITATOR_ADDRESS) throw new Error("FACILITATOR_ADDRESS is not defined");
+    if (!userAddress) throw new Error("User address is not defined");
 
     // The amount passed here is already the TOTAL amount (User Amount + Fee)
     // calculated by the consumer (useCrossChainTransfer).

@@ -10,6 +10,8 @@ const RouteSchema = new Schema({
 const TransactionSchema = new Schema({
     id: { type: String, required: true, unique: true }, // Keeping UUID from frontend or generating it
     fromAddress: { type: String, required: true, index: true },
+    toAddress: { type: String, required: true }, // [NEW]
+    destinationChain: { type: String, required: true }, // [NEW]
     totalAmount: { type: Number, required: true },
     status: { type: String, enum: ['SUCCESS', 'PENDING', 'FAILED'], required: true },
     route: [RouteSchema],

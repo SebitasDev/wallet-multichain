@@ -418,6 +418,41 @@ export const useCrossChainTransfer = () => {
 
             if (result.success) {
                 toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
+
+                // Save to DB
+                try {
+                    const txData = {
+                        id: crypto.randomUUID(),
+                        fromAddress: address,
+                        totalAmount: amount,
+                        status: "PENDING", // Requested by user
+                        tokenSymbol: data.destToken,
+                        decimals: 6,
+                        toAddress: data.recipient, // [NEW]
+                        destinationChain: data.destChain, // [NEW]
+                        createdAt: Date.now(),
+                        route: [
+                            {
+                                chainName: data.sourceChain, // Source chain as requested
+                                amount: amount,
+                                status: "PENDING",
+                                txHash: result.transactionHash
+                            }
+                        ]
+                    };
+
+                    await fetch("/api/transactions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(txData)
+                    });
+                    console.log("Transaction saved to DB");
+
+                } catch (dbError) {
+                    console.error("Failed to save transaction to DB:", dbError);
+                    // Don't block UI flow for BG error
+                }
+
                 if (result.burnTransactionHash) {
                     toast.info(`Burn TX: ${result.burnTransactionHash.slice(0, 10)}... Circle minteará automáticamente.`);
                 }
