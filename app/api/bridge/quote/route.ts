@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOneClickQuote } from "@/app/stellar-transfer-core/sdk-service";
-import {PlatformFess} from "@/app/constants/platformFess";
+import { PlatformFess } from "@/app/constants/platformFess";
 
 export async function POST(request: NextRequest) {
     try {

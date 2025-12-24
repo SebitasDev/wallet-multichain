@@ -13,6 +13,12 @@ export const AVALANCHE: ChainConfig = {
             decimals: 6,
             address: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address,
             icon: <UsdcIcon />
+        },
+        {
+            name: "AVAX",
+            decimals: 18,
+            address: "0x0000000000000000000000000000000000000000" as Address,
+            icon: <AvalancheIcon />
         }
     ],
     evm: {
@@ -30,7 +36,7 @@ export const AVALANCHE: ChainConfig = {
                 supportCCTP: true,
                 domain: 1,
             },
-            aproxFromFee: isDevelopment ? 10000 : 10000,
+            aproxFromFee: 0.02,
         },
         nearIntentInformation: {
             support: true,
@@ -39,6 +45,11 @@ export const AVALANCHE: ChainConfig = {
                     assetId: "nep245:v2_1.omni.hot.tg:43114_3atVJH3r5c4GqiSYmg9fECvjc47o",
                     name: "USDC",
                     decimals: 6
+                },
+                {
+                    assetId: "nep245:v2_1.omni.hot.tg:43114_11111111111111111111",
+                    name: "AVAX",
+                    decimals: 18
                 }
             ],
             needMemo: false

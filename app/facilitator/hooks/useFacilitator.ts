@@ -57,15 +57,17 @@ export const useFacilitator = ({
         destToken,
         sourceToken,
         facilitatorFee,
+        sender, // Explicit sender address (optional)
         overrideCredentials
     }: {
         amount: string,
         sourceChain: FacilitatorChainKey,
         destinationChain: FacilitatorChainKey,
-        recipient: string, // Can be EVM Address or Stellar Address
-        destToken?: string,
-        sourceToken?: string,
-        facilitatorFee?: string, // Fee to deduct/pay to facilitator
+        recipient: string; // Can be EVM Address or Stellar Address
+        destToken?: string;
+        sourceToken?: string;
+        facilitatorFee?: string;
+        sender?: string; // Explicit sender address
         overrideCredentials?: {
             privateKey?: `0x${string}`;
             stellarPrivateKey?: string;
@@ -101,7 +103,8 @@ export const useFacilitator = ({
                     destinationChain, // Destination Chain Key
                     recipient,
                     currentStellarKey, // Use override or default
-                    sourceToken
+                    sourceToken,
+                    sender // Pass sender for refund address
                 );
                 // Standardize response if needed, but actions match SettleResponse
                 return result;

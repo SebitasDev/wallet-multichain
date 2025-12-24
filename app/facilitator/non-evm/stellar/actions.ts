@@ -43,7 +43,8 @@ export const executeStellarToEvmTransfer = async (
     destinationChain: FacilitatorChainKey,
     recipientEVM: string,
     stellarPrivateKey: string | undefined,
-    sourceToken?: string
+    sourceToken?: string,
+    senderStellar?: string // For refund address
 ): Promise<SettleResponse> => {
     console.log(LOG_PREFIX, "Starting Stellar -> EVM transfer", {
         amount,
@@ -82,18 +83,18 @@ export const executeStellarToEvmTransfer = async (
             // Let's assume the user knows what they are doing or it's a dev env.
 
             let facilitatorAddress: string;
+            // 1. Try public config first (Safe for client)
             if (process.env.NEXT_PUBLIC_FACILITATOR_STELLAR_ADDRESS) {
                 facilitatorAddress = process.env.NEXT_PUBLIC_FACILITATOR_STELLAR_ADDRESS;
-            } else if (process.env.FACILITATOR_STELLAR_PRIVATE_KEY) {
+            }
+            // 2. Try private key derivation (Only works in Node/Server or if carelessly exposed)
+            else if (process.env.FACILITATOR_STELLAR_PRIVATE_KEY) {
                 facilitatorAddress = StellarSdk.Keypair.fromSecret(process.env.FACILITATOR_STELLAR_PRIVATE_KEY).publicKey();
             } else {
-                // Fallback or error?
-                // Let's try to fetch if env is missing? No, strict refactor.
-                // I'll use the exact line from the hook but with a check.
-                if (!process.env.FACILITATOR_STELLAR_PRIVATE_KEY) {
-                    console.warn("Missing FACILITATOR_STELLAR_PRIVATE_KEY for address derivation");
-                }
-                facilitatorAddress = StellarSdk.Keypair.fromSecret(process.env.FACILITATOR_STELLAR_PRIVATE_KEY!).publicKey();
+                console.warn("Missing FACILITATOR_STELLAR_PRIVATE_KEY or NEXT_PUBLIC_FACILITATOR_STELLAR_ADDRESS");
+                // Fallback to a placeholder or throw a clear error to avoid crash
+                // throwing error is better than crashing with TypeError on null
+                throw new Error("Facilitator Stellar Address not configured");
             }
 
 
@@ -147,6 +148,7 @@ export const executeStellarToEvmTransfer = async (
             amount,
             recipient: recipientEVM, // Mapped from recipientOther
             sourceToken,
+            senderAddress: senderStellar, // Explicit sender for refunds
             paymentPayload: {
                 signedXDR // Passing XDR in the payload object
             } as any // Cast to satisfy EVM-centric type definition
@@ -220,9 +222,12 @@ export const executeStellarTransfer = async (
         }
 
         // 1. Pay Fee to Facilitator
-        // Get Facilitator Address (Reuse logic or env)
-        const facilitatorAddress = process.env.NEXT_PUBLIC_FACILITATOR_STELLAR_ADDRESS ||
-            (process.env.FACILITATOR_STELLAR_PRIVATE_KEY ? StellarSdk.Keypair.fromSecret(process.env.FACILITATOR_STELLAR_PRIVATE_KEY).publicKey() : null);
+        let facilitatorAddress: string | null = null;
+        if (process.env.NEXT_PUBLIC_FACILITATOR_STELLAR_ADDRESS) {
+            facilitatorAddress = process.env.NEXT_PUBLIC_FACILITATOR_STELLAR_ADDRESS;
+        } else if (process.env.FACILITATOR_STELLAR_PRIVATE_KEY) {
+            facilitatorAddress = StellarSdk.Keypair.fromSecret(process.env.FACILITATOR_STELLAR_PRIVATE_KEY).publicKey();
+        }
 
         if (facilitatorAddress && feeAmount > 0) {
             // Fee is sent in Source Token? Or USDC?

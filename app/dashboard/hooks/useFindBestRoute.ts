@@ -29,7 +29,9 @@ export const useFindBestRoute = () => {
             const key = CHAIN_ID_TO_KEY[id] as keyof typeof NETWORKS;
             if (!key) return 0.003;
             // Access nested fee, default to 0.003 if missing
-            return NETWORKS[key].crossChainInformation.circleInformation?.aproxFromFee || 0.003;
+            // We must align this with the Facilitator Fee (0.01 - 0.02)
+            // To be safe and prevent "Exceeds Balance", we assume 0.02 for everyone.
+            return 0.02;
         };
 
         const filteredWallets = wallets

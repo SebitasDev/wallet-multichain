@@ -231,12 +231,20 @@ export const useSendMoneyModal = () => {
                     )
                 );
 
+                // Determine Fee (Same logic as useCrossChainTransfer)
+                // 0.01 for Same Chain, 0.02 for Cross Chain
+                const currentFee = fromValidChain === toValidChain ? 0.01 : 0.02;
+
+                // Add fee to the amount to be signed/transferred
+                // Because we removed the auto-add in createAuthorizationPayload
+                const totalAmount = (amountFloat + currentFee).toFixed(6);
+
                 try {
                     // EXECUTE UNIFIED TRANSFER
                     // This handles Same-Chain (Gasless) AND Cross-Chain (CCTP) automatically via Smart Router
 
                     const result = await executeTransfer({
-                        amount: amountString,
+                        amount: totalAmount, // Send total (Amount + Fee)
                         sourceChain: fromValidChain as FacilitatorChainKey,
                         destinationChain: toValidChain as FacilitatorChainKey,
                         recipient: recipient,

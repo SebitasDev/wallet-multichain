@@ -21,8 +21,9 @@ export const AmountInput = ({
     isAmountValid,
     maxAmount,
     isExceedingMax,
-    token = "USDC" // Default to USDC if not provided
-}: AmountInputProps) => (
+    token = "USDC", // Default to USDC if not provided
+    balance = 0
+}: AmountInputProps & { balance?: number }) => (
     <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
             <Typography
@@ -123,5 +124,17 @@ export const AmountInput = ({
                 />
             )}
         />
+        {/* Balance Display */}
+        <Typography
+            align="right"
+            sx={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#999999",
+                mt: 0.5
+            }}
+        >
+            Balance: {balance.toFixed(6)} {token}
+        </Typography>
     </Box >
 );

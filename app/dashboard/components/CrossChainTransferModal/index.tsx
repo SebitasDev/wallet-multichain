@@ -16,6 +16,7 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 import { useCrossChainTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/useCrossChainTransfer";
+import { NETWORKS } from "@/app/constants/chainsInformation";
 import { Controller } from "react-hook-form";
 import { TransferHeader } from "./TransferHeader";
 import { ChainSelector } from "./ChainSelector";
@@ -26,14 +27,7 @@ import { SubmitButton } from "./SubmitButton";
 import { FacilitatorChainKey } from "@/app/facilitator";
 import { TokenSelector } from "./TokenSelector";
 
-const SOURCE_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[] = [
-    STELLAR_CHAIN_KEY,
-    "Base",
-    "Polygon",
-    "Arbitrum",
-    "Optimism",
-    "Unichain",
-];
+const SOURCE_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[] = Object.keys(NETWORKS) as (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[];
 
 const DESTINATION_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[] = [
     ...SOURCE_CHAIN_OPTIONS
@@ -59,6 +53,7 @@ export const CrossChainTransferModal = () => {
         minAmount,
         isAmountValid,
         maxAmount,
+        balance,
         isExceedingMax,
 
         fee,
@@ -244,6 +239,7 @@ export const CrossChainTransferModal = () => {
                             maxAmount={maxAmount}
                             isExceedingMax={isExceedingMax}
                             token={watchSourceToken} // Pass dynamic token
+                            balance={balance} // Pass balance
                         />
 
                         <TransferSummary

@@ -37,7 +37,10 @@ export const createAuthorizationPayload = async (
     const networkConfig = FACILITATOR_NETWORKS[sourceChain];
     if (!networkConfig) throw new Error(`Unsupported chain: ${sourceChain}`);
 
-    const totalAmount = calculateTotalWithFee(amount);
+    // The amount passed here is already the TOTAL amount (User Amount + Fee)
+    // calculated by the consumer (useCrossChainTransfer).
+    // We should NOT add the fee again.
+    const totalAmount = amount;
 
     const publicClient = createPublicClient({
         chain: networkConfig.chain,
