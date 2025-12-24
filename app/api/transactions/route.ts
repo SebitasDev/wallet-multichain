@@ -8,7 +8,6 @@ export async function POST(request: Request) {
         await connectDB();
         const body: Transaction = await request.json();
 
-        // Validate basic fields
         if (!body.id || !body.fromAddress || !body.totalAmount) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
