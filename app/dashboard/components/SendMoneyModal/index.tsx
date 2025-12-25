@@ -14,11 +14,15 @@ export const SendMoneyModal = () => {
     } = useSendMoneyModal();
 
     const [isEditing, setIsEditing] = useState(false);
+    const [simulationErrors, setSimulationErrors] = useState<Record<string, boolean>>({}); // [NEW] Track blocking errors
 
     const handleClose = () => {
         setSendModal(false);
         setIsEditing(false);
+        setSimulationErrors({}); // Reset on close
     };
+
+    const hasBlockingErrors = Object.values(simulationErrors).some(Boolean);
 
     return (
         <Dialog
@@ -65,6 +69,7 @@ export const SendMoneyModal = () => {
                         watch={watch}
                         control={control}
                         setValue={setValue}
+                        setSimulationError={(id, hasError) => setSimulationErrors(prev => ({ ...prev, [id]: hasError }))} // [NEW]
                     />
                 )}
             </DialogContent>
@@ -73,7 +78,7 @@ export const SendMoneyModal = () => {
                 onClose={handleClose}
                 onAction={routeReady ? handleOnConfirm : handleSubmit(handleOnSend as any)}
                 loading={sendLoading}
-                disabled={!canSend || (routeReady && (isEditing || !routeSummary?.allocations?.length))}
+                disabled={!canSend || (routeReady && (isEditing || !routeSummary?.allocations?.length || hasBlockingErrors))} // [NEW] Added hasBlockingErrors
                 routeReady={routeReady}
             />
         </Dialog>
