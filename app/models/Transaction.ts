@@ -23,6 +23,10 @@ const TransactionSchema = new Schema({
     timestamps: true // Adds createdAt (Date) and updatedAt (Date) automatically by Mongoose too, but we are using our own numeric createdAt for compatibility
 });
 
+// Compound Indexes for efficient sorting and filtering
+TransactionSchema.index({ fromAddress: 1, createdAt: -1 });
+TransactionSchema.index({ toAddress: 1, createdAt: -1 });
+
 const TransactionModel = models.Transaction || model('Transaction', TransactionSchema);
 
 export default TransactionModel;

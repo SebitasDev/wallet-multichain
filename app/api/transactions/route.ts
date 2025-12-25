@@ -43,13 +43,13 @@ export async function GET(req: Request) {
 
         // Normalize address: If it's an EVM address (starts with 0x), take the first 42 chars to handle potential suffixes/dirty data
         const cleanAddress = (address.startsWith('0x') && address.length >= 42)
-            ? address.substring(0, 42)
-            : address;
+            ? address.substring(0, 42).toLowerCase()
+            : address.toLowerCase();
 
         const transactions = await TransactionModel.find({
             $or: [
-                { fromAddress: { $regex: new RegExp(`^\\s*${cleanAddress}`, 'i') } }, // Match if it STARTS with the clean address (ignoring whitespace)
-                { toAddress: { $regex: new RegExp(`^\\s*${cleanAddress}`, 'i') } }
+                { fromAddress: cleanAddress }, // Exact match
+                { toAddress: cleanAddress }
             ]
         })
             .sort({ createdAt: -1 })

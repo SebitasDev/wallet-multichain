@@ -423,12 +423,12 @@ export const useCrossChainTransfer = () => {
                 try {
                     const txData = {
                         id: crypto.randomUUID(),
-                        fromAddress: address,
+                        fromAddress: address.toLowerCase(), // Normalize to lowercase for index efficiency
                         totalAmount: amount,
                         status: "PENDING", // Requested by user
                         tokenSymbol: data.destToken,
                         decimals: 6,
-                        toAddress: data.recipient.trim(), // [NEW]
+                        toAddress: data.recipient.trim().toLowerCase(), // [NEW] Normalize recipient
                         destinationChain: data.destChain, // [NEW]
                         createdAt: Date.now(),
                         route: [

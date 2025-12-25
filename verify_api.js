@@ -67,7 +67,8 @@ async function test() {
         console.log(`Found ${listRes.transactions ? listRes.transactions.length : 0} transactions`);
         if (listRes.transactions && listRes.transactions.length > 0) {
             const tx = listRes.transactions[0];
-            if (tx.toAddress === receiver && tx.status === 'PENDING') {
+            // Normalize for comparison as input might be mixed case but output from DB is now normalized
+            if (tx.toAddress.toLowerCase() === receiverClean.toLowerCase() && tx.status === 'PENDING') {
                 console.log('SUCCESS: Pending Incoming Transaction found via API!');
             } else {
                 console.log('FAILURE: Transaction data mismatch');
