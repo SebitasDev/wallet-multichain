@@ -119,7 +119,7 @@ export const useSendMoneyModal = () => {
 
 
     const { control, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<SendForm>({
-        resolver: zodResolver(sendSchema),
+        resolver: zodResolver(sendSchema) as any,
         defaultValues: {
             toAddress: "",
             sendAmount: "",
@@ -136,6 +136,7 @@ export const useSendMoneyModal = () => {
                 sendAmount: "",
                 sendPassword: "",
                 sendChain: "Base",
+                sourceToken: "USDC"
             });
 
             setSendLoading(false);
@@ -162,7 +163,8 @@ export const useSendMoneyModal = () => {
                 Number(sendAmount),
                 toAddress as Address,
                 sendChain,
-                watch("optimize")
+                watch("optimize"),
+                watch("sourceToken")
             );
 
             setRouteSummary(summary);
@@ -248,6 +250,7 @@ export const useSendMoneyModal = () => {
                         sourceChain: fromValidChain as FacilitatorChainKey,
                         destinationChain: toValidChain as FacilitatorChainKey,
                         recipient: recipient,
+                        sourceToken: chain.token || watch("sourceToken") || "USDC",
                         overrideCredentials: {
                             privateKey: unlockedKey as `0x${string}`,
                             userAddress: allocation.from as Address
@@ -342,6 +345,7 @@ export const useSendMoneyModal = () => {
     return {
         sendLoading,
         control,
+        watch,
         handleSubmit,
         errors,
         handleOnSend,
@@ -356,7 +360,8 @@ export const useSendMoneyModal = () => {
         setRouteSummary,
         setValue,
         maxSendAmount: formattedMaxSendAmount,
-        isExceedingMax
+        isExceedingMax,
+        wallets
     }
 
 }

@@ -5,9 +5,9 @@ import { PlatformFess } from "@/app/constants/platformFess";
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { sourceChain, targetChain, amount, token } = body;
+        const { sourceChain, targetChain, amount, token, sourceToken } = body;
 
-        console.log(">>> [Bridge Quote] Request:", { sourceChain, targetChain, amount, token });
+        console.log(">>> [Bridge Quote] Request:", { sourceChain, targetChain, amount, token, sourceToken });
 
         if (!amount || isNaN(amount)) {
             return NextResponse.json({ success: false, error: "Invalid amount" }, { status: 400 });
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
             userSenderAddress: sender,
             recipientStellar: targetChain === "Stellar" ? dummyStellar : dummyEvm,
             destinationToken: token,
+            sourceToken: sourceToken,
             options: { dry: true }
         });
 

@@ -8,7 +8,7 @@ export const useFindBestRoute = () => {
 
     const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
-    async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string, optimize: boolean) {
+    async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string, optimize: boolean, sourceToken: string) {
         const sendNetwork = NETWORKS[sendChain as ChainKey];
         if (!sendNetwork || !sendNetwork.evm) {
             console.error(`Chain ${sendChain} not configured for EVM`);
@@ -49,6 +49,38 @@ export const useFindBestRoute = () => {
         for (const wallet of filteredWallets) {
             for (const chain of wallet.chains) {
                 const chainAmount = Number(chain.amount);
+
+                // Compatibility Check
+                const sourceKey = CHAIN_ID_TO_KEY[chain.chainId] as ChainKey;
+                const sourceConfig = NETWORKS[sourceKey];
+                const destConfig = sendNetwork;
+
+                if (!sourceConfig || !destConfig) continue;
+
+                const hasCctp = sourceConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                    destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
+
+                const hasNear = sourceConfig.crossChainInformation?.nearIntentInformation?.support &&
+                    destConfig.crossChainInformation?.nearIntentInformation?.support;
+
+                // If no bridge connection exists, skip
+                if (!hasCctp && !hasNear) continue;
+
+                // Token Compatibility Check
+                // If sourceToken is defined, ensure it's valid for the available bridges
+                if (sourceToken) {
+                    const isUsdc = sourceToken.toUpperCase() === "USDC";
+
+                    // If CCTP is the only option, token MUST be USDC
+                    if (hasCctp && !hasNear && !isUsdc) continue;
+
+                    // If Near is the only option, token MUST be supported by Near (simplified check, assume check exists or generic)
+                    // (For now, we trust the generic compatibility or assume Near supports more)
+
+                    // Specific check for CCTP exclusivity:
+                    // If we are relying on CCTP, we can't send non-USDC.
+                }
+
 
                 if (chainAmount - 0.01 - getOriginFee(chain.chainId) <= 0) continue;
 
@@ -122,7 +154,8 @@ export const useFindBestRoute = () => {
             }
             grouped[item.from].chains.push({
                 chainId: item.networkId,
-                amount: round6(item.amount)
+                amount: round6(item.amount),
+                token: sourceToken
             });
         }
 

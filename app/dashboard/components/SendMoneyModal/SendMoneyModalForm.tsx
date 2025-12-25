@@ -1,4 +1,4 @@
-import { Control, Controller, FieldErrors, UseFormSetValue } from "react-hook-form";
+import { Control, Controller, FieldErrors, UseFormSetValue, UseFormWatch } from "react-hook-form";
 import {
     MenuItem,
     Stack,
@@ -10,25 +10,26 @@ import {
 } from "@mui/material";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
-
-type FormValues = {
-    toAddress: string;
-    sendAmount: string;
-    sendPassword: string;
-    sendChain: ChainKey;
-    optimize: boolean;
-};
+import { TokenSelector } from "../CrossChainTransferModal/TokenSelector";
+import { SendForm } from "@/app/lib/zod/sendSchema";
 
 type Props = {
-    control: Control<FormValues>;
-    errors: FieldErrors<FormValues>;
+    control: Control<SendForm>;
+    errors: FieldErrors<SendForm>;
     sendLoading: boolean;
-    setValue: UseFormSetValue<FormValues>;
+    setValue: UseFormSetValue<SendForm>;
+    watch: UseFormWatch<SendForm>;
     maxSendAmount: number;
     isExceedingMax: boolean;
 };
 
-export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, maxSendAmount, isExceedingMax }: Props) => {
+// Re-using TokenSelector requires matching props or adapter. 
+// TokenSelector expects `chain` and `control`. 
+// We will adapt it here.
+
+export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, watch, maxSendAmount, isExceedingMax }: Props) => {
+    const selectedChain = watch("sendChain");
+
     return (
         <Stack spacing={2.5}>
             {/* CHAIN DESTINO */}
@@ -97,6 +98,16 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, max
                             ))}
                         </TextField>
                     )}
+                />
+            </Box>
+
+            {/* TOKEN ORIGEN */}
+            <Box>
+                <TokenSelector
+                    label="Token (Se enviará)"
+                    name="sourceToken"
+                    control={control as any} // Cast compatible control
+                    chain={selectedChain as any}
                 />
             </Box>
 
