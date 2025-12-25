@@ -32,7 +32,9 @@ export async function GET(req: Request) {
         await connectDB();
         const { searchParams } = new URL(req.url);
         const address = searchParams.get('address');
-        const limit = parseInt(searchParams.get('limit') || '20');
+        const limit = parseInt(searchParams.get('limit') || '5'); // Default to 5 per page
+        const page = parseInt(searchParams.get('page') || '1');
+        const skip = (page - 1) * limit;
 
         if (!address) {
             return NextResponse.json(
@@ -46,17 +48,32 @@ export async function GET(req: Request) {
             ? address.substring(0, 42).toLowerCase()
             : address.toLowerCase();
 
-        const transactions = await TransactionModel.find({
+        const query = {
             $or: [
                 { fromAddress: cleanAddress }, // Exact match
                 { toAddress: cleanAddress }
             ]
-        })
+        };
+
+        const total = await TransactionModel.countDocuments(query);
+        const totalPages = Math.ceil(total / limit);
+
+        const transactions = await TransactionModel.find(query)
             .sort({ createdAt: -1 })
+            .skip(skip)
             .limit(limit)
             .lean();
 
-        return NextResponse.json({ success: true, transactions });
+        return NextResponse.json({
+            success: true,
+            transactions,
+            pagination: {
+                total,
+                totalPages,
+                page,
+                limit
+            }
+        });
     } catch (error: any) {
         console.error("Error fetching transactions:", error);
         return NextResponse.json(

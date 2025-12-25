@@ -14,6 +14,7 @@ const TransactionSchema = new Schema({
     toAddress: { type: String, required: true, index: true }, // [NEW]
     destinationChain: { type: String, required: true }, // [NEW]
     totalAmount: { type: Number, required: true },
+    estimatedReceived: { type: Number }, // [NEW] Estimated amount to reach destination
     status: { type: String, enum: ['SUCCESS', 'PENDING', 'FAILED'], required: true },
     route: [RouteSchema],
     createdAt: { type: Number, required: true, index: true }, // Timestamp
