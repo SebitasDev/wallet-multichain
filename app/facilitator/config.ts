@@ -5,9 +5,9 @@ import { ChainKey } from "@/app/types/chain";
 // CONFIGURACIÓN DEL FACILITADOR
 // ============================================
 
-const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
+const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
 
-export const FACILITATOR_FEE_USDC = BigInt(10000); // 0.01 USDC
+export const FACILITATOR_FEE_USDC = BigInt(10000);
 
 export const FEE_RECIPIENT: Address = process.env.FACILITATOR_FEE_RECIPIENT as Address || "0x0000000000000000000000000000000000000000";
 
@@ -31,6 +31,7 @@ export interface FacilitatorNetworkConfig {
 }
 
 export const calculateFee = (): bigint => {
+    if (isDev) return BigInt(0);
     return FACILITATOR_FEE_USDC;
 };
 
