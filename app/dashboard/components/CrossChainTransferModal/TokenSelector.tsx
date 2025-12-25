@@ -25,9 +25,10 @@ type TokenSelectorProps = {
     onChange?: (value: string) => void;
     inputSx?: SxProps;
     allowedTokens?: string[];
+    balances?: Record<string, number>;
 };
 
-export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx, onChange, allowedTokens }: TokenSelectorProps) => {
+export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx, onChange, allowedTokens, balances }: TokenSelectorProps) => {
     let assets = getAssetsForChain(chain);
 
     if (allowedTokens && allowedTokens.length > 0) {
@@ -37,6 +38,13 @@ export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx,
     // ... (keep comments)
 
     if (!assets || assets.length === 0) return null;
+
+    // Helper for formatting
+    const formatBalance = (val: number) => {
+        if (val === 0) return "0";
+        if (val < 0.000001) return "<0.000001";
+        return val.toLocaleString("en-US", { maximumFractionDigits: 6 });
+    };
 
     return (
         <Box>
@@ -87,25 +95,32 @@ export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx,
                     >
                         {assets.map((asset) => (
                             <MenuItem key={asset.name} value={asset.name}>
-                                <Stack direction="row" alignItems="center" spacing={1.5}>
-                                    {asset.icon && (
-                                        <Box sx={{
-                                            width: 24,
-                                            height: 24,
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            "& svg": {
-                                                width: "100%",
-                                                height: "100%",
-                                            }
-                                        }}>
-                                            {asset.icon}
-                                        </Box>
+                                <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%">
+                                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                                        {asset.icon && (
+                                            <Box sx={{
+                                                width: 24,
+                                                height: 24,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                "& svg": {
+                                                    width: "100%",
+                                                    height: "100%",
+                                                }
+                                            }}>
+                                                {asset.icon}
+                                            </Box>
+                                        )}
+                                        <Typography fontWeight={600}>
+                                            {asset.name}
+                                        </Typography>
+                                    </Stack>
+                                    {balances && balances[asset.name] !== undefined && (
+                                        <Typography fontSize={12} color="#666666" fontWeight={600}>
+                                            {formatBalance(balances[asset.name])}
+                                        </Typography>
                                     )}
-                                    <Typography fontWeight={600}>
-                                        {asset.name}
-                                    </Typography>
                                 </Stack>
                             </MenuItem>
                         ))}

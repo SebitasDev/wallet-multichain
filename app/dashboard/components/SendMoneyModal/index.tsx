@@ -1,4 +1,5 @@
 import { Dialog, DialogContent } from "@mui/material";
+import { useState } from "react";
 import { useSendMoneyModal } from "@/app/dashboard/hooks/useSendMoneyModal";
 import { SendMoneyModalHeader } from "./SendMoneyModalHeader";
 import { SendMoneyModalForm } from "./SendMoneyModalForm";
@@ -12,10 +13,17 @@ export const SendMoneyModal = () => {
         maxSendAmount, isExceedingMax, watch, setRouteSummary, wallets
     } = useSendMoneyModal();
 
+    const [isEditing, setIsEditing] = useState(false);
+
+    const handleClose = () => {
+        setSendModal(false);
+        setIsEditing(false);
+    };
+
     return (
         <Dialog
             open={isOpen}
-            onClose={() => setSendModal(false)}
+            onClose={handleClose}
             maxWidth="sm"
             fullWidth
             PaperProps={{
@@ -29,7 +37,7 @@ export const SendMoneyModal = () => {
             }}
         >
             <SendMoneyModalHeader
-                onClose={() => setSendModal(false)}
+                onClose={handleClose}
                 disabled={sendLoading}
             />
 
@@ -52,15 +60,20 @@ export const SendMoneyModal = () => {
                         routeReady={routeReady}
                         selected={selected}
                         wallets={wallets}
+                        isEditing={isEditing}
+                        setIsEditing={setIsEditing}
+                        watch={watch}
+                        control={control}
+                        setValue={setValue}
                     />
                 )}
             </DialogContent>
 
             <SendMoneyModalActions
-                onClose={() => setSendModal(false)}
+                onClose={handleClose}
                 onAction={routeReady ? handleOnConfirm : handleSubmit(handleOnSend as any)}
                 loading={sendLoading}
-                disabled={!canSend}
+                disabled={!canSend || (routeReady && (isEditing || !routeSummary?.allocations?.length))}
                 routeReady={routeReady}
             />
         </Dialog>

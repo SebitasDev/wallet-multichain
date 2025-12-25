@@ -19,7 +19,8 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { RouteDetail } from "@/app/dashboard/hooks/useSendMoneyModal";
 import { useState } from "react";
 import { TokenSelector } from "@/app/dashboard/components/CrossChainTransferModal/TokenSelector";
-import { useForm, Control } from "react-hook-form";
+import { useForm, Control, UseFormWatch, UseFormSetValue, Controller } from "react-hook-form";
+import { SendForm } from "@/app/lib/zod/sendSchema";
 
 type Props = {
     routeDetails: RouteDetail[],
@@ -27,7 +28,12 @@ type Props = {
     routeSummary: AllocationSummary | null,
     setRouteSummary: (summary: AllocationSummary | null) => void,
     selected: ChainConfig,
-    wallets: { name: string; address: string; chains: any[] }[]
+    wallets: { name: string; address: string; chains: any[] }[],
+    isEditing: boolean,
+    setIsEditing: (isEditing: boolean) => void,
+    watch: UseFormWatch<SendForm>,
+    control: Control<SendForm>,
+    setValue: UseFormSetValue<SendForm>
 }
 
 export const STATUS_META = {
@@ -44,10 +50,9 @@ export const STATUS_META = {
 
 
 export const SendMoneyModalRoute = (
-    { routeDetails, routeReady, routeSummary, setRouteSummary, selected, wallets }: Props
+    { routeDetails, routeReady, routeSummary, setRouteSummary, selected, wallets, isEditing, setIsEditing, watch, control, setValue }: Props
 ) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const { control, watch, setValue } = useForm();
+
 
     // Add Wallet State
     const [anchorElWallet, setAnchorElWallet] = useState<null | HTMLElement>(null);
@@ -64,6 +69,16 @@ export const SendMoneyModalRoute = (
             totalAmountTaken: newAllocations.reduce((sum, a) => sum + a.chains.reduce((s, c) => s + c.amount, 0), 0)
         });
     }
+
+    const handleRemoveWallet = (walletAddress: string) => {
+        if (!routeSummary) return;
+
+        const newAllocations = routeSummary.allocations.filter(
+            alloc => alloc.from.toLowerCase() !== walletAddress.toLowerCase()
+        );
+
+        updateSummary(newAllocations);
+    };
 
     const handleRemoveChain = (walletAddress: string, chainId: string) => {
         if (!routeSummary) return;
@@ -92,7 +107,6 @@ export const SendMoneyModalRoute = (
 
         updateSummary(newAllocations);
     };
-
     const handleAmountChange = (walletAddress: string, chainId: string, newAmount: string) => {
         if (!routeSummary) return;
 
@@ -148,7 +162,7 @@ export const SendMoneyModalRoute = (
                     {
                         chainId: chainId,
                         amount: 0,
-                        token: "USDC"
+                        token: "USDC" // Default token
                     }
                 ]
             };
@@ -158,21 +172,22 @@ export const SendMoneyModalRoute = (
         handleCloseChainMenu();
     };
 
-
-    const handleOpenWalletMenu = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorElWallet(event.currentTarget);
-    };
     const handleCloseWalletMenu = () => {
         setAnchorElWallet(null);
+    };
+
+    const handleCloseChainMenu = () => {
+        setAnchorElChain(null);
+        setActiveWalletForChainAdd(null);
     };
 
     const handleOpenChainMenu = (event: React.MouseEvent<HTMLElement>, walletAddress: string) => {
         setAnchorElChain(event.currentTarget);
         setActiveWalletForChainAdd(walletAddress);
     };
-    const handleCloseChainMenu = () => {
-        setAnchorElChain(null);
-        setActiveWalletForChainAdd(null);
+
+    const handleOpenWalletMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorElWallet(event.currentTarget);
     };
 
     // Validation Check to Disable Save
@@ -183,27 +198,37 @@ export const SendMoneyModalRoute = (
                 const cId = (c.value || c.chainId || c.id || "").toString();
                 return cId === r.chainId;
             });
-            const maxAmount = currentChainDetail?.amount || 0;
+            const chainBalance = currentChainDetail?.amount || 0; // Use amount for consistency with UI
+            const destChainId = selected.evm?.chain?.id?.toString() || "";
+            const isSameChain = destChainId === r.chainId;
+            const isUSDC = (r.token || "USDC").toUpperCase() === "USDC";
+
+            const fee = (isSameChain && isUSDC) ? 0.01 : 0.02;
+            const maxUsable = Math.max(0, chainBalance - fee);
 
             // Check if amount is invalid
-            if (r.amount > maxAmount) return true;
+            if (r.amount <= 0 || r.amount > maxUsable + 1e-9) return true;
             return false;
         });
     });
 
+    // ... existing code ...
+
     return (
         <Box
             sx={{
-                p: { xs: 2, sm: 2.5 },
-                borderRadius: 3,
-                backgroundColor: "#f5f5f5",
+                width: "100%",
+                height: "100%",
+                borderRadius: 2,
+                overflowY: "auto",
                 border: "2px solid #000000",
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
+                position: "relative",
+                backgroundColor: "#f5f5f5",
+                p: { xs: 1.5, sm: 2 },
+                flex: 1
             }}
         >
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography
                     fontWeight={800}
                     fontSize={{ xs: 13, sm: 15 }}
@@ -233,11 +258,13 @@ export const SendMoneyModalRoute = (
                 </Button>
             </Stack>
 
-            <Stack spacing={2}>
+            <Stack spacing={2} pb={8}>
                 {(routeSummary?.allocations || []).map((walletAlloc) => {
-                    const walletDetail = routeDetails.find(w => w.wallet.toLowerCase() === walletAlloc.from.toLowerCase());
-                    const walletName = walletDetail?.walletName || wallets.find(w => w.address.toLowerCase() === walletAlloc.from.toLowerCase())?.name || "Wallet";
+                    const currentWallet = wallets.find(w => w.address.toLowerCase() === walletAlloc.from.toLowerCase());
+                    const walletName = currentWallet?.name || "Unknown Wallet";
+                    const walletBalanceTotal = currentWallet?.chains.reduce((acc, chain) => acc + (chain.usdAmount || 0), 0) || 0;
                     const shortAddress = `${walletAlloc.from.slice(0, 6)}...${walletAlloc.from.slice(-4)}`;
+                    const walletDetail = routeDetails.find(w => w.wallet.toLowerCase() === walletAlloc.from.toLowerCase());
 
                     return (
                         <Accordion
@@ -275,31 +302,55 @@ export const SendMoneyModalRoute = (
                                     sx={{ width: "100%", pr: { xs: 0.5, sm: 1 }, minWidth: 0 }}
                                     spacing={{ xs: 1, sm: 2 }}
                                 >
-                                    <Box flex={1} minWidth={0}>
-                                        <Typography
-                                            fontWeight={800}
-                                            fontSize={{ xs: 13, sm: 14 }}
-                                            color="#000000"
-                                            sx={{
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                whiteSpace: "nowrap"
-                                            }}
-                                        >
-                                            {walletName}
-                                        </Typography>
-                                        <Typography
-                                            variant="body2"
-                                            sx={{
-                                                color: "#666666",
-                                                fontWeight: 600,
-                                                fontSize: { xs: 11, sm: 12 },
-                                                fontFamily: "monospace"
-                                            }}
-                                            title={walletAlloc.from}
-                                        >
-                                            {shortAddress}
-                                        </Typography>
+                                    <Box flex={1} minWidth={0} display="flex" alignItems="center" gap={1}>
+                                        {isEditing && (
+                                            <Box
+                                                component="span"
+                                                role="button"
+                                                onClick={(e: React.MouseEvent) => {
+                                                    e.stopPropagation(); // Prevent accordion toggle
+                                                    handleRemoveWallet(walletAlloc.from);
+                                                }}
+                                                sx={{
+                                                    color: "#ff4444",
+                                                    p: 0.5,
+                                                    mr: 0.5,
+                                                    cursor: "pointer",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    "&:hover": { opacity: 0.7 }
+                                                }}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </Box>
+                                        )}
+                                        <Box overflow="hidden">
+
+                                            <Typography
+                                                fontWeight={800}
+                                                fontSize={{ xs: 13, sm: 14 }}
+                                                color="#000000"
+                                                sx={{
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    whiteSpace: "nowrap"
+                                                }}
+                                            >
+                                                {walletName}
+                                            </Typography>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    color: "#666666",
+                                                    fontWeight: 600,
+                                                    fontSize: { xs: 11, sm: 12 },
+                                                    fontFamily: "monospace"
+                                                }}
+                                                title={walletAlloc.from}
+                                            >
+                                                {shortAddress}
+                                            </Typography>
+                                        </Box>
                                     </Box>
                                     <Box textAlign="right" flexShrink={0}>
                                         <Typography
@@ -347,13 +398,13 @@ export const SendMoneyModalRoute = (
                                             const cId = (c.value || c.chainId || c.id || "").toString();
                                             return cId === r.chainId;
                                         });
-                                        const maxAmount = currentChainDetail?.amount || 0;
-
+                                        const chainBalance = currentChainDetail?.amount || 0;
                                         const destChainId = selected.evm?.chain?.id?.toString() || "";
                                         const isSameChain = destChainId === r.chainId;
-                                        const isUSDC = (r.token || "USDC").toUpperCase() === "USDC";
+                                        const isUSDC = (r.token || "USDC").toUpperCase() === "USDC"; // Default USDC if no token
 
-                                        const minAmount = (isSameChain && isUSDC) ? 0.01 : 0.02;
+                                        const fee = (isSameChain && isUSDC) ? 0.01 : 0.02;
+                                        const maxUsable = Math.max(0, chainBalance - fee);
 
                                         return (
                                             <Box
@@ -397,27 +448,27 @@ export const SendMoneyModalRoute = (
                                                     </Stack>
 
                                                     {isEditing ? (
-                                                        <TextField
-                                                            size="small"
-                                                            type="number"
-                                                            value={r.amount}
-                                                            onChange={(e) => {
-                                                                const val = parseFloat(e.target.value);
-                                                                if (val > maxAmount) {
-                                                                    handleAmountChange(walletAlloc.from, r.chainId, maxAmount.toString());
-                                                                } else {
-                                                                    handleAmountChange(walletAlloc.from, r.chainId, e.target.value);
-                                                                }
-                                                            }}
-                                                            inputProps={{ max: maxAmount, step: "any" }}
-                                                            helperText={
-                                                                r.amount > maxAmount
-                                                                    ? `Max: ${formatCurrency(maxAmount, 2)}`
-                                                                    : null
-                                                            }
-                                                            error={r.amount > maxAmount}
-                                                            sx={{ width: 140 }}
-                                                        />
+                                                        <Stack direction="column" alignItems="flex-end" spacing={0.5}>
+                                                            <TextField
+                                                                size="small"
+                                                                type="number"
+                                                                value={r.amount}
+                                                                onChange={(e) => {
+                                                                    const val = parseFloat(e.target.value);
+                                                                    if (val > maxUsable) {
+                                                                        handleAmountChange(walletAlloc.from, r.chainId, maxUsable.toString());
+                                                                    } else {
+                                                                        handleAmountChange(walletAlloc.from, r.chainId, e.target.value);
+                                                                    }
+                                                                }}
+                                                                inputProps={{ max: maxUsable, step: "any" }}
+                                                                error={r.amount > maxUsable}
+                                                                sx={{ width: 140 }}
+                                                            />
+                                                            <Typography fontSize={10} color="#999999" fontWeight={600}>
+                                                                Max: {formatCurrency(maxUsable, 6)}
+                                                            </Typography>
+                                                        </Stack>
                                                     ) : (
                                                         <Typography fontWeight={800} fontSize={15}>
                                                             {formatCurrency(r.amount, 6)}
@@ -456,6 +507,9 @@ export const SendMoneyModalRoute = (
 
                                                                 return allowed.size > 0 ? Array.from(allowed) : undefined;
                                                             })()}
+                                                            balances={{
+                                                                [r.token || "USDC"]: chainBalance // Pass known balance. For others it will be hidden.
+                                                            }}
                                                         />
                                                     </Box>
                                                 ) : (
@@ -607,45 +661,129 @@ export const SendMoneyModalRoute = (
                     >
                         Destinatario
                     </Typography>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: "#000000",
-                            fontWeight: 600,
-                            fontSize: { xs: 11, sm: 12 },
-                            fontFamily: "monospace",
-                            mb: 1.5,
-                            wordBreak: "break-all",
-                            overflowWrap: "break-word"
-                        }}
-                    >
-                        {routeReady || "N/D"}
-                    </Typography>
 
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                        <Box sx={{
-                            width: { xs: 20, sm: 24 },
-                            height: { xs: 20, sm: 24 },
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            "& svg": {
-                                width: "100%",
-                                height: "100%",
-                            }
-                        }}>
-                            {selected?.icon}
-                        </Box>
-                        <Typography
-                            variant="body2"
-                            fontWeight={700}
-                            fontSize={{ xs: 12, sm: 13 }}
-                            color="#000000"
-                        >
-                            Llega en {selected?.label || "Chain destino"}
-                        </Typography>
-                    </Stack>
+                    {!isEditing ? (
+                        <>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: "#000000",
+                                    fontWeight: 600,
+                                    fontSize: { xs: 11, sm: 12 },
+                                    fontFamily: "monospace",
+                                    mb: 1.5,
+                                    wordBreak: "break-all",
+                                    overflowWrap: "break-word"
+                                }}
+                            >
+                                {watch("toAddress") || "N/D"}
+                            </Typography>
+
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                                <Box sx={{
+                                    width: { xs: 20, sm: 24 },
+                                    height: { xs: 20, sm: 24 },
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                    "& svg": { width: "100%", height: "100%" }
+                                }}>
+                                    {NETWORKS[watch("sendChain") as ChainKey]?.icon || selected?.icon}
+                                </Box>
+                                <Typography
+                                    variant="body2"
+                                    fontWeight={700}
+                                    fontSize={{ xs: 12, sm: 13 }}
+                                    color="#000000"
+                                >
+                                    Llega en {NETWORKS[watch("sendChain") as ChainKey]?.label || selected?.label || "Chain destino"}
+                                </Typography>
+
+                                <Stack direction="row" alignItems="center" spacing={0.8} ml={1}>
+                                    <Box sx={{
+                                        width: 16,
+                                        height: 16,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        "& svg": { width: "100%", height: "100%" }
+                                    }}>
+                                        {(() => {
+                                            const cKey = watch("sendChain") as ChainKey;
+                                            const tName = watch("sourceToken");
+                                            const assets = NETWORKS[cKey]?.assets;
+                                            const asset = assets?.find(a => a.name === tName);
+                                            return asset?.icon;
+                                        })()}
+                                    </Box>
+                                    <Typography
+                                        variant="body2"
+                                        fontWeight={700}
+                                        fontSize={{ xs: 12, sm: 13 }}
+                                        color="#666666"
+                                    >
+                                        {watch("sourceToken")}
+                                    </Typography>
+                                </Stack>
+                            </Stack>
+                        </>
+                    ) : (
+                        <Stack spacing={2} mt={1}>
+                            {/* Address */}
+                            <Controller
+                                control={control}
+                                name="toAddress"
+                                render={({ field }) => (
+                                    <TextField
+                                        {...field}
+                                        fullWidth
+                                        size="small"
+                                        label="Address Destino"
+                                        placeholder="0x..."
+                                        InputProps={{
+                                            sx: { fontFamily: "monospace", fontSize: 13, background: "#ffffff" }
+                                        }}
+                                    />
+                                )}
+                            />
+
+                            {/* Chain */}
+                            <Controller
+                                control={control}
+                                name="sendChain"
+                                render={({ field }) => (
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        size="small"
+                                        label="Chain"
+                                        {...field}
+                                        InputProps={{ sx: { background: "#ffffff" } }}
+                                    >
+                                        {Object.entries(NETWORKS).filter(([k, cfg]) => !!cfg.evm).map(([key, cfg]) => (
+                                            <MenuItem key={key} value={key}>
+                                                <Stack direction="row" alignItems="center" spacing={1}>
+                                                    <Box sx={{ width: 20, height: 20, display: "flex", "& svg": { width: "100%" } }}>
+                                                        {cfg.icon}
+                                                    </Box>
+                                                    <Typography fontSize={13} fontWeight={600}>{cfg.label}</Typography>
+                                                </Stack>
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                )}
+                            />
+
+                            {/* Token */}
+                            <TokenSelector
+                                label="Token"
+                                name="sourceToken"
+                                control={control as any}
+                                chain={watch("sendChain")}
+                            />
+                        </Stack>
+                    )}
                 </Box>
 
                 <Box
