@@ -428,7 +428,7 @@ export const useCrossChainTransfer = () => {
                         status: "PENDING", // Requested by user
                         tokenSymbol: data.destToken,
                         decimals: 6,
-                        toAddress: data.recipient, // [NEW]
+                        toAddress: data.recipient.trim(), // [NEW]
                         destinationChain: data.destChain, // [NEW]
                         createdAt: Date.now(),
                         route: [

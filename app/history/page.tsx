@@ -253,8 +253,8 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                                                 <Typography fontWeight={800} fontSize={14}>${step.amount}</Typography>
                                                                 {step.assetOrigin && (
                                                                     <>
-                                                                        {step.assetOrigin === 'USDC' && <UsdcIcon />}
-                                                                        {step.assetOrigin === 'USDT' && <UsdtIcon />}
+                                                                        {step.assetOrigin === 'USDC' && <Box component="span" sx={{ display: 'flex', flexShrink: 0 }}><UsdcIcon size={16} /></Box>}
+                                                                        {step.assetOrigin === 'USDT' && <Box component="span" sx={{ display: 'flex', flexShrink: 0 }}><UsdtIcon size={16} /></Box>}
                                                                     </>
                                                                 )}
                                                             </Box>
@@ -332,22 +332,32 @@ export default function HistoryListPage() {
                 const data = await res.json();
                 if (data.success) {
                     // Map API data to UI format
-                    const mapped = data.transactions.map((tx: any) => ({
-                        id: tx.id,
-                        type: "SEND", // Infer type if possible, for now default to SEND as that's what we support
-                        date: format(new Date(tx.createdAt), "dd MMM yyyy, HH:mm"),
-                        amount: tx.totalAmount,
-                        token: tx.tokenSymbol || "USDC",
-                        status: tx.status,
-                        from: tx.fromAddress,
-                        to: tx.toAddress || "Unknown",
-                        addressFrom: tx.fromAddress,
-                        addressTo: tx.toAddress || "Unknown",
-                        chainTo: tx.destinationChain || "Unknown",
-                        txHash: tx.route?.[0]?.txHash || "",
-                        fee: 0, // Not stored in main object yet, maybe infer diff?
-                        route: tx.route
-                    }));
+                    const mapped = data.transactions.map((tx: any) => {
+                        // Fuzzy check for isSender: if the stored fromAddress starts with our address (or vice versa)
+                        // This handles cases where one might have a suffix (e.g. 0x...B)
+                        const cleanUserAddr = address.toLowerCase().startsWith('0x') ? address.toLowerCase().substring(0, 42) : address.toLowerCase();
+                        const cleanTxFrom = tx.fromAddress.toLowerCase().startsWith('0x') ? tx.fromAddress.toLowerCase().substring(0, 42) : tx.fromAddress.toLowerCase();
+
+                        const isSender = cleanTxFrom === cleanUserAddr; // Robust comparison
+
+                        return {
+                            id: tx.id,
+                            type: isSender ? "SEND" : "RECEIVE",
+                            date: format(new Date(tx.createdAt), "dd MMM yyyy, HH:mm"),
+                            amount: tx.totalAmount,
+                            token: tx.tokenSymbol || "USDC", // Fallback, but now we should have it
+                            status: tx.status,
+                            from: tx.fromAddress,
+                            to: tx.toAddress || "Unknown",
+                            addressFrom: tx.fromAddress,
+                            addressTo: tx.toAddress || "Unknown",
+                            chainTo: tx.destinationChain || "Unknown",
+                            txHash: tx.route?.[0]?.txHash || "",
+                            fee: 0,
+                            route: tx.route,
+                            tokenSymbol: tx.tokenSymbol
+                        };
+                    });
                     setTransactions(mapped);
                 }
             } catch (error) {
@@ -483,9 +493,16 @@ export default function HistoryListPage() {
 
                                                 {/* Right: Amount + Status */}
                                                 <Box textAlign="right" flexShrink={0} ml={2}>
-                                                    <Typography fontWeight={900} fontSize={18} color={tx.type === "SEND" ? "#000" : "#008a57"}>
-                                                        {tx.type === "SEND" ? "-" : "+"}${tx.amount} {tx.token}
-                                                    </Typography>
+                                                    <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
+                                                        <Typography fontWeight={900} fontSize={18} color={tx.type === "SEND" ? "#000" : "#008a57"}>
+                                                            {tx.type === "SEND" ? "-" : "+"}${tx.amount}
+                                                        </Typography>
+                                                        {tx.token === 'USDC' && <Box component="span" sx={{ display: 'flex', flexShrink: 0 }}><UsdcIcon size={20} /></Box>}
+                                                        {tx.token === 'USDT' && <Box component="span" sx={{ display: 'flex', flexShrink: 0 }}><UsdtIcon size={20} /></Box>}
+                                                        {(tx.token !== 'USDC' && tx.token !== 'USDT') && (
+                                                            <Typography fontWeight={900} fontSize={14}>{tx.token}</Typography>
+                                                        )}
+                                                    </Box>
                                                     <Chip
                                                         label={tx.status}
                                                         size="small"

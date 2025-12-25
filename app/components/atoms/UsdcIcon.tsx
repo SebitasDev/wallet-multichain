@@ -1,4 +1,4 @@
-export function UsdcIcon({ size = 32 }) {
+export function UsdcIcon({ size = 32 }: { size?: number }) {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
