@@ -52,6 +52,10 @@ export const AddressChainList = ({
                             <ChainItem address={address} chainKey="Avalanche" />
                             <Divider />
                             <ChainItem address={address} chainKey="WorldChain" />
+                            <Divider />
+                            <ChainItem address={address} chainKey="BNB" />
+                            <Divider />
+                            <ChainItem address={address} chainKey="Monad" />
                         </>
                     )}
                 </List>

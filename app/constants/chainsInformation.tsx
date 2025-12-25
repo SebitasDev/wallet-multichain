@@ -5,7 +5,9 @@ import {
     optimism,
     optimismSepolia,
     polygonAmoy, unichain,
-    unichainSepolia, worldchain, worldchainSepolia
+    unichainSepolia, worldchain, worldchainSepolia,
+    monad, monadTestnet,
+    bsc, bscTestnet
 } from "viem/chains";
 import { polygon } from "wagmi/chains";
 import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN, BNB } from "@/app/constants/chais";
@@ -37,4 +39,6 @@ export const CHAIN_ID_TO_KEY: Record<string, string> = {
     [isDevelopment ? polygonAmoy.id.toString() : polygon.id.toString()]: "Polygon",
     [isDevelopment ? avalancheFuji.id.toString() : avalanche.id.toString()]: "Avalanche",
     [isDevelopment ? worldchainSepolia.id.toString() : worldchain.id.toString()]: "WorldChain",
+    [isDevelopment ? monadTestnet.id.toString() : monad.id.toString()]: "Monad",
+    [isDevelopment ? bscTestnet.id.toString() : bsc.id.toString()]: "BNB",
 };

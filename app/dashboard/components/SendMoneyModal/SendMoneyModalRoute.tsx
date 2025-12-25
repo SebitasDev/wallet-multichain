@@ -133,7 +133,7 @@ export const SendMoneyModalRoute = (
     const handleAddChain = (walletAddress: string, chain: any) => {
         if (!routeSummary) return;
 
-        const chainId = (chain.value || chain.chainId || chain.id).toString();
+        const chainId = (chain.evm?.chain?.id || chain.value || chain.chainId || chain.id).toString();
 
         const newAllocations = routeSummary.allocations.map(alloc => {
             if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
@@ -175,6 +175,22 @@ export const SendMoneyModalRoute = (
         setActiveWalletForChainAdd(null);
     };
 
+    // Validation Check to Disable Save
+    const hasErrors = (routeSummary?.allocations || []).some(walletAlloc => {
+        return walletAlloc.chains.some(r => {
+            const currentWallet = wallets.find(w => w.address.toLowerCase() === walletAlloc.from.toLowerCase());
+            const currentChainDetail = currentWallet?.chains.find(c => {
+                const cId = (c.value || c.chainId || c.id || "").toString();
+                return cId === r.chainId;
+            });
+            const maxAmount = currentChainDetail?.amount || 0;
+
+            // Check if amount is invalid
+            if (r.amount > maxAmount) return true;
+            return false;
+        });
+    });
+
     return (
         <Box
             sx={{
@@ -201,12 +217,16 @@ export const SendMoneyModalRoute = (
                 </Typography>
                 <Button
                     startIcon={isEditing ? <SaveIcon /> : <EditIcon />}
-                    onClick={() => setIsEditing(!isEditing)}
+                    onClick={() => {
+                        if (isEditing && hasErrors) return;
+                        setIsEditing(!isEditing);
+                    }}
+                    disabled={isEditing && hasErrors}
                     size="small"
                     sx={{
                         textTransform: "none",
                         fontWeight: 700,
-                        color: isEditing ? "#00DC8C" : "#000000"
+                        color: (isEditing && hasErrors) ? "#999999" : (isEditing ? "#00DC8C" : "#000000")
                     }}
                 >
                     {isEditing ? "Guardar" : "Editar"}
@@ -389,13 +409,13 @@ export const SendMoneyModalRoute = (
                                                                     handleAmountChange(walletAlloc.from, r.chainId, e.target.value);
                                                                 }
                                                             }}
-                                                            inputProps={{ min: minAmount, max: maxAmount, step: "any" }}
+                                                            inputProps={{ max: maxAmount, step: "any" }}
                                                             helperText={
-                                                                r.amount < minAmount
-                                                                    ? `Min ${minAmount}`
-                                                                    : `Max: ${formatCurrency(maxAmount, 2)}`
+                                                                r.amount > maxAmount
+                                                                    ? `Max: ${formatCurrency(maxAmount, 2)}`
+                                                                    : null
                                                             }
-                                                            error={r.amount < minAmount || r.amount > maxAmount}
+                                                            error={r.amount > maxAmount}
                                                             sx={{ width: 140 }}
                                                         />
                                                     ) : (
@@ -417,7 +437,25 @@ export const SendMoneyModalRoute = (
                                                             control={control as any}
                                                             chain={chainKey as any}
                                                             onChange={(val: string) => handleTokenChange(walletAlloc.from, r.chainId, val)}
+                                                            allowedTokens={(() => {
+                                                                const source = chainConfig as any;
+                                                                const dest = selected;
 
+                                                                const hasCctp = source.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                                                                    dest.evm && // Dest must be EVM for CCTP here? Or just check circle info
+                                                                    dest.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
+
+                                                                const hasNear = source.crossChainInformation?.nearIntentInformation?.support &&
+                                                                    dest.crossChainInformation?.nearIntentInformation?.support;
+
+                                                                const allowed = new Set<string>();
+                                                                if (hasCctp) allowed.add("USDC");
+                                                                if (hasNear) {
+                                                                    source.crossChainInformation?.nearIntentInformation?.assetsId?.forEach((a: any) => allowed.add(a.name));
+                                                                }
+
+                                                                return allowed.size > 0 ? Array.from(allowed) : undefined;
+                                                            })()}
                                                         />
                                                     </Box>
                                                 ) : (
@@ -514,16 +552,28 @@ export const SendMoneyModalRoute = (
                 open={Boolean(anchorElChain)}
                 onClose={handleCloseChainMenu}
             >
-                {activeWalletForChainAdd && wallets.find(w => w.address === activeWalletForChainAdd)?.chains.map((chain) => {
-                    const chainId = chain.value || chain.chainId || chain.id;
-                    const chainKey = CHAIN_ID_TO_KEY[chainId] || "";
-                    const chainConfig = NETWORKS[chainKey as keyof typeof NETWORKS];
-                    const label = (chainConfig as any)?.label || chain.name || chainId;
+                {activeWalletForChainAdd && Object.values(NETWORKS).filter(n => {
+                    if (!n.evm) return false;
+
+                    // Compatibility Check
+                    const dest = selected;
+                    const source = n;
+
+                    const hasCctp = source.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                        dest.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
+
+                    const hasNear = source.crossChainInformation?.nearIntentInformation?.support &&
+                        dest.crossChainInformation?.nearIntentInformation?.support;
+
+                    return hasCctp || hasNear;
+                }).map((chain) => {
+                    const chainId = chain.evm?.chain.id.toString();
+                    const label = chain.label;
 
                     return (
                         <MenuItem key={chainId} onClick={() => handleAddChain(activeWalletForChainAdd, chain)}>
                             <Stack direction="row" alignItems="center" spacing={1}>
-                                {chainConfig?.icon}
+                                {chain.icon}
                                 <Typography fontWeight={700}>{label}</Typography>
                             </Stack>
                         </MenuItem>

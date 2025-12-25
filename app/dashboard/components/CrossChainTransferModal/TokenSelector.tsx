@@ -24,10 +24,15 @@ type TokenSelectorProps = {
     hideLabel?: boolean;
     onChange?: (value: string) => void;
     inputSx?: SxProps;
+    allowedTokens?: string[];
 };
 
-export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx, onChange }: TokenSelectorProps) => {
-    const assets = getAssetsForChain(chain);
+export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx, onChange, allowedTokens }: TokenSelectorProps) => {
+    let assets = getAssetsForChain(chain);
+
+    if (allowedTokens && allowedTokens.length > 0) {
+        assets = assets.filter(a => allowedTokens.includes(a.name));
+    }
 
     // ... (keep comments)
 
