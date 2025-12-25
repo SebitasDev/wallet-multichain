@@ -1,4 +1,4 @@
-import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography, IconButton, Button, TextField, Menu, MenuItem } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography, IconButton, Button, TextField, Menu, MenuItem, CircularProgress } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
@@ -17,10 +17,11 @@ import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { RouteDetail } from "@/app/dashboard/hooks/useSendMoneyModal";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { TokenSelector } from "@/app/dashboard/components/CrossChainTransferModal/TokenSelector";
-import { useForm, Control, UseFormWatch, UseFormSetValue, Controller } from "react-hook-form";
+import { UseFormWatch, UseFormSetValue, Control, Controller } from "react-hook-form";
 import { SendForm } from "@/app/lib/zod/sendSchema";
+import { toast } from "react-toastify";
 
 type Props = {
     routeDetails: RouteDetail[],
@@ -31,9 +32,10 @@ type Props = {
     wallets: { name: string; address: string; chains: any[] }[],
     isEditing: boolean,
     setIsEditing: (isEditing: boolean) => void,
-    watch: UseFormWatch<SendForm>,
-    control: Control<SendForm>,
-    setValue: UseFormSetValue<SendForm>
+    watch: UseFormWatch<SendForm>, // [RESTORED]
+    control: Control<SendForm>, // [RESTORED]
+    setValue: UseFormSetValue<SendForm>, // [RESTORED]
+    setSimulationError: (id: string, hasError: boolean) => void;
 }
 
 export const STATUS_META = {
@@ -50,8 +52,82 @@ export const STATUS_META = {
 
 
 export const SendMoneyModalRoute = (
-    { routeDetails, routeReady, routeSummary, setRouteSummary, selected, wallets, isEditing, setIsEditing, watch, control, setValue }: Props
+    { routeDetails, routeReady, routeSummary, setRouteSummary, selected, wallets, isEditing, setIsEditing, watch, control, setValue, setSimulationError }: Props
 ) => {
+
+    // Simulation State
+    const [simulating, setSimulating] = useState<Record<string, boolean>>({});
+    const [simulationResults, setSimulationResults] = useState<Record<string, string | null>>({});
+    const [simulationErrorMessages, setSimulationErrorMessages] = useState<Record<string, string | null>>({}); // [NEW] Local error messages
+
+    const handleSimulate = async (chainId: string, amount: number, token: string, sourceChainKey: string) => {
+        if (!amount || amount <= 0) return;
+
+        setSimulating(prev => ({ ...prev, [chainId]: true }));
+        setSimulationResults(prev => ({ ...prev, [chainId]: null }));
+        setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
+        setSimulationError(chainId, false); // Clear blocking error initially
+
+        try {
+            const destChainKey = watch("sendChain");
+
+            const response = await fetch("/api/bridge/quote", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sourceChain: sourceChainKey,
+                    targetChain: destChainKey,
+                    amount: amount.toString(),
+                    token: watch("sourceToken") || "USDC", // The destination token requested
+                    sourceToken: token // The source token being sent
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.estimatedReceived) {
+                setSimulationResults(prev => ({ ...prev, [chainId]: data.estimatedReceived }));
+                setSimulationError(chainId, false);
+            } else {
+                const errorMsg = data.error || "Simulation failed";
+                setSimulationErrorMessages(prev => ({ ...prev, [chainId]: errorMsg }));
+                setSimulationError(chainId, true); // Block confirmation
+                // toast.error(errorMsg); // Optional: toast as well? Maybe too noisy if shown inline.
+            }
+        } catch (error) {
+            console.error("Simulation error:", error);
+            setSimulationErrorMessages(prev => ({ ...prev, [chainId]: "Failed to simulate" }));
+            setSimulationError(chainId, true); // Block
+        } finally {
+            setSimulating(prev => ({ ...prev, [chainId]: false }));
+        }
+    };
+
+    // Auto-Simulate Effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (!routeSummary) return;
+            const destChainKey = watch("sendChain");
+
+            routeSummary.allocations.forEach(alloc => {
+                alloc.chains.forEach(chain => {
+                    const sourceChainKey = CHAIN_ID_TO_KEY[chain.chainId];
+                    const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
+                    const destConfig = NETWORKS[destChainKey as keyof typeof NETWORKS];
+
+                    const isNearSupported =
+                        sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
+                        destConfig?.crossChainInformation?.nearIntentInformation?.support;
+
+                    if (isNearSupported && chain.amount > 0 && !simulationResults[chain.chainId] && !simulating[chain.chainId]) {
+                        handleSimulate(chain.chainId, chain.amount, chain.token || "USDC", sourceChainKey);
+                    }
+                });
+            });
+        }, 800); // 800ms debounce
+
+        return () => clearTimeout(timer);
+    }, [routeSummary, watch("sendChain"), watch("sourceToken")]); // Dependencies trigger the effect
 
 
     // Add Wallet State
@@ -105,6 +181,10 @@ export const SendMoneyModalRoute = (
             };
         });
 
+        // Clear simulation state on change
+        setSimulationResults(prev => ({ ...prev, [chainId]: null }));
+        setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
+        setSimulationError(chainId, true); // Block until re-simulated
         updateSummary(newAllocations);
     };
     const handleAmountChange = (walletAddress: string, chainId: string, newAmount: string) => {
@@ -120,6 +200,10 @@ export const SendMoneyModalRoute = (
             };
         });
 
+        // Clear simulation state on change
+        setSimulationResults(prev => ({ ...prev, [chainId]: null }));
+        setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
+        setSimulationError(chainId, true); // Block until re-simulated
         updateSummary(newAllocations);
     };
 
@@ -203,11 +287,28 @@ export const SendMoneyModalRoute = (
             const isSameChain = destChainId === r.chainId;
             const isUSDC = (r.token || "USDC").toUpperCase() === "USDC";
 
-            const fee = (isSameChain && isUSDC) ? 0.01 : 0.02;
+            const isDev = process.env.NODE_ENV === 'development';
+            const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
+            const fee = isDev ? 0 : baseFee;
             const maxUsable = Math.max(0, chainBalance - fee);
 
             // Check if amount is invalid
             if (r.amount <= 0 || r.amount > maxUsable + 1e-9) return true;
+
+            // Check if simulation is required (Near) but not done or failed
+            const sourceChainKey = CHAIN_ID_TO_KEY[r.chainId];
+            const destChainKey = watch("sendChain"); // This uses the form watch, make sure it's available
+            const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
+            const destConfig = NETWORKS[destChainKey as keyof typeof NETWORKS];
+
+            const isNearSupported =
+                sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
+                destConfig?.crossChainInformation?.nearIntentInformation?.support;
+
+            if (isNearSupported && !isEditing) {
+                if (!simulationResults[r.chainId]) return true; // Block if not simulated
+            }
+
             return false;
         });
     });
@@ -371,7 +472,12 @@ export const SendMoneyModalRoute = (
                                         >
                                             {formatCurrency(
                                                 walletAlloc.chains.reduce((acc: number, c: any) => {
-                                                    const fee = 0.02;
+                                                    const isDev = process.env.NODE_ENV === 'development';
+                                                    const destChainId = selected.evm?.chain?.id?.toString() || "";
+                                                    const isSameChain = destChainId === c.chainId;
+                                                    const isUSDC = (c.token || "USDC").toUpperCase() === "USDC";
+                                                    const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
+                                                    const fee = isDev ? 0 : baseFee;
                                                     return acc + c.amount + fee;
                                                 }, 0),
                                                 6
@@ -517,6 +623,51 @@ export const SendMoneyModalRoute = (
                                                         Token: {r.token || "USDC"}
                                                     </Typography>
                                                 )}
+
+                                                {/* Near Simulation Section */}
+                                                {(() => {
+                                                    const sourceChainKey = CHAIN_ID_TO_KEY[r.chainId];
+                                                    const destChainKey = watch("sendChain");
+                                                    const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
+                                                    const destConfig = NETWORKS[destChainKey as keyof typeof NETWORKS];
+
+                                                    const isNearSupported =
+                                                        sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
+                                                        destConfig?.crossChainInformation?.nearIntentInformation?.support;
+
+                                                    if (!isNearSupported || isEditing) return null;
+
+                                                    return (
+                                                        <Box mt={1} display="flex" alignItems="center" gap={1}>
+                                                            <Button
+                                                                size="small"
+                                                                variant="outlined"
+                                                                disabled={simulating[r.chainId] || !r.amount || r.amount <= 0}
+                                                                onClick={() => handleSimulate(r.chainId, r.amount, r.token, sourceChainKey)}
+                                                                sx={{
+                                                                    fontSize: 10,
+                                                                    py: 0.2,
+                                                                    minWidth: "auto",
+                                                                    textTransform: "none",
+                                                                    height: 24,
+                                                                    borderColor: "#666",
+                                                                    color: "#333"
+                                                                }}
+                                                            >
+                                                                {simulating[r.chainId] ? <CircularProgress size={12} /> : "Simular"}
+                                                            </Button>
+                                                            {simulationErrorMessages[r.chainId] ? (
+                                                                <Typography fontSize={11} color="error.main" fontWeight={600}>
+                                                                    {simulationErrorMessages[r.chainId]}
+                                                                </Typography>
+                                                            ) : simulationResults[r.chainId] ? (
+                                                                <Typography fontSize={11} color="success.main" fontWeight={600}>
+                                                                    Recibes: {simulationResults[r.chainId]} {watch("sourceToken")}
+                                                                </Typography>
+                                                            ) : null}
+                                                        </Box>
+                                                    );
+                                                })()}
 
                                                 {/* Status (Only show if not editing or static) */}
                                                 {!isEditing && (
@@ -794,38 +945,84 @@ export const SendMoneyModalRoute = (
                         p: { xs: 1.5, sm: 2 },
                     }}
                 >
-                    <Typography
-                        fontWeight={800}
-                        fontSize={{ xs: 11, sm: 13 }}
-                        sx={{
-                            textTransform: "uppercase",
-                            letterSpacing: 0.5,
-                            color: "#666666",
-                            mb: 0.5
-                        }}
-                    >
-                        Recibe
-                    </Typography>
+                    {(() => {
+                        const allocations = routeSummary?.allocations || [];
+                        const destChainId = selected.evm?.chain?.id?.toString() || "";
 
-                    <Typography
-                        fontWeight={900}
-                        fontSize={{ xs: 18, sm: 24 }}
-                        color="#000000"
-                        sx={{ mb: 0.5 }}
-                    >
-                        {formatCurrency((routeSummary?.totalAmountTaken ?? 0), 6)}
-                    </Typography>
+                        let totalSent = 0;
+                        let totalReceived = 0;
 
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: "#666666",
-                            fontWeight: 600,
-                            fontSize: { xs: 10, sm: 11 }
-                        }}
-                    >
-                        Monto neto (estimado)
-                    </Typography>
+                        allocations.forEach(alloc => {
+                            alloc.chains.forEach(c => {
+                                // Calculate Sent (Amount + Fee)
+                                const isUSDC = (c.token || "USDC").toUpperCase() === "USDC"; // Default USDC
+                                const isSameChain = destChainId === c.chainId;
+
+                                const isDev = process.env.NODE_ENV === 'development';
+                                const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
+                                const calculatedFee = isDev ? 0 : baseFee;
+
+                                totalSent += (c.amount + calculatedFee);
+
+                                // Calculate Received
+                                const sourceChainKey = CHAIN_ID_TO_KEY[c.chainId];
+                                const destChainKey = watch("sendChain");
+                                const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
+                                const destConfig = NETWORKS[destChainKey as keyof typeof NETWORKS];
+                                const isNearSupported =
+                                    sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
+                                    destConfig?.crossChainInformation?.nearIntentInformation?.support;
+
+                                if (isNearSupported) {
+                                    // Use simulation result
+                                    const simulated = parseFloat(simulationResults[c.chainId] || "0");
+                                    totalReceived += simulated;
+                                } else {
+                                    // Assume CCTP/Direct = Amount (1:1)
+                                    // "llega el valor que la persona dijo" -> Amount input
+                                    totalReceived += c.amount;
+                                }
+                            });
+                        });
+
+                        const difference = totalReceived - totalSent;
+
+                        return (
+                            <Stack spacing={1}>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                    <Typography fontSize={12} fontWeight={700} color="#666666" letterSpacing={0.5} textTransform="uppercase">
+                                        Envia
+                                    </Typography>
+                                    <Typography fontWeight={800} fontSize={16} color="#000000">
+                                        {formatCurrency(totalSent, 6)}
+                                    </Typography>
+                                </Stack>
+
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                    <Typography fontSize={12} fontWeight={700} color="#666666" letterSpacing={0.5} textTransform="uppercase">
+                                        Recibe (Est.)
+                                    </Typography>
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                        <Typography fontWeight={800} fontSize={16} color="#00DC8C">
+                                            {formatCurrency(totalReceived, 6)}
+                                        </Typography>
+                                        <Typography fontWeight={700} fontSize={12} color="#000000">
+                                            {watch("sourceToken") || "USDC"}
+                                        </Typography>
+                                    </Stack>
+                                </Stack>
+
+                                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: 1, borderTop: "1px dashed #cccccc" }}>
+                                    <Typography fontSize={12} fontWeight={700} color="#666666" letterSpacing={0.5} textTransform="uppercase">
+                                        Diferencia
+                                    </Typography>
+                                    <Typography fontWeight={800} fontSize={14} color="#ff4444">
+                                        {difference > 0 ? "+" : ""}{formatCurrency(difference, 6)}
+                                    </Typography>
+                                </Stack>
+                            </Stack>
+                        );
+                    })()}
                 </Box>
             </Box>
         </Box>
