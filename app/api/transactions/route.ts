@@ -1,77 +1,67 @@
-import { NextResponse } from 'next/server';
-import connectDB from '@/app/lib/db';
-import TransactionModel from '@/app/models/Transaction';
-import { Transaction } from '@/app/types/Transaction';
+import { NextResponse } from "next/server";
+import connectDB from "@/app/lib/db";
+import TransactionModel from "@/app/models/Transaction";
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
     try {
         await connectDB();
-        const body: Transaction = await request.json();
+        const data = await req.json();
 
-        // Validate basic fields
-        if (!body.id || !body.fromAddress || !body.totalAmount) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        // Validate required fields (basic check, schema validation handles stricter rules)
+        if (!data.id || !data.fromAddress || !data.totalAmount || !data.destinationChain || !data.toAddress) {
+            return NextResponse.json(
+                { success: false, error: "Missing required fields" },
+                { status: 400 }
+            );
         }
 
-        const newTx = await TransactionModel.create(body);
-        return NextResponse.json(newTx, { status: 201 });
+        const newTransaction = await TransactionModel.create(data);
 
-    } catch (error) {
-        console.error('Error creating transaction:', error);
-        return NextResponse.json({ error: 'Failed to create transaction' }, { status: 500 });
+        return NextResponse.json({ success: true, transaction: newTransaction });
+    } catch (error: any) {
+        console.error("Error creating transaction:", error);
+        return NextResponse.json(
+            { success: false, error: error.message || "Internal Server Error" },
+            { status: 500 }
+        );
     }
 }
 
-export async function GET(request: Request) {
+export async function GET(req: Request) {
     try {
         await connectDB();
-        const { searchParams } = new URL(request.url);
+        const { searchParams } = new URL(req.url);
         const address = searchParams.get('address');
+        const limit = parseInt(searchParams.get('limit') || '20');
 
         if (!address) {
-            return NextResponse.json({ error: 'Address is required' }, { status: 400 });
+            return NextResponse.json(
+                { success: false, error: "Address is required" },
+                { status: 400 }
+            );
         }
 
-        const transactions = await TransactionModel.find({ fromAddress: address })
-            .sort({ createdAt: -1 }) // Newest first
+        // Normalize address: If it's an EVM address (starts with 0x), take the first 42 chars to handle potential suffixes/dirty data
+        const cleanAddress = (address.startsWith('0x') && address.length >= 42)
+            ? address.substring(0, 42).toLowerCase()
+            : address.toLowerCase();
+
+        const transactions = await TransactionModel.find({
+            $or: [
+                { fromAddress: cleanAddress }, // Exact match
+                { toAddress: cleanAddress }
+            ]
+        })
+            .sort({ createdAt: -1 })
+            .limit(limit)
             .lean();
 
-        return NextResponse.json(transactions);
-
-    } catch (error) {
-        console.error('Error fetching transactions:', error);
-        return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 });
-    }
-}
-
-export async function PUT(request: Request) {
-    try {
-        await connectDB();
-        const body = await request.json();
-        const { id, status, route } = body;
-
-        if (!id) {
-            return NextResponse.json({ error: 'Transaction ID is required' }, { status: 400 });
-        }
-
-        const updateData: any = {};
-        if (status) updateData.status = status;
-        if (route) updateData.route = route;
-
-        const updatedTx = await TransactionModel.findOneAndUpdate(
-            { id: id },
-            { $set: updateData },
-            { new: true }
+        return NextResponse.json({ success: true, transactions });
+    } catch (error: any) {
+        console.error("Error fetching transactions:", error);
+        return NextResponse.json(
+            { success: false, error: error.message || "Internal Server Error" },
+            { status: 500 }
         );
-
-        if (!updatedTx) {
-            return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
-        }
-
-        return NextResponse.json(updatedTx);
-
-    } catch (error) {
-        console.error('Error updating transaction:', error);
-        return NextResponse.json({ error: 'Failed to update transaction' }, { status: 500 });
     }
 }
