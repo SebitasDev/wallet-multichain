@@ -90,7 +90,7 @@ const useMaxTransferAmount = (
 
     // Calculate expected fee for Max calc (independent of amount entered)
     const expectedFee = useMemo(() => {
-        if (process.env.NEXT_PUBLIC_ENVIROMENT === "development") return 0;
+        if (process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development") return 0;
 
         let feeVal = 0.02; // Default Cross-chain
         if (sourceChain === destChain) {
@@ -183,7 +183,8 @@ const useMaxTransferAmount = (
                     const { balance: rawBal } = await getBalanceFromChain(
                         networkConfig.evm.chain,
                         address as Address,
-                        tokenAddress as Address
+                        tokenAddress as Address,
+                        assetInfo?.decimals // [NEW] Pass decimals from config
                     );
                     const numBalance = Number(rawBal || 0);
 
@@ -315,13 +316,14 @@ export const useCrossChainTransfer = () => {
     const routeError = useRouteValidation(watchSourceChain, watchDestChain, watchSourceToken, watchDestToken);
 
     const minAmount = useMemo(() => {
-        if (!isCrossChain) return 0;
-        if ((watchDestChain as string) === STELLAR_CHAIN_KEY) return 0.001;
-        if ((watchSourceChain as string) === STELLAR_CHAIN_KEY) return 0.23;
+        if (!isCrossChain) {
+            return watchSourceToken === watchDestToken ? 0.01 : 0.02;
+        }
 
-        const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
-        return sourceConfig?.crossChainInformation.circleInformation?.aproxFromFee || 0;
-    }, [watchSourceChain, watchDestChain, isCrossChain]);
+        // Uniform minimum of 0.02 for all cross-chain transfers (including Stellar)
+        // Specific bridge limits will be handled by API errors if higher.
+        return 0.02;
+    }, [watchSourceChain, watchDestChain, isCrossChain, watchSourceToken, watchDestToken]);
 
     const isAmountValid = useMemo(() => {
         const strAmount = watchAmount ? String(watchAmount) : "";
@@ -338,7 +340,7 @@ export const useCrossChainTransfer = () => {
     }, [watchAmount, maxAmount]);
 
     const fee = useMemo(() => {
-        if (process.env.NEXT_PUBLIC_ENVIROMENT === "development") return "0";
+        if (process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development") return "0";
         if (!watchAmount) return "0.00";
 
         if (watchSourceChain === watchDestChain) {

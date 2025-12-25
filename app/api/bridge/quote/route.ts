@@ -17,22 +17,8 @@ export async function POST(request: NextRequest) {
         const IS_DEV = process.env.NODE_ENV === 'development';
         const FEE = IS_DEV ? PlatformFess.DEV : PlatformFess.EVM_TO_OTHER;
 
-        let bridgeMin = 0.001;
-
-        if (sourceChain === "Stellar") {
-            bridgeMin = 0.25;
-        }
-
-        const MIN_AMOUNT = FEE + bridgeMin;
-
-        if (amountNum < MIN_AMOUNT) {
-            return NextResponse.json({
-                success: false,
-                error: `Amount too low. Minimum required: ${MIN_AMOUNT} USDC`,
-                minAmount: MIN_AMOUNT,
-                protocolFee: FEE
-            }, { status: 400 });
-        }
+        // Validation removed as per user request (let provider handle it)
+        const MIN_AMOUNT = FEE;
 
         const netAmountBridged = (amountNum - FEE).toFixed(6);
 
@@ -47,7 +33,7 @@ export async function POST(request: NextRequest) {
             sourceChain,
             destinationChain: targetChain || "Base",
             userSenderAddress: sender,
-            recipientStellar: targetChain === "Stellar" ? dummyStellar : undefined,
+            recipientStellar: targetChain === "Stellar" ? dummyStellar : dummyEvm,
             destinationToken: token,
             options: { dry: true }
         });
