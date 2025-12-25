@@ -8,7 +8,7 @@ export const useFindBestRoute = () => {
 
     const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
-    async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string, optimize: boolean) {
+    async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string, optimize: boolean, sourceToken: string) {
         const sendNetwork = NETWORKS[sendChain as ChainKey];
         if (!sendNetwork || !sendNetwork.evm) {
             console.error(`Chain ${sendChain} not configured for EVM`);
@@ -122,7 +122,8 @@ export const useFindBestRoute = () => {
             }
             grouped[item.from].chains.push({
                 chainId: item.networkId,
-                amount: round6(item.amount)
+                amount: round6(item.amount),
+                token: sourceToken
             });
         }
 

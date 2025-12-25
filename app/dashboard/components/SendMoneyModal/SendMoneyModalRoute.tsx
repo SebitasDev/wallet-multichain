@@ -1,9 +1,9 @@
-import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography, IconButton, Button, TextField, Menu, MenuItem } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainConfig, ChainKey } from "@/app/types/chain";
-import { AllocationSummary } from "@/app/dashboard/types";
+import { AllocationSummary, Wallet } from "@/app/dashboard/types";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
@@ -12,13 +12,22 @@ import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { RouteDetail } from "@/app/dashboard/hooks/useSendMoneyModal";
+import { useState } from "react";
+import { TokenSelector } from "@/app/dashboard/components/CrossChainTransferModal/TokenSelector";
+import { useForm, Control } from "react-hook-form";
 
 type Props = {
     routeDetails: RouteDetail[],
     routeReady: boolean,
     routeSummary: AllocationSummary | null,
-    selected: ChainConfig
+    setRouteSummary: (summary: AllocationSummary | null) => void,
+    selected: ChainConfig,
+    wallets: { name: string; address: string; chains: any[] }[]
 }
 
 export const STATUS_META = {
@@ -35,8 +44,137 @@ export const STATUS_META = {
 
 
 export const SendMoneyModalRoute = (
-    { routeDetails, routeReady, routeSummary, selected }: Props
+    { routeDetails, routeReady, routeSummary, setRouteSummary, selected, wallets }: Props
 ) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const { control, watch, setValue } = useForm();
+
+    // Add Wallet State
+    const [anchorElWallet, setAnchorElWallet] = useState<null | HTMLElement>(null);
+
+    // Add Chain State (Specific to a wallet)
+    const [anchorElChain, setAnchorElChain] = useState<null | HTMLElement>(null);
+    const [activeWalletForChainAdd, setActiveWalletForChainAdd] = useState<string | null>(null);
+
+    const updateSummary = (newAllocations: AllocationSummary["allocations"]) => {
+        if (!routeSummary) return;
+        setRouteSummary({
+            ...routeSummary,
+            allocations: newAllocations,
+            totalAmountTaken: newAllocations.reduce((sum, a) => sum + a.chains.reduce((s, c) => s + c.amount, 0), 0)
+        });
+    }
+
+    const handleRemoveChain = (walletAddress: string, chainId: string) => {
+        if (!routeSummary) return;
+
+        const newAllocations = routeSummary.allocations.map(alloc => {
+            if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
+            return {
+                ...alloc,
+                chains: alloc.chains.filter(c => c.chainId !== chainId)
+            };
+        }).filter(alloc => alloc.chains.length > 0);
+
+        updateSummary(newAllocations);
+    };
+
+    const handleTokenChange = (walletAddress: string, chainId: string, newToken: string) => {
+        if (!routeSummary) return;
+
+        const newAllocations = routeSummary.allocations.map(alloc => {
+            if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
+            return {
+                ...alloc,
+                chains: alloc.chains.map(c => c.chainId === chainId ? { ...c, token: newToken } : c)
+            };
+        });
+
+        updateSummary(newAllocations);
+    };
+
+    const handleAmountChange = (walletAddress: string, chainId: string, newAmount: string) => {
+        if (!routeSummary) return;
+
+        const amount = parseFloat(newAmount) || 0;
+
+        const newAllocations = routeSummary.allocations.map(alloc => {
+            if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
+            return {
+                ...alloc,
+                chains: alloc.chains.map(c => c.chainId === chainId ? { ...c, amount: amount } : c)
+            };
+        });
+
+        updateSummary(newAllocations);
+    };
+
+    const handleAddWallet = (wallet: { name: string; address: string; chains: any[] }) => {
+        if (!routeSummary) return;
+
+        // Check if already exists
+        if (routeSummary.allocations.some(a => a.from.toLowerCase() === wallet.address.toLowerCase())) {
+            handleCloseWalletMenu();
+            return;
+        }
+
+        const newAllocations = [
+            ...routeSummary.allocations,
+            {
+                from: wallet.address,
+                chains: [] // Starts empty, user needs to add chain
+            }
+        ];
+
+        updateSummary(newAllocations);
+        handleCloseWalletMenu();
+    };
+
+    const handleAddChain = (walletAddress: string, chain: any) => {
+        if (!routeSummary) return;
+
+        const chainId = (chain.value || chain.chainId || chain.id).toString();
+
+        const newAllocations = routeSummary.allocations.map(alloc => {
+            if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
+
+            // Check if chain already exists
+            if (alloc.chains.some(c => c.chainId === chainId)) return alloc;
+
+            return {
+                ...alloc,
+                chains: [
+                    ...alloc.chains,
+                    {
+                        chainId: chainId,
+                        amount: 0,
+                        token: "USDC"
+                    }
+                ]
+            };
+        });
+
+        updateSummary(newAllocations);
+        handleCloseChainMenu();
+    };
+
+
+    const handleOpenWalletMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorElWallet(event.currentTarget);
+    };
+    const handleCloseWalletMenu = () => {
+        setAnchorElWallet(null);
+    };
+
+    const handleOpenChainMenu = (event: React.MouseEvent<HTMLElement>, walletAddress: string) => {
+        setAnchorElChain(event.currentTarget);
+        setActiveWalletForChainAdd(walletAddress);
+    };
+    const handleCloseChainMenu = () => {
+        setAnchorElChain(null);
+        setActiveWalletForChainAdd(null);
+    };
+
     return (
         <Box
             sx={{
@@ -49,27 +187,44 @@ export const SendMoneyModalRoute = (
                 gap: 2,
             }}
         >
-            <Typography
-                fontWeight={800}
-                fontSize={{ xs: 13, sm: 15 }}
-                sx={{
-                    textTransform: "uppercase",
-                    letterSpacing: 0.5,
-                    color: "#000000"
-                }}
-            >
-                Ruta encontrada
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography
+                    fontWeight={800}
+                    fontSize={{ xs: 13, sm: 15 }}
+                    sx={{
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                        color: "#000000"
+                    }}
+                >
+                    Ruta encontrada
+                </Typography>
+                <Button
+                    startIcon={isEditing ? <SaveIcon /> : <EditIcon />}
+                    onClick={() => setIsEditing(!isEditing)}
+                    size="small"
+                    sx={{
+                        textTransform: "none",
+                        fontWeight: 700,
+                        color: isEditing ? "#00DC8C" : "#000000"
+                    }}
+                >
+                    {isEditing ? "Guardar" : "Editar"}
+                </Button>
+            </Stack>
 
             <Stack spacing={2}>
-                {routeDetails.map((wallet) => {
-                    const shortAddress = `${wallet.wallet.slice(0, 6)}...${wallet.wallet.slice(-4)}`;
+                {(routeSummary?.allocations || []).map((walletAlloc) => {
+                    const walletDetail = routeDetails.find(w => w.wallet.toLowerCase() === walletAlloc.from.toLowerCase());
+                    const walletName = walletDetail?.walletName || wallets.find(w => w.address.toLowerCase() === walletAlloc.from.toLowerCase())?.name || "Wallet";
+                    const shortAddress = `${walletAlloc.from.slice(0, 6)}...${walletAlloc.from.slice(-4)}`;
 
                     return (
                         <Accordion
-                            key={wallet.wallet}
+                            key={walletAlloc.from}
                             disableGutters
                             elevation={0}
+                            defaultExpanded={true}
                             sx={{
                                 backgroundColor: "#ffffff",
                                 borderRadius: 3,
@@ -92,6 +247,7 @@ export const SendMoneyModalRoute = (
                                     },
                                 }}
                             >
+                                {/* Header Content */}
                                 <Stack
                                     direction="row"
                                     alignItems="center"
@@ -110,7 +266,7 @@ export const SendMoneyModalRoute = (
                                                 whiteSpace: "nowrap"
                                             }}
                                         >
-                                            Wallet
+                                            {walletName}
                                         </Typography>
                                         <Typography
                                             variant="body2"
@@ -120,7 +276,7 @@ export const SendMoneyModalRoute = (
                                                 fontSize: { xs: 11, sm: 12 },
                                                 fontFamily: "monospace"
                                             }}
-                                            title={wallet.wallet}
+                                            title={walletAlloc.from}
                                         >
                                             {shortAddress}
                                         </Typography>
@@ -143,13 +299,7 @@ export const SendMoneyModalRoute = (
                                             color="#000000"
                                         >
                                             {formatCurrency(
-                                                wallet.chains.reduce((acc: number, c: any) => {
-                                                    // Hardcoded display fix to match the true fee of 0.02.
-                                                    // The previous logic was chaining undefined resulting in NaN or weird summation?
-                                                    // Actually, if aproxFromFee was undefined, it was 0?
-                                                    // The previous calculation: (undefined || 0) + 0.01 = 0.01.
-                                                    // 10000 probably came from mock data or a huge chain.amount.
-                                                    // But let's fix the FEE logic first.
+                                                walletAlloc.chains.reduce((acc: number, c: any) => {
                                                     const fee = 0.02;
                                                     return acc + c.amount + fee;
                                                 }, 0),
@@ -161,131 +311,225 @@ export const SendMoneyModalRoute = (
                             </AccordionSummary>
                             <AccordionDetails sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: "#f5f5f5" }}>
                                 <Stack spacing={1.5}>
-                                    {wallet.chains.map((r: any) => {
-                                        const fee = 0.02;
-                                        const statusMeta = STATUS_META[r.status as keyof typeof STATUS_META];
+                                    {walletAlloc.chains.map((r: any) => {
+                                        const chainKey = CHAIN_ID_TO_KEY[r.chainId];
+                                        const chainConfig = NETWORKS[chainKey as keyof typeof NETWORKS] || {};
+                                        const label = (chainConfig as any).label || "Chain " + r.chainId;
+
+                                        // Status logic
+                                        const existingDetail = walletDetail?.chains.find((c: any) => c.id === r.chainId);
+                                        const status = existingDetail?.status || 'idle';
+                                        const statusMeta = STATUS_META[status as keyof typeof STATUS_META];
+
+                                        // Validations
+                                        const currentWallet = wallets.find(w => w.address.toLowerCase() === walletAlloc.from.toLowerCase());
+                                        const currentChainDetail = currentWallet?.chains.find(c => {
+                                            const cId = (c.value || c.chainId || c.id || "").toString();
+                                            return cId === r.chainId;
+                                        });
+                                        const maxAmount = currentChainDetail?.amount || 0;
+
+                                        const destChainId = selected.evm?.chain?.id?.toString() || "";
+                                        const isSameChain = destChainId === r.chainId;
+                                        const isUSDC = (r.token || "USDC").toUpperCase() === "USDC";
+
+                                        const minAmount = (isSameChain && isUSDC) ? 0.01 : 0.02;
 
                                         return (
                                             <Box
-                                                key={r.id}
+                                                key={r.chainId}
                                                 sx={{
                                                     p: { xs: 1.5, sm: 2 },
                                                     borderRadius: 3,
                                                     backgroundColor: "#ffffff",
                                                     border: "2px solid #000000",
+                                                    position: "relative"
                                                 }}
                                             >
+                                                {isEditing && (
+                                                    <IconButton
+                                                        onClick={() => handleRemoveChain(walletAlloc.from, r.chainId)}
+                                                        sx={{
+                                                            position: "absolute",
+                                                            top: 5,
+                                                            right: 5,
+                                                            color: "#ff4444"
+                                                        }}
+                                                        size="small"
+                                                    >
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                )}
+
                                                 <Stack
                                                     direction="row"
                                                     alignItems="center"
                                                     justifyContent="space-between"
                                                     mb={1.5}
                                                     spacing={1}
-                                                    sx={{ minWidth: 0 }}
+                                                    sx={{ minWidth: 0, pr: isEditing ? 3 : 0 }}
                                                 >
                                                     <Stack direction="row" alignItems="center" spacing={1} flex={1} minWidth={0}>
-                                                        <Box sx={{
-                                                            width: { xs: 24, sm: 28 },
-                                                            height: { xs: 24, sm: 28 },
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            flexShrink: 0,
-                                                            "& svg": {
-                                                                width: "100%",
-                                                                height: "100%",
-                                                            }
-                                                        }}>
-                                                            {r.icon}
-                                                        </Box>
-                                                        <Typography
-                                                            fontWeight={800}
-                                                            fontSize={{ xs: 13, sm: 14 }}
-                                                            color="#000000"
-                                                            sx={{
-                                                                overflow: "hidden",
-                                                                textOverflow: "ellipsis",
-                                                                whiteSpace: "nowrap"
-                                                            }}
-                                                        >
-                                                            {r.label}
+                                                        {existingDetail?.icon}
+                                                        <Typography fontWeight={800} fontSize={14}>
+                                                            {label}
                                                         </Typography>
                                                     </Stack>
 
-                                                    <Typography
-                                                        fontWeight={800}
-                                                        fontSize={{ xs: 13, sm: 15 }}
-                                                        color="#000000"
-                                                        sx={{ flexShrink: 0 }}
-                                                    >
-                                                        {formatCurrency(
-                                                            r.amount +
-                                                            ((CHAIN_ID_TO_KEY[r.id]
-                                                                ? (NETWORKS[CHAIN_ID_TO_KEY[r.id] as ChainKey]?.crossChainInformation?.circleInformation?.aproxFromFee || 0)
-                                                                : 0) || 0),
-                                                            6
-                                                        )}
-                                                    </Typography>
+                                                    {isEditing ? (
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            value={r.amount}
+                                                            onChange={(e) => {
+                                                                const val = parseFloat(e.target.value);
+                                                                if (val > maxAmount) {
+                                                                    handleAmountChange(walletAlloc.from, r.chainId, maxAmount.toString());
+                                                                } else {
+                                                                    handleAmountChange(walletAlloc.from, r.chainId, e.target.value);
+                                                                }
+                                                            }}
+                                                            inputProps={{ min: minAmount, max: maxAmount, step: "any" }}
+                                                            helperText={
+                                                                r.amount < minAmount
+                                                                    ? `Min ${minAmount}`
+                                                                    : `Max: ${formatCurrency(maxAmount, 2)}`
+                                                            }
+                                                            error={r.amount < minAmount || r.amount > maxAmount}
+                                                            sx={{ width: 140 }}
+                                                        />
+                                                    ) : (
+                                                        <Typography fontWeight={800} fontSize={15}>
+                                                            {formatCurrency(r.amount, 6)}
+                                                        </Typography>
+                                                    )}
                                                 </Stack>
 
-                                                {/* Status */}
-                                                <Box
-                                                    sx={{
-                                                        px: { xs: 1.2, sm: 1.5 },
-                                                        py: { xs: 0.6, sm: 0.75 },
-                                                        borderRadius: 2,
-                                                        border: "2px solid #000000",
-                                                        fontSize: { xs: 11, sm: 12 },
-                                                        fontWeight: 800,
-                                                        display: "inline-flex",
-                                                        alignItems: "center",
-                                                        gap: "6px",
-                                                        backgroundColor: statusMeta?.color || "#cccccc",
-                                                        color: r.status === 'idle' ? "#000000" : "#ffffff",
-                                                        mb: r.message ? 1 : 0,
-                                                    }}
-                                                >
-                                                    {statusMeta?.icon}
-                                                    {statusMeta?.label}
-                                                </Box>
+                                                {/* Edit Token Selector */}
+                                                {isEditing && chainKey ? (
+                                                    <Box mt={2}>
+                                                        <Typography fontSize={11} fontWeight={700} color="#666666" mb={0.5}>
+                                                            TOKEN A ENVIAR
+                                                        </Typography>
+                                                        <TokenSelector
+                                                            label=""
+                                                            name={`token_${walletAlloc.from}_${r.chainId}` as any}
+                                                            control={control as any}
+                                                            chain={chainKey as any}
+                                                            onChange={(val: string) => handleTokenChange(walletAlloc.from, r.chainId, val)}
 
-                                                {r.message && (
-                                                    <Typography
-                                                        fontSize={{ xs: 11, sm: 12 }}
-                                                        sx={{
-                                                            color: "#666666",
-                                                            fontWeight: 600,
-                                                            mt: 1,
-                                                            wordBreak: "break-word"
-                                                        }}
-                                                    >
-                                                        {r.message}
+                                                        />
+                                                    </Box>
+                                                ) : (
+                                                    <Typography fontSize={11} fontWeight={700} color="#666666">
+                                                        Token: {r.token || "USDC"}
                                                     </Typography>
                                                 )}
 
-                                                {/* Fee info */}
-                                                <Typography
-                                                    mt={1.5}
-                                                    variant="body2"
-                                                    fontSize={{ xs: 10, sm: 11 }}
-                                                    sx={{
-                                                        color: "#666666",
-                                                        fontWeight: 700,
-                                                        textTransform: "uppercase",
-                                                        letterSpacing: 0.5
-                                                    }}
-                                                >
-                                                    Fee estimada: {formatCurrency(fee, 6)}
-                                                </Typography>
+                                                {/* Status (Only show if not editing or static) */}
+                                                {!isEditing && (
+                                                    <Box
+                                                        sx={{
+                                                            mt: 1,
+                                                            px: 1,
+                                                            py: 0.5,
+                                                            borderRadius: 1,
+                                                            fontSize: 11,
+                                                            fontWeight: 800,
+                                                            backgroundColor: statusMeta?.color || "#cccccc",
+                                                            color: "#ffffff",
+                                                            display: "inline-flex",
+                                                            alignItems: "center",
+                                                            gap: 0.5
+                                                        }}
+                                                    >
+                                                        {statusMeta?.icon}
+                                                        {statusMeta?.label}
+                                                    </Box>
+                                                )}
                                             </Box>
                                         );
                                     })}
+
+                                    {/* Add Chain Button */}
+                                    {isEditing && (
+                                        <Button
+                                            startIcon={<AddCircleIcon />}
+                                            onClick={(e) => handleOpenChainMenu(e, walletAlloc.from)}
+                                            fullWidth
+                                            sx={{
+                                                textTransform: "none",
+                                                fontWeight: 700,
+                                                color: "#000000",
+                                                border: "1px dashed #000000",
+                                                borderRadius: 2
+                                            }}
+                                        >
+                                            Agregar Chain
+                                        </Button>
+                                    )}
                                 </Stack>
                             </AccordionDetails>
                         </Accordion>
                     );
                 })}
+
+                {/* Add Wallet Button */}
+                {isEditing && (
+                    <Button
+                        startIcon={<AddCircleIcon />}
+                        onClick={handleOpenWalletMenu}
+                        fullWidth
+                        sx={{
+                            p: 2,
+                            textTransform: "none",
+                            fontWeight: 800,
+                            color: "#000000",
+                            backgroundColor: "#ffffff",
+                            border: "2px dashed #000000",
+                            borderRadius: 3,
+                        }}
+                    >
+                        Agregar Wallet
+                    </Button>
+                )}
             </Stack>
+
+            {/* WALLET MENU */}
+            <Menu
+                anchorEl={anchorElWallet}
+                open={Boolean(anchorElWallet)}
+                onClose={handleCloseWalletMenu}
+            >
+                {wallets.filter(w => !routeSummary?.allocations.some(a => a.from.toLowerCase() === w.address.toLowerCase())).map((wallet) => (
+                    <MenuItem key={wallet.address} onClick={() => handleAddWallet(wallet)}>
+                        <Typography fontWeight={700}>{wallet.name} ({wallet.address.slice(0, 6)}...)</Typography>
+                    </MenuItem>
+                ))}
+            </Menu>
+
+            {/* CHAIN MENU */}
+            <Menu
+                anchorEl={anchorElChain}
+                open={Boolean(anchorElChain)}
+                onClose={handleCloseChainMenu}
+            >
+                {activeWalletForChainAdd && wallets.find(w => w.address === activeWalletForChainAdd)?.chains.map((chain) => {
+                    const chainId = chain.value || chain.chainId || chain.id;
+                    const chainKey = CHAIN_ID_TO_KEY[chainId] || "";
+                    const chainConfig = NETWORKS[chainKey as keyof typeof NETWORKS];
+                    const label = (chainConfig as any)?.label || chain.name || chainId;
+
+                    return (
+                        <MenuItem key={chainId} onClick={() => handleAddChain(activeWalletForChainAdd, chain)}>
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                                {chainConfig?.icon}
+                                <Typography fontWeight={700}>{label}</Typography>
+                            </Stack>
+                        </MenuItem>
+                    );
+                })}
+            </Menu>
 
             {/* RESUMEN FINAL */}
             <Box
@@ -381,7 +625,7 @@ export const SendMoneyModalRoute = (
                         color="#000000"
                         sx={{ mb: 0.5 }}
                     >
-                        {formatCurrency((routeSummary?.targetAmount) ?? 0, 6)}
+                        {formatCurrency((routeSummary?.totalAmountTaken ?? 0), 6)}
                     </Typography>
 
                     <Typography
@@ -392,7 +636,7 @@ export const SendMoneyModalRoute = (
                             fontSize: { xs: 10, sm: 11 }
                         }}
                     >
-                        Monto neto luego de comisión
+                        Monto neto (estimado)
                     </Typography>
                 </Box>
             </Box>

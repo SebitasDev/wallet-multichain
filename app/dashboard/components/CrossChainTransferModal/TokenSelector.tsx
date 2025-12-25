@@ -22,10 +22,11 @@ type TokenSelectorProps = {
     control: Control<FormValues>;
     chain: FacilitatorChainKey | typeof STELLAR_CHAIN_KEY;
     hideLabel?: boolean;
+    onChange?: (value: string) => void;
     inputSx?: SxProps;
 };
 
-export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx }: TokenSelectorProps) => {
+export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx, onChange }: TokenSelectorProps) => {
     const assets = getAssetsForChain(chain);
 
     // ... (keep comments)
@@ -56,6 +57,10 @@ export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx 
                         select
                         fullWidth
                         {...field}
+                        onChange={(e) => {
+                            field.onChange(e);
+                            if (onChange) onChange(e.target.value);
+                        }}
                         // Ensure the value matches an available asset, or default to first if mismatch
                         // (Handling logic usually belongs in parent/hook, but visual safety here)
                         value={assets.some(a => a.name === field.value) ? field.value : assets[0]?.name || ""}

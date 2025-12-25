@@ -7,7 +7,7 @@ export const sendSchema = z.object({
     sendPassword: z.string().min(1, "Password muy corta"),
     sendChain: ChainKeyEnum,
     optimize: z.boolean(),
-
+    sourceToken: z.string().default("USDC"),
 });
 
 export type SendForm = z.infer<typeof sendSchema>;

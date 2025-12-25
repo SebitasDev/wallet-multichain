@@ -9,7 +9,7 @@ export const SendMoneyModal = () => {
     const {
         sendLoading, control, handleSubmit, errors, handleOnSend, handleOnConfirm,
         canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary, setValue,
-        maxSendAmount, isExceedingMax
+        maxSendAmount, isExceedingMax, watch, setRouteSummary, wallets
     } = useSendMoneyModal();
 
     return (
@@ -36,26 +36,29 @@ export const SendMoneyModal = () => {
             <DialogContent sx={{ px: 3, py: 3, background: "#ffffff" }}>
                 {!routeReady ? (
                     <SendMoneyModalForm
-                        control={control}
+                        control={control as any}
                         sendLoading={sendLoading}
                         errors={errors}
                         setValue={setValue}
+                        watch={watch}
                         maxSendAmount={maxSendAmount}
                         isExceedingMax={isExceedingMax}
                     />
                 ) : (
                     <SendMoneyModalRoute
                         routeSummary={routeSummary}
+                        setRouteSummary={setRouteSummary}
                         routeDetails={routeDetails}
                         routeReady={routeReady}
                         selected={selected}
+                        wallets={wallets}
                     />
                 )}
             </DialogContent>
 
             <SendMoneyModalActions
                 onClose={() => setSendModal(false)}
-                onAction={routeReady ? handleOnConfirm : handleSubmit(handleOnSend)}
+                onAction={routeReady ? handleOnConfirm : handleSubmit(handleOnSend as any)}
                 loading={sendLoading}
                 disabled={!canSend}
                 routeReady={routeReady}
