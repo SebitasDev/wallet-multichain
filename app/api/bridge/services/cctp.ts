@@ -163,7 +163,7 @@ export async function processCCTPSettlement(
             abi: tokenMessengerAbi,
             functionName: "depositForBurn",
             args: [
-                amountBigInt - BigInt(20000), // Deduct 0.02 USDC Fee
+                amountBigInt - (fee * BigInt(2)), // Deduct 0.02 USDC Fee (2x Base Fee)
                 crossChainConfig.destinationDomain,
                 mintRecipient,
                 networkConfig.usdc,

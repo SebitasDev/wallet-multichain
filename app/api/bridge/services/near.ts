@@ -73,8 +73,11 @@ export async function processNearSettlement(
 
     // Amount conversion
     const amountAtomicTotal = Math.floor(parseFloat(amount) * Math.pow(10, decimals));
-    // Deduct 0.02 Fee (20000 for 6 decimals, 200000 for 7 decimals)
-    const feeUnits = Math.floor(0.02 * Math.pow(10, decimals));
+    // Deduct Fee based on Environment
+    const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+    const feeValue = isDev ? 0 : 0.02;
+
+    const feeUnits = Math.floor(feeValue * Math.pow(10, decimals));
     const amountAtomicNet = (amountAtomicTotal - feeUnits).toString();
 
     // Safety check
