@@ -13,6 +13,7 @@ import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { useBridgeUsdcStream } from "@/app/dashboard/hooks/useBridgeUsdcStream";
 import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
+import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 
 export type RouteStatus =
     | "idle"
@@ -45,6 +46,8 @@ export const useSendMoneyModal = () => {
     const { allocateAcrossNetworks } = useFindBestRoute();
     const { unlockWallet, transferBalance } = useWalletStore();
     const generalWallet = useSessionWalletStore(state => state.address);
+    const wallets = useWalletStore((state) => state.wallets);
+    const { xoWallet, mainWallet } = useXOWalletStore();
     const { setSendModal, isOpen } = useSendMoneyStore();
     const [routeDetails, setRouteDetails] = useState<RouteDetail[]>([]);
 
@@ -193,6 +196,9 @@ export const useSendMoneyModal = () => {
 
         console.log("Destination:", toValidChain, recipient);
 
+        const executedRoutes: any[] = [];
+        let totalSentAmount = 0;
+
         // Loop Allocations
         for (const allocation of routeSummary!.allocations) {
 
@@ -285,6 +291,16 @@ export const useSendMoneyModal = () => {
                             amountFloat
                         );
 
+                        // Track success for DB
+                        executedRoutes.push({
+                            chainName: fromValidChain,
+                            amount: amountFloat,
+                            assetOrigin: chain.token || watch("sourceToken") || "USDC",
+                            status: "SUCCESS",
+                            txHash: result.transactionHash
+                        });
+                        totalSentAmount += amountFloat;
+
                     } else {
                         throw new Error(result.errorReason);
                     }
@@ -310,7 +326,38 @@ export const useSendMoneyModal = () => {
         }
 
         console.log("✅ Final transfer completed");
-        toast.success("Transacciones completadas");
+
+        if (executedRoutes.length > 0) {
+            toast.success("Transacciones completadas");
+
+            // Save Transaction to DB
+            try {
+                const txData = {
+                    id: crypto.randomUUID(),
+                    // Priority: XO Wallet -> XO Main Wallet -> Session fallback
+                    fromAddress: xoWallet?.address?.toLowerCase() || mainWallet?.address?.toLowerCase() || generalWallet?.toLowerCase(),
+                    toAddress: recipient.toLowerCase(),
+                    destinationChain: toValidChain,
+                    totalAmount: totalSentAmount,
+                    status: "PENDING",
+                    tokenSymbol: watch("sourceToken") || "USDC",
+                    decimals: 6,
+                    createdAt: Date.now(),
+                    route: executedRoutes
+                };
+
+                await fetch("/api/transactions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(txData)
+                });
+                console.log("Transaction saved to DB");
+            } catch (dbError) {
+                console.error("Failed to save transaction to DB:", dbError);
+            }
+        } else {
+            toast.error("No se completó ninguna transacción");
+        }
 
         // Brief delay to show success state before closing
         setTimeout(() => {
@@ -322,7 +369,7 @@ export const useSendMoneyModal = () => {
         }, 2000);
     };
 
-    const wallets = useWalletStore((state) => state.wallets);
+
 
     const getOriginFee = (id: string) => {
         const key = CHAIN_ID_TO_KEY[id] as ChainKey;

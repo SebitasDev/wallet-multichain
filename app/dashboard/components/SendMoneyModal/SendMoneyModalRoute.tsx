@@ -1,4 +1,4 @@
-import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography, IconButton, Button, TextField, Menu, MenuItem, CircularProgress } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography, IconButton, Button, TextField, Menu, MenuItem, CircularProgress, Divider } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
@@ -71,13 +71,29 @@ export const SendMoneyModalRoute = (
         try {
             const destChainKey = watch("sendChain");
 
+            // Determine Fee to Match Execution Logic
+            // Backend subtracts Fee from "amount".
+            // Since User pays "amount + Fee" (total), we must simulate "amount + Fee".
+            // Logic must match `useSendMoneyModal.ts` (Execution) and `route.ts` (Backend)
+
+            const isDev = process.env.NODE_ENV === 'development';
+
+            // Assume Cross-Chain (Near usually is).
+            // Same-chain Near is unlikely but handled. 
+            // If destChainKey === sourceChainKey -> 0.01.
+            // Else -> 0.02.
+            const baseFee = (sourceChainKey === destChainKey) ? 0.01 : 0.02;
+            const fee = isDev ? 0 : baseFee;
+
+            const totalAmountToSimulate = (amount + fee).toFixed(6);
+
             const response = await fetch("/api/bridge/quote", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     sourceChain: sourceChainKey,
                     targetChain: destChainKey,
-                    amount: amount.toString(),
+                    amount: totalAmountToSimulate,
                     token: watch("sourceToken") || "USDC", // The destination token requested
                     sourceToken: token // The source token being sent
                 })
@@ -118,6 +134,18 @@ export const SendMoneyModalRoute = (
                     const isNearSupported =
                         sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
                         destConfig?.crossChainInformation?.nearIntentInformation?.support;
+
+                    const isCCTP =
+                        sourceConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                        destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                        (chain.token || "USDC").toUpperCase() === "USDC";
+
+                    // Prevent simulation if CCTP is available (Priority)
+                    if (isCCTP) {
+                        // We might want to clear any existing simulation error/state if it was there?
+                        // But mainly we just don't trigger it.
+                        return;
+                    }
 
                     if (isNearSupported && chain.amount > 0 && !simulationResults[chain.chainId] && !simulating[chain.chainId]) {
                         handleSimulate(chain.chainId, chain.amount, chain.token || "USDC", sourceChainKey);
@@ -304,6 +332,14 @@ export const SendMoneyModalRoute = (
             const isNearSupported =
                 sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
                 destConfig?.crossChainInformation?.nearIntentInformation?.support;
+
+            // Check CCTP (Exempt from simulation)
+            const isCCTP =
+                sourceConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                (r.token || "USDC").toUpperCase() === "USDC";
+
+            if (isCCTP) return false; // CCTP routes don't need simulation check
 
             if (isNearSupported && !isEditing) {
                 if (!simulationResults[r.chainId]) return true; // Block if not simulated
@@ -635,6 +671,15 @@ export const SendMoneyModalRoute = (
                                                         sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
                                                         destConfig?.crossChainInformation?.nearIntentInformation?.support;
 
+                                                    // Check CCTP (Same logic as TokenSelector)
+                                                    const isCCTP =
+                                                        sourceConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                                                        destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                                                        (r.token || "USDC").toUpperCase() === "USDC";
+
+                                                    // If CCTP is supported, don't show Near simulation button
+                                                    if (isCCTP) return null;
+
                                                     if (!isNearSupported || isEditing) return null;
 
                                                     return (
@@ -949,7 +994,8 @@ export const SendMoneyModalRoute = (
                         const allocations = routeSummary?.allocations || [];
                         const destChainId = selected.evm?.chain?.id?.toString() || "";
 
-                        let totalSent = 0;
+                        let totalPrincipal = 0;
+                        let totalFee = 0;
                         let totalReceived = 0;
 
                         allocations.forEach(alloc => {
@@ -962,62 +1008,79 @@ export const SendMoneyModalRoute = (
                                 const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
                                 const calculatedFee = isDev ? 0 : baseFee;
 
-                                totalSent += (c.amount + calculatedFee);
+                                totalPrincipal += c.amount;
+                                totalFee += calculatedFee;
 
                                 // Calculate Received
                                 const sourceChainKey = CHAIN_ID_TO_KEY[c.chainId];
                                 const destChainKey = watch("sendChain");
                                 const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
                                 const destConfig = NETWORKS[destChainKey as keyof typeof NETWORKS];
+
                                 const isNearSupported =
                                     sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
                                     destConfig?.crossChainInformation?.nearIntentInformation?.support;
 
-                                if (isNearSupported) {
+                                // Check CCTP Support
+                                const isCCTP =
+                                    (sourceConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                                        destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP) && isUSDC;
+
+                                if (isCCTP) {
+                                    // CCTP Priority: Assume 1:1 (Principal)
+                                    totalReceived += c.amount;
+                                } else if (isNearSupported) {
                                     // Use simulation result
                                     const simulated = parseFloat(simulationResults[c.chainId] || "0");
                                     totalReceived += simulated;
                                 } else {
-                                    // Assume CCTP/Direct = Amount (1:1)
-                                    // "llega el valor que la persona dijo" -> Amount input
+                                    // Fallback (Direct/Other) -> Assume 1:1
                                     totalReceived += c.amount;
                                 }
                             });
                         });
 
-                        const difference = totalReceived - totalSent;
+                        const totalSentTotal = totalPrincipal + totalFee;
+                        const diff = totalReceived - totalSentTotal;
+                        const isDiffPositive = diff >= 0;
 
                         return (
                             <Stack spacing={1}>
                                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                    <Typography fontSize={12} fontWeight={700} color="#666666" letterSpacing={0.5} textTransform="uppercase">
-                                        Envia
+                                    <Typography variant="body2" fontWeight={700} color="#666666" fontSize={{ xs: 11, sm: 12 }}>
+                                        ENVIA
                                     </Typography>
-                                    <Typography fontWeight={800} fontSize={16} color="#000000">
-                                        {formatCurrency(totalSent, 6)}
+                                    <Typography variant="body2" fontWeight={700} color="#000000" fontSize={{ xs: 12, sm: 13 }}>
+                                        {formatCurrency(totalPrincipal, 6)}
                                     </Typography>
                                 </Stack>
 
                                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                    <Typography fontSize={12} fontWeight={700} color="#666666" letterSpacing={0.5} textTransform="uppercase">
-                                        Recibe (Est.)
+                                    <Typography variant="body2" fontWeight={700} color="#666666" fontSize={{ xs: 11, sm: 12 }}>
+                                        FEE PLATAFORMA
                                     </Typography>
-                                    <Stack direction="row" alignItems="center" spacing={1}>
-                                        <Typography fontWeight={800} fontSize={16} color="#00DC8C">
-                                            {formatCurrency(totalReceived, 6)}
-                                        </Typography>
-                                        <Typography fontWeight={700} fontSize={12} color="#000000">
-                                            {watch("sourceToken") || "USDC"}
-                                        </Typography>
-                                    </Stack>
+                                    <Typography variant="body2" fontWeight={700} color="#ff4444" fontSize={{ xs: 12, sm: 13 }}>
+                                        -{formatCurrency(totalFee, 6)}
+                                    </Typography>
                                 </Stack>
 
-                                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: 1, borderTop: "1px dashed #cccccc" }}>
-                                    <Typography fontSize={12} fontWeight={700} color="#666666" letterSpacing={0.5} textTransform="uppercase">
-                                        Diferencia
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                    <Typography variant="body2" fontWeight={700} color="#666666" fontSize={{ xs: 11, sm: 12 }}>
+                                        RECIBE (EST.)
                                     </Typography>
-                                    <Typography fontWeight={800} fontSize={14} color="#ff4444">
-                                        {difference > 0 ? "+" : ""}{formatCurrency(difference, 6)}
+                                    <Typography variant="body2" fontWeight={700} color="#00DC8C" fontSize={{ xs: 12, sm: 13 }}>
+                                        {formatCurrency(totalReceived, 6)} <span style={{ color: "#000000", fontSize: "11px" }}>USDC</span>
+                                    </Typography>
+                                </Stack>
+
+                                <Divider sx={{ borderStyle: "dashed", borderColor: "#cccccc" }} />
+
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                    <Typography variant="body2" fontWeight={800} color="#666666" fontSize={{ xs: 11, sm: 12 }}>
+                                        DIFERENCIA
+                                    </Typography>
+                                    <Typography variant="body2" fontWeight={700} color={isDiffPositive ? "#00DC8C" : "#ff4444"} fontSize={{ xs: 12, sm: 13 }}>
+                                        {isDiffPositive ? "+" : ""}{formatCurrency(diff, 6)}
                                     </Typography>
                                 </Stack>
                             </Stack>
