@@ -504,14 +504,25 @@ export const useCrossChainTransfer = () => {
 
         setSimulation(prev => ({ ...prev, loading: true, error: null, done: false }));
         try {
+            // Determine Fee logic matching execution
+            const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+            const baseFee = (watchSourceChain === watchDestChain)
+                ? (watchSourceToken !== watchDestToken ? 0.02 : 0.01)
+                : 0.02;
+            const fee = isDev ? 0 : baseFee;
+
+            const amountFloat = parseFloat(watchAmount);
+            const totalAmountToSimulate = (amountFloat + fee).toFixed(6);
+
             const res = await fetch("/api/bridge/quote", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     sourceChain: watchSourceChain,
                     targetChain: watchDestChain,
-                    amount: watchAmount,
-                    token: watchDestToken
+                    amount: totalAmountToSimulate,
+                    token: watchDestToken,
+                    sourceToken: watchSourceToken
                 })
             });
             const data = await res.json();

@@ -71,13 +71,29 @@ export const SendMoneyModalRoute = (
         try {
             const destChainKey = watch("sendChain");
 
+            // Determine Fee to Match Execution Logic
+            // Backend subtracts Fee from "amount".
+            // Since User pays "amount + Fee" (total), we must simulate "amount + Fee".
+            // Logic must match `useSendMoneyModal.ts` (Execution) and `route.ts` (Backend)
+
+            const isDev = process.env.NODE_ENV === 'development';
+
+            // Assume Cross-Chain (Near usually is).
+            // Same-chain Near is unlikely but handled. 
+            // If destChainKey === sourceChainKey -> 0.01.
+            // Else -> 0.02.
+            const baseFee = (sourceChainKey === destChainKey) ? 0.01 : 0.02;
+            const fee = isDev ? 0 : baseFee;
+
+            const totalAmountToSimulate = (amount + fee).toFixed(6);
+
             const response = await fetch("/api/bridge/quote", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     sourceChain: sourceChainKey,
                     targetChain: destChainKey,
-                    amount: amount.toString(),
+                    amount: totalAmountToSimulate,
                     token: watch("sourceToken") || "USDC", // The destination token requested
                     sourceToken: token // The source token being sent
                 })
