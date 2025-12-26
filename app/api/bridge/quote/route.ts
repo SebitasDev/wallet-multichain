@@ -22,6 +22,25 @@ export async function POST(request: NextRequest) {
 
         const netAmountBridged = (amountNum - FEE).toFixed(6);
 
+        if (parseFloat(netAmountBridged) <= 0) {
+            return NextResponse.json({
+                success: false,
+                error: `Monto insuficiente (${amountNum}) para cubrir el fee (${FEE})`
+            }); // 200 OK with success:false to handle gracefully in frontend? 
+            // The frontend logic (SendMoneyModalRoute) handles success:false nicely.
+            // But if we return 400, it throws. Let's return JSON with success:false as per existing pattern line 53 (500) or line 13 (400).
+            // Actually, line 13 returns 400.
+            // SendMoneyModalRoute: 
+            // if (data.success ...)
+            // else setSimulationErrorMessages(...)
+            // So status 400 with success:false is fine if fetch doesn't throw on 400.
+            // Fetch DOES NOT throw on 400 unless you check res.ok.
+            // Let's check SendMoneyModalRoute line 74.
+            // const response = await fetch(...)
+            // const data = await response.json();
+            // It parses JSON regardless of status. So returning { success: false, error: ... } is perfect.
+        }
+
         const dummyEvm = "0x0000000000000000000000000000000000000000";
         // Stellar dummy (Random valid public key)
         const dummyStellar = "GB7BDSZU2Y27LYNLJLVEGW5TIVYQ6362DS5QZ5F6S27S227227227AAA";
