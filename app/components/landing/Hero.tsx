@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Box, Button, Card, Chip, Container, Grid, Stack, Typography } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import TranslateIcon from "@mui/icons-material/Translate";
@@ -5,6 +6,18 @@ import Link from "next/link";
 import { Language, translate, heroContent, languageToggleLabel } from "@/app/landing-translations";
 
 export function Hero({ lang, onToggleLanguage }: { lang: Language; onToggleLanguage: () => void }) {
+    const [stats, setStats] = useState<{ totalTransactions: number; totalVolume: number; transactionsToday: number } | null>(null);
+
+    useEffect(() => {
+        fetch("/api/stats/global")
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.success) {
+                    setStats(data.stats);
+                }
+            })
+            .catch((err) => console.error("Failed to fetch stats", err));
+    }, []);
     return (
         <Box
             component="section"
@@ -124,16 +137,30 @@ export function Hero({ lang, onToggleLanguage }: { lang: Language; onToggleLangu
                                 </Button>
                             </Stack>
                             <Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ pt: 2 }}>
-                                {heroContent.highlights.map((item) => (
-                                    <Box key={item.title.es}>
-                                        <Typography fontWeight={900} color={item.color} fontSize={20}>
-                                            {translate(item.title, lang)}
-                                        </Typography>
-                                        <Typography variant="body2" color="#666666" fontWeight={600}>
-                                            {translate(item.subtitle, lang)}
-                                        </Typography>
-                                    </Box>
-                                ))}
+                                <Box>
+                                    <Typography fontWeight={900} color="#7852FF" fontSize={20}>
+                                        {stats ? stats.totalTransactions.toLocaleString() : "..."}
+                                    </Typography>
+                                    <Typography variant="body2" color="#666666" fontWeight={600}>
+                                        {lang === "es" ? "Transacciones Totales" : "Total Transactions"}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography fontWeight={900} color="#00DC8C" fontSize={20}>
+                                        ${stats ? stats.totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 }) : "..."}
+                                    </Typography>
+                                    <Typography variant="body2" color="#666666" fontWeight={600}>
+                                        {lang === "es" ? "Volumen Total" : "Total Volume"}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography fontWeight={900} color="#28A0F0" fontSize={20}>
+                                        {stats ? stats.transactionsToday.toLocaleString() : "..."}
+                                    </Typography>
+                                    <Typography variant="body2" color="#666666" fontWeight={600}>
+                                        {lang === "es" ? "Transacciones Hoy" : "Transactions Today"}
+                                    </Typography>
+                                </Box>
                             </Stack>
                         </Stack>
                     </Grid>
