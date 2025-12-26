@@ -78,7 +78,7 @@ export const SendMoneyModal = () => {
                 onClose={handleClose}
                 onAction={routeReady ? handleOnConfirm : handleSubmit(handleOnSend as any)}
                 loading={sendLoading}
-                disabled={!canSend || (routeReady && (isEditing || !routeSummary?.allocations?.length || hasBlockingErrors))} // [NEW] Added hasBlockingErrors
+                disabled={!canSend || (routeReady && (isEditing || !routeSummary?.allocations?.length || hasBlockingErrors || routeDetails.some(w => w.chains.some(c => c.status !== 'idle' && c.status !== 'done' && c.status !== 'error'))))} // [NEW] Disable if processing (not idle/done/error)
                 routeReady={routeReady}
             />
         </Dialog>

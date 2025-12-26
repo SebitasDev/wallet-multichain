@@ -30,7 +30,7 @@ export const ARBITRUM: ChainConfig = {
                 supportCCTP: true,
                 domain: 3,
             },
-            aproxFromFee: isDevelopment ? 0.04 : 0.03,
+            aproxFromFee: 0,
         },
         nearIntentInformation: {
             support: true,

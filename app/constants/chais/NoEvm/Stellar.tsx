@@ -31,7 +31,7 @@ export const STELLAR: ChainConfig = {
     crossChainInformation: {
         circleInformation: {
             supportCirclePaymaster: false,
-            aproxFromFee: isDevelopment ? 0.003 : 0.0028
+            aproxFromFee: 0
         },
         nearIntentInformation: {
             support: true,
