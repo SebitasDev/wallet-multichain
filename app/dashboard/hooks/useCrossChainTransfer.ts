@@ -316,6 +316,9 @@ export const useCrossChainTransfer = () => {
     const routeError = useRouteValidation(watchSourceChain, watchDestChain, watchSourceToken, watchDestToken);
 
     const minAmount = useMemo(() => {
+        const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+        if (isDev) return 0.000001; // Minimal amount in dev
+
         if (!isCrossChain) {
             return watchSourceToken === watchDestToken ? 0.01 : 0.02;
         }
