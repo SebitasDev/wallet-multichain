@@ -76,6 +76,7 @@ export interface SettleResponse {
     success: boolean;
     transactionHash?: `0x${string}`;
     burnTransactionHash?: `0x${string}`;
+    mintTransactionHash?: `0x${string}`;
     payer?: Address;
     fee?: string;
     netAmount?: string;
