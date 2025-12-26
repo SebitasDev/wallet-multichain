@@ -88,7 +88,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                     {label}
                 </Typography>
                 <Typography fontWeight={900} fontSize={16} color="#000">
-                    ${payload[0].value.toLocaleString()}
+                    ${payload[0].value.toLocaleString('en-US', { maximumFractionDigits: 6 })}
                 </Typography>
                 <Typography variant="caption" fontWeight={700} color="#00DC8C">
                     En envíos
@@ -229,11 +229,15 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                 <CloseIcon sx={{ color: "#000", fontWeight: "bold", fontSize: 14 }} />
                             </IconButton>
                             <Box display="flex" alignItems="center" justifyContent="flex-end" gap={1}>
-                                <Typography variant="h4" fontWeight={900}>
-                                    ${transaction.amount.toLocaleString('en-US', { maximumFractionDigits: 6 })}
+                                <Typography variant="h4" fontWeight={900} color="#000">
+                                    ${(transaction.type === "RECEIVE"
+                                        ? (transaction.estimatedReceived || transaction.amount)
+                                        : transaction.amount
+                                    ).toLocaleString('en-US', { maximumFractionDigits: 6 })}
                                 </Typography>
-                                <Box display="flex" alignItems="center" gap={0.5} flexDirection="column" mt={0.5}>
-                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10}>
+                                <Box display="flex" alignItems="center" gap={0.5} mt={0.5}>
+                                    <TokenLogo token={transaction.token} size={24} />
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={14}>
                                         {transaction.token}
                                     </Typography>
                                 </Box>
@@ -690,8 +694,8 @@ export default function HistoryListPage() {
                                                 {/* Right: Amount + Status */}
                                                 <Box textAlign="right" flexShrink={0} ml={2}>
                                                     <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
-                                                        <Typography fontWeight={900} fontSize={18} color={tx.type === "SEND" ? "#000" : "#008a57"}>
-                                                            {tx.type === "SEND" ? "-" : "+"}${Number(tx.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}
+                                                        <Typography fontWeight={900} fontSize={18} color={tx.type === "SEND" ? "#FF2E2E" : "#008a57"}>
+                                                            {tx.type === "SEND" ? "-" : "+"}${Number(tx.type === "RECEIVE" ? (tx.estimatedReceived || tx.amount) : tx.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}
                                                         </Typography>
                                                         <TokenLogo token={tx.token} size={20} />
                                                     </Box>
@@ -799,7 +803,7 @@ export default function HistoryListPage() {
                                         </Box>
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
                                             <Typography variant="caption" fontWeight={700} color="#666">TOTAL ENVIADO</Typography>
-                                            <Typography variant="h5" fontWeight={900}>${stats.totalSentAmount.toLocaleString()}</Typography>
+                                            <Typography variant="h5" fontWeight={900} color="#FF2E2E">${stats.totalSentAmount.toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
                                         </Box>
 
                                         {/* RECEIVE STATS */}
@@ -809,13 +813,16 @@ export default function HistoryListPage() {
                                         </Box>
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
                                             <Typography variant="caption" fontWeight={700} color="#666">TOTAL RECIBIDO</Typography>
-                                            <Typography variant="h5" fontWeight={900}>${stats.totalReceivedAmount.toLocaleString()}</Typography>
+                                            <Typography variant="h5" fontWeight={900} color="#008A57">${stats.totalReceivedAmount.toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
                                         </Box>
 
                                         {/* OTHER STATS */}
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
                                             <Typography variant="caption" fontWeight={700} color="#666">TOP COIN</Typography>
-                                            <Typography variant="h5" fontWeight={900}>{stats.mostUsedToken}</Typography>
+                                            <Box display="flex" alignItems="center" gap={1}>
+                                                <Typography variant="h5" fontWeight={900}>{stats.mostUsedToken}</Typography>
+                                                {stats.mostUsedToken !== "N/A" && <TokenLogo token={stats.mostUsedToken} size={28} />}
+                                            </Box>
                                         </Box>
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
                                             <Typography variant="caption" fontWeight={700} color="#666">MAYOR ENVÍO</Typography>
@@ -857,7 +864,7 @@ export default function HistoryListPage() {
                                                 <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f5f5f5', opacity: 0.5 }} />
                                                 <Bar
                                                     dataKey="value"
-                                                    fill="#FF90E8"
+                                                    fill="#FFAB40"
                                                     stroke="#000"
                                                     strokeWidth={2}
                                                     radius={[6, 6, 0, 0]}
