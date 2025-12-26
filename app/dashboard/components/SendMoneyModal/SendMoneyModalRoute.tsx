@@ -395,7 +395,7 @@ export const SendMoneyModalRoute = (
                 </Button>
             </Stack>
 
-            <Stack spacing={2} pb={8}>
+            <Stack spacing={5} pb={8}>
                 {(routeSummary?.allocations || []).map((walletAlloc) => {
                     const currentWallet = wallets.find(w => w.address.toLowerCase() === walletAlloc.from.toLowerCase());
                     const walletName = currentWallet?.name || "Unknown Wallet";
@@ -655,9 +655,28 @@ export const SendMoneyModalRoute = (
                                                         />
                                                     </Box>
                                                 ) : (
-                                                    <Typography fontSize={11} fontWeight={700} color="#666666">
-                                                        Token: {r.token || "USDC"}
-                                                    </Typography>
+                                                    <Box mt={1} display="flex" alignItems="center" gap={1}>
+                                                        {(() => {
+                                                            const tokenSymbol = r.token || "USDC";
+                                                            const asset = chainConfig?.assets?.find((a: any) => a.name === tokenSymbol);
+                                                            return (
+                                                                <Box display="flex" alignItems="center" gap={0.5} sx={{ backgroundColor: "#f0f0f0", px: 1, py: 0.5, borderRadius: 1 }}>
+                                                                    {asset?.icon ? (
+                                                                        typeof asset.icon === 'string' ? (
+                                                                            <Box component="img" src={asset.icon} sx={{ width: 16, height: 16, borderRadius: "50%" }} />
+                                                                        ) : (
+                                                                            <Box sx={{ width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                                {asset.icon}
+                                                                            </Box>
+                                                                        )
+                                                                    ) : null}
+                                                                    <Typography fontSize={11} fontWeight={800} color="#000000">
+                                                                        {tokenSymbol}
+                                                                    </Typography>
+                                                                </Box>
+                                                            );
+                                                        })()}
+                                                    </Box>
                                                 )}
 
                                                 {/* Near Simulation Section */}
