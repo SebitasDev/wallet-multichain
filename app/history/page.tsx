@@ -236,13 +236,6 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                         {transaction.token}
                                     </Typography>
                                 </Box>
-                                {transaction.estimatedReceived && (
-                                    <Box mt={0.5}>
-                                        <Typography variant="caption" color="error" fontWeight={900} fontSize={10} display="block">
-                                            Fee/Diff: -${(transaction.totalAmount - transaction.estimatedReceived).toFixed(4)}
-                                        </Typography>
-                                    </Box>
-                                )}
                             </Box>
                         </Box>
                     </Box>
@@ -280,7 +273,7 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                         </Box>
 
                         {/* CHAIN / HASH Row */}
-                        <Box display="grid" gridTemplateColumns="1fr 1fr">
+                        <Box display="grid" gridTemplateColumns="1fr 1fr" sx={{ borderBottom: "2px solid #000" }}>
                             <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
                                 <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">CHAIN</Typography>
                                 <Box display="flex" alignItems="center" gap={0.5}>
@@ -304,6 +297,28 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                 </Typography>
                             </Box>
                         </Box>
+
+                        {/* FINANCIALS Row (New) */}
+                        {transaction.estimatedReceived && (
+                            <Box display="grid" gridTemplateColumns="1fr 1fr 1fr">
+                                <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">ENVIADO</Typography>
+                                    <Typography fontWeight={800} fontSize={12}>${Number(transaction.amount).toFixed(4)}</Typography>
+                                </Box>
+                                <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">RECIBIDO (EST)</Typography>
+                                    <Typography fontWeight={800} fontSize={12} color="#00DC8C">
+                                        ${Number(transaction.estimatedReceived).toFixed(4)}
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ p: 1.5 }}>
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">DIFERENCIA</Typography>
+                                    <Typography fontWeight={800} fontSize={12} color="error.main">
+                                        -${(transaction.amount - transaction.estimatedReceived).toFixed(4)}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        )}
 
                     </Box>
                 </Box>
@@ -489,7 +504,7 @@ export default function HistoryListPage() {
                             txHash: tx.route?.[0]?.txHash || "",
                             fee: 0,
                             route: tx.route,
-                            route: tx.route,
+                            estimatedReceived: tx.estimatedReceived, // [NEW] Map from API
                             tokenSymbol: tx.tokenSymbol,
                             createdAt: tx.createdAt // [NEW] Needed for filtering by date
                         };
