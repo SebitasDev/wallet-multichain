@@ -30,7 +30,7 @@ export const OPTIMISM: ChainConfig = {
                 supportCCTP: true,
                 domain: 2,
             },
-            aproxFromFee: 0.0025,
+            aproxFromFee: 0,
         },
         nearIntentInformation: {
             support: true,

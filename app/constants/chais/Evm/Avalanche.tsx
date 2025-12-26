@@ -36,7 +36,7 @@ export const AVALANCHE: ChainConfig = {
                 supportCCTP: true,
                 domain: 1,
             },
-            aproxFromFee: 0.02,
+            aproxFromFee: 0,
         },
         nearIntentInformation: {
             support: true,

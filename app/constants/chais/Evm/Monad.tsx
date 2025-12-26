@@ -31,7 +31,7 @@ export const Monad: ChainConfig = {
                 supportCCTP: false,
                 domain: 0,
             },
-            aproxFromFee: isDevelopment ? 0.001 : 0.001,
+            aproxFromFee: 0,
         },
         nearIntentInformation: {
             support: true,

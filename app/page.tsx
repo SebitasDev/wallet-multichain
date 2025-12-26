@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import { Box } from "@mui/material";
 import { Language } from "@/app/landing-translations";
 import { Hero } from "@/app/components/landing/Hero";
 import { Stats } from "@/app/components/landing/Stats";
@@ -35,7 +34,7 @@ export default function Home() {
         });
 
     return (
-        <Box suppressHydrationWarning sx={{ backgroundColor: "#ffffff", color: "#000000", minHeight: "100vh" }}>
+        <main style={{ backgroundColor: "#ffffff", color: "#000000", minHeight: "100vh" }}>
             <Hero lang={lang} onToggleLanguage={toggleLanguage} />
             <Stats lang={lang} />
             <Chains lang={lang} />
@@ -46,6 +45,6 @@ export default function Home() {
             <FAQ lang={lang} />
             <CTA lang={lang} />
             <Footer lang={lang} />
-        </Box>
+        </main>
     );
 }

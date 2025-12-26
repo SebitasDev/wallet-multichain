@@ -649,9 +649,7 @@ export const SendMoneyModalRoute = (
 
                                                                     return allowed.size > 0 ? Array.from(allowed) : undefined;
                                                                 })()}
-                                                                balances={{
-                                                                    [r.token || "USDC"]: chainBalance // Pass known balance. For others it will be hidden.
-                                                                }}
+                                                                balances={currentChainDetail?.tokens || { [r.token || "USDC"]: chainBalance }}
                                                             />
                                                         </Box>
                                                     ) : (

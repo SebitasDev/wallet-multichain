@@ -30,7 +30,7 @@ export const WORLD_CHAIN: ChainConfig = {
                 supportCCTP: true,
                 domain: 14,
             },
-            aproxFromFee: isDevelopment ? 0.003 : 0.036,
+            aproxFromFee: 0,
         },
         nearIntentInformation: null
     }

@@ -380,10 +380,20 @@ export const useSendMoneyModal = () => {
     const maxSendAmount = wallets.reduce((total, wallet) => {
         const walletTotal = wallet.chains.reduce((sum, chain) => {
             const amount = Number(chain.amount);
-            const fee = getOriginFee(chain.chainId);
-            // Logic matching useFindBestRoute:
-            // Available = Amount - 0.01 (buffer) - Fee
-            const available = amount - 0.01 - fee;
+            // Dynamic Fee Calculation
+            const sourceChainKey = CHAIN_ID_TO_KEY[chain.chainId];
+            const destChainKey = watch("sendChain");
+
+            // Default to cross-chain fee (0.02) if unknown, effectively 0.01 if same chain
+            // User requested: "cobro o 0.01 o 0.02"
+            // If source == dest -> 0.01
+            // If source != dest -> 0.02
+            const isSameChain = sourceChainKey === destChainKey;
+            const dynamicMaxFee = isSameChain ? 0.01 : 0.02;
+
+            // We subtract the max possible fee for this specific route consideration
+            // available = Balance - Fee
+            const available = amount - dynamicMaxFee;
 
             return available > 0 ? sum + available : sum;
         }, 0);

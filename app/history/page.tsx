@@ -451,7 +451,7 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
 
 export default function HistoryListPage() {
     const router = useRouter();
-    const { mainWallet } = useXOWalletStore();
+    const { mainWallet, xoWallet } = useXOWalletStore();
     const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
 
     // Pagination State
@@ -472,7 +472,8 @@ export default function HistoryListPage() {
     const [loading, setLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0); // [NEW] Trigger for manual refresh
 
-    const address = mainWallet?.address;
+    // Prioritize XO Wallet address if available, otherwise fallback to Main Wallet
+    const address = xoWallet?.address || mainWallet?.address;
 
     const handleRefresh = () => {
         setLoading(true);

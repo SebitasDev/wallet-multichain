@@ -30,7 +30,7 @@ export const BASE: ChainConfig = {
                 supportCCTP: true,
                 domain: 6,
             },
-            aproxFromFee: isDevelopment ? 0.003 : 0.005,
+            aproxFromFee: 0,
         },
         nearIntentInformation: {
             support: true,

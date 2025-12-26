@@ -14,6 +14,7 @@ import { calculateTotalFees } from "@/app/utils/calculateFees";
 interface ChainInfo {
     chainId: string;
     amount: number;
+    tokens: Record<string, number>; // New storage for individual token balances
 }
 
 export interface WalletInfo {
@@ -90,41 +91,48 @@ export const useWalletStore = create<WalletStore>()(
                             return {
                                 chainId: "unknown",
                                 amount: 0,
+                                tokens: {}
                             };
                         }
 
                         try {
-                            const usdcAsset = network.assets.find(a => a.name === "USDC");
-                            const usdcAddress = usdcAsset?.address;
-                            if (!usdcAddress) {
-                                return {
-                                    chainId: network.evm.chain.id.toString(),
-                                    amount: 0,
-                                };
-                            }
+                            // Initial fetch of USDC (legacy amount) and all tokens
+                            const tokenBalances: Record<string, number> = {};
 
-                            const getBalance = await getBalanceFromChain(
-                                network.evm.chain,
-                                account.address as Address,
-                                usdcAddress as Address,
-                                usdcAsset.decimals // Pass decimals
-                            );
+                            // Iterate over all assets to fetch initial balances
+                            await Promise.all(network.assets.map(async (asset) => {
+                                if (!asset.address) return;
+                                try {
+                                    const { balance } = await getBalanceFromChain(
+                                        network.evm!.chain,
+                                        account.address as Address,
+                                        asset.address as Address,
+                                        asset.decimals
+                                    );
+                                    tokenBalances[asset.name] = Number(balance || 0);
+                                } catch (e) {
+                                    console.error(`Failed to fetch initial balance for ${asset.name} on ${network.label}`, e);
+                                    tokenBalances[asset.name] = 0;
+                                }
+                            }));
 
                             return {
                                 chainId: network.evm.chain.id.toString(),
-                                amount: Number(getBalance.balance || 0),
+                                amount: tokenBalances["USDC"] || 0, // Legacy support
+                                tokens: tokenBalances
                             };
                         } catch (err) {
-                            console.error("Error al obtener balance de", network.label, err);
+                            console.error("Error al obtener balance inicial de", network.label, err);
                             return {
                                 chainId: network.evm.chain.id.toString(),
                                 amount: 0,
+                                tokens: {}
                             };
                         }
                     })
                 );
 
-                // Filter out unknown chains (non-evm in this context)
+                // Filter out unknown chains
                 const validChains = chains.filter(c => c.chainId !== "unknown");
 
                 const newWallet: WalletInfo = {
@@ -183,62 +191,58 @@ export const useWalletStore = create<WalletStore>()(
 
                 const updatedWallets = await Promise.all(
                     wallets.map(async (wallet) => {
-                        // Create a map of existing chains for easy lookup
                         const existingChainsMap = new Map(
                             wallet.chains.map((c) => [c.chainId, c])
                         );
 
-                        // Iterate over ALL configured networks to ensure wallet has them all
                         const chainsOrNulls = await Promise.all(
                             networks.map(async (network) => {
-                                // Skip non-EVM or invalid configs
                                 if (!network.evm) return null;
 
                                 const chainId = network.evm.chain.id.toString();
                                 const existingChain = existingChainsMap.get(chainId);
-
-                                // If existing, we update its balance. If not, we create it.
                                 const currentAmount = existingChain ? existingChain.amount : 0;
+                                const currentTokens = existingChain ? existingChain.tokens : {};
 
                                 try {
-                                    const usdcAsset = network.assets.find(a => a.name === "USDC");
-                                    const usdcAddress = usdcAsset?.address;
+                                    const tokenBalances: Record<string, number> = { ...currentTokens };
 
-                                    // If no USDC address, we can't fetch balance, return existing or 0
-                                    if (!usdcAddress) {
-                                        return {
-                                            chainId,
-                                            amount: currentAmount,
-                                        };
-                                    }
-
-                                    const { balance } = await getBalanceFromChain(
-                                        network.evm.chain,
-                                        wallet.address as Address,
-                                        usdcAddress as Address,
-                                        usdcAsset.decimals // Pass decimals
-                                    );
+                                    // Iterate all assets
+                                    await Promise.all(network.assets.map(async (asset) => {
+                                        if (!asset.address) return;
+                                        try {
+                                            const { balance } = await getBalanceFromChain(
+                                                network.evm!.chain,
+                                                wallet.address as Address,
+                                                asset.address as Address,
+                                                asset.decimals
+                                            );
+                                            tokenBalances[asset.name] = Number(balance || 0);
+                                        } catch (e) {
+                                            // If update fails, keep old value or 0
+                                            // console.warn(`Failed to update balance for ${asset.name} on ${network.label}`, e);
+                                        }
+                                    }));
 
                                     return {
                                         chainId,
-                                        amount: Number(balance || 0),
+                                        amount: tokenBalances["USDC"] || 0, // Update legacy amount with fresh USDC balance
+                                        tokens: tokenBalances
                                     };
                                 } catch (err) {
                                     console.error(
                                         `Error al actualizar balance de ${wallet.name} en chain ${chainId}`,
                                         err
                                     );
-                                    // On error, keep existing amount or 0
                                     return {
                                         chainId,
                                         amount: currentAmount,
+                                        tokens: currentTokens
                                     };
                                 }
                             })
                         );
 
-                        // Filter out nulls (non-EVM networks)
-                        // This ensures every wallet has exactly one entry per configured EVM network
                         return {
                             ...wallet,
                             chains: chainsOrNulls.filter((c): c is ChainInfo => c !== null)
@@ -332,9 +336,9 @@ export const useWalletStore = create<WalletStore>()(
                         // Get fee from config, or default to 0.003 if not found/configured
                         const fee = networkConfig?.crossChainInformation?.circleInformation?.aproxFromFee ?? 0.003;
 
-                        // Calculate usable amount: Balance - Buffer(0.01) - Fee
-                        // If negative, it contributes 0 to the total
-                        const usableAmount = Math.max(0, c.amount - 0.01 - fee);
+                        // Calculate usable amount: Balance - Fee (now 0)
+                        // User requested to see full balance. Dynamic fee applied at Send.
+                        const usableAmount = Math.max(0, c.amount - fee);
 
                         return chainAcc + usableAmount;
                     }, 0);
