@@ -1,0 +1,129 @@
+
+> my-app@0.1.0 build
+> next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\tiago\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\tiago\wallet-multichain\pnpm-lock.yaml
+
+   ▲ Next.js 16.0.7 (Turbopack)
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 4 errors:
+./wallet-multichain/app/common-people/components/AssetModal.tsx:2:1
+Module not found: Can't resolve '@heroicons/react/24/outline'
+[0m [90m 1 |[39m
+[31m[1m>[22m[39m[90m 2 |[39m [36mimport[39m { [33mXMarkIcon[39m } [36mfrom[39m [32m"@heroicons/react/24/outline"[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 3 |[39m [36mimport[39m { [33mChainData[39m } [36mfrom[39m [32m"./ChainCard"[39m[33m;[39m
+ [90m 4 |[39m
+ [90m 5 |[39m [36minterface[39m [33mAssetModalProps[39m {[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./wallet-multichain/app/common-people/components/AssetModal.tsx [Client Component Browser]
+    ./wallet-multichain/app/common-people/components/ChainGrid.tsx [Client Component Browser]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Client Component Browser]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./wallet-multichain/app/common-people/components/AssetModal.tsx [Client Component SSR]
+    ./wallet-multichain/app/common-people/components/ChainGrid.tsx [Client Component SSR]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Client Component SSR]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./wallet-multichain/app/common-people/components/ChainCard.tsx:2:1
+Module not found: Can't resolve '@heroicons/react/24/outline'
+[0m [90m 1 |[39m
+[31m[1m>[22m[39m[90m 2 |[39m [36mimport[39m { [33mChevronDownIcon[39m } [36mfrom[39m [32m"@heroicons/react/24/outline"[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 3 |[39m
+ [90m 4 |[39m [36mexport[39m [36minterface[39m [33mAsset[39m {
+ [90m 5 |[39m     symbol[33m:[39m string[33m;[39m[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./wallet-multichain/app/common-people/components/ChainCard.tsx [Client Component Browser]
+    ./wallet-multichain/app/common-people/components/ChainGrid.tsx [Client Component Browser]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Client Component Browser]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./wallet-multichain/app/common-people/components/ChainCard.tsx [Client Component SSR]
+    ./wallet-multichain/app/common-people/components/ChainGrid.tsx [Client Component SSR]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Client Component SSR]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./wallet-multichain/app/common-people/components/TransactionHistory.tsx:2:1
+Module not found: Can't resolve '@heroicons/react/24/outline'
+[0m [90m 1 |[39m
+[31m[1m>[22m[39m[90m 2 |[39m [36mimport[39m { [33mArrowUpRightIcon[39m[33m,[39m [33mArrowDownLeftIcon[39m } [36mfrom[39m [32m"@heroicons/react/24/outline"[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 3 |[39m
+ [90m 4 |[39m [36mexport[39m [36mfunction[39m [33mTransactionHistory[39m() {
+ [90m 5 |[39m     [36mconst[39m transactions [33m=[39m [[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./wallet-multichain/app/common-people/components/TransactionHistory.tsx [Client Component Browser]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Client Component Browser]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./wallet-multichain/app/common-people/components/TransactionHistory.tsx [Client Component SSR]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Client Component SSR]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./wallet-multichain/app/common-people/components/WalletHeader.tsx:1:1
+Module not found: Can't resolve '@heroicons/react/24/outline'
+[0m[31m[1m>[22m[39m[90m 1 |[39m [36mimport[39m { [33mArrowDownIcon[39m[33m,[39m [33mArrowUpIcon[39m } [36mfrom[39m [32m"@heroicons/react/24/outline"[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 2 |[39m
+ [90m 3 |[39m [36mexport[39m [36mfunction[39m [33mWalletHeader[39m() {
+ [90m 4 |[39m     [36mreturn[39m ([0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./wallet-multichain/app/common-people/components/WalletHeader.tsx [Client Component Browser]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Client Component Browser]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./wallet-multichain/app/common-people/components/WalletHeader.tsx [Client Component SSR]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Client Component SSR]
+    ./wallet-multichain/app/common-people/dashboard/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (./wallet-multichain/app/common-people/components/AssetModal.tsx:2:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./wallet-multichain/app/common-people/components/ChainCard.tsx:2:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./wallet-multichain/app/common-people/components/TransactionHistory.tsx:2:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./wallet-multichain/app/common-people/components/WalletHeader.tsx:1:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)

@@ -331,8 +331,8 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                 {/* Sub-Transactions / Route */}
                 {transaction.route && transaction.route.length > 0 && (
                     <>
-                        <Box sx={{ bgcolor: "#FFD700", p: 1, borderBottom: "2.5px solid #000", borderTop: "3px solid #000" }}>
-                            <Typography fontWeight={900} textTransform="uppercase" fontSize={11} letterSpacing={1} textAlign="center">
+                        <Box sx={{ bgcolor: "#FFD700", p: 2, borderBottom: "3px solid #000", borderTop: "3px solid #000" }}>
+                            <Typography fontWeight={900} textTransform="uppercase" fontSize={16} letterSpacing={2} textAlign="center">
                                 Ruta de Ejecución
                             </Typography>
                         </Box>
@@ -346,19 +346,19 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                         {visibleSteps.map((step: any, index: number) => {
                                             return (
                                                 <Box key={index} sx={{ borderBottom: "1px solid #eee" }}>
-                                                    <Box sx={{ p: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between", "&:hover": { bgcolor: "#fff9c4" } }}>
+                                                    <Box sx={{ p: 2.5, display: "flex", alignItems: "center", justifyContent: "space-between", "&:hover": { bgcolor: "#fff9c4" } }}>
                                                         <Box display="flex" alignItems="center" gap={1.5}>
                                                             {/* Step Number */}
                                                             <Box
                                                                 sx={{
-                                                                    width: 20, height: 20,
+                                                                    width: 32, height: 32,
                                                                     borderRadius: "50%",
                                                                     bgcolor: "#3CD2FF",
-                                                                    border: "2px solid #000",
+                                                                    border: "2.5px solid #000",
                                                                     display: "flex", alignItems: "center", justifyContent: "center",
                                                                     fontWeight: 900,
-                                                                    fontSize: 10,
-                                                                    boxShadow: "1px 1px 0px #000",
+                                                                    fontSize: 16,
+                                                                    boxShadow: "2px 2px 0px #000",
                                                                     flexShrink: 0
                                                                 }}
                                                             >
@@ -369,11 +369,11 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                                             <Box>
                                                                 <Box display="flex" alignItems="center" gap={0.5}>
                                                                     <ChainLogo chain={step.chainName} />
-                                                                    <Typography fontWeight={800} fontSize={13}>
+                                                                    <Typography fontWeight={900} fontSize={18}>
                                                                         {step.chainName}
                                                                     </Typography>
                                                                 </Box>
-                                                                <Typography variant="caption" fontWeight={600} fontFamily="monospace" color="#666" fontSize={10}>
+                                                                <Typography variant="caption" fontWeight={700} fontFamily="monospace" color="#666" fontSize={13}>
                                                                     {step.txHash ? (
                                                                         <a
                                                                             href={getExplorerUrl(step.chainName, step.txHash)}
@@ -393,7 +393,7 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                                         {/* Right Side: Status & Amount */}
                                                         <Box textAlign="right" display="flex" flexDirection="column" alignItems="flex-end" gap={0.5}>
                                                             <Box display="flex" alignItems="center" gap={0.5}>
-                                                                <Typography fontWeight={800} fontSize={13}>${step.amount}</Typography>
+                                                                <Typography fontWeight={900} fontSize={18}>${step.amount}</Typography>
                                                                 {step.assetOrigin && (
                                                                     <TokenLogo token={step.assetOrigin} size={16} />
                                                                 )}
@@ -404,10 +404,10 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                                                 sx={{
                                                                     bgcolor: step.status === "SUCCESS" ? "#00DC8C" : "#FFD700",
                                                                     fontWeight: 900,
-                                                                    border: "1.5px solid #000",
-                                                                    fontSize: 8,
-                                                                    height: 16,
-                                                                    px: 0.5
+                                                                    border: "2px solid #000",
+                                                                    fontSize: 11,
+                                                                    height: 24,
+                                                                    px: 1
                                                                 }}
                                                             />
                                                         </Box>
