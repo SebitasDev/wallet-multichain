@@ -404,380 +404,381 @@ export const SendMoneyModalRoute = (
                     const walletDetail = routeDetails.find(w => w.wallet.toLowerCase() === walletAlloc.from.toLowerCase());
 
                     return (
-                        <Accordion
-                            key={walletAlloc.from}
-                            disableGutters
-                            elevation={0}
-                            defaultExpanded={true}
-                            sx={{
-                                backgroundColor: "#ffffff",
-                                borderRadius: 3,
-                                border: "2px solid #000000",
-                                overflow: "hidden",
-                                "&::before": { display: "none" },
-                                "&.Mui-expanded": {
-                                    margin: 0,
-                                },
-                            }}
-                        >
-                            <AccordionSummary
-                                expandIcon={<ExpandMoreIcon sx={{ color: "#000000" }} />}
+                        <Box key={walletAlloc.from}>
+                            <Accordion
+                                disableGutters
+                                elevation={0}
+                                defaultExpanded={true}
                                 sx={{
-                                    minHeight: { xs: 48, sm: 56 },
-                                    px: { xs: 1.5, sm: 2 },
+                                    backgroundColor: "#ffffff",
+                                    borderRadius: 3,
+                                    border: "2px solid #000000",
+                                    overflow: "hidden",
+                                    "&::before": { display: "none" },
                                     "&.Mui-expanded": {
-                                        minHeight: { xs: 48, sm: 56 },
-                                        borderBottom: "2px solid #000000",
+                                        margin: 0,
                                     },
                                 }}
                             >
-                                {/* Header Content */}
-                                <Stack
-                                    direction="row"
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                    sx={{ width: "100%", pr: { xs: 0.5, sm: 1 }, minWidth: 0 }}
-                                    spacing={{ xs: 1, sm: 2 }}
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon sx={{ color: "#000000" }} />}
+                                    sx={{
+                                        minHeight: { xs: 48, sm: 56 },
+                                        px: { xs: 1.5, sm: 2 },
+                                        "&.Mui-expanded": {
+                                            minHeight: { xs: 48, sm: 56 },
+                                            borderBottom: "2px solid #000000",
+                                        },
+                                    }}
                                 >
-                                    <Box flex={1} minWidth={0} display="flex" alignItems="center" gap={1}>
-                                        {isEditing && (
-                                            <Box
-                                                component="span"
-                                                role="button"
-                                                onClick={(e: React.MouseEvent) => {
-                                                    e.stopPropagation(); // Prevent accordion toggle
-                                                    handleRemoveWallet(walletAlloc.from);
-                                                }}
-                                                sx={{
-                                                    color: "#ff4444",
-                                                    p: 0.5,
-                                                    mr: 0.5,
-                                                    cursor: "pointer",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    "&:hover": { opacity: 0.7 }
-                                                }}
-                                            >
-                                                <DeleteIcon fontSize="small" />
-                                            </Box>
-                                        )}
-                                        <Box overflow="hidden">
+                                    {/* Header Content */}
+                                    <Stack
+                                        direction="row"
+                                        alignItems="center"
+                                        justifyContent="space-between"
+                                        sx={{ width: "100%", pr: { xs: 0.5, sm: 1 }, minWidth: 0 }}
+                                        spacing={{ xs: 1, sm: 2 }}
+                                    >
+                                        <Box flex={1} minWidth={0} display="flex" alignItems="center" gap={1}>
+                                            {isEditing && (
+                                                <Box
+                                                    component="span"
+                                                    role="button"
+                                                    onClick={(e: React.MouseEvent) => {
+                                                        e.stopPropagation(); // Prevent accordion toggle
+                                                        handleRemoveWallet(walletAlloc.from);
+                                                    }}
+                                                    sx={{
+                                                        color: "#ff4444",
+                                                        p: 0.5,
+                                                        mr: 0.5,
+                                                        cursor: "pointer",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        "&:hover": { opacity: 0.7 }
+                                                    }}
+                                                >
+                                                    <DeleteIcon fontSize="small" />
+                                                </Box>
+                                            )}
+                                            <Box overflow="hidden">
 
+                                                <Typography
+                                                    fontWeight={800}
+                                                    fontSize={{ xs: 13, sm: 14 }}
+                                                    color="#000000"
+                                                    sx={{
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                        whiteSpace: "nowrap"
+                                                    }}
+                                                >
+                                                    {walletName}
+                                                </Typography>
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        color: "#666666",
+                                                        fontWeight: 600,
+                                                        fontSize: { xs: 11, sm: 12 },
+                                                        fontFamily: "monospace"
+                                                    }}
+                                                    title={walletAlloc.from}
+                                                >
+                                                    {shortAddress}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                        <Box textAlign="right" flexShrink={0}>
                                             <Typography
-                                                fontWeight={800}
-                                                fontSize={{ xs: 13, sm: 14 }}
-                                                color="#000000"
-                                                sx={{
-                                                    overflow: "hidden",
-                                                    textOverflow: "ellipsis",
-                                                    whiteSpace: "nowrap"
-                                                }}
-                                            >
-                                                {walletName}
-                                            </Typography>
-                                            <Typography
-                                                variant="body2"
+                                                fontSize={{ xs: 10, sm: 11 }}
                                                 sx={{
                                                     color: "#666666",
-                                                    fontWeight: 600,
-                                                    fontSize: { xs: 11, sm: 12 },
-                                                    fontFamily: "monospace"
+                                                    fontWeight: 700,
+                                                    textTransform: "uppercase",
+                                                    letterSpacing: 0.5
                                                 }}
-                                                title={walletAlloc.from}
                                             >
-                                                {shortAddress}
+                                                Total
+                                            </Typography>
+                                            <Typography
+                                                fontWeight={800}
+                                                fontSize={{ xs: 13, sm: 15 }}
+                                                color="#000000"
+                                            >
+                                                {formatCurrency(
+                                                    walletAlloc.chains.reduce((acc: number, c: any) => {
+                                                        const isDev = process.env.NODE_ENV === 'development';
+                                                        const destChainId = selected.evm?.chain?.id?.toString() || "";
+                                                        const isSameChain = destChainId === c.chainId;
+                                                        const isUSDC = (c.token || "USDC").toUpperCase() === "USDC";
+                                                        const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
+                                                        const fee = isDev ? 0 : baseFee;
+                                                        return acc + c.amount + fee;
+                                                    }, 0),
+                                                    6
+                                                )}
                                             </Typography>
                                         </Box>
-                                    </Box>
-                                    <Box textAlign="right" flexShrink={0}>
-                                        <Typography
-                                            fontSize={{ xs: 10, sm: 11 }}
-                                            sx={{
-                                                color: "#666666",
-                                                fontWeight: 700,
-                                                textTransform: "uppercase",
-                                                letterSpacing: 0.5
-                                            }}
-                                        >
-                                            Total
-                                        </Typography>
-                                        <Typography
-                                            fontWeight={800}
-                                            fontSize={{ xs: 13, sm: 15 }}
-                                            color="#000000"
-                                        >
-                                            {formatCurrency(
-                                                walletAlloc.chains.reduce((acc: number, c: any) => {
-                                                    const isDev = process.env.NODE_ENV === 'development';
-                                                    const destChainId = selected.evm?.chain?.id?.toString() || "";
-                                                    const isSameChain = destChainId === c.chainId;
-                                                    const isUSDC = (c.token || "USDC").toUpperCase() === "USDC";
-                                                    const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
-                                                    const fee = isDev ? 0 : baseFee;
-                                                    return acc + c.amount + fee;
-                                                }, 0),
-                                                6
-                                            )}
-                                        </Typography>
-                                    </Box>
-                                </Stack>
-                            </AccordionSummary>
-                            <AccordionDetails sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: "#f5f5f5" }}>
-                                <Stack spacing={1.5}>
-                                    {walletAlloc.chains.map((r: any) => {
-                                        const chainKey = CHAIN_ID_TO_KEY[r.chainId];
-                                        const chainConfig = NETWORKS[chainKey as keyof typeof NETWORKS] || {};
-                                        const label = (chainConfig as any).label || "Chain " + r.chainId;
+                                    </Stack>
+                                </AccordionSummary>
+                                <AccordionDetails sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: "#f5f5f5" }}>
+                                    <Stack spacing={1.5}>
+                                        {walletAlloc.chains.map((r: any) => {
+                                            const chainKey = CHAIN_ID_TO_KEY[r.chainId];
+                                            const chainConfig = NETWORKS[chainKey as keyof typeof NETWORKS] || {};
+                                            const label = (chainConfig as any).label || "Chain " + r.chainId;
 
-                                        // Status logic
-                                        const existingDetail = walletDetail?.chains.find((c: any) => c.id === r.chainId);
-                                        const status = existingDetail?.status || 'idle';
-                                        const statusMeta = STATUS_META[status as keyof typeof STATUS_META];
+                                            // Status logic
+                                            const existingDetail = walletDetail?.chains.find((c: any) => c.id === r.chainId);
+                                            const status = existingDetail?.status || 'idle';
+                                            const statusMeta = STATUS_META[status as keyof typeof STATUS_META];
 
-                                        // Validations
-                                        const currentWallet = wallets.find(w => w.address.toLowerCase() === walletAlloc.from.toLowerCase());
-                                        const currentChainDetail = currentWallet?.chains.find(c => {
-                                            const cId = (c.value || c.chainId || c.id || "").toString();
-                                            return cId === r.chainId;
-                                        });
-                                        const chainBalance = currentChainDetail?.amount || 0;
-                                        const destChainId = selected.evm?.chain?.id?.toString() || "";
-                                        const isSameChain = destChainId === r.chainId;
-                                        const isUSDC = (r.token || "USDC").toUpperCase() === "USDC"; // Default USDC if no token
+                                            // Validations
+                                            const currentWallet = wallets.find(w => w.address.toLowerCase() === walletAlloc.from.toLowerCase());
+                                            const currentChainDetail = currentWallet?.chains.find(c => {
+                                                const cId = (c.value || c.chainId || c.id || "").toString();
+                                                return cId === r.chainId;
+                                            });
+                                            const chainBalance = currentChainDetail?.amount || 0;
+                                            const destChainId = selected.evm?.chain?.id?.toString() || "";
+                                            const isSameChain = destChainId === r.chainId;
+                                            const isUSDC = (r.token || "USDC").toUpperCase() === "USDC"; // Default USDC if no token
 
-                                        const fee = (isSameChain && isUSDC) ? 0.01 : 0.02;
-                                        const maxUsable = Math.max(0, chainBalance - fee);
+                                            const fee = (isSameChain && isUSDC) ? 0.01 : 0.02;
+                                            const maxUsable = Math.max(0, chainBalance - fee);
 
-                                        return (
-                                            <Box
-                                                key={r.chainId}
-                                                sx={{
-                                                    p: { xs: 1.5, sm: 2 },
-                                                    borderRadius: 3,
-                                                    backgroundColor: "#ffffff",
-                                                    border: "2px solid #000000",
-                                                    position: "relative"
-                                                }}
-                                            >
-                                                {isEditing && (
-                                                    <IconButton
-                                                        onClick={() => handleRemoveChain(walletAlloc.from, r.chainId)}
-                                                        sx={{
-                                                            position: "absolute",
-                                                            top: 5,
-                                                            right: 5,
-                                                            color: "#ff4444"
-                                                        }}
-                                                        size="small"
-                                                    >
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                )}
-
-                                                <Stack
-                                                    direction="row"
-                                                    alignItems="center"
-                                                    justifyContent="space-between"
-                                                    mb={1.5}
-                                                    spacing={1}
-                                                    sx={{ minWidth: 0, pr: isEditing ? 3 : 0 }}
+                                            return (
+                                                <Box
+                                                    key={r.chainId}
+                                                    sx={{
+                                                        p: { xs: 1.5, sm: 2 },
+                                                        borderRadius: 3,
+                                                        backgroundColor: "#ffffff",
+                                                        border: "2px solid #000000",
+                                                        position: "relative"
+                                                    }}
                                                 >
-                                                    <Stack direction="row" alignItems="center" spacing={1} flex={1} minWidth={0}>
-                                                        {existingDetail?.icon}
-                                                        <Typography fontWeight={800} fontSize={14}>
-                                                            {label}
-                                                        </Typography>
-                                                    </Stack>
+                                                    {isEditing && (
+                                                        <IconButton
+                                                            onClick={() => handleRemoveChain(walletAlloc.from, r.chainId)}
+                                                            sx={{
+                                                                position: "absolute",
+                                                                top: 5,
+                                                                right: 5,
+                                                                color: "#ff4444"
+                                                            }}
+                                                            size="small"
+                                                        >
+                                                            <DeleteIcon fontSize="small" />
+                                                        </IconButton>
+                                                    )}
 
-                                                    {isEditing ? (
-                                                        <Stack direction="column" alignItems="flex-end" spacing={0.5}>
-                                                            <TextField
-                                                                size="small"
-                                                                type="number"
-                                                                value={r.amount}
-                                                                onChange={(e) => {
-                                                                    const val = parseFloat(e.target.value);
-                                                                    if (val > maxUsable) {
-                                                                        handleAmountChange(walletAlloc.from, r.chainId, maxUsable.toString());
-                                                                    } else {
-                                                                        handleAmountChange(walletAlloc.from, r.chainId, e.target.value);
-                                                                    }
-                                                                }}
-                                                                inputProps={{ max: maxUsable, step: "any" }}
-                                                                error={r.amount > maxUsable}
-                                                                sx={{ width: 140 }}
-                                                            />
-                                                            <Typography fontSize={10} color="#999999" fontWeight={600}>
-                                                                Max: {formatCurrency(maxUsable, 6)}
+                                                    <Stack
+                                                        direction="row"
+                                                        alignItems="center"
+                                                        justifyContent="space-between"
+                                                        mb={1.5}
+                                                        spacing={1}
+                                                        sx={{ minWidth: 0, pr: isEditing ? 3 : 0 }}
+                                                    >
+                                                        <Stack direction="row" alignItems="center" spacing={1} flex={1} minWidth={0}>
+                                                            {existingDetail?.icon}
+                                                            <Typography fontWeight={800} fontSize={14}>
+                                                                {label}
                                                             </Typography>
                                                         </Stack>
-                                                    ) : (
-                                                        <Typography fontWeight={800} fontSize={15}>
-                                                            {formatCurrency(r.amount, 6)}
-                                                        </Typography>
-                                                    )}
-                                                </Stack>
 
-                                                {/* Edit Token Selector */}
-                                                {isEditing && chainKey ? (
-                                                    <Box mt={2}>
-                                                        <Typography fontSize={11} fontWeight={700} color="#666666" mb={0.5}>
-                                                            TOKEN A ENVIAR
-                                                        </Typography>
-                                                        <TokenSelector
-                                                            label=""
-                                                            name={`token_${walletAlloc.from}_${r.chainId}` as any}
-                                                            control={control as any}
-                                                            chain={chainKey as any}
-                                                            onChange={(val: string) => handleTokenChange(walletAlloc.from, r.chainId, val)}
-                                                            allowedTokens={(() => {
-                                                                const source = chainConfig as any;
-                                                                const dest = selected;
+                                                        {isEditing ? (
+                                                            <Stack direction="column" alignItems="flex-end" spacing={0.5}>
+                                                                <TextField
+                                                                    size="small"
+                                                                    type="number"
+                                                                    value={r.amount}
+                                                                    onChange={(e) => {
+                                                                        const val = parseFloat(e.target.value);
+                                                                        if (val > maxUsable) {
+                                                                            handleAmountChange(walletAlloc.from, r.chainId, maxUsable.toString());
+                                                                        } else {
+                                                                            handleAmountChange(walletAlloc.from, r.chainId, e.target.value);
+                                                                        }
+                                                                    }}
+                                                                    inputProps={{ max: maxUsable, step: "any" }}
+                                                                    error={r.amount > maxUsable}
+                                                                    sx={{ width: 140 }}
+                                                                />
+                                                                <Typography fontSize={10} color="#999999" fontWeight={600}>
+                                                                    Max: {formatCurrency(maxUsable, 6)}
+                                                                </Typography>
+                                                            </Stack>
+                                                        ) : (
+                                                            <Typography fontWeight={800} fontSize={15}>
+                                                                {formatCurrency(r.amount, 6)}
+                                                            </Typography>
+                                                        )}
+                                                    </Stack>
 
-                                                                const hasCctp = source.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
-                                                                    dest.evm && // Dest must be EVM for CCTP here? Or just check circle info
-                                                                    dest.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
+                                                    {/* Edit Token Selector */}
+                                                    {isEditing && chainKey ? (
+                                                        <Box mt={2}>
+                                                            <Typography fontSize={11} fontWeight={700} color="#666666" mb={0.5}>
+                                                                TOKEN A ENVIAR
+                                                            </Typography>
+                                                            <TokenSelector
+                                                                label=""
+                                                                name={`token_${walletAlloc.from}_${r.chainId}` as any}
+                                                                control={control as any}
+                                                                chain={chainKey as any}
+                                                                onChange={(val: string) => handleTokenChange(walletAlloc.from, r.chainId, val)}
+                                                                allowedTokens={(() => {
+                                                                    const source = chainConfig as any;
+                                                                    const dest = selected;
 
-                                                                const hasNear = source.crossChainInformation?.nearIntentInformation?.support &&
-                                                                    dest.crossChainInformation?.nearIntentInformation?.support;
+                                                                    const hasCctp = source.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                                                                        dest.evm && // Dest must be EVM for CCTP here? Or just check circle info
+                                                                        dest.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
 
-                                                                const allowed = new Set<string>();
-                                                                if (hasCctp) allowed.add("USDC");
-                                                                if (hasNear) {
-                                                                    source.crossChainInformation?.nearIntentInformation?.assetsId?.forEach((a: any) => allowed.add(a.name));
-                                                                }
+                                                                    const hasNear = source.crossChainInformation?.nearIntentInformation?.support &&
+                                                                        dest.crossChainInformation?.nearIntentInformation?.support;
 
-                                                                return allowed.size > 0 ? Array.from(allowed) : undefined;
-                                                            })()}
-                                                            balances={{
-                                                                [r.token || "USDC"]: chainBalance // Pass known balance. For others it will be hidden.
-                                                            }}
-                                                        />
-                                                    </Box>
-                                                ) : (
-                                                    <Box mt={1} display="flex" alignItems="center" gap={1}>
-                                                        {(() => {
-                                                            const tokenSymbol = r.token || "USDC";
-                                                            const asset = chainConfig?.assets?.find((a: any) => a.name === tokenSymbol);
-                                                            return (
-                                                                <Box display="flex" alignItems="center" gap={0.5} sx={{ backgroundColor: "#f0f0f0", px: 1, py: 0.5, borderRadius: 1 }}>
-                                                                    {asset?.icon ? (
-                                                                        typeof asset.icon === 'string' ? (
-                                                                            <Box component="img" src={asset.icon} sx={{ width: 16, height: 16, borderRadius: "50%" }} />
-                                                                        ) : (
-                                                                            <Box sx={{ width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                                                                {asset.icon}
-                                                                            </Box>
-                                                                        )
-                                                                    ) : null}
-                                                                    <Typography fontSize={11} fontWeight={800} color="#000000">
-                                                                        {tokenSymbol}
-                                                                    </Typography>
-                                                                </Box>
-                                                            );
-                                                        })()}
-                                                    </Box>
-                                                )}
+                                                                    const allowed = new Set<string>();
+                                                                    if (hasCctp) allowed.add("USDC");
+                                                                    if (hasNear) {
+                                                                        source.crossChainInformation?.nearIntentInformation?.assetsId?.forEach((a: any) => allowed.add(a.name));
+                                                                    }
 
-                                                {/* Near Simulation Section */}
-                                                {(() => {
-                                                    const sourceChainKey = CHAIN_ID_TO_KEY[r.chainId];
-                                                    const destChainKey = watch("sendChain");
-                                                    const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
-                                                    const destConfig = NETWORKS[destChainKey as keyof typeof NETWORKS];
-
-                                                    const isNearSupported =
-                                                        sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
-                                                        destConfig?.crossChainInformation?.nearIntentInformation?.support;
-
-                                                    // Check CCTP (Same logic as TokenSelector)
-                                                    const isCCTP =
-                                                        sourceConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
-                                                        destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
-                                                        (r.token || "USDC").toUpperCase() === "USDC";
-
-                                                    // If CCTP is supported, don't show Near simulation button
-                                                    if (isCCTP) return null;
-
-                                                    if (!isNearSupported || isEditing) return null;
-
-                                                    return (
-                                                        <Box mt={1} display="flex" alignItems="center" gap={1}>
-                                                            <Button
-                                                                size="small"
-                                                                variant="outlined"
-                                                                disabled={simulating[r.chainId] || !r.amount || r.amount <= 0}
-                                                                onClick={() => handleSimulate(r.chainId, r.amount, r.token, sourceChainKey)}
-                                                                sx={{
-                                                                    fontSize: 10,
-                                                                    py: 0.2,
-                                                                    minWidth: "auto",
-                                                                    textTransform: "none",
-                                                                    height: 24,
-                                                                    borderColor: "#666",
-                                                                    color: "#333"
+                                                                    return allowed.size > 0 ? Array.from(allowed) : undefined;
+                                                                })()}
+                                                                balances={{
+                                                                    [r.token || "USDC"]: chainBalance // Pass known balance. For others it will be hidden.
                                                                 }}
-                                                            >
-                                                                {simulating[r.chainId] ? <CircularProgress size={12} /> : "Simular"}
-                                                            </Button>
-                                                            {simulationErrorMessages[r.chainId] ? (
-                                                                <Typography fontSize={11} color="error.main" fontWeight={600}>
-                                                                    {simulationErrorMessages[r.chainId]}
-                                                                </Typography>
-                                                            ) : simulationResults[r.chainId] ? (
-                                                                <Typography fontSize={11} color="success.main" fontWeight={600}>
-                                                                    Recibes: {simulationResults[r.chainId]} {watch("sourceToken")}
-                                                                </Typography>
-                                                            ) : null}
+                                                            />
                                                         </Box>
-                                                    );
-                                                })()}
+                                                    ) : (
+                                                        <Box mt={1} display="flex" alignItems="center" gap={1}>
+                                                            {(() => {
+                                                                const tokenSymbol = r.token || "USDC";
+                                                                const asset = chainConfig?.assets?.find((a: any) => a.name === tokenSymbol);
+                                                                return (
+                                                                    <Box display="flex" alignItems="center" gap={0.5} sx={{ backgroundColor: "#f0f0f0", px: 1, py: 0.5, borderRadius: 1 }}>
+                                                                        {asset?.icon ? (
+                                                                            typeof asset.icon === 'string' ? (
+                                                                                <Box component="img" src={asset.icon} sx={{ width: 16, height: 16, borderRadius: "50%" }} />
+                                                                            ) : (
+                                                                                <Box sx={{ width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                                    {asset.icon}
+                                                                                </Box>
+                                                                            )
+                                                                        ) : null}
+                                                                        <Typography fontSize={11} fontWeight={800} color="#000000">
+                                                                            {tokenSymbol}
+                                                                        </Typography>
+                                                                    </Box>
+                                                                );
+                                                            })()}
+                                                        </Box>
+                                                    )}
 
-                                                {/* Status (Only show if not editing or static) */}
-                                                {!isEditing && (
-                                                    <Box
-                                                        sx={{
-                                                            mt: 1,
-                                                            px: 1,
-                                                            py: 0.5,
-                                                            borderRadius: 1,
-                                                            fontSize: 11,
-                                                            fontWeight: 800,
-                                                            backgroundColor: statusMeta?.color || "#cccccc",
-                                                            color: "#ffffff",
-                                                            display: "inline-flex",
-                                                            alignItems: "center",
-                                                            gap: 0.5
-                                                        }}
-                                                    >
-                                                        {statusMeta?.icon}
-                                                        {statusMeta?.label}
-                                                    </Box>
-                                                )}
-                                            </Box>
-                                        );
-                                    })}
+                                                    {/* Near Simulation Section */}
+                                                    {(() => {
+                                                        const sourceChainKey = CHAIN_ID_TO_KEY[r.chainId];
+                                                        const destChainKey = watch("sendChain");
+                                                        const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
+                                                        const destConfig = NETWORKS[destChainKey as keyof typeof NETWORKS];
 
-                                    {/* Add Chain Button */}
-                                    {isEditing && (
-                                        <Button
-                                            startIcon={<AddCircleIcon />}
-                                            onClick={(e) => handleOpenChainMenu(e, walletAlloc.from)}
-                                            fullWidth
-                                            sx={{
-                                                textTransform: "none",
-                                                fontWeight: 700,
-                                                color: "#000000",
-                                                border: "1px dashed #000000",
-                                                borderRadius: 2
-                                            }}
-                                        >
-                                            Agregar Chain
-                                        </Button>
-                                    )}
-                                </Stack>
-                            </AccordionDetails>
-                        </Accordion>
+                                                        const isNearSupported =
+                                                            sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
+                                                            destConfig?.crossChainInformation?.nearIntentInformation?.support;
+
+                                                        // Check CCTP (Same logic as TokenSelector)
+                                                        const isCCTP =
+                                                            sourceConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                                                            destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                                                            (r.token || "USDC").toUpperCase() === "USDC";
+
+                                                        // If CCTP is supported, don't show Near simulation button
+                                                        if (isCCTP) return null;
+
+                                                        if (!isNearSupported || isEditing) return null;
+
+                                                        return (
+                                                            <Box mt={1} display="flex" alignItems="center" gap={1}>
+                                                                <Button
+                                                                    size="small"
+                                                                    variant="outlined"
+                                                                    disabled={simulating[r.chainId] || !r.amount || r.amount <= 0}
+                                                                    onClick={() => handleSimulate(r.chainId, r.amount, r.token, sourceChainKey)}
+                                                                    sx={{
+                                                                        fontSize: 10,
+                                                                        py: 0.2,
+                                                                        minWidth: "auto",
+                                                                        textTransform: "none",
+                                                                        height: 24,
+                                                                        borderColor: "#666",
+                                                                        color: "#333"
+                                                                    }}
+                                                                >
+                                                                    {simulating[r.chainId] ? <CircularProgress size={12} /> : "Simular"}
+                                                                </Button>
+                                                                {simulationErrorMessages[r.chainId] ? (
+                                                                    <Typography fontSize={11} color="error.main" fontWeight={600}>
+                                                                        {simulationErrorMessages[r.chainId]}
+                                                                    </Typography>
+                                                                ) : simulationResults[r.chainId] ? (
+                                                                    <Typography fontSize={11} color="success.main" fontWeight={600}>
+                                                                        Recibes: {simulationResults[r.chainId]} {watch("sourceToken")}
+                                                                    </Typography>
+                                                                ) : null}
+                                                            </Box>
+                                                        );
+                                                    })()}
+
+                                                    {/* Status (Only show if not editing or static) */}
+                                                    {!isEditing && (
+                                                        <Box
+                                                            sx={{
+                                                                mt: 1,
+                                                                px: 1,
+                                                                py: 0.5,
+                                                                borderRadius: 1,
+                                                                fontSize: 11,
+                                                                fontWeight: 800,
+                                                                backgroundColor: statusMeta?.color || "#cccccc",
+                                                                color: "#ffffff",
+                                                                display: "inline-flex",
+                                                                alignItems: "center",
+                                                                gap: 0.5
+                                                            }}
+                                                        >
+                                                            {statusMeta?.icon}
+                                                            {statusMeta?.label}
+                                                        </Box>
+                                                    )}
+                                                </Box>
+                                            );
+                                        })}
+
+                                        {/* Add Chain Button */}
+                                        {isEditing && (
+                                            <Button
+                                                startIcon={<AddCircleIcon />}
+                                                onClick={(e) => handleOpenChainMenu(e, walletAlloc.from)}
+                                                fullWidth
+                                                sx={{
+                                                    textTransform: "none",
+                                                    fontWeight: 700,
+                                                    color: "#000000",
+                                                    border: "1px dashed #000000",
+                                                    borderRadius: 2
+                                                }}
+                                            >
+                                                Agregar Chain
+                                            </Button>
+                                        )}
+                                    </Stack>
+                                </AccordionDetails>
+                            </Accordion>
+                        </Box>
                     );
                 })}
 
