@@ -66,7 +66,7 @@ export const SendMoneyModalRoute = (
         setSimulating(prev => ({ ...prev, [chainId]: true }));
         setSimulationResults(prev => ({ ...prev, [chainId]: null }));
         setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
-        setSimulationError(chainId, false); // Clear blocking error initially
+        setSimulationError(chainId, true); // Block action while loading
 
         try {
             const destChainKey = watch("sendChain");
