@@ -16,9 +16,11 @@ import {
     Bar,
     XAxis,
     YAxis,
-    Tooltip
+    Tooltip,
+    CartesianGrid
 } from "recharts";
-import { format } from "date-fns";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
+import { es } from "date-fns/locale";
 
 // Import Atom Icons locally for the Detail view
 import { BaseIcon } from "../components/atoms/BaseIcon";
@@ -57,6 +59,45 @@ const CHAIN_COMPONENTS: Record<string, React.ElementType> = {
     "World Chain": WorldChainIcon,
 };
 
+const TOKEN_COMPONENTS: Record<string, React.ElementType> = {
+    "USDC": UsdcIcon,
+    "USDT": UsdtIcon,
+    "BNB": BnbIcon,
+    "ETH": EthIcon,
+    "WETH": EthIcon,
+    "MATIC": PolygonIcon,
+    "AVAX": AvalancheIcon,
+    "XLM": StellarIcon,
+    "OP": OPIcon,
+    "ARB": ArbIcon,
+    "MON": MonadIcon,
+};
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <Box sx={{
+                bgcolor: '#fff',
+                border: '2px solid #000',
+                boxShadow: '4px 4px 0px #000',
+                p: 1.5,
+                borderRadius: 2
+            }}>
+                <Typography fontWeight={900} fontSize={12} textTransform="uppercase" color="#666" mb={0.5}>
+                    {label}
+                </Typography>
+                <Typography fontWeight={900} fontSize={16} color="#000">
+                    ${payload[0].value.toLocaleString()}
+                </Typography>
+                <Typography variant="caption" fontWeight={700} color="#00DC8C">
+                    En envíos
+                </Typography>
+            </Box>
+        );
+    }
+    return null;
+};
+
 // ----------------------------------------------------------------------
 // HELPER COMPONENTS
 // ----------------------------------------------------------------------
@@ -69,6 +110,50 @@ const ChainLogo = ({ chain }: { chain: string }) => {
             <LinkIcon sx={{ fontSize: 10, color: "#fff" }} />
         </Avatar>
     );
+};
+
+const TokenLogo = ({ token, size = 16 }: { token: string, size?: number }) => {
+    const IconComponent = TOKEN_COMPONENTS[token] || TOKEN_COMPONENTS[token.toUpperCase()];
+
+    // Customize size for Icons that accept it, or wrap standard ones
+    if (IconComponent) {
+        // Some icons like UsdcIcon might accept size, others might not. 
+        // For consistency in this specific codebase where icons seem to be varied:
+        // We'll wrap in a Box to enforce size if needed, or pass size prop if supported.
+        // Looking at BnbIcon, it returns an img with fixed 24x24 but style access?
+        // Let's wrap in a styled Box to handle visual sizing broadly.
+        return (
+            <Box sx={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', '& > *': { width: '100%', height: '100%' } }}>
+                <IconComponent />
+            </Box>
+        );
+    }
+
+    return (
+        <Avatar sx={{ width: size, height: size, bgcolor: "#000", fontSize: size * 0.5, fontWeight: 900 }}>
+            {token.charAt(0)}
+        </Avatar>
+    );
+};
+
+const getExplorerUrl = (chain: string, hash: string) => {
+    const baselines: Record<string, string> = {
+        "Ethereum": "https://etherscan.io/tx/",
+        "Polygon": "https://polygonscan.com/tx/",
+        "BNB": "https://bscscan.com/tx/",
+        "Arbitrum": "https://arbiscan.io/tx/",
+        "Optimism": "https://optimistic.etherscan.io/tx/",
+        "Avalanche": "https://snowtrace.io/tx/",
+        "Base": "https://basescan.org/tx/",
+        "Stellar": "https://stellar.expert/explorer/public/tx/",
+        "Monad": "https://explorer.monad.xyz/tx/", // Hypothetical URL
+        "Unichain": "https://unichain-explorer.com/tx/", // Hypothetical URL
+        "World Chain": "https://worldchain-explorer.com/tx/", // Hypothetical URL,
+        "Unknown": "#"
+    };
+    const base = baselines[chain] || baselines[Object.keys(baselines).find(k => chain.toLowerCase().includes(k.toLowerCase())) || "Unknown"];
+    if (base === "#" || !hash) return "#";
+    return `${base}${hash}`;
 };
 
 // Transaction Detail Component (Embedded) - COMPACT VERSION
@@ -115,9 +200,16 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                     {transaction.type === "SEND" ? "Envío" : transaction.type === "RECEIVE" ? "Recepción" : "Operación"}
                                 </Typography>
                             </Box>
-                            <Typography variant="caption" color="#666" fontWeight={700} fontFamily="monospace" fontSize={11}>
-                                ID: {transaction.id.slice(0, 12)}...
-                            </Typography>
+                            <Box>
+                                <Typography variant="caption" color="#666" fontWeight={700} fontFamily="monospace" fontSize={11} display="block">
+                                    ID: {transaction.id.slice(0, 12)}...
+                                </Typography>
+                                {transaction.estimatedReceived && transaction.totalAmount && (
+                                    <Typography variant="caption" fontWeight={800} color="#666" fontSize={10}>
+                                        Est. Recibido: ${Number(transaction.estimatedReceived).toFixed(4)}
+                                    </Typography>
+                                )}
+                            </Box>
                         </Box>
                         <Box textAlign="right">
                             <IconButton
@@ -139,9 +231,7 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                 <Typography variant="h4" fontWeight={900}>
                                     ${transaction.amount.toLocaleString()}
                                 </Typography>
-                                <Box display="flex" alignItems="center" gap={0.25} flexDirection="column" mt={1.5}>
-                                    {transaction.token === 'USDC' && <UsdcIcon />}
-                                    {transaction.token === 'USDT' && <UsdtIcon />}
+                                <Box display="flex" alignItems="center" gap={0.5} flexDirection="column" mt={0.5}>
                                     <Typography variant="caption" fontWeight={900} color="#666" fontSize={10}>
                                         {transaction.token}
                                     </Typography>
@@ -153,36 +243,80 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                     {/* Grid Info */}
                     <Box
                         display="grid"
-                        gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
-                        gap={1.5}
+                        gridTemplateColumns="1fr"
+                        gap={0}
                         sx={{
                             bgcolor: "#f8f8f8",
-                            p: 2,
                             border: "2px solid #000",
-                            borderRadius: 2
+                            borderRadius: 2,
+                            overflow: "hidden"
                         }}
                     >
-                        <Box>
-                            <Typography variant="caption" fontWeight={700} color="#666" fontSize={10}>DE</Typography>
-                            <Typography fontWeight={700} fontSize={13} sx={{ wordBreak: "break-all" }}>{transaction.addressFrom}</Typography>
-                        </Box>
-                        <Box>
-                            <Typography variant="caption" fontWeight={700} color="#666" fontSize={10}>PARA</Typography>
-                            <Typography fontWeight={700} fontSize={13} sx={{ wordBreak: "break-all" }}>{transaction.addressTo}</Typography>
-                        </Box>
-                        <Box>
-                            <Typography variant="caption" fontWeight={700} color="#666" fontSize={10}>CHAIN</Typography>
-                            <Box display="flex" alignItems="center" gap={0.5}>
-                                <ChainLogo chain={transaction.chainTo} />
-                                <Typography fontWeight={700} fontSize={13}>{transaction.chainTo}</Typography>
+                        {/* DE / PARA Row */}
+                        <Box display="grid" gridTemplateColumns="1fr 1fr" sx={{ borderBottom: "2px solid #000" }}>
+                            <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
+                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">DE</Typography>
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                    <Typography fontWeight={700} fontSize={12} fontFamily="monospace">
+                                        {transaction.addressFrom.slice(0, 6)}...{transaction.addressFrom.slice(-4)}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <Box sx={{ p: 1.5 }}>
+                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">PARA</Typography>
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                    <Typography fontWeight={700} fontSize={12} fontFamily="monospace">
+                                        {transaction.addressTo.slice(0, 6)}...{transaction.addressTo.slice(-4)}
+                                    </Typography>
+                                </Box>
                             </Box>
                         </Box>
-                        {transaction.txHash && (
-                            <Box>
-                                <Typography variant="caption" fontWeight={700} color="#666" fontSize={10}>HASH</Typography>
-                                <Typography fontWeight={700} sx={{ wordBreak: "break-all", fontFamily: "monospace", fontSize: 11 }}>
-                                    {transaction.txHash}
+
+                        {/* CHAIN / HASH Row */}
+                        <Box display="grid" gridTemplateColumns="1fr 1fr" sx={{ borderBottom: "2px solid #000" }}>
+                            <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
+                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">CHAIN</Typography>
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                    <ChainLogo chain={transaction.chainTo} />
+                                    <Typography fontWeight={800} fontSize={12}>{transaction.chainTo}</Typography>
+                                </Box>
+                            </Box>
+                            <Box sx={{ p: 1.5 }}>
+                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">HASH</Typography>
+                                <Typography fontWeight={700} fontSize={12} fontFamily="monospace" sx={{ wordBreak: "break-all", lineHeight: 1.1 }}>
+                                    {transaction.txHash ? (
+                                        <a
+                                            href={getExplorerUrl(transaction.chainTo, transaction.txHash)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ color: "inherit", textDecoration: "underline", textDecorationThickness: "2px" }}
+                                        >
+                                            {transaction.txHash.slice(0, 10)}...{transaction.txHash.slice(-8)}
+                                        </a>
+                                    ) : "N/A"}
                                 </Typography>
+                            </Box>
+                        </Box>
+
+                        {/* FINANCIALS Row (New) */}
+                        {transaction.estimatedReceived && (
+                            <Box display="grid" gridTemplateColumns="1fr 1fr 1fr">
+                                <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">ENVIADO</Typography>
+                                    <Typography fontWeight={800} fontSize={12}>${Number(transaction.amount).toFixed(4)}</Typography>
+                                </Box>
+                                <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">RECIBIDO (EST)</Typography>
+                                    <Typography fontWeight={800} fontSize={12} color="#00DC8C">
+                                        ${Number(transaction.estimatedReceived).toFixed(4)}
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ p: 1.5 }}>
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">DIFERENCIA</Typography>
+                                    <Typography fontWeight={800} fontSize={12} color="error.main">
+                                        -${(transaction.amount - transaction.estimatedReceived).toFixed(4)}
+                                    </Typography>
+                                </Box>
                             </Box>
                         )}
 
@@ -192,21 +326,13 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                 {/* Sub-Transactions / Route */}
                 {transaction.route && transaction.route.length > 0 && (
                     <>
-                        <Box sx={{ bgcolor: "#FFD700", p: 1, borderBottom: "2.5px solid #000" }}>
-                            <Typography fontWeight={900} textTransform="uppercase" fontSize={10} letterSpacing={1}>
+                        <Box sx={{ bgcolor: "#FFD700", p: 1, borderBottom: "2.5px solid #000", borderTop: "3px solid #000" }}>
+                            <Typography fontWeight={900} textTransform="uppercase" fontSize={11} letterSpacing={1} textAlign="center">
                                 Ruta de Ejecución
                             </Typography>
                         </Box>
                         <Box>
                             {(() => {
-                                // For current route logic, it's a simple list of steps. 
-                                // We might need to adapt if the model changes to groups of chains.
-                                // The backend returns: route: [{ chainName, amount, status, txHash }]
-                                // The UI expects: routeItem: { chains: [...] } structure OR we adapt here.
-
-                                // Adapting BACKEND format to UI logic or simplifying UI logic.
-                                // Let's simplify UI logic for now as the backend structure is flat for now (or simple list)
-
                                 const steps = transaction.route;
                                 const visibleSteps = isExpanded ? steps : steps.slice(0, 5);
 
@@ -215,47 +341,56 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                         {visibleSteps.map((step: any, index: number) => {
                                             return (
                                                 <Box key={index} sx={{ borderBottom: "1px solid #eee" }}>
-                                                    <Box sx={{ p: 1.5, display: "flex", alignItems: "flex-start", justifyContent: "space-between", "&:hover": { bgcolor: "#fff9c4" } }}>
-                                                        <Box display="flex" alignItems="flex-start" gap={1.5}>
+                                                    <Box sx={{ p: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between", "&:hover": { bgcolor: "#fff9c4" } }}>
+                                                        <Box display="flex" alignItems="center" gap={1.5}>
                                                             {/* Step Number */}
                                                             <Box
                                                                 sx={{
-                                                                    width: 24, height: 24,
+                                                                    width: 20, height: 20,
                                                                     borderRadius: "50%",
                                                                     bgcolor: "#3CD2FF",
                                                                     border: "2px solid #000",
                                                                     display: "flex", alignItems: "center", justifyContent: "center",
                                                                     fontWeight: 900,
-                                                                    fontSize: 11,
+                                                                    fontSize: 10,
                                                                     boxShadow: "1px 1px 0px #000",
-                                                                    flexShrink: 0,
-                                                                    mt: 0.5
+                                                                    flexShrink: 0
                                                                 }}
                                                             >
                                                                 {index + 1}
                                                             </Box>
 
                                                             {/* Content */}
-                                                            <Box display="flex" gap={1}>
-                                                                <Box mt={0.5}><ChainLogo chain={step.chainName} /></Box>
-                                                                <Box>
-                                                                    <Typography fontWeight={800} fontSize={14} sx={{ lineHeight: 1.2 }}>
+                                                            <Box>
+                                                                <Box display="flex" alignItems="center" gap={0.5}>
+                                                                    <ChainLogo chain={step.chainName} />
+                                                                    <Typography fontWeight={800} fontSize={13}>
                                                                         {step.chainName}
                                                                     </Typography>
-                                                                    <Typography variant="caption" fontWeight={600} fontFamily="monospace" color="#666" fontSize={10} sx={{ display: "block", lineHeight: 1.2 }}>
-                                                                        {step.txHash || 'N/A'}
-                                                                    </Typography>
                                                                 </Box>
+                                                                <Typography variant="caption" fontWeight={600} fontFamily="monospace" color="#666" fontSize={10}>
+                                                                    {step.txHash ? (
+                                                                        <a
+                                                                            href={getExplorerUrl(step.chainName, step.txHash)}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            style={{ color: "#666", textDecoration: "none", borderBottom: "1px dotted #666" }}
+                                                                            onMouseEnter={(e: any) => e.target.style.color = "#000"}
+                                                                            onMouseLeave={(e: any) => e.target.style.color = "#666"}
+                                                                        >
+                                                                            {step.txHash.slice(0, 6)}...{step.txHash.slice(-4)}
+                                                                        </a>
+                                                                    ) : 'N/A'}
+                                                                </Typography>
                                                             </Box>
                                                         </Box>
-                                                        <Box textAlign="right">
-                                                            <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
-                                                                <Typography fontWeight={800} fontSize={14}>${step.amount}</Typography>
+
+                                                        {/* Right Side: Status & Amount */}
+                                                        <Box textAlign="right" display="flex" flexDirection="column" alignItems="flex-end" gap={0.5}>
+                                                            <Box display="flex" alignItems="center" gap={0.5}>
+                                                                <Typography fontWeight={800} fontSize={13}>${step.amount}</Typography>
                                                                 {step.assetOrigin && (
-                                                                    <>
-                                                                        {step.assetOrigin === 'USDC' && <Box component="span" sx={{ display: 'flex', flexShrink: 0 }}><UsdcIcon size={16} /></Box>}
-                                                                        {step.assetOrigin === 'USDT' && <Box component="span" sx={{ display: 'flex', flexShrink: 0 }}><UsdtIcon size={16} /></Box>}
-                                                                    </>
+                                                                    <TokenLogo token={step.assetOrigin} size={16} />
                                                                 )}
                                                             </Box>
                                                             <Chip
@@ -263,11 +398,11 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                                                 size="small"
                                                                 sx={{
                                                                     bgcolor: step.status === "SUCCESS" ? "#00DC8C" : "#FFD700",
-                                                                    fontWeight: 800,
+                                                                    fontWeight: 900,
                                                                     border: "1.5px solid #000",
-                                                                    fontSize: 9,
-                                                                    height: 18,
-                                                                    mt: 0.5
+                                                                    fontSize: 8,
+                                                                    height: 16,
+                                                                    px: 0.5
                                                                 }}
                                                             />
                                                         </Box>
@@ -313,9 +448,22 @@ export default function HistoryListPage() {
     const router = useRouter();
     const { mainWallet } = useXOWalletStore();
     const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
-    const [isHistoryExpanded, setIsHistoryExpanded] = useState(false); // State for main list expansion
+
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const LIMIT = 5;
 
     const [transactions, setTransactions] = useState<any[]>([]);
+    const [stats, setStats] = useState({
+        totalSends: 0,
+        totalSentAmount: 0,
+        maxSent: 0,
+        totalReceives: 0,
+        totalReceivedAmount: 0,
+        mostUsedToken: "N/A",
+        weeklyActivity: [] as any[]
+    });
     const [loading, setLoading] = useState(true);
 
     const address = mainWallet?.address;
@@ -328,7 +476,8 @@ export default function HistoryListPage() {
             }
 
             try {
-                const res = await fetch(`/api/transactions?address=${address}`);
+                // Fetch with pagination
+                const res = await fetch(`/api/transactions?address=${address}&page=${page}&limit=${LIMIT}`);
                 const data = await res.json();
                 if (data.success) {
                     // Map API data to UI format
@@ -355,10 +504,16 @@ export default function HistoryListPage() {
                             txHash: tx.route?.[0]?.txHash || "",
                             fee: 0,
                             route: tx.route,
-                            tokenSymbol: tx.tokenSymbol
+                            estimatedReceived: tx.estimatedReceived, // [NEW] Map from API
+                            tokenSymbol: tx.tokenSymbol,
+                            createdAt: tx.createdAt // [NEW] Needed for filtering by date
                         };
                     });
                     setTransactions(mapped);
+                    // Update Page Info
+                    if (data.pagination) {
+                        setTotalPages(data.pagination.totalPages);
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch history", error);
@@ -367,34 +522,49 @@ export default function HistoryListPage() {
             }
         };
 
+        const fetchStats = async () => {
+            if (!address) return;
+            try {
+                const res = await fetch(`/api/transactions/stats?address=${address}`);
+                const data = await res.json();
+                if (data.success) {
+                    setStats(data.stats);
+                }
+            } catch (error) {
+                console.error("Failed to fetch stats", error);
+            }
+        };
+
         fetchHistory();
-    }, [address]);
+        fetchStats();
+    }, [address, page]);
 
 
-    // Derived Metrics 
-    const totalSends = transactions.length;
-    // Mocking daily data for now as we don't have enough real data for a chart
-    const DAILY_SPEND_DATA = [
-        { name: 'Lun', value: 0 },
-        { name: 'Mar', value: 0 },
-        { name: 'Mie', value: 0 },
-        { name: 'Jue', value: 0 },
-        { name: 'Vie', value: 0 },
-        { name: 'Sab', value: 0 },
-        { name: 'Dom', value: 0 },
-    ];
+    // --- NEW LOGIC: Weekly Chart Data (Current Week) ---
+    const today = new Date();
+    // Get start and end of current week (Sunday to Saturday)
+    const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 0 });
+    const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 0 });
 
-    // Update chart with real totals if available? For now keep placeholder or simple sum.
-    const totalVolume = transactions.reduce((acc, tx) => acc + (tx.amount || 0), 0);
-    const maxSent = transactions.length > 0 ? Math.max(...transactions.map(tx => tx.amount)) : 0;
+    // Generate array of days for the current week
+    const weekDays = eachDayOfInterval({ start: startOfCurrentWeek, end: endOfCurrentWeek });
 
-    const tokenCounts = transactions.reduce((acc: any, tx) => {
-        acc[tx.token] = (acc[tx.token] || 0) + 1;
-        return acc;
-    }, {});
-    const mostUsedToken = Object.keys(tokenCounts).length > 0
-        ? Object.keys(tokenCounts).reduce((a, b) => tokenCounts[a] > tokenCounts[b] ? a : b)
-        : "N/A";
+    const weeklySendsData = weekDays.map(day => {
+        const dateStr = format(day, "yyyy-MM-dd");
+        // Find stats for this day
+        const dayStat = stats.weeklyActivity.find((item: any) => item._id === dateStr);
+        const dayTotal = dayStat ? dayStat.totalAmount : 0;
+
+        // Format day name (e.g., "Lun", "Mar")
+        const dayName = format(day, "eee", { locale: es });
+        // Capitalize first letter
+        const formattedName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+
+        return {
+            name: formattedName,
+            value: dayTotal
+        };
+    });
 
     // Helper to find selected tx
     const selectedTx = transactions.find(t => t.id === selectedTxId);
@@ -439,7 +609,7 @@ export default function HistoryListPage() {
                                 {transactions.length === 0 && (
                                     <Typography variant="body1" textAlign="center" color="text.secondary">No hay transacciones aún.</Typography>
                                 )}
-                                {(isHistoryExpanded ? transactions : transactions.slice(0, 5)).map((tx) => (
+                                {transactions.map((tx) => (
                                     <Card
                                         key={tx.id}
                                         sx={{
@@ -488,6 +658,11 @@ export default function HistoryListPage() {
                                                         <Typography variant="body2" fontWeight={700} color="#666" noWrap sx={{ lineHeight: 1.2 }}>
                                                             {tx.date} • {tx.type === "SEND" ? tx.to : tx.from || tx.to}
                                                         </Typography>
+                                                        {tx.estimatedReceived && tx.type === "SEND" && (
+                                                            <Typography variant="caption" fontWeight={800} color="#666" sx={{ fontSize: 10, bgcolor: "#eee", px: 0.5, borderRadius: 0.5, display: "inline-block", mt: 0.5 }}>
+                                                                Est: ${Number(tx.estimatedReceived).toFixed(2)}
+                                                            </Typography>
+                                                        )}
                                                     </Box>
                                                 </Box>
 
@@ -497,11 +672,7 @@ export default function HistoryListPage() {
                                                         <Typography fontWeight={900} fontSize={18} color={tx.type === "SEND" ? "#000" : "#008a57"}>
                                                             {tx.type === "SEND" ? "-" : "+"}${tx.amount}
                                                         </Typography>
-                                                        {tx.token === 'USDC' && <Box component="span" sx={{ display: 'flex', flexShrink: 0 }}><UsdcIcon size={20} /></Box>}
-                                                        {tx.token === 'USDT' && <Box component="span" sx={{ display: 'flex', flexShrink: 0 }}><UsdtIcon size={20} /></Box>}
-                                                        {(tx.token !== 'USDC' && tx.token !== 'USDT') && (
-                                                            <Typography fontWeight={900} fontSize={14}>{tx.token}</Typography>
-                                                        )}
+                                                        <TokenLogo token={tx.token} size={20} />
                                                     </Box>
                                                     <Chip
                                                         label={tx.status}
@@ -522,22 +693,47 @@ export default function HistoryListPage() {
                                     </Card>
                                 ))}
 
-                                {/* History Toggle Button */}
-                                {transactions.length > 5 && (
-                                    <Box sx={{ textAlign: "center", py: 2 }}>
-                                        <Typography
-                                            onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <Box display="flex" justifyContent="center" alignItems="center" gap={2} mt={2}>
+                                        <IconButton
+                                            disabled={page === 1}
+                                            onClick={() => setPage(p => Math.max(1, p - 1))}
                                             sx={{
-                                                cursor: "pointer",
-                                                fontWeight: 900,
-                                                textTransform: "uppercase",
-                                                fontSize: 14,
-                                                textDecoration: "underline",
-                                                "&:hover": { color: "#555" }
+                                                border: "2px solid #000",
+                                                bgcolor: page === 1 ? "#e0e0e0" : "#fff",
+                                                color: page === 1 ? "#999" : "#000",
+                                                boxShadow: page === 1 ? "none" : "3px 3px 0px #000",
+                                                "&:hover": {
+                                                    bgcolor: page === 1 ? "#e0e0e0" : "#f5f5f5",
+                                                    transform: page === 1 ? "none" : "translate(1px, 1px)",
+                                                    boxShadow: page === 1 ? "none" : "2px 2px 0px #000"
+                                                }
                                             }}
                                         >
-                                            {isHistoryExpanded ? "Ver menos" : `Ver más (+${transactions.length - 5})`}
+                                            <ArrowBackIcon />
+                                        </IconButton>
+                                        <Typography fontWeight={900} fontSize={14}>
+                                            Página {page} de {totalPages}
                                         </Typography>
+                                        <IconButton
+                                            disabled={page === totalPages}
+                                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                            sx={{
+                                                border: "2px solid #000",
+                                                bgcolor: page === totalPages ? "#e0e0e0" : "#fff",
+                                                color: page === totalPages ? "#999" : "#000",
+                                                boxShadow: page === totalPages ? "none" : "3px 3px 0px #000",
+                                                "&:hover": {
+                                                    bgcolor: page === totalPages ? "#e0e0e0" : "#f5f5f5",
+                                                    transform: page === totalPages ? "none" : "translate(1px, 1px)",
+                                                    boxShadow: page === totalPages ? "none" : "2px 2px 0px #000"
+                                                }
+                                            }}
+                                        >
+                                            {/* Rotate ArrowBack to make it ArrowForward since we already imported ArrowBack */}
+                                            <ArrowBackIcon sx={{ transform: "rotate(180deg)" }} />
+                                        </IconButton>
                                     </Box>
                                 )}
                             </Box>
@@ -575,21 +771,34 @@ export default function HistoryListPage() {
                                     </Box>
 
                                     <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
+                                        {/* SEND STATS */}
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
                                             <Typography variant="caption" fontWeight={700} color="#666">TOTAL ENVÍOS</Typography>
-                                            <Typography variant="h5" fontWeight={900}>{totalSends}</Typography>
+                                            <Typography variant="h5" fontWeight={900}>{stats.totalSends}</Typography>
                                         </Box>
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                            <Typography variant="caption" fontWeight={700} color="#666">VOLUMEN TOTAL</Typography>
-                                            <Typography variant="h5" fontWeight={900}>${totalVolume.toLocaleString()}</Typography>
+                                            <Typography variant="caption" fontWeight={700} color="#666">TOTAL ENVIADO</Typography>
+                                            <Typography variant="h5" fontWeight={900}>${stats.totalSentAmount.toLocaleString()}</Typography>
                                         </Box>
+
+                                        {/* RECEIVE STATS */}
+                                        <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
+                                            <Typography variant="caption" fontWeight={700} color="#666">TOTAL RECIBIDOS</Typography>
+                                            <Typography variant="h5" fontWeight={900}>{stats.totalReceives}</Typography>
+                                        </Box>
+                                        <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
+                                            <Typography variant="caption" fontWeight={700} color="#666">TOTAL RECIBIDO</Typography>
+                                            <Typography variant="h5" fontWeight={900}>${stats.totalReceivedAmount.toLocaleString()}</Typography>
+                                        </Box>
+
+                                        {/* OTHER STATS */}
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
                                             <Typography variant="caption" fontWeight={700} color="#666">TOP COIN</Typography>
-                                            <Typography variant="h5" fontWeight={900}>{mostUsedToken}</Typography>
+                                            <Typography variant="h5" fontWeight={900}>{stats.mostUsedToken}</Typography>
                                         </Box>
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
                                             <Typography variant="caption" fontWeight={700} color="#666">MAYOR ENVÍO</Typography>
-                                            <Typography variant="h5" fontWeight={900}>${maxSent}</Typography>
+                                            <Typography variant="h5" fontWeight={900}>${stats.maxSent}</Typography>
                                         </Box>
                                     </Box>
                                 </Box>
@@ -605,37 +814,33 @@ export default function HistoryListPage() {
                                         height: 300
                                     }}
                                 >
-                                    <Box display="flex" alignItems="center" gap={1} mb={2}>
-                                        <BarChartIcon />
-                                        <Typography fontWeight={900} textTransform="uppercase">Envíos por Día</Typography>
+                                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <BarChartIcon />
+                                            <Typography fontWeight={900} textTransform="uppercase">Envíos por Día (Semana Actual)</Typography>
+                                        </Box>
                                     </Box>
 
                                     <Box sx={{ width: "100%", height: "85%" }}>
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={DAILY_SPEND_DATA}>
+                                            <BarChart data={weeklySendsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#000" strokeOpacity={0.1} />
                                                 <XAxis
                                                     dataKey="name"
-                                                    tick={{ fontSize: 12, fontWeight: 700 }}
+                                                    tick={{ fontSize: 11, fontWeight: 800, fill: '#000' }}
                                                     axisLine={false}
                                                     tickLine={false}
+                                                    dy={10}
                                                 />
-                                                <YAxis hide />
-                                                <Tooltip
-                                                    cursor={{ fill: '#f0f0f0' }}
-                                                    contentStyle={{
-                                                        backgroundColor: '#fff',
-                                                        border: '2px solid #000',
-                                                        borderRadius: '8px',
-                                                        boxShadow: '4px 4px 0px #000',
-                                                        fontWeight: 900
-                                                    }}
-                                                />
+                                                <YAxis hide domain={[0, "dataMax"]} />
+                                                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f5f5f5', opacity: 0.5 }} />
                                                 <Bar
                                                     dataKey="value"
                                                     fill="#FF90E8"
                                                     stroke="#000"
                                                     strokeWidth={2}
-                                                    radius={[4, 4, 0, 0]}
+                                                    radius={[6, 6, 0, 0]}
+                                                    maxBarSize={50}
                                                 />
                                             </BarChart>
                                         </ResponsiveContainer>

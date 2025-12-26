@@ -444,7 +444,8 @@ export const useCrossChainTransfer = () => {
                                 status: "PENDING",
                                 txHash: result.transactionHash
                             }
-                        ]
+                        ],
+                        estimatedReceived: simulation.estimated ? parseFloat(simulation.estimated) : undefined // [NEW] Save simulation result
                     };
 
                     await fetch("/api/transactions", {
