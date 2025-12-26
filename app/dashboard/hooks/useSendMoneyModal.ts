@@ -13,6 +13,7 @@ import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { useBridgeUsdcStream } from "@/app/dashboard/hooks/useBridgeUsdcStream";
 import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
+import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 
 export type RouteStatus =
     | "idle"
@@ -45,6 +46,8 @@ export const useSendMoneyModal = () => {
     const { allocateAcrossNetworks } = useFindBestRoute();
     const { unlockWallet, transferBalance } = useWalletStore();
     const generalWallet = useSessionWalletStore(state => state.address);
+    const wallets = useWalletStore((state) => state.wallets);
+    const { xoWallet, mainWallet } = useXOWalletStore();
     const { setSendModal, isOpen } = useSendMoneyStore();
     const [routeDetails, setRouteDetails] = useState<RouteDetail[]>([]);
 
@@ -331,7 +334,8 @@ export const useSendMoneyModal = () => {
             try {
                 const txData = {
                     id: crypto.randomUUID(),
-                    fromAddress: generalWallet?.toLowerCase() || wallets[0]?.address.toLowerCase(),
+                    // Priority: XO Wallet -> XO Main Wallet -> Session fallback
+                    fromAddress: xoWallet?.address?.toLowerCase() || mainWallet?.address?.toLowerCase() || generalWallet?.toLowerCase(),
                     toAddress: recipient.toLowerCase(),
                     destinationChain: toValidChain,
                     totalAmount: totalSentAmount,
@@ -365,7 +369,7 @@ export const useSendMoneyModal = () => {
         }, 2000);
     };
 
-    const wallets = useWalletStore((state) => state.wallets);
+
 
     const getOriginFee = (id: string) => {
         const key = CHAIN_ID_TO_KEY[id] as ChainKey;

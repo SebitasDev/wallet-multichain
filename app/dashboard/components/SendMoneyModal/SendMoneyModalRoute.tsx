@@ -333,6 +333,14 @@ export const SendMoneyModalRoute = (
                 sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
                 destConfig?.crossChainInformation?.nearIntentInformation?.support;
 
+            // Check CCTP (Exempt from simulation)
+            const isCCTP =
+                sourceConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                (r.token || "USDC").toUpperCase() === "USDC";
+
+            if (isCCTP) return false; // CCTP routes don't need simulation check
+
             if (isNearSupported && !isEditing) {
                 if (!simulationResults[r.chainId]) return true; // Block if not simulated
             }
@@ -1043,7 +1051,7 @@ export const SendMoneyModalRoute = (
                                         ENVIA
                                     </Typography>
                                     <Typography variant="body2" fontWeight={700} color="#000000" fontSize={{ xs: 12, sm: 13 }}>
-                                        {formatCurrency(totalPrincipal)}
+                                        {formatCurrency(totalPrincipal, 6)}
                                     </Typography>
                                 </Stack>
 
@@ -1052,7 +1060,7 @@ export const SendMoneyModalRoute = (
                                         FEE PLATAFORMA
                                     </Typography>
                                     <Typography variant="body2" fontWeight={700} color="#ff4444" fontSize={{ xs: 12, sm: 13 }}>
-                                        -{formatCurrency(totalFee)}
+                                        -{formatCurrency(totalFee, 6)}
                                     </Typography>
                                 </Stack>
 
@@ -1061,7 +1069,7 @@ export const SendMoneyModalRoute = (
                                         RECIBE (EST.)
                                     </Typography>
                                     <Typography variant="body2" fontWeight={700} color="#00DC8C" fontSize={{ xs: 12, sm: 13 }}>
-                                        {formatCurrency(totalReceived)} <span style={{ color: "#000000", fontSize: "11px" }}>USDC</span>
+                                        {formatCurrency(totalReceived, 6)} <span style={{ color: "#000000", fontSize: "11px" }}>USDC</span>
                                     </Typography>
                                 </Stack>
 
@@ -1072,7 +1080,7 @@ export const SendMoneyModalRoute = (
                                         DIFERENCIA
                                     </Typography>
                                     <Typography variant="body2" fontWeight={700} color={isDiffPositive ? "#00DC8C" : "#ff4444"} fontSize={{ xs: 12, sm: 13 }}>
-                                        {isDiffPositive ? "+" : ""}{formatCurrency(diff)}
+                                        {isDiffPositive ? "+" : ""}{formatCurrency(diff, 6)}
                                     </Typography>
                                 </Stack>
                             </Stack>
