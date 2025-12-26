@@ -8,6 +8,7 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import CloseIcon from "@mui/icons-material/Close";
 import LinkIcon from "@mui/icons-material/Link";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import {
@@ -206,7 +207,7 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                                 </Typography>
                                 {transaction.estimatedReceived && transaction.totalAmount && (
                                     <Typography variant="caption" fontWeight={800} color="#666" fontSize={10}>
-                                        Est. Recibido: ${Number(transaction.estimatedReceived).toFixed(4)}
+                                        Est. Recibido: ${Number(transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
                                     </Typography>
                                 )}
                             </Box>
@@ -229,7 +230,7 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                             </IconButton>
                             <Box display="flex" alignItems="center" justifyContent="flex-end" gap={1}>
                                 <Typography variant="h4" fontWeight={900}>
-                                    ${transaction.amount.toLocaleString()}
+                                    ${transaction.amount.toLocaleString('en-US', { maximumFractionDigits: 6 })}
                                 </Typography>
                                 <Box display="flex" alignItems="center" gap={0.5} flexDirection="column" mt={0.5}>
                                     <Typography variant="caption" fontWeight={900} color="#666" fontSize={10}>
@@ -255,17 +256,17 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                         {/* DE / PARA Row */}
                         <Box display="grid" gridTemplateColumns="1fr 1fr" sx={{ borderBottom: "2px solid #000" }}>
                             <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
-                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">DE</Typography>
+                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">DE</Typography>
                                 <Box display="flex" alignItems="center" gap={0.5}>
-                                    <Typography fontWeight={700} fontSize={12} fontFamily="monospace">
+                                    <Typography fontWeight={700} fontSize={14} fontFamily="monospace">
                                         {transaction.addressFrom.slice(0, 6)}...{transaction.addressFrom.slice(-4)}
                                     </Typography>
                                 </Box>
                             </Box>
                             <Box sx={{ p: 1.5 }}>
-                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">PARA</Typography>
+                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">PARA</Typography>
                                 <Box display="flex" alignItems="center" gap={0.5}>
-                                    <Typography fontWeight={700} fontSize={12} fontFamily="monospace">
+                                    <Typography fontWeight={700} fontSize={14} fontFamily="monospace">
                                         {transaction.addressTo.slice(0, 6)}...{transaction.addressTo.slice(-4)}
                                     </Typography>
                                 </Box>
@@ -275,15 +276,15 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                         {/* CHAIN / HASH Row */}
                         <Box display="grid" gridTemplateColumns="1fr 1fr" sx={{ borderBottom: "2px solid #000" }}>
                             <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
-                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">CHAIN</Typography>
+                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">CHAIN</Typography>
                                 <Box display="flex" alignItems="center" gap={0.5}>
                                     <ChainLogo chain={transaction.chainTo} />
-                                    <Typography fontWeight={800} fontSize={12}>{transaction.chainTo}</Typography>
+                                    <Typography fontWeight={800} fontSize={14}>{transaction.chainTo}</Typography>
                                 </Box>
                             </Box>
                             <Box sx={{ p: 1.5 }}>
-                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">HASH</Typography>
-                                <Typography fontWeight={700} fontSize={12} fontFamily="monospace" sx={{ wordBreak: "break-all", lineHeight: 1.1 }}>
+                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">HASH</Typography>
+                                <Typography fontWeight={700} fontSize={14} fontFamily="monospace" sx={{ wordBreak: "break-all", lineHeight: 1.1 }}>
                                     {transaction.txHash ? (
                                         <a
                                             href={getExplorerUrl(transaction.chainTo, transaction.txHash)}
@@ -302,19 +303,19 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                         {transaction.estimatedReceived && (
                             <Box display="grid" gridTemplateColumns="1fr 1fr 1fr">
                                 <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
-                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">ENVIADO</Typography>
-                                    <Typography fontWeight={800} fontSize={12}>${Number(transaction.amount).toFixed(4)}</Typography>
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">ENVIADO</Typography>
+                                    <Typography fontWeight={800} fontSize={14}>${Number(transaction.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
                                 </Box>
                                 <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
-                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">RECIBIDO (EST)</Typography>
-                                    <Typography fontWeight={800} fontSize={12} color="#00DC8C">
-                                        ${Number(transaction.estimatedReceived).toFixed(4)}
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">RECIBIDO (EST)</Typography>
+                                    <Typography fontWeight={800} fontSize={14} color="#00DC8C">
+                                        ${Number(transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
                                     </Typography>
                                 </Box>
                                 <Box sx={{ p: 1.5 }}>
-                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={10} mb={0.5} display="block">DIFERENCIA</Typography>
-                                    <Typography fontWeight={800} fontSize={12} color="error.main">
-                                        -${(transaction.amount - transaction.estimatedReceived).toFixed(4)}
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">DIFERENCIA</Typography>
+                                    <Typography fontWeight={800} fontSize={14} color="error.main">
+                                        -${(transaction.amount - transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
                                     </Typography>
                                 </Box>
                             </Box>
@@ -465,8 +466,14 @@ export default function HistoryListPage() {
         weeklyActivity: [] as any[]
     });
     const [loading, setLoading] = useState(true);
+    const [refreshTrigger, setRefreshTrigger] = useState(0); // [NEW] Trigger for manual refresh
 
     const address = mainWallet?.address;
+
+    const handleRefresh = () => {
+        setLoading(true);
+        setRefreshTrigger(prev => prev + 1);
+    };
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -537,7 +544,7 @@ export default function HistoryListPage() {
 
         fetchHistory();
         fetchStats();
-    }, [address, page]);
+    }, [address, page, refreshTrigger]);
 
 
     // --- NEW LOGIC: Weekly Chart Data (Current Week) ---
@@ -595,6 +602,20 @@ export default function HistoryListPage() {
                             <Typography variant="h4" fontWeight={900} sx={{ textTransform: "uppercase", letterSpacing: 1 }}>
                                 Historial
                             </Typography>
+                            <IconButton
+                                onClick={handleRefresh}
+                                sx={{
+                                    border: "2px solid #000",
+                                    bgcolor: "#fff",
+                                    borderRadius: 2,
+                                    width: 40, height: 40,
+                                    boxShadow: "3px 3px 0px #000",
+                                    "&:hover": { bgcolor: "#f5f5f5", transform: "translate(1px, 1px)", boxShadow: "2px 2px 0px #000" },
+                                    "&:active": { transform: "translate(3px, 3px)", boxShadow: "0px 0px 0px #000" }
+                                }}
+                            >
+                                <RefreshIcon sx={{ color: "#000", fontWeight: "bold" }} />
+                            </IconButton>
                         </Box>
 
                         {loading ? (
@@ -660,7 +681,7 @@ export default function HistoryListPage() {
                                                         </Typography>
                                                         {tx.estimatedReceived && tx.type === "SEND" && (
                                                             <Typography variant="caption" fontWeight={800} color="#666" sx={{ fontSize: 10, bgcolor: "#eee", px: 0.5, borderRadius: 0.5, display: "inline-block", mt: 0.5 }}>
-                                                                Est: ${Number(tx.estimatedReceived).toFixed(2)}
+                                                                Est: ${Number(tx.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
                                                             </Typography>
                                                         )}
                                                     </Box>
@@ -670,7 +691,7 @@ export default function HistoryListPage() {
                                                 <Box textAlign="right" flexShrink={0} ml={2}>
                                                     <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
                                                         <Typography fontWeight={900} fontSize={18} color={tx.type === "SEND" ? "#000" : "#008a57"}>
-                                                            {tx.type === "SEND" ? "-" : "+"}${tx.amount}
+                                                            {tx.type === "SEND" ? "-" : "+"}${Number(tx.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}
                                                         </Typography>
                                                         <TokenLogo token={tx.token} size={20} />
                                                     </Box>

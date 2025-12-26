@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { Address } from "abitype";
@@ -445,7 +445,7 @@ export const useCrossChainTransfer = () => {
                                 txHash: result.transactionHash
                             }
                         ],
-                        estimatedReceived: simulation.estimated ? parseFloat(simulation.estimated) : undefined // [NEW] Save simulation result
+                        estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount // Use amount if no simulation (Direct/CCTP)
                     };
 
                     await fetch("/api/transactions", {
@@ -483,6 +483,14 @@ export const useCrossChainTransfer = () => {
         netAmount?: number;
     }>({ estimated: "", error: null, done: false, loading: false });
 
+    // [FIX] Use Ref to avoid stale closure in onSubmit
+    const simulationRef = useRef<typeof simulation>(simulation);
+
+    // Sync ref with state
+    useEffect(() => {
+        simulationRef.current = simulation;
+    }, [simulation]);
+
     // Reset simulation when inputs change
     useEffect(() => {
         setSimulation({ estimated: "", error: null, done: false, loading: false });
@@ -509,13 +517,15 @@ export const useCrossChainTransfer = () => {
             const data = await res.json();
 
             if (data.success) {
-                setSimulation({
+                const newSimState = {
                     estimated: data.estimatedReceived,
                     netAmount: data.netAmountBridged,
                     error: null,
                     done: true,
                     loading: false
-                });
+                };
+                setSimulation(newSimState);
+                simulationRef.current = newSimState; // Update ref immediately
             } else {
                 setSimulation({
                     estimated: "",
