@@ -38,7 +38,7 @@ export const BNB: ChainConfig = {
     crossChainInformation: {
         circleInformation: {
             supportCirclePaymaster: false,
-            aproxFromFee: 0.0005,
+            aproxFromFee: 0,
             cCTPInformation: {
                 supportCCTP: false,
                 domain: 0,

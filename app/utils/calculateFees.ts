@@ -26,7 +26,7 @@ export function calculateTotalFees(wallets: WalletInfo[]): number {
 
     // Sum fees for each unique chain if balance covers (fee + commission)
     let totalFee = 0;
-    const COMMISSION_PER_CHAIN = 0.01;
+    const COMMISSION_PER_CHAIN = 0;
 
     balancePerChain.forEach((balance, chainId) => {
         const chainKey = CHAIN_ID_TO_KEY[chainId];
