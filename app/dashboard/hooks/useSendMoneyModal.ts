@@ -235,7 +235,9 @@ export const useSendMoneyModal = () => {
 
                 // Determine Fee (Same logic as useCrossChainTransfer)
                 // 0.01 for Same Chain, 0.02 for Cross Chain
-                const currentFee = fromValidChain === toValidChain ? 0.01 : 0.02;
+                const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+                const baseFee = fromValidChain === toValidChain ? 0.01 : 0.02;
+                const currentFee = isDev ? 0 : baseFee;
 
                 // Add fee to the amount to be signed/transferred
                 // Because we removed the auto-add in createAuthorizationPayload
@@ -309,6 +311,15 @@ export const useSendMoneyModal = () => {
 
         console.log("✅ Final transfer completed");
         toast.success("Transacciones completadas");
+
+        // Brief delay to show success state before closing
+        setTimeout(() => {
+            setSendModal(false);
+            reset();
+            setRouteReady(false);
+            setRouteSummary(null);
+            setRouteDetails([]);
+        }, 2000);
     };
 
     const wallets = useWalletStore((state) => state.wallets);
