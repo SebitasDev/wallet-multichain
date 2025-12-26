@@ -193,6 +193,9 @@ export const useSendMoneyModal = () => {
 
         console.log("Destination:", toValidChain, recipient);
 
+        const executedRoutes: any[] = [];
+        let totalSentAmount = 0;
+
         // Loop Allocations
         for (const allocation of routeSummary!.allocations) {
 
@@ -285,6 +288,16 @@ export const useSendMoneyModal = () => {
                             amountFloat
                         );
 
+                        // Track success for DB
+                        executedRoutes.push({
+                            chainName: fromValidChain,
+                            amount: amountFloat,
+                            assetOrigin: chain.token || watch("sourceToken") || "USDC",
+                            status: "SUCCESS",
+                            txHash: result.transactionHash
+                        });
+                        totalSentAmount += amountFloat;
+
                     } else {
                         throw new Error(result.errorReason);
                     }
@@ -310,7 +323,37 @@ export const useSendMoneyModal = () => {
         }
 
         console.log("✅ Final transfer completed");
-        toast.success("Transacciones completadas");
+
+        if (executedRoutes.length > 0) {
+            toast.success("Transacciones completadas");
+
+            // Save Transaction to DB
+            try {
+                const txData = {
+                    id: crypto.randomUUID(),
+                    fromAddress: generalWallet?.toLowerCase() || wallets[0]?.address.toLowerCase(),
+                    toAddress: recipient.toLowerCase(),
+                    destinationChain: toValidChain,
+                    totalAmount: totalSentAmount,
+                    status: "PENDING",
+                    tokenSymbol: watch("sourceToken") || "USDC",
+                    decimals: 6,
+                    createdAt: Date.now(),
+                    route: executedRoutes
+                };
+
+                await fetch("/api/transactions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(txData)
+                });
+                console.log("Transaction saved to DB");
+            } catch (dbError) {
+                console.error("Failed to save transaction to DB:", dbError);
+            }
+        } else {
+            toast.error("No se completó ninguna transacción");
+        }
 
         // Brief delay to show success state before closing
         setTimeout(() => {
