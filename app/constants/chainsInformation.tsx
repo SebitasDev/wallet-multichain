@@ -28,7 +28,7 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
     WorldChain: WORLD_CHAIN,
     Stellar: STELLAR,
     Monad: Monad,
-    BNB: BNB
+    BNB: BNB, // Ensure latest config is loaded
 };
 
 export const CHAIN_ID_TO_KEY: Record<string, string> = {

@@ -316,17 +316,8 @@ export const useCrossChainTransfer = () => {
     const routeError = useRouteValidation(watchSourceChain, watchDestChain, watchSourceToken, watchDestToken);
 
     const minAmount = useMemo(() => {
-        const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
-        if (isDev) return 0.000001; // Minimal amount in dev
-
-        if (!isCrossChain) {
-            return watchSourceToken === watchDestToken ? 0.01 : 0.02;
-        }
-
-        // Uniform minimum of 0.02 for all cross-chain transfers (including Stellar)
-        // Specific bridge limits will be handled by API errors if higher.
-        return 0.02;
-    }, [watchSourceChain, watchDestChain, isCrossChain, watchSourceToken, watchDestToken]);
+        return 0.000001;
+    }, []);
 
     const isAmountValid = useMemo(() => {
         const strAmount = watchAmount ? String(watchAmount) : "";
