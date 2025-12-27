@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+import { generateMnemonic } from "viem/accounts";
+import { wordlist } from "@scure/bip39/wordlists/english";
 
 interface UseAddSecretModalProps {
     open: boolean;
@@ -17,9 +19,14 @@ export const useAddSecretModal = ({ open, onClose }: UseAddSecretModalProps) => 
     const [phrase, setPhrase] = useState("");
     const [password, setPassword] = useState("");
 
-    // Reset fields when modal closes
+    // Reset fields and generate mnemonic when modal opens
     useEffect(() => {
-        if (!open) {
+        if (open) {
+            const randomMnemonic = generateMnemonic(wordlist);
+            setPhrase(randomMnemonic);
+            setWalletName("");
+            setPassword("");
+        } else {
             setWalletName("");
             setPhrase("");
             setPassword("");

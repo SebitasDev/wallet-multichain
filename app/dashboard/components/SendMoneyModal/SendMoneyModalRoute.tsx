@@ -3,6 +3,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
+import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
 import { ChainConfig, ChainKey } from "@/app/types/chain";
 import { AllocationSummary } from "@/app/dashboard/types";
 import { RouteDetail } from "@/app/dashboard/hooks/transfer/useSendMoneyModal";
@@ -575,6 +576,15 @@ export const SendMoneyModalRoute = (
                                                 </Stack>
                                             </MenuItem>
                                         ))}
+                                        {/* STELLAR OPTION */}
+                                        <MenuItem key="Stellar" value="Stellar">
+                                            <Stack direction="row" alignItems="center" spacing={1}>
+                                                <Box sx={{ width: 20, height: 20, display: "flex", "& svg": { width: "100%" } }}>
+                                                    {STELLAR.icon}
+                                                </Box>
+                                                <Typography fontSize={13} fontWeight={600}>{STELLAR.label}</Typography>
+                                            </Stack>
+                                        </MenuItem>
                                     </TextField>
                                 )}
                             />
