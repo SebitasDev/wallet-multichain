@@ -1,11 +1,7 @@
-import {
-    Box,
-    Typography,
-    IconButton,
-} from "@mui/material";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { Box, Typography } from "@mui/material";
+import { formatCurrency } from "@/app/utils/formatCurrency";
 import { Address } from "abitype";
+import { CopyableAddress } from "@/app/components/molecules/CopyableAddress";
 
 interface AddressCardInfoProps {
     address: Address;
@@ -30,71 +26,12 @@ export const AddressCardInfo = ({
         >
             {/* Address and action buttons */}
             <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                <Box
-                    component="code"
-                    sx={{
-                        backgroundColor: "#ffffff",
-                        px: { xs: 1.2, sm: 1.5 },
-                        py: 0.75,
-                        borderRadius: 2,
-                        fontSize: { xs: "12px", sm: "13px" },
-                        fontWeight: 700,
-                        color: "#000000",
-                        border: "2px solid #000000",
-                        fontFamily: "monospace",
-                    }}
-                >
-                    {truncated}
-                </Box>
-
-                <IconButton
-                    size="small"
-                    aria-label="Copiar address"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        copyToClipboard(address, "Address");
-                    }}
-                    sx={{
-                        color: "#000000",
-                        background: "#ffffff",
-                        border: "2px solid #000000",
-                        borderRadius: 2,
-                        width: { xs: 30, sm: 32 },
-                        height: { xs: 30, sm: 32 },
-                        transition: "all 0.2s",
-                        "&:hover": {
-                            background: "#3CD2FF",
-                            transform: "scale(1.05)",
-                        },
-                    }}
-                    className="tour-copy-address"
-                >
-                    <ContentCopyIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
-                </IconButton>
-
-                <IconButton
-                    size="small"
-                    component="a"
-                    href={`https://etherscan.io/address/${address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{
-                        color: "#000000",
-                        background: "#ffffff",
-                        border: "2px solid #000000",
-                        borderRadius: 2,
-                        width: { xs: 30, sm: 32 },
-                        height: { xs: 30, sm: 32 },
-                        transition: "all 0.2s",
-                        "&:hover": {
-                            background: "#7852FF",
-                            color: "#ffffff",
-                            transform: "scale(1.05)",
-                        },
-                    }}
-                >
-                    <OpenInNewIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
-                </IconButton>
+                <CopyableAddress
+                    address={address}
+                    onCopy={(text) => copyToClipboard(text, "Address")}
+                    variant="neo"
+                    truncated={true}
+                />
             </Box>
 
             {/* Balance */}
