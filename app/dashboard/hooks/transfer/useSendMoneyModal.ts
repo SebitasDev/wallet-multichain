@@ -251,6 +251,14 @@ export const useSendMoneyModal = () => {
                 // Because we removed the auto-add in createAuthorizationPayload
                 const totalAmount = (amountFloat + currentFee).toFixed(6);
 
+                // Sanitize Token verify it exists on chain
+                let finalToken = chain.token || watch("sourceToken") || "USDC";
+                const assetExists = fromNet.assets.some(a => a.name === finalToken);
+                if (!assetExists && fromNet.assets.length > 0) {
+                    console.log(`[Sanitizer] Invalid token ${finalToken} for ${fromValidChain}. Defaulting to ${fromNet.assets[0].name}`);
+                    finalToken = fromNet.assets[0].name;
+                }
+
                 try {
                     // EXECUTE UNIFIED TRANSFER
                     // This handles Same-Chain (Gasless) AND Cross-Chain (CCTP) automatically via Smart Router
@@ -260,7 +268,8 @@ export const useSendMoneyModal = () => {
                         sourceChain: fromValidChain as FacilitatorChainKey,
                         destinationChain: toValidChain as FacilitatorChainKey,
                         recipient: recipient,
-                        sourceToken: chain.token || watch("sourceToken") || "USDC",
+                        sourceToken: finalToken,
+                        destToken: watch("sourceToken"), // Pass explicit intent
                         overrideCredentials: {
                             privateKey: unlockedKey as `0x${string}`,
                             userAddress: allocation.from as Address
@@ -297,7 +306,7 @@ export const useSendMoneyModal = () => {
                         executedRoutes.push({
                             chainName: fromValidChain,
                             amount: amountFloat,
-                            assetOrigin: chain.token || watch("sourceToken") || "USDC",
+                            assetOrigin: finalToken,
                             status: "SUCCESS",
                             txHash: result.transactionHash
                         });
@@ -343,7 +352,7 @@ export const useSendMoneyModal = () => {
                     destinationChain: toValidChain,
                     totalAmount: totalSentAmount,
                     status: "PENDING",
-                    tokenSymbol: watch("sourceToken") || "USDC",
+                    tokenSymbol: executedRoutes.length > 0 ? executedRoutes[0].assetOrigin : (watch("sourceToken") || "USDC"),
                     decimals: 6,
                     createdAt: Date.now(),
                     route: executedRoutes,
