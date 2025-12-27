@@ -13,6 +13,7 @@ import { UseFormWatch, UseFormSetValue, Control, Controller } from "react-hook-f
 import { SendForm } from "@/app/lib/zod/sendSchema";
 import { SendMoneyRouteWallet } from "./SendMoneyRouteWallet";
 import { SendMoneyRouteSummary } from "./SendMoneyRouteSummary";
+import { bridgeApi } from "@/app/services/api";
 
 type Props = {
     routeDetails: RouteDetail[],
@@ -55,19 +56,13 @@ export const SendMoneyModalRoute = (
 
             const totalAmountToSimulate = (amount + fee).toFixed(6);
 
-            const response = await fetch("/api/bridge/quote", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    sourceChain: sourceChainKey,
-                    targetChain: destChainKey,
-                    amount: totalAmountToSimulate,
-                    token: watch("sourceToken") || "USDC",
-                    sourceToken: token
-                })
+            const data = await bridgeApi.getQuote({
+                sourceChain: sourceChainKey,
+                targetChain: destChainKey,
+                amount: totalAmountToSimulate,
+                token: watch("sourceToken") || "USDC",
+                sourceToken: token
             });
-
-            const data = await response.json();
 
             if (data.success && data.estimatedReceived) {
                 setSimulationResults(prev => ({ ...prev, [chainId]: data.estimatedReceived }));

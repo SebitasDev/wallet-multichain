@@ -23,6 +23,7 @@ import {
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { SavingsPosition } from "@/app/savings/types";
 import { AnimatedValue } from "./AnimatedValue";
+import { savingsApi } from "@/app/services/api";
 
 interface PositionsTableProps {
     onOpenConfirmModal: (
@@ -75,18 +76,12 @@ export function PositionsTable({ onOpenConfirmModal }: PositionsTableProps) {
                 // Unlock wallet to get private key
                 const privateKey = await unlockWallet(mainWallet.address, currentPassword);
 
-                const response = await fetch("/api/savings/withdraw", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        chain: position.chain,
-                        amount: amountBigInt.toString(),
-                        walletAddress: mainWallet.address,
-                        privateKey,
-                    }),
+                const data = await savingsApi.withdraw({
+                    chain: position.chain,
+                    amount: amountBigInt.toString(),
+                    walletAddress: mainWallet.address,
+                    privateKey,
                 });
-
-                const data = await response.json();
 
                 if (data.success) {
                     toast.success(`Withdrew ${formatUsdcDisplay(amountBigInt)} from ${position.chain}`);
@@ -95,7 +90,7 @@ export function PositionsTable({ onOpenConfirmModal }: PositionsTableProps) {
                     addWithdrawEntry({
                         chain: position.chain,
                         amount: amountBigInt.toString(),
-                        txHash: data.transactionHash,
+                        txHash: data.transactionHash || "",
                     });
 
                     // Refresh positions

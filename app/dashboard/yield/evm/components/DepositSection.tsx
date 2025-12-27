@@ -22,6 +22,7 @@ import { useSavingsStore, fetchSavingsPositions } from "@/app/dashboard/store/us
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { WalletInfo, useWalletStore } from "@/app/store/useWalletsStore";
+import { savingsApi } from "@/app/services/api";
 
 interface DepositSectionProps {
     walletAddress: string;
@@ -106,18 +107,12 @@ export function DepositSection({ walletAddress, wallet, password, onOpenConfirmM
                 // Unlock wallet to get private key
                 const privateKey = await unlockWallet(walletAddress, password);
 
-                const response = await fetch("/api/savings/deposit", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        chain: selectedChain,
-                        amount: amountBigInt.toString(),
-                        walletAddress,
-                        privateKey,
-                    }),
+                const data = await savingsApi.deposit({
+                    chain: selectedChain,
+                    amount: amountBigInt.toString(),
+                    walletAddress,
+                    privateKey,
                 });
-
-                const data = await response.json();
 
                 if (data.success) {
                     toast.success(`Deposited ${formatUsdcDisplay(amountBigInt)} to ${selectedChain}`);
@@ -126,7 +121,7 @@ export function DepositSection({ walletAddress, wallet, password, onOpenConfirmM
                     addDepositEntry({
                         chain: selectedChain,
                         amount: amountBigInt.toString(),
-                        txHash: data.transactionHash,
+                        txHash: data.transactionHash || "",
                         type: "deposit",
                     });
 
