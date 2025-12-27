@@ -16,12 +16,45 @@ import { FacilitatorChainKey } from "@/app/facilitator/config";
 import { usdcErc3009Abi } from "@/app/facilitator/evm/usdcErc3009Abi";
 import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
 import * as StellarSdk from "stellar-sdk";
+import { BridgeStrategy, BridgeContext } from "./types";
 
 // Initialize API
 OpenAPI.BASE = 'https://1click.chaindefuser.com';
 OpenAPI.TOKEN = process.env.ONE_CLICK_JWT;
 
 const FACILITATOR_PRIVATE_KEY = process.env.FACILITATOR_PRIVATE_KEY as Hex;
+
+export class NearStrategy implements BridgeStrategy {
+    name = "NearIntents";
+
+    canHandle(context: BridgeContext): boolean {
+        const { sourceChain, destChain } = context;
+        const sourceConfig = NETWORKS[sourceChain];
+        const destConfig = NETWORKS[destChain];
+
+        if (!sourceConfig || !destConfig) return false;
+
+        const sourceNear = sourceConfig.crossChainInformation.nearIntentInformation?.support;
+        const destNear = destConfig.crossChainInformation.nearIntentInformation?.support;
+
+        return !!(sourceNear && destNear);
+    }
+
+    async execute(context: BridgeContext): Promise<SettleResponse> {
+        const { paymentPayload, sourceChain, destChain, amount, recipient, destToken, sourceToken, senderAddress } = context;
+
+        return processNearSettlement(
+            paymentPayload,
+            sourceChain,
+            destChain,
+            amount,
+            recipient,
+            destToken,
+            sourceToken,
+            senderAddress
+        );
+    }
+}
 
 export async function processNearSettlement(
     paymentPayload: FacilitatorPaymentPayload | null,
