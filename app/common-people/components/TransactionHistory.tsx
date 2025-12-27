@@ -4,9 +4,11 @@
 import { Box, Typography, Button, List, ListItem, ListItemText, ListItemAvatar } from "@mui/material";
 import { NorthEast } from "@mui/icons-material";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { useRouter } from "next/navigation";
 
 export function TransactionHistory() {
     const { language } = useLanguageStore();
+    const router = useRouter();
 
     // Mock data translations
     const transactions = [
@@ -55,6 +57,7 @@ export function TransactionHistory() {
                 <Button
                     variant="contained"
                     size="small"
+                    onClick={() => router.push("/common-people/history")}
                     sx={{
                         backgroundColor: "#4b5563",
                         color: "white",

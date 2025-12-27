@@ -19,7 +19,7 @@ export function CommonDashboardTour() {
     const tourRef = useRef<Tour | null>(null);
 
     // Key to prevent showing the tour multiple times
-    const KEY_COMMON_TOUR = "hasSeenCommonOnboarding_v3";
+    const KEY_COMMON_TOUR = "hasSeenCommonOnboarding_v4";
 
     // --- STEP DEFINITIONS ---
     const getSteps = (tour: Tour) => {
@@ -50,10 +50,20 @@ export function CommonDashboardTour() {
                 attachTo: { element: "#common-balance-card", on: "bottom" },
                 buttons: [
                     { classes: "shepherd-button-secondary", text: "Atrás", action: back },
-                    { classes: "shepherd-button-primary", text: "Entendido", action: next },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
                 ],
                 title: "💰 Tu Dinero Total",
-                text: "Aquí ves cuánto dinero tienes disponible. Es como el saldo de tu banco. Si tocas la tarjeta, verás el detalle de tus monedas (como Dólares digitales o Pesos).",
+                text: "Acá ves cuánto dinero tenes disponible.",
+            },
+            {
+                id: "expand-balance",
+                attachTo: { element: "#common-expand-btn", on: "top" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "🔍 Ver Detalle",
+                text: "Si tocas acá, verás el detalle de tus monedas.",
             },
             {
                 id: "actions",

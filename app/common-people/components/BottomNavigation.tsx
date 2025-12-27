@@ -111,7 +111,7 @@ export const BottomNavigation = () => {
 
                 {[
                     { label: language === "es" ? "Tu dinero" : "Your Money", icon: AccountBalanceWallet, path: "/common-people/dashboard" },
-                    { label: language === "es" ? "Actividad" : "Activity", icon: GridView, path: "/history" },
+                    { label: language === "es" ? "Actividad" : "Activity", icon: GridView, path: "/common-people/history" },
                     { label: language === "es" ? "Tarjetas" : "Cards", icon: Send, path: "/cards" }
                 ].map((link) => (
                     <Box key={link.label}

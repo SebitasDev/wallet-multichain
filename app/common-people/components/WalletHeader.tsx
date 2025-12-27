@@ -7,7 +7,7 @@ import { ArrowDownward, ArrowUpward, Login, ExpandMore, ExpandLess } from "@mui/
 import { ChainGrid } from "./ChainGrid";
 import { AssetModal } from "./AssetModal";
 import { ChainData } from "./ChainCard";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"; // Fixed import
 
 // Import Chain Constants for Icons
 import {
@@ -68,7 +68,7 @@ export function WalletHeader() {
     }
 
 
-    // Hardcoded chains data using real icons
+    // Hardcoded chains data using real icons and assets
     const chains: ChainData[] = [
         {
             id: "base",
@@ -76,7 +76,12 @@ export function WalletHeader() {
             icon: BASE.icon,
             totalValue: "0.10",
             color: "#0052FF",
-            assets: [{ symbol: "USDC", balance: "0.10", value: "$0.10", icon: BASE.assets[0].icon }],
+            assets: BASE.assets.map(asset => ({
+                symbol: asset.name,
+                balance: asset.name === "USDC" ? "0.10" : "0.00",
+                value: asset.name === "USDC" ? "$0.10" : "$0.00",
+                icon: asset.icon
+            })),
         },
         {
             id: "optimism",
@@ -84,7 +89,12 @@ export function WalletHeader() {
             icon: OPTIMISM.icon,
             totalValue: "0.00",
             color: "#FF0420",
-            assets: [{ symbol: "OP", balance: "0.00", value: "$0.00", icon: OPTIMISM.assets[0].icon }], // Assuming Optimism has assets defined similarly
+            assets: OPTIMISM.assets.map(asset => ({
+                symbol: asset.name,
+                balance: "0.00",
+                value: "$0.00",
+                icon: asset.icon
+            })),
         },
         {
             id: "arbitrum",
@@ -92,7 +102,12 @@ export function WalletHeader() {
             icon: ARBITRUM.icon,
             totalValue: "0.00",
             color: "#12AAFF",
-            assets: [{ symbol: "ARB", balance: "0.00", value: "$0.00", icon: ARBITRUM.assets[0].icon }],
+            assets: ARBITRUM.assets.map(asset => ({
+                symbol: asset.name,
+                balance: "0.00",
+                value: "$0.00",
+                icon: asset.icon
+            })),
         },
         {
             id: "polygon",
@@ -100,7 +115,12 @@ export function WalletHeader() {
             icon: POLYGON.icon,
             totalValue: "0.00",
             color: "#8247E5",
-            assets: [{ symbol: "POL", balance: "0.00", value: "$0.00", icon: POLYGON.assets[0].icon }],
+            assets: POLYGON.assets.map(asset => ({
+                symbol: asset.name,
+                balance: "0.00",
+                value: "$0.00",
+                icon: asset.icon
+            })),
         },
         {
             id: "avalanche",
@@ -108,7 +128,12 @@ export function WalletHeader() {
             icon: AVALANCHE.icon,
             totalValue: "0.00",
             color: "#E84142",
-            assets: [{ symbol: "AVAX", balance: "0.00", value: "$0.00", icon: AVALANCHE.assets[0]?.icon }],
+            assets: AVALANCHE.assets.map(asset => ({
+                symbol: asset.name,
+                balance: "0.00",
+                value: "$0.00",
+                icon: asset.icon
+            })),
         },
         {
             id: "bnb",
@@ -116,7 +141,12 @@ export function WalletHeader() {
             icon: BNB.icon,
             totalValue: "0.00",
             color: "#F3BA2F",
-            assets: [{ symbol: "BNB", balance: "0.00", value: "$0.00", icon: BNB.assets[0]?.icon }],
+            assets: BNB.assets.map(asset => ({
+                symbol: asset.name,
+                balance: "0.00",
+                value: "$0.00",
+                icon: asset.icon
+            })),
         },
         {
             id: "unichain",
@@ -124,7 +154,12 @@ export function WalletHeader() {
             icon: UNICHAIN.icon,
             totalValue: "0.00",
             color: "#FF007A",
-            assets: [{ symbol: "UNI", balance: "0.00", value: "$0.00", icon: UNICHAIN.assets[0]?.icon }],
+            assets: UNICHAIN.assets.map(asset => ({
+                symbol: asset.name,
+                balance: "0.00",
+                value: "$0.00",
+                icon: asset.icon
+            })),
         },
         {
             id: "worldchain",
@@ -132,7 +167,12 @@ export function WalletHeader() {
             icon: WORLD_CHAIN.icon,
             totalValue: "0.00",
             color: "#000000",
-            assets: [{ symbol: "WLD", balance: "0.00", value: "$0.00", icon: WORLD_CHAIN.assets[0]?.icon }],
+            assets: WORLD_CHAIN.assets.map(asset => ({
+                symbol: asset.name,
+                balance: "0.00",
+                value: "$0.00",
+                icon: asset.icon
+            })),
         },
         {
             id: "monad",
@@ -140,7 +180,12 @@ export function WalletHeader() {
             icon: Monad.icon,
             totalValue: "0.00",
             color: "#836EF9",
-            assets: [{ symbol: "MON", balance: "0.00", value: "$0.00", icon: Monad.assets[0]?.icon }],
+            assets: Monad.assets.map(asset => ({
+                symbol: asset.name,
+                balance: "0.00",
+                value: "$0.00",
+                icon: asset.icon
+            })),
         },
         {
             id: "stellar",
@@ -148,7 +193,12 @@ export function WalletHeader() {
             icon: STELLAR.icon,
             totalValue: "0.00",
             color: "#3E1B3C",
-            assets: [{ symbol: "XLM", balance: "0.00", value: "$0.00", icon: STELLAR.assets[0]?.icon }],
+            assets: STELLAR.assets.map(asset => ({
+                symbol: asset.name,
+                balance: "0.00",
+                value: "$0.00",
+                icon: asset.icon
+            })),
         },
     ];
 
@@ -438,7 +488,7 @@ export function WalletHeader() {
                 </Box>
 
                 {/* Expand Button */}
-                <Box display="flex" justifyContent="center" pb={1} onClick={() => setExpanded(!expanded)}>
+                <Box id="common-expand-btn" display="flex" justifyContent="center" pb={1} onClick={() => setExpanded(!expanded)}>
                     <Box
                         sx={{
                             backgroundColor: "#1f2937", // dark gray
