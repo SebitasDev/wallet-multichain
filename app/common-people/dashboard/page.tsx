@@ -9,6 +9,7 @@ import { SendMoneyModal } from "@/app/dashboard/components/SendMoneyModal";
 import { SimpleReceiveModal } from "../components/SimpleReceiveModal";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
+import { CommonDashboardTour } from "../components/CommonDashboardTour";
 
 export default function CommonPeopleDashboard() {
     const { receiveOpen, closeReceive } = useDashboardModalsStore();
@@ -32,13 +33,12 @@ export default function CommonPeopleDashboard() {
             <BottomNavigation />
             <SendMoneyModal />
 
-            {wallets[0] && (
-                <SimpleReceiveModal
-                    open={receiveOpen}
-                    wallet={wallets[0]}
-                    onClose={closeReceive}
-                />
-            )}
+            <SimpleReceiveModal
+                open={receiveOpen}
+                wallet={wallets[0]}
+                onClose={closeReceive}
+            />
+            <CommonDashboardTour />
         </Box>
     );
 }

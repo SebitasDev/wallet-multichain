@@ -5,7 +5,8 @@ import QRCode from "react-qr-code";
 import { toast } from "react-toastify";
 import { WalletInfo } from "@/app/store/useWalletsStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
-import { decryptSeed } from "@/app/utils/cripto";
+import { useXOWalletStore } from "@/app/store/useXOWalletStore";
+import { decryptSeed, decryptPrivateKey } from "@/app/utils/cripto";
 import { mnemonicToSeedSync } from "@scure/bip39";
 import { derivePath } from "ed25519-hd-key";
 import { Keypair } from "stellar-sdk";
@@ -13,32 +14,58 @@ import { Keypair } from "stellar-sdk";
 interface SimpleReceiveModalProps {
     open: boolean;
     onClose: () => void;
-    wallet: WalletInfo;
+    wallet?: WalletInfo; // optional
 }
 
 export function SimpleReceiveModal({ open, onClose, wallet }: SimpleReceiveModalProps) {
     const [network, setNetwork] = useState<"EVM" | "Stellar">("EVM");
     const [stellarAddress, setStellarAddress] = useState<string | null>(null);
     const { currentPassword } = useWalletPasswordStore();
+    const xoMainWallet = useXOWalletStore(s => s.mainWallet);
+
+    // Determine effective address source
+    const effectiveEvmAddress = wallet?.address || xoMainWallet.address;
+    const effectiveEncryptedSeed = wallet?.encryptedSeed || xoMainWallet.encryptedMnemonic;
 
     // Derive Stellar Address on mount/open
     useEffect(() => {
-        if (!wallet || !currentPassword) return;
+        const derive = async () => {
+            if (!currentPassword) return;
 
-        try {
-            const mnemonic = decryptSeed(wallet.encryptedSeed, currentPassword);
-            if (mnemonic) {
-                const seed = mnemonicToSeedSync(mnemonic);
-                const { key } = derivePath("m/44'/148'/0'", Buffer.from(seed).toString('hex'));
-                const keypair = Keypair.fromRawEd25519Seed(key);
-                setStellarAddress(keypair.publicKey());
+            // Prefer explicitly stored stellar address if available (fastest)
+            if (!wallet && xoMainWallet.addressStellar) {
+                setStellarAddress(xoMainWallet.addressStellar);
             }
-        } catch (e) {
-            console.error("Error deriving Stellar address", e);
-        }
-    }, [wallet, currentPassword]);
 
-    const currentAddress = network === "EVM" ? wallet.address : stellarAddress;
+            try {
+                let mnemonic: string | null = null;
+
+                if (wallet) {
+                    mnemonic = decryptSeed(wallet.encryptedSeed, currentPassword);
+                } else if (xoMainWallet.encryptedMnemonic && xoMainWallet.salt && xoMainWallet.iv) {
+                    mnemonic = await decryptPrivateKey(
+                        xoMainWallet.encryptedMnemonic,
+                        currentPassword,
+                        xoMainWallet.salt,
+                        xoMainWallet.iv
+                    );
+                }
+
+                if (mnemonic) {
+                    const seed = mnemonicToSeedSync(mnemonic);
+                    const { key } = derivePath("m/44'/148'/0'", Buffer.from(seed).toString('hex'));
+                    const keypair = Keypair.fromRawEd25519Seed(key);
+                    setStellarAddress(keypair.publicKey());
+                }
+            } catch (e) {
+                console.error("Error deriving Stellar address", e);
+            }
+        };
+
+        derive();
+    }, [wallet, currentPassword, xoMainWallet]);
+
+    const currentAddress = network === "EVM" ? effectiveEvmAddress : stellarAddress;
 
     const handleCopy = () => {
         if (currentAddress) {
@@ -71,12 +98,12 @@ export function SimpleReceiveModal({ open, onClose, wallet }: SimpleReceiveModal
                     border: "3px solid #000000",
                     boxShadow: "8px 8px 0px #000000",
                     background: "#f0fdf4", // green-50
-                    maxWidth: "400px" // Smaller width as requested
+                    maxWidth: "500px" // Wider as requested
                 },
             }}
         >
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" p={3} pb={1}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" p={2} pb={0}>
                 <Typography variant="h5" fontWeight={900}>
                     Receive
                 </Typography>
@@ -98,7 +125,7 @@ export function SimpleReceiveModal({ open, onClose, wallet }: SimpleReceiveModal
             </Box>
 
             {/* Content */}
-            <Box p={3} display="flex" flexDirection="column" alignItems="center" gap={3}>
+            <Box px={3} pb={3} pt={1} display="flex" flexDirection="column" alignItems="center" gap={4}>
 
                 {/* Network Toggle */}
                 <ToggleButtonGroup
@@ -166,7 +193,8 @@ export function SimpleReceiveModal({ open, onClose, wallet }: SimpleReceiveModal
                         backgroundColor: "white",
                         border: "3px solid #000000",
                         borderRadius: "12px",
-                        p: 1.5,
+                        py: 1,
+                        px: 2,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -181,10 +209,11 @@ export function SimpleReceiveModal({ open, onClose, wallet }: SimpleReceiveModal
                         fontWeight="bold"
                         fontSize={14}
                         sx={{
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            mr: 1
+                            wordBreak: "break-word",
+                            overflowWrap: "anywhere",
+                            mr: 1,
+                            lineHeight: 1.6,
+                            fontSize: 12,
                         }}
                     >
                         {currentAddress}

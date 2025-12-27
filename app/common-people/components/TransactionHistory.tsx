@@ -13,7 +13,7 @@ export function TransactionHistory() {
         {
             id: 1,
             type: "received",
-            title: "MiniPay Boost",
+            title: "1llet Boost",
             time: language === "es" ? "Hace 23 h" : "23h ago",
             amount: "+$<0.01",
             color: "#dcfce7", // Light green
@@ -21,7 +21,7 @@ export function TransactionHistory() {
         {
             id: 2,
             type: "received",
-            title: "MiniPay Boost",
+            title: "1llet Boost",
             time: language === "es" ? "Anteayer" : "Day before yesterday",
             amount: "+$<0.01",
             color: "#dcfce7",
@@ -29,7 +29,7 @@ export function TransactionHistory() {
         {
             id: 3,
             type: "received",
-            title: "MiniPay Boost",
+            title: "1llet Boost",
             time: language === "es" ? "Hace 3 días" : "3 days ago",
             amount: "+$<0.01",
             color: "#dcfce7",
@@ -38,6 +38,7 @@ export function TransactionHistory() {
 
     return (
         <Box
+            id="common-transactions"
             sx={{
                 backgroundColor: "#2c2d35",
                 color: "white",

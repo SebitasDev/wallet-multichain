@@ -25,12 +25,12 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
                     top: "50%",
                     left: "50%",
                     transform: "translate(-50%, -50%)",
-                    width: "100%",
-                    maxWidth: 448, // max-w-md
-                    bgcolor: "background.paper",
-                    border: "4px solid #000000",
+                    width: "95%",
+                    maxWidth: 420,
+                    bgcolor: "#ffffff",
+                    border: "2px solid #000000",
                     borderRadius: "24px",
-                    boxShadow: "12px 12px 0px #000000",
+                    boxShadow: "8px 8px 0px rgba(0,0,0,1)",
                     overflow: "hidden",
                     outline: "none",
                 }}
@@ -38,65 +38,81 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
                 {/* Header */}
                 <Box
                     sx={{
-                        backgroundColor: "#f0f9ff",
                         p: 3,
-                        borderBottom: "3px solid #000000",
+                        pb: 2,
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "flex-start",
+                        alignItems: "center",
                     }}
                 >
                     <Box>
-                        <Typography variant="h5" fontWeight={900}>
-                            {chain.name} Wallet
-                        </Typography>
-                        <Typography fontWeight="bold" color="text.secondary">
-                            Assets & Tokens
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                            <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: "-0.02em" }}>
+                                {chain.name}
+                            </Typography>
+                            {/* Optional Badge if needed */}
+                        </Stack>
+                        <Typography variant="body2" fontWeight={600} color="text.secondary">
+                            Wallet Assets
                         </Typography>
                     </Box>
                     <IconButton
                         onClick={onClose}
                         sx={{
-                            backgroundColor: "white",
-                            border: "3px solid #000000",
-                            borderRadius: 2,
-                            p: 0.5,
+                            backgroundColor: "#f3f4f6",
+                            borderRadius: "12px",
+                            p: 1,
+                            transition: "all 0.2s",
                             "&:hover": {
-                                backgroundColor: "#fef2f2", // red-50
-                                borderColor: "#ef4444", // red-500
+                                backgroundColor: "#e5e7eb",
+                                transform: "rotate(90deg)"
                             },
                         }}
                     >
-                        <Close sx={{ fontSize: 24, color: "black", strokeWidth: 3 }} />
+                        <Close sx={{ fontSize: 20, color: "black" }} />
                     </IconButton>
                 </Box>
 
-                {/* List */}
-                <Box sx={{ p: 3, maxHeight: "60vh", overflowY: "auto" }}>
+                {/* Content */}
+                <Box sx={{ p: 3, pt: 0, maxHeight: "65vh", overflowY: "auto" }}>
+
+                    {/* Balance Card */}
                     <Box
                         sx={{
-                            mb: 3,
-                            backgroundColor: "black",
+                            mb: 2,
+                            background: "linear-gradient(135deg, #1a1a1a 0%, #000000 100%)",
                             color: "white",
                             p: 2,
-                            borderRadius: "12px",
-                            border: "3px solid #000000",
-                            boxShadow: "4px 4px 0px #666",
+                            borderRadius: "16px",
+                            position: "relative",
+                            overflow: "hidden",
+                            boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
                         }}
                     >
-                        <Typography variant="body2" fontWeight="bold" color="grey.400">
+                        {/* Decorative circle */}
+                        <Box sx={{
+                            position: "absolute",
+                            top: -20,
+                            right: -20,
+                            width: 80,
+                            height: 80,
+                            background: "rgba(255,255,255,0.05)",
+                            borderRadius: "50%"
+                        }} />
+
+                        <Typography variant="caption" fontWeight={500} color="rgba(255,255,255,0.6)" mb={0}>
                             Total Balance
                         </Typography>
-                        <Typography variant="h4" fontWeight={900}>
+                        <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: "-0.03em" }}>
                             {chain.totalValue}
                         </Typography>
                     </Box>
 
-                    <Typography variant="h6" fontWeight={900} mb={2} textTransform="uppercase" letterSpacing={1}>
-                        Your Assets
+                    <Typography variant="subtitle2" fontWeight={700} color="text.secondary" mb={2} sx={{ textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.75rem" }}>
+                        Your Tokens
                     </Typography>
 
-                    <Stack spacing={1.5}>
+                    <Stack spacing={2}>
                         {chain.assets.map((asset, idx) => (
                             <Box
                                 key={idx}
@@ -105,57 +121,54 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
                                     justifyContent: "space-between",
                                     alignItems: "center",
                                     p: 2,
-                                    backgroundColor: "white",
-                                    border: "3px solid #000000",
-                                    borderRadius: "12px",
-                                    transition: "transform 0.2s",
+                                    borderRadius: "16px",
+                                    border: "1px solid #e5e7eb",
+                                    transition: "all 0.2s",
+                                    cursor: "pointer",
                                     "&:hover": {
-                                        transform: "translate(2px, 0)",
+                                        borderColor: "#000",
+                                        backgroundColor: "#fafafa",
+                                        transform: "translateY(-2px)",
+                                        boxShadow: "4px 4px 0px #000000"
                                     },
                                 }}
                             >
-                                <Box display="flex" alignItems="center" gap={1.5}>
+                                <Box display="flex" alignItems="center" gap={2}>
                                     <Box
                                         sx={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: "50%",
-                                            backgroundColor: "#6366f1", // indigo-500
-                                            border: "2px solid #000000",
+                                            width: 44,
+                                            height: 44,
+                                            borderRadius: "14px",
+                                            backgroundColor: "#f3f4f6",
                                             display: "flex",
                                             alignItems: "center",
                                             justifyContent: "center",
-                                            color: "white",
+                                            color: "black",
                                             fontWeight: "bold",
+                                            fontSize: "1.2rem",
+                                            border: "1px solid #e5e7eb"
                                         }}
                                     >
                                         {asset.icon ?? asset.symbol[0]}
                                     </Box>
                                     <Box>
-                                        <Typography fontWeight={900} fontSize={16}>
+                                        <Typography fontWeight={700} fontSize={16}>
                                             {asset.symbol}
                                         </Typography>
                                         <Typography
-                                            fontWeight="bold"
-                                            fontSize={12}
+                                            fontWeight={500}
+                                            fontSize={13}
                                             color="text.secondary"
-                                            sx={{
-                                                backgroundColor: "#f3f4f6", // gray-100
-                                                px: 1,
-                                                py: 0.25,
-                                                borderRadius: 10,
-                                                width: "fit-content",
-                                            }}
                                         >
                                             Token
                                         </Typography>
                                     </Box>
                                 </Box>
                                 <Box textAlign="right">
-                                    <Typography fontWeight={900} fontSize={16}>
+                                    <Typography fontWeight={700} fontSize={16}>
                                         {asset.balance}
                                     </Typography>
-                                    <Typography fontWeight="bold" color="text.secondary">
+                                    <Typography fontWeight={500} fontSize={13} color="text.secondary">
                                         {asset.value}
                                     </Typography>
                                 </Box>
@@ -163,20 +176,23 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
                         ))}
                     </Stack>
 
-                    <Box mt={3} display="flex" gap={1}>
+                    <Box mt={4} display="flex" gap={2}>
                         <Button
                             fullWidth
-                            variant="outlined"
+                            variant="contained"
                             sx={{
-                                border: "3px solid #000000",
-                                color: "black",
-                                fontWeight: 900,
-                                borderRadius: "12px",
+                                backgroundColor: "black",
+                                color: "white",
+                                fontWeight: 700,
+                                borderRadius: "14px",
                                 py: 1.5,
                                 textTransform: "none",
+                                fontSize: "1rem",
+                                boxShadow: "none",
+                                border: "2px solid transparent",
                                 "&:hover": {
-                                    backgroundColor: "#f3f4f6",
-                                    border: "3px solid #000000",
+                                    backgroundColor: "#333",
+                                    boxShadow: "none",
                                 },
                             }}
                         >
@@ -187,14 +203,22 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
                             sx={{
                                 backgroundColor: "#00DC8C",
                                 color: "black",
-                                border: "3px solid #000000",
-                                fontWeight: 900,
-                                borderRadius: "12px",
+                                border: "2px solid black",
+                                fontWeight: 800,
+                                borderRadius: "14px",
                                 py: 1.5,
                                 textTransform: "none",
+                                fontSize: "1rem",
+                                boxShadow: "4px 4px 0px #000000",
                                 "&:hover": {
                                     backgroundColor: "#00c980",
+                                    transform: "translate(2px, 2px)",
+                                    boxShadow: "2px 2px 0px #000000"
                                 },
+                                "&:active": {
+                                    transform: "translate(4px, 4px)",
+                                    boxShadow: "none"
+                                }
                             }}
                         >
                             Swap

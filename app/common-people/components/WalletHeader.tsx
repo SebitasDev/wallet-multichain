@@ -26,10 +26,11 @@ import {
 import { useLocalCurrency } from "@/app/hooks/useLocalCurrency";
 
 import { useCurrencyStore } from "@/app/store/useCurrencyStore";
-import { Loop, AttachMoney, Language } from "@mui/icons-material"; // Icons
+import { Loop, AttachMoney, Language, CompareArrows } from "@mui/icons-material"; // Icons
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
+import { CrossChainTransferModal } from "@/app/dashboard/components/CrossChainTransferModal";
 
 export function WalletHeader() {
     const router = useRouter();
@@ -154,7 +155,7 @@ export function WalletHeader() {
     return (
         <Box width="100%">
             {/* Welcome Message */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} id="common-welcome">
                 <Box
                     sx={{
                         display: "flex",
@@ -218,6 +219,7 @@ export function WalletHeader() {
 
             {/* Main Collapsible Card */}
             <Box
+                id="common-balance-card"
                 sx={{
                     backgroundColor: "#00DC8C",
                     border: "3px solid #000000",
@@ -277,55 +279,152 @@ export function WalletHeader() {
                         )}
                     </Box>
 
-                    <Stack direction="row" spacing={2} mb={2}>
+                    <Stack direction="row" spacing={2} mb={3} id="common-actions">
                         <Button
                             onClick={openReceive}
                             fullWidth
+                            className="neobrutalist-button"
                             sx={{
-                                backgroundColor: "#0f766e",
+                                flex: 1,
+                                backgroundColor: "#18181b", // Zinc-950 (Almost Black)
                                 color: "white",
                                 py: 1.5,
-                                px: 2,
-                                borderRadius: "16px",
-                                border: "3px solid #000000",
-                                boxShadow: "4px 4px 0px #000000",
-                                fontWeight: "bold",
+                                borderRadius: "14px", // Slightly tighter radius
+                                border: "2px solid #000000", // Thinner, sharper border
+                                boxShadow: "4px 4px 0px #000000", // Classic solid shadow
+                                fontWeight: 800, // Extra bold
                                 textTransform: "none",
-                                fontSize: 16,
-                                "&:hover": { backgroundColor: "#0d6e66", transform: "translate(2px, 2px)", boxShadow: "2px 2px 0px #000000" },
-                                "&:active": { transform: "translate(4px, 4px)", boxShadow: "none" },
+                                fontSize: "0.95rem",
+                                display: "flex",
+                                flexDirection: "column", // Vertical Layout (Icon Top, Text Bottom)
+                                gap: 0.5,
+                                minWidth: 0,
+                                transition: "all 0.1s ease-in-out",
+                                "&:hover": {
+                                    backgroundColor: "#27272a", // Zinc-800
+                                    transform: "translate(-2px, -2px)",
+                                    boxShadow: "6px 6px 0px #000000",
+                                },
+                                "&:active": {
+                                    transform: "translate(2px, 2px)",
+                                    boxShadow: "0px 0px 0px #000000",
+                                },
                             }}
-                            startIcon={
-                                <Box sx={{ backgroundColor: "white", borderRadius: "50%", p: 0.5, border: "2px solid #000000", display: "flex" }}>
-                                    <ArrowDownward sx={{ fontSize: 16, color: "black", strokeWidth: 3 }} />
-                                </Box>
-                            }
                         >
+                            <Box
+                                sx={{
+                                    backgroundColor: "#2dd4bf", // Teal-400 (Contrast pop)
+                                    color: "black",
+                                    borderRadius: "50%",
+                                    p: 0.5,
+                                    mb: 0.2, // Tiny spacing
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    border: "1.5px solid #000000"
+                                }}
+                            >
+                                <ArrowDownward sx={{ fontSize: 18, strokeWidth: 2.5 }} />
+                            </Box>
                             {language === "es" ? "Recibir" : "Receive"}
                         </Button>
+
+                        <CrossChainTransferModal
+                            trigger={
+                                <Button
+                                    fullWidth
+                                    sx={{
+                                        flex: 1,
+                                        backgroundColor: "#18181b",
+                                        color: "white",
+                                        py: 1.5,
+                                        borderRadius: "14px",
+                                        border: "2px solid #000000",
+                                        boxShadow: "4px 4px 0px #000000",
+                                        fontWeight: 800,
+                                        textTransform: "none",
+                                        fontSize: "0.95rem",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 0.5,
+                                        minWidth: 0,
+                                        transition: "all 0.1s ease-in-out",
+                                        "&:hover": {
+                                            backgroundColor: "#27272a",
+                                            transform: "translate(-2px, -2px)",
+                                            boxShadow: "6px 6px 0px #000000",
+                                        },
+                                        "&:active": {
+                                            transform: "translate(2px, 2px)",
+                                            boxShadow: "0px 0px 0px #000000",
+                                        },
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            backgroundColor: "#facc15", // Yellow-400
+                                            color: "black",
+                                            borderRadius: "50%",
+                                            p: 0.5,
+                                            mb: 0.2,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            border: "1.5px solid #000000"
+                                        }}
+                                    >
+                                        <CompareArrows sx={{ fontSize: 18, strokeWidth: 2.5 }} />
+                                    </Box>
+                                    Swap
+                                </Button>
+                            }
+                        />
+
                         <Button
                             onClick={() => setSendModal(true)}
                             fullWidth
                             sx={{
-                                backgroundColor: "#0f766e",
+                                flex: 1,
+                                backgroundColor: "#18181b",
                                 color: "white",
                                 py: 1.5,
-                                px: 2,
-                                borderRadius: "16px",
-                                border: "3px solid #000000",
+                                borderRadius: "14px",
+                                border: "2px solid #000000",
                                 boxShadow: "4px 4px 0px #000000",
-                                fontWeight: "bold",
+                                fontWeight: 800,
                                 textTransform: "none",
-                                fontSize: 16,
-                                "&:hover": { backgroundColor: "#0d6e66", transform: "translate(2px, 2px)", boxShadow: "2px 2px 0px #000000" },
-                                "&:active": { transform: "translate(4px, 4px)", boxShadow: "none" },
+                                fontSize: "0.95rem",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 0.5,
+                                minWidth: 0,
+                                transition: "all 0.1s ease-in-out",
+                                "&:hover": {
+                                    backgroundColor: "#27272a",
+                                    transform: "translate(-2px, -2px)",
+                                    boxShadow: "6px 6px 0px #000000",
+                                },
+                                "&:active": {
+                                    transform: "translate(2px, 2px)",
+                                    boxShadow: "0px 0px 0px #000000",
+                                },
                             }}
-                            startIcon={
-                                <Box sx={{ backgroundColor: "white", borderRadius: "50%", p: 0.5, border: "2px solid #000000", display: "flex" }}>
-                                    <ArrowUpward sx={{ fontSize: 16, color: "black", strokeWidth: 3 }} />
-                                </Box>
-                            }
                         >
+                            <Box
+                                sx={{
+                                    backgroundColor: "#ef4444", // Red-500
+                                    color: "black",
+                                    borderRadius: "50%",
+                                    p: 0.5,
+                                    mb: 0.2,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    border: "1.5px solid #000000"
+                                }}
+                            >
+                                <ArrowUpward sx={{ fontSize: 18, strokeWidth: 2.5 }} />
+                            </Box>
                             {language === "es" ? "Enviar" : "Send"}
                         </Button>
                     </Stack>

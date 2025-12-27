@@ -37,6 +37,7 @@ export const BottomNavigation = () => {
 
     return (
         <Box
+            id="common-navigation"
             sx={{
                 position: "fixed",
                 zIndex: 1000,
@@ -74,6 +75,7 @@ export const BottomNavigation = () => {
 
                 {/* Desktop: Wallet Button (Main) */}
                 <Box
+                    id="common-wallet-btn"
                     onClick={() => router.push("/common-people/dashboard")}
                     sx={{
                         display: "flex",
