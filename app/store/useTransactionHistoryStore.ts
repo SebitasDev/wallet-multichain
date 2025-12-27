@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Transaction, TransactionStatus } from '@/app/types/Transaction';
+import { transactionsApi, CreateTransactionRequest } from '@/app/services/api';
 
 interface TransactionHistoryState {
     transactions: Transaction[];
@@ -27,10 +28,8 @@ export const useTransactionHistoryStore = create<TransactionHistoryState>((set, 
     fetchTransactions: async (address: string) => {
         set({ isLoading: true, error: null });
         try {
-            const res = await fetch(`/api/transactions?address=${address}`);
-            if (!res.ok) throw new Error('Failed to fetch transactions');
-            const data = await res.json();
-            set({ transactions: data, isLoading: false });
+            const data = await transactionsApi.getAll({ address });
+            set({ transactions: data.transactions || [], isLoading: false });
         } catch (error: any) {
             console.error(error);
             set({ error: error.message, isLoading: false });
@@ -41,12 +40,10 @@ export const useTransactionHistoryStore = create<TransactionHistoryState>((set, 
         // Optimistic update
         set((state) => ({ transactions: [tx, ...state.transactions] }));
         try {
-            const res = await fetch('/api/transactions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(tx),
-            });
-            if (!res.ok) throw new Error('Failed to save transaction');
+            // Adapt tx to CreateTransactionRequest if needed, assuming direct compatibility for now
+            // But tx has types that might mismatch strict 'string' fields of request if they are optional
+            // We cast or carefully map. Transaction type usually matches schema.
+            await transactionsApi.create(tx as unknown as CreateTransactionRequest);
         } catch (error: any) {
             console.error(error);
             // Rollback on error could be implemented here
@@ -63,11 +60,7 @@ export const useTransactionHistoryStore = create<TransactionHistoryState>((set, 
         }));
 
         try {
-            await fetch('/api/transactions', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, status }),
-            });
+            await transactionsApi.update({ id, status });
         } catch (error: any) {
             console.error(error);
         }
@@ -86,8 +79,6 @@ export const useTransactionHistoryStore = create<TransactionHistoryState>((set, 
             return r;
         });
 
-        // Check if we need to update parent status? (Optional logic)
-
         set((state) => ({
             transactions: state.transactions.map((t) =>
                 t.id === txId ? { ...t, route: updatedRoutes } : t
@@ -96,11 +87,7 @@ export const useTransactionHistoryStore = create<TransactionHistoryState>((set, 
 
         // Send to API
         try {
-            await fetch('/api/transactions', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: txId, route: updatedRoutes }),
-            });
+            await transactionsApi.update({ id: txId, route: updatedRoutes });
         } catch (error: any) {
             console.error(error);
         }

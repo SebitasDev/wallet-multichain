@@ -3,6 +3,7 @@ import { SettleResponse, FacilitatorPaymentPayload } from "@/app/facilitator/typ
 import { STELLAR } from "@/app/constants/chais";
 import * as StellarSdk from "stellar-sdk";
 import { toast } from "react-toastify";
+import { bridgeApi } from "@/app/services/api";
 
 const LOG_PREFIX = "[Facilitator Stellar]";
 
@@ -15,21 +16,15 @@ export const executeStellarBridgeTransfer = async (
     sourceToken?: string
 ): Promise<SettleResponse> => {
     console.log(LOG_PREFIX, "Calling Smart Router API");
-    const response = await fetch("/api/bridge/settle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            paymentPayload,
-            sourceChain,
-            destChain: "Stellar", // EVM -> Stellar
-            amount,
-            recipient: recipientStellar,
-            destToken,
-            sourceToken
-        })
+    const result = await bridgeApi.settle({
+        paymentPayload,
+        sourceChain,
+        destChain: "Stellar", // EVM -> Stellar
+        amount,
+        recipient: recipientStellar,
+        destToken,
+        sourceToken
     });
-
-    const result = await response.json();
 
     if (!result.success) {
         throw new Error(result.errorReason || "Stellar bridge failed");
@@ -139,23 +134,17 @@ export const executeStellarToEvmTransfer = async (
     }
 
     // Call Smart Router API
-    const response = await fetch("/api/bridge/settle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            sourceChain: "Stellar",
-            destChain: destinationChain, // Mapped from targetChain
-            amount,
-            recipient: recipientEVM, // Mapped from recipientOther
-            sourceToken,
-            senderAddress: senderStellar, // Explicit sender for refunds
-            paymentPayload: {
-                signedXDR // Passing XDR in the payload object
-            } as any // Cast to satisfy EVM-centric type definition
-        })
+    const result = await bridgeApi.settle({
+        sourceChain: "Stellar",
+        destChain: destinationChain, // Mapped from targetChain
+        amount,
+        recipient: recipientEVM, // Mapped from recipientOther
+        sourceToken,
+        senderAddress: senderStellar, // Explicit sender for refunds
+        paymentPayload: {
+            signedXDR // Passing XDR in the payload object
+        } as any // Cast to satisfy EVM-centric type definition
     });
-
-    const result = await response.json();
 
     if (!result.success) {
         throw new Error(result.errorReason || "Stellar bridge failed");
@@ -164,9 +153,9 @@ export const executeStellarToEvmTransfer = async (
     console.log(LOG_PREFIX, "Stellar -> EVM Automated Transfer completed", result);
 
     return {
+        ...result,
         success: true,
         transactionHash: result.transactionHash,
-        ...result
     } as SettleResponse;
 };
 

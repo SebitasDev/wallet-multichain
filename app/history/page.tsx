@@ -9,6 +9,7 @@ import { useXOWalletStore } from "../store/useXOWalletStore";
 import { HistoryTransactionList } from "./components/HistoryTransactionList";
 import { HistoryMetrics } from "./components/HistoryMetrics";
 import { HistoryTransactionDetail } from "./components/HistoryTransactionDetail";
+import { transactionsApi } from "@/app/services/api";
 
 export default function HistoryListPage() {
     const router = useRouter();
@@ -51,9 +52,9 @@ export default function HistoryListPage() {
 
             try {
                 // Fetch with pagination
-                const res = await fetch(`/api/transactions?address=${address}&page=${page}&limit=${LIMIT}`);
-                const data = await res.json();
-                if (data.success) {
+                const data = await transactionsApi.getAll({ address, page, limit: LIMIT });
+
+                if (data.success && data.transactions) {
                     const mapped = data.transactions.map((tx: any) => {
                         const cleanUserAddr = address.toLowerCase().startsWith('0x') ? address.toLowerCase().substring(0, 42) : address.toLowerCase();
                         const cleanTxFrom = tx.fromAddress.toLowerCase().startsWith('0x') ? tx.fromAddress.toLowerCase().substring(0, 42) : tx.fromAddress.toLowerCase();
@@ -95,8 +96,7 @@ export default function HistoryListPage() {
         const fetchStats = async () => {
             if (!address) return;
             try {
-                const res = await fetch(`/api/transactions/stats?address=${address}`);
-                const data = await res.json();
+                const data: any = await transactionsApi.getStats({ address });
                 if (data.success) {
                     setStats(data.stats);
                 }

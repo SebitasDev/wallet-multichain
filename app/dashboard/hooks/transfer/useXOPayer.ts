@@ -5,6 +5,7 @@ import { Address } from "abitype";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { NETWORKS, AvailableChains } from "../wallet/useXOConnect";
+import { miscApi } from "@/app/services/api";
 
 interface UseXOPayerProps {
     isUsingXO: boolean;
@@ -76,19 +77,12 @@ export const useXOPayer = ({ isUsingXO, xoProviderRef, address, password }: UseX
                 });
             }
 
-            const res = await fetch("/api/x402-pay", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    paymentHeader,
-                    recipientAddress,
-                    amount: amountAtomic,
-                    network: networkConfig.network,
-                }),
+            const result = await miscApi.x402Pay({
+                paymentHeader,
+                recipientAddress,
+                amount: amountAtomic,
+                network: networkConfig.network,
             });
-
-            const result = await res.json();
-            if (!res.ok) throw new Error(result.error);
 
             return { success: true, txHash: result.transaction };
         } catch (err: any) {

@@ -14,6 +14,7 @@ import { ChainKey } from "@/app/types/chain";
 import { useBridgeUsdcStream } from "@/app/dashboard/hooks/transfer/useBridgeUsdcStream";
 import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
+import { transactionsApi, CreateTransactionRequest } from "@/app/services/api";
 
 export type RouteStatus =
     | "idle"
@@ -349,11 +350,8 @@ export const useSendMoneyModal = () => {
                     fee: totalFeePaid // [NEW] Save total fee paid
                 };
 
-                await fetch("/api/transactions", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(txData)
-                });
+                await transactionsApi.create(txData as unknown as CreateTransactionRequest);
+                console.log("Transaction saved to DB");
                 console.log("Transaction saved to DB");
             } catch (dbError) {
                 console.error("Failed to save transaction to DB:", dbError);

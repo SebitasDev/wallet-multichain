@@ -4,6 +4,7 @@ import { Box, Typography, Button, Grid } from "@mui/material";
 import FlagIcon from "@mui/icons-material/Flag";
 import { useCTF } from "../hooks/features/useCTF";
 import { PasswordModal } from "../components/PasswordModal";
+import { ctfApi } from "@/app/services/api";
 
 import { useState } from "react";
 import { CreateGameModal } from "./components/CreateGameModal";
@@ -37,9 +38,8 @@ export default function CTFPage() {
         setSelectedDetailsData(null);
 
         try {
-            const res = await fetch(`/api/ctf/game-details?gameAddress=${gameAddress}&userAddress=${address || ""}`);
-            if (!res.ok) throw new Error("Failed to fetch details");
-            const data = await res.json();
+            // Using ctfApi
+            const data = await ctfApi.getGameDetails(gameAddress, address || "");
             setSelectedDetailsData(data);
         } catch (error) {
             console.error(error);

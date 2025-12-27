@@ -82,3 +82,43 @@ export async function GET(req: Request) {
         );
     }
 }
+
+export async function PUT(req: Request) {
+    try {
+        await connectDB();
+        const data = await req.json();
+        const { id, status, route } = data;
+
+        if (!id) {
+            return NextResponse.json(
+                { success: false, error: "Transaction ID is required" },
+                { status: 400 }
+            );
+        }
+
+        const updateData: any = {};
+        if (status) updateData.status = status;
+        if (route) updateData.route = route;
+
+        const updatedTransaction = await TransactionModel.findOneAndUpdate(
+            { id: id },
+            { $set: updateData },
+            { new: true }
+        );
+
+        if (!updatedTransaction) {
+            return NextResponse.json(
+                { success: false, error: "Transaction not found" },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json({ success: true, transaction: updatedTransaction });
+    } catch (error: any) {
+        console.error("Error updating transaction:", error);
+        return NextResponse.json(
+            { success: false, error: error.message || "Internal Server Error" },
+            { status: 500 }
+        );
+    }
+}
