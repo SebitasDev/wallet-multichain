@@ -3,7 +3,7 @@ import { useState } from "react";
 import PersonIcon from '@mui/icons-material/Person';
 import StarIcon from '@mui/icons-material/Star';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import { useXOContracts } from "../../hooks/useXOConnect";
+import { useXOContracts } from "../../hooks/wallet/useXOConnect";
 import { PasswordModal } from "../PasswordModal"; // Import PasswordModal
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { toast } from "react-toastify";

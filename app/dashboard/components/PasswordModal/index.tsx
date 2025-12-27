@@ -1,5 +1,5 @@
 import { Box, Modal, Stack } from "@mui/material";
-import { usePasswordModal } from "@/app/dashboard/hooks/usePasswordModal";
+import { usePasswordModal } from "@/app/dashboard/hooks/common/usePasswordModal";
 import { PasswordModalHeader } from "./PasswordModalHeader";
 import { PasswordModalForm } from "./PasswordModalForm";
 import { PasswordModalActions } from "./PasswordModalActions";

@@ -60,7 +60,7 @@ export const TransferSummary = ({ watchAmount, fee, total, isCrossChain, token =
                         size="small"
                         sx={{
                             bgcolor: isCrossChain ? "#7852FF" : "#3CD2FF",
-                            color: "#000000",
+                            color: isCrossChain ? "#FFFFFF" : "#000000",
                             fontWeight: 800,
                             fontSize: 11,
                             border: "2px solid #000000",

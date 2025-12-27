@@ -4,7 +4,7 @@ import { createWalletClient, custom, publicActions } from "viem";
 import { Address } from "abitype";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
-import { NETWORKS, AvailableChains } from "./useXOConnect";
+import { NETWORKS, AvailableChains } from "../wallet/useXOConnect";
 
 interface UseXOPayerProps {
     isUsingXO: boolean;

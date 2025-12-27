@@ -4,12 +4,12 @@ import { parseEther, Address, createWalletClient, http, publicActions, parseEven
 import { privateKeyToAccount } from "viem/accounts";
 import { polygon } from "viem/chains";
 
-import CTFFactoryABI from "../ctf/abis/CTFFactory.json";
-import CTFGameABI from "../ctf/abis/CTFGame.json";
+import CTFFactoryABI from "../../ctf/abis/CTFFactory.json";
+import CTFGameABI from "../../ctf/abis/CTFGame.json";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
-import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
+import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
 
 // Deployed Address (Scroll Sepolia)
 const FACTORY_ADDRESS = "0x18fA0850E4b4E7Fba2CF39E827Ed87d412b5406B";

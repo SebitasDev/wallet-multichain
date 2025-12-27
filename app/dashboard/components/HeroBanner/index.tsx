@@ -1,5 +1,5 @@
 import { Box } from "@mui/material";
-import { useHeroBanner } from "@/app/dashboard/hooks/useHeroBanner";
+import { useHeroBanner } from "@/app/dashboard/hooks/dashboard/useHeroBanner";
 import { HeroBannerMainWallet } from "./HeroBannerMainWallet";
 import { HeroBannerTotalBalance } from "./HeroBannerTotalBalance";
 

@@ -15,7 +15,7 @@ import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import TimerIcon from "@mui/icons-material/Timer";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import { GameData, LeaderboardData } from "../../hooks/useCTF";
+import { GameData, LeaderboardData } from "../../hooks/features/useCTF";
 
 interface GameCardProps {
     game: GameData;

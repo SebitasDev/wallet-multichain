@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useWalletStore } from "@/app/store/useWalletsStore";
-import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
+import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";

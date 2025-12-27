@@ -1,6 +1,6 @@
 import { Dialog, DialogContent } from "@mui/material";
 import { useState } from "react";
-import { useSendMoneyModal } from "@/app/dashboard/hooks/useSendMoneyModal";
+import { useSendMoneyModal } from "@/app/dashboard/hooks/transfer/useSendMoneyModal";
 import { SendMoneyModalHeader } from "./SendMoneyModalHeader";
 import { SendMoneyModalForm } from "./SendMoneyModalForm";
 import { SendMoneyModalRoute } from "./SendMoneyModalRoute";

@@ -2,7 +2,7 @@
 import { Box, Button, Modal, TextField, Typography, CircularProgress } from "@mui/material";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { useXOContracts } from "../hooks/useXOConnect";
+import { useXOContracts } from "../hooks/wallet/useXOConnect";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import CloseIcon from "@mui/icons-material/Close";
 

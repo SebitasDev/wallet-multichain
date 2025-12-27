@@ -101,6 +101,7 @@ export const BlendHeader = ({ address }: BlendHeaderProps) => {
                         fontWeight: 700,
                         fontSize: { xs: 11, md: 13 },
                         letterSpacing: 0.5,
+                        wordBreak: "break-all",
                     }}
                 >
                     {address}

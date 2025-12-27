@@ -3,8 +3,8 @@ import { Keypair } from "stellar-sdk";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
-import { blendService, BlendData } from "../services/blendService";
-import { BLEND_CONFIG } from "../config/blendConfig";
+import { blendService, BlendData } from "../../services/blendService";
+import { BLEND_CONFIG } from "../../config/blendConfig";
 
 export const useBlend = (selectedAsset: "USDC" | "USDGLO") => {
     const { mainWallet } = useXOWalletStore();
