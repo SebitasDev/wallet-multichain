@@ -1,5 +1,5 @@
 import { Dialog, DialogContent } from "@mui/material";
-import { useSendMoneyMainWallet } from "@/app/dashboard/hooks/useSendMoneyMainWallet";
+import { useSendMoneyMainWallet } from "@/app/dashboard/hooks/transfer/useSendMoneyMainWallet";
 import { SendMoneyTrigger } from "./SendMoneyTrigger";
 import { SendMoneyModalHeader } from "./SendMoneyModalHeader";
 import { SendMoneyModalForm } from "./SendMoneyModalForm";

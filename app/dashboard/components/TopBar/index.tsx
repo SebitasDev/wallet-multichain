@@ -1,5 +1,5 @@
 import { Box } from "@mui/material";
-import { useTopBar } from "@/app/dashboard/hooks/useTopBar";
+import { useTopBar } from "@/app/dashboard/hooks/dashboard/useTopBar";
 import { TopBarProfile } from "./TopBarProfile";
 import { TopBarActions } from "./TopBarActions";
 import { useRouter } from "next/navigation";

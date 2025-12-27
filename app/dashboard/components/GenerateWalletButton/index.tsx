@@ -1,5 +1,5 @@
 import { Dialog } from "@mui/material";
-import { useGenerateWalletButton } from "@/app/dashboard/hooks/useGenerateWalletButton";
+import { useGenerateWalletButton } from "@/app/dashboard/hooks/wallet/useGenerateWalletButton";
 import { GenerateWalletButtonTrigger } from "./GenerateWalletButtonTrigger";
 import { GenerateWalletModalHeader } from "./GenerateWalletModalHeader";
 import { GenerateWalletModalForm } from "./GenerateWalletModalForm";

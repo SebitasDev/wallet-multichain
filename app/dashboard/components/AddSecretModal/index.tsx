@@ -1,6 +1,6 @@
 import { Dialog } from "@mui/material";
 
-import { useAddSecretModal } from "@/app/dashboard/hooks/useAddSecretModal";
+import { useAddSecretModal } from "@/app/dashboard/hooks/wallet/useAddSecretModal";
 import { AddSecretModalHeader } from "./AddSecretModalHeader";
 import { AddSecretModalForm } from "./AddSecretModalForm";
 import { AddSecretModalActions } from "./AddSecretModalActions";

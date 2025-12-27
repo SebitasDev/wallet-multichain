@@ -8,7 +8,7 @@ import React, {
     useEffect,
     useRef,
 } from "react";
-import { useEmbedded } from "@/app/dashboard/hooks/embebed";
+import { useEmbedded } from "@/app/dashboard/hooks/dashboard/embedded";
 import { toast } from "react-toastify";
 import { Wallet } from "ethers";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
@@ -20,7 +20,7 @@ import {
 import { Keypair } from "stellar-sdk";
 import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
 import { base, polygon } from "viem/chains";
-import { useXOPayer } from "@/app/dashboard/hooks/useXOPayer";
+import { useXOPayer } from "@/app/dashboard/hooks/transfer/useXOPayer";
 import { useXOWalletManager } from "./useXOWalletManager";
 
 

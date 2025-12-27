@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
-import { useCrossChainTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/useCrossChainTransfer";
+import { useCrossChainTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { Controller } from "react-hook-form";
 import { TransferHeader } from "./TransferHeader";

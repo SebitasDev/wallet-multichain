@@ -3,7 +3,7 @@ import { WalletCardHeader } from "./WalletCardHeader";
 import { WalletCardAddressBar } from "./WalletCardAddressBar";
 import { WalletCardChainList } from "./WalletCardChainList";
 import { WalletCardFooter } from "./WalletCardFooter";
-import { useWalletCard } from "@/app/dashboard/hooks/useWalletCard";
+import { useWalletCard } from "@/app/dashboard/hooks/wallet/useWalletCard";
 import { Wallet } from "@/app/dashboard/types";
 
 type Props = { wallet: Wallet };

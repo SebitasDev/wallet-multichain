@@ -4,7 +4,7 @@ import Link from "next/link";
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { toast } from "react-toastify";
-import { useBlend } from "../hooks/useBlend";
+import { useBlend } from "../hooks/features/useBlend";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { PasswordModal } from "./PasswordModal";
