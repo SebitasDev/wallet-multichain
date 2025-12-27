@@ -55,10 +55,22 @@ export async function POST(request: NextRequest) {
         const sourceCCTP = sourceConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
         const destCCTP = destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
 
-        // Default to USDC if destToken is missing (backward compatibility)
-        const targetToken = destToken || "USDC";
+        // Default to USDC if destToken is missing (backward compatibility) 
+        // BUT strict verification: if sourceToken is explicitly NOT USDC, we shouldn't default target to USDC blindly unless it's a known swap?
+        // Actually, if destToken is undefined, we assume it's a USDC transfer for legacy reasons.
+        // However, if sourceToken is defined and is NOT named "USDC", we should be careful.
 
-        if (sourceCCTP && destCCTP && targetToken === "USDC") {
+        let targetToken = destToken;
+        if (!targetToken) {
+            if (sourceToken && sourceToken !== "USDC") {
+                // If source is NOT USDC, and dest is undefined, imply dest is SAME as source 
+                targetToken = sourceToken;
+            } else {
+                targetToken = "USDC";
+            }
+        }
+
+        if (sourceCCTP && destCCTP && targetToken === "USDC" && (sourceToken === "USDC" || !sourceToken)) {
             console.log("[SmartRouter] Routing to: CCTP Service");
 
             const destinationDomain = destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.domain;

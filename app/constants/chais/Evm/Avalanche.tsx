@@ -3,6 +3,7 @@ import { AvalancheIcon } from "@/app/components/atoms/AvalancheIcon";
 import { Address } from "abitype";
 import { ChainConfig } from "@/app/types/chain";
 import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
+import { UsdtIcon } from "@/app/components/atoms/UsdtIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
@@ -19,6 +20,12 @@ export const AVALANCHE: ChainConfig = {
             decimals: 18,
             address: "0x0000000000000000000000000000000000000000" as Address,
             icon: <AvalancheIcon />
+        },
+        {
+            name: "USDT",
+            decimals: 6,
+            address: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7" as Address,
+            icon: <UsdtIcon />
         }
     ],
     evm: {
@@ -50,6 +57,11 @@ export const AVALANCHE: ChainConfig = {
                     assetId: "nep245:v2_1.omni.hot.tg:43114_11111111111111111111",
                     name: "AVAX",
                     decimals: 18
+                },
+                {
+                    assetId: "nep245:v2_1.omni.hot.tg:43114_372BeH7ENZieCaabwkbWkBiTTgXp",
+                    name: "USDT",
+                    decimals: 6
                 }
             ],
             needMemo: false

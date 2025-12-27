@@ -3,6 +3,7 @@ import { BaseIcon } from "@/app/components/atoms/BaseIcon";
 import { Address } from "abitype";
 import { ChainConfig } from "@/app/types/chain";
 import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
+import { EthIcon } from "@/app/components/atoms/EthIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
@@ -13,6 +14,12 @@ export const BASE: ChainConfig = {
             decimals: 6,
             address: (isDevelopment ? "0x036CbD53842c5426634e7929541eC2318f3dCF7e" : "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") as Address,
             icon: <UsdcIcon />
+        },
+        {
+            name: "ETH",
+            decimals: 18,
+            address: "0x0000000000000000000000000000000000000000" as Address,
+            icon: <EthIcon />
         }
     ],
     evm: {
@@ -39,6 +46,11 @@ export const BASE: ChainConfig = {
                     assetId: "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
                     name: "USDC",
                     decimals: 6
+                },
+                {
+                    assetId: "nep141:base.omft.near",
+                    name: "ETH",
+                    decimals: 18
                 }
             ],
             needMemo: false

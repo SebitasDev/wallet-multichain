@@ -62,6 +62,23 @@ export const SendMoneyRouteChain = ({
     const fee = (isSameChain && isUSDC) ? 0.01 : 0.02;
     const maxUsable = Math.max(0, chainBalance - fee);
 
+    // Auto-correct token if invalid for this chain
+    const { useEffect } = require("react");
+    useEffect(() => {
+        if (!process.browser) return; // Client-side only
+        const currentToken = r.token || "USDC";
+        const isValid = chainConfig?.assets?.some((a: any) => a.name === currentToken);
+
+        if (!isValid && chainConfig?.assets?.length > 0) {
+            const defaultToken = chainConfig.assets[0].name;
+            // Avoid infinite loop if onTokenChange triggers re-render 
+            if (currentToken !== defaultToken) {
+                console.log(`[AutoCorrect] Fixing invalid token ${currentToken} on ${chainConfig.label} to ${defaultToken}`);
+                onTokenChange(walletAddress, r.chainId, defaultToken);
+            }
+        }
+    }, [chainConfig, r.token, walletAddress, r.chainId, onTokenChange]);
+
     return (
         <Box
             sx={{
@@ -170,8 +187,15 @@ export const SendMoneyRouteChain = ({
             ) : (
                 <Box mt={1} display="flex" alignItems="center" gap={1}>
                     {(() => {
-                        const tokenSymbol = r.token || "USDC";
-                        const asset = chainConfig?.assets?.find((a: any) => a.name === tokenSymbol);
+                        let tokenSymbol = r.token || "USDC";
+                        let asset = chainConfig?.assets?.find((a: any) => a.name === tokenSymbol);
+
+                        // Fallback if token not found in chain config (e.g. state persistence issue)
+                        if (!asset && chainConfig?.assets?.length > 0) {
+                            asset = chainConfig.assets[0];
+                            tokenSymbol = asset.name;
+                        }
+
                         return (
                             <Box display="flex" alignItems="center" gap={0.5} sx={{ backgroundColor: "#f0f0f0", px: 1, py: 0.5, borderRadius: 1 }}>
                                 {asset?.icon ? (
@@ -206,7 +230,8 @@ export const SendMoneyRouteChain = ({
                 const isCCTP =
                     sourceConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
                     destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
-                    (r.token || "USDC").toUpperCase() === "USDC";
+                    (r.token || "USDC").toUpperCase() === "USDC" &&
+                    (watch("sourceToken") || "USDC").toUpperCase() === "USDC";
 
                 if (isCCTP) return null;
                 if (!isNearSupported || isEditing) return null;
