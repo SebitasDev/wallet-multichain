@@ -13,9 +13,35 @@ import {
 import { FACILITATOR_NETWORKS } from "@/app/facilitator/evm/config";
 import { usdcErc3009Abi } from "@/app/facilitator/evm/usdcErc3009Abi";
 import { SettleResponse, FacilitatorPaymentPayload } from "@/app/facilitator/types";
+import { BridgeStrategy, BridgeContext } from "./types";
 
 const FACILITATOR_PRIVATE_KEY = process.env.FACILITATOR_PRIVATE_KEY as `0x${string}`;
 
+export class GaslessStrategy implements BridgeStrategy {
+    name = "Gasless";
+
+    canHandle(context: BridgeContext): boolean {
+        const { sourceChain, destChain, sourceToken, destToken } = context;
+        // Same Chain -> Gasless Transfer (Only if tokens match)
+        return sourceChain === destChain && (sourceToken === destToken || !destToken);
+    }
+
+    async execute(context: BridgeContext): Promise<SettleResponse> {
+        const { paymentPayload, sourceChain, amount, recipient } = context;
+
+        // Ensure sourceChain matches FacilitatorChainKey (EVM mainly for gasless)
+        // Ideally we check if it IS in FacilitatorChainKey, but for now assuming type safety via logic
+
+        return processGaslessSettlement(
+            paymentPayload,
+            sourceChain as FacilitatorChainKey,
+            amount,
+            recipient as Address
+        );
+    }
+}
+
+// Keep original function for executing the logic
 export async function processGaslessSettlement(
     paymentPayload: FacilitatorPaymentPayload,
     sourceChain: FacilitatorChainKey,

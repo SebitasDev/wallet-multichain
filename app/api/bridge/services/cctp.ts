@@ -17,6 +17,9 @@ import { usdcErc3009Abi } from "@/app/facilitator/evm/usdcErc3009Abi";
 import { tokenMessengerAbi, messageTransmitterAbi } from "@/app/facilitator/evm/cctpAbi";
 import { SettleResponse, FacilitatorPaymentPayload, CrossChainConfig } from "@/app/facilitator/types";
 import { createRetrieveAttestation } from "@/app/cross-chain-core/circleCCTP/retrieveAttestationFactory";
+import { BridgeStrategy, BridgeContext } from "./types";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
 
 const FACILITATOR_PRIVATE_KEY = process.env.FACILITATOR_PRIVATE_KEY as `0x${string}`;
 
@@ -24,6 +27,61 @@ const FACILITATOR_PRIVATE_KEY = process.env.FACILITATOR_PRIVATE_KEY as `0x${stri
 const addressToBytes32 = (address: Address): `0x${string}` => {
     return padHex(address, { size: 32 });
 };
+
+export class CCTPStrategy implements BridgeStrategy {
+    name = "CCTP";
+
+    canHandle(context: BridgeContext): boolean {
+        const { sourceChain, destChain, sourceToken, destToken } = context;
+        const sourceConfig = NETWORKS[sourceChain];
+        const destConfig = NETWORKS[destChain];
+
+        if (!sourceConfig || !destConfig) return false;
+
+        const sourceCCTP = sourceConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
+        const destCCTP = destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
+
+        // Default to USDC if destToken is missing (backward compatibility) 
+        let targetToken = destToken;
+        if (!targetToken) {
+            if (sourceToken && sourceToken !== "USDC") {
+                targetToken = sourceToken;
+            } else {
+                targetToken = "USDC";
+            }
+        }
+
+        return !!(sourceCCTP && destCCTP && targetToken === "USDC" && (sourceToken === "USDC" || !sourceToken));
+    }
+
+    async execute(context: BridgeContext): Promise<SettleResponse> {
+        const { paymentPayload, sourceChain, destChain, amount, recipient } = context;
+
+        const destConfig = NETWORKS[destChain];
+        const destinationDomain = destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.domain;
+
+        if (destinationDomain === undefined) {
+            return {
+                success: false,
+                errorReason: "Destination chain does not have CCTP domain configured"
+            };
+        }
+
+        const crossChainConfig: CrossChainConfig = {
+            destinationChain: destChain as FacilitatorChainKey,
+            destinationDomain: destinationDomain,
+            mintRecipient: recipient as Address
+        };
+
+        return processCCTPSettlement(
+            paymentPayload,
+            sourceChain as FacilitatorChainKey,
+            amount,
+            crossChainConfig,
+            recipient as Address
+        );
+    }
+}
 
 export async function processCCTPSettlement(
     paymentPayload: FacilitatorPaymentPayload,
