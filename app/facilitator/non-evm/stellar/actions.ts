@@ -38,6 +38,7 @@ export const executeStellarToEvmTransfer = async (
     destinationChain: FacilitatorChainKey,
     recipientEVM: string,
     stellarPrivateKey: string | undefined,
+    destToken?: string,
     sourceToken?: string,
     senderStellar?: string // For refund address
 ): Promise<SettleResponse> => {
@@ -139,6 +140,7 @@ export const executeStellarToEvmTransfer = async (
         destChain: destinationChain, // Mapped from targetChain
         amount,
         recipient: recipientEVM, // Mapped from recipientOther
+        destToken,
         sourceToken,
         senderAddress: senderStellar, // Explicit sender for refunds
         paymentPayload: {

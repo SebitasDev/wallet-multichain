@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
 
         // --- ROUTING LOGIC ---
 
-        // 1. Same Chain -> Gasless Transfer
-        if (sourceChain === destChain) {
+        // 1. Same Chain -> Gasless Transfer (Only if tokens match)
+        if (sourceChain === destChain && (sourceToken === destToken || !destToken)) {
             console.log("[SmartRouter] Routing to: Gasless Service");
             const result = await processGaslessSettlement(
                 paymentPayload,

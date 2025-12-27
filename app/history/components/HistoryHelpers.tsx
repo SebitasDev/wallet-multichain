@@ -41,6 +41,7 @@ export const TOKEN_COMPONENTS: Record<string, React.ElementType> = {
     "ETH": EthIcon,
     "WETH": EthIcon,
     "MATIC": PolygonIcon,
+    "POL": PolygonIcon,
     "AVAX": AvalancheIcon,
     "XLM": StellarIcon,
     "OP": OPIcon,

@@ -104,6 +104,7 @@ export const useFacilitator = ({
                     destinationChain, // Destination Chain Key
                     recipient,
                     currentStellarKey, // Use override or default
+                    destToken,
                     sourceToken,
                     sender // Pass sender for refund address
                 );
