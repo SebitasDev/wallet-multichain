@@ -1,6 +1,6 @@
 import { STELLAR } from "@/app/constants/chais";
 import { Horizon } from "stellar-sdk";
-import {toast} from "react-toastify";
+import { toast } from "react-toastify";
 
 export const getStellarUSDCBalance = async (
     stellarAddress: string
@@ -27,8 +27,13 @@ export const getStellarUSDCBalance = async (
         );
 
         return balance ? Number(balance.balance) : 0;
-    } catch (e) {
-        toast.error(`Error fetching Stellar balance:: ${JSON.stringify(e)}`);
+    } catch (e: any) {
+        if (e.response && e.response.status === 404) {
+            toast.error("Cuenta inactiva. Envía al menos 1 XLM para activarla.");
+            return 0;
+        }
+
+        console.error("Error fetching Stellar balance:", e);
         return null;
     }
 };

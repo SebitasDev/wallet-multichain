@@ -8,7 +8,7 @@ import { Buffer } from "buffer";
 import { decryptSeed, encryptSeed } from "../utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { Address } from "abitype";
-import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
+import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { calculateTotalFees } from "@/app/utils/calculateFees";
 
 interface ChainInfo {

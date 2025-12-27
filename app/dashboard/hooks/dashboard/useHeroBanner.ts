@@ -5,7 +5,7 @@ import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
-import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
+import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { Address } from "viem";
