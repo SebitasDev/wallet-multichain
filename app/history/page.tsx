@@ -9,6 +9,8 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import CloseIcon from "@mui/icons-material/Close";
 import LinkIcon from "@mui/icons-material/Link";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import {
@@ -18,7 +20,9 @@ import {
     XAxis,
     YAxis,
     Tooltip,
-    CartesianGrid
+    CartesianGrid,
+    AreaChart,
+    Area
 } from "recharts";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
@@ -159,7 +163,8 @@ const getExplorerUrl = (chain: string, hash: string) => {
 
 // Transaction Detail Component (Embedded) - COMPACT VERSION
 const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onClose: () => void }) => {
-    const [isExpanded, setIsExpanded] = useState(false); // State to control View More
+    const [isExpanded, setIsExpanded] = useState(false); // State to control View More in items list
+    const [showRoute, setShowRoute] = useState(true); // State to toggle Execution Route section
     if (!transaction) return null;
 
     return (
@@ -340,113 +345,132 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                 {/* Sub-Transactions / Route */}
                 {transaction.route && transaction.route.length > 0 && (
                     <>
-                        <Box sx={{ bgcolor: "#FFD700", p: 1, borderBottom: "2.5px solid #000", borderTop: "3px solid #000" }}>
+                        <Box
+                            onClick={() => setShowRoute(!showRoute)}
+                            sx={{
+                                bgcolor: "#FFD700",
+                                p: 1,
+                                borderBottom: "2.5px solid #000",
+                                borderTop: "3px solid #000",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                cursor: "pointer",
+                                "&:hover": { opacity: 0.9 }
+                            }}
+                        >
+                            <Box sx={{ width: 24 }} /> {/* Spacer to center title if needed, or just let space-between work */}
                             <Typography fontWeight={900} textTransform="uppercase" fontSize={11} letterSpacing={1} textAlign="center">
                                 Ruta de Ejecución
                             </Typography>
+                            <Box sx={{ width: 24, display: "flex", justifyContent: "center" }}>
+                                {showRoute ? <ExpandLessIcon sx={{ fontSize: 16, color: "#000" }} /> : <ExpandMoreIcon sx={{ fontSize: 16, color: "#000" }} />}
+                            </Box>
                         </Box>
-                        <Box>
-                            {(() => {
-                                const steps = transaction.route;
-                                const visibleSteps = isExpanded ? steps : steps.slice(0, 5);
+                        {showRoute && (
+                            <Box>
+                                {(() => {
+                                    const steps = transaction.route;
+                                    const visibleSteps = isExpanded ? steps : steps.slice(0, 5);
 
-                                return (
-                                    <>
-                                        {visibleSteps.map((step: any, index: number) => {
-                                            return (
-                                                <Box key={index} sx={{ borderBottom: "1px solid #eee" }}>
-                                                    <Box sx={{ p: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between", "&:hover": { bgcolor: "#fff9c4" } }}>
-                                                        <Box display="flex" alignItems="center" gap={1.5}>
-                                                            {/* Step Number */}
-                                                            <Box
-                                                                sx={{
-                                                                    width: 20, height: 20,
-                                                                    borderRadius: "50%",
-                                                                    bgcolor: "#3CD2FF",
-                                                                    border: "2px solid #000",
-                                                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                                                    fontWeight: 900,
-                                                                    fontSize: 10,
-                                                                    boxShadow: "1px 1px 0px #000",
-                                                                    flexShrink: 0
-                                                                }}
-                                                            >
-                                                                {index + 1}
-                                                            </Box>
+                                    return (
+                                        <>
+                                            {visibleSteps.map((step: any, index: number) => {
+                                                return (
+                                                    <Box key={index} sx={{ borderBottom: "1px solid #eee" }}>
+                                                        <Box sx={{ p: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between", "&:hover": { bgcolor: "#fff9c4" } }}>
+                                                            <Box display="flex" alignItems="center" gap={1.5}>
+                                                                {/* Step Number */}
+                                                                <Box
+                                                                    sx={{
+                                                                        width: 20, height: 20,
+                                                                        borderRadius: "50%",
+                                                                        bgcolor: "#3CD2FF",
+                                                                        border: "2px solid #000",
+                                                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                                                        fontWeight: 900,
+                                                                        fontSize: 10,
+                                                                        boxShadow: "1px 1px 0px #000",
+                                                                        flexShrink: 0
+                                                                    }}
+                                                                >
+                                                                    {index + 1}
+                                                                </Box>
 
-                                                            {/* Content */}
-                                                            <Box>
-                                                                <Box display="flex" alignItems="center" gap={0.5}>
-                                                                    <ChainLogo chain={step.chainName} />
-                                                                    <Typography fontWeight={800} fontSize={13}>
-                                                                        {step.chainName}
+                                                                {/* Content */}
+                                                                <Box>
+                                                                    <Box display="flex" alignItems="center" gap={0.5}>
+                                                                        <ChainLogo chain={step.chainName} />
+                                                                        <Typography fontWeight={800} fontSize={13}>
+                                                                            {step.chainName}
+                                                                        </Typography>
+                                                                    </Box>
+                                                                    <Typography variant="caption" fontWeight={600} fontFamily="monospace" color="#666" fontSize={10}>
+                                                                        {step.txHash ? (
+                                                                            <a
+                                                                                href={getExplorerUrl(step.chainName, step.txHash)}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                style={{ color: "#666", textDecoration: "none", borderBottom: "1px dotted #666" }}
+                                                                                onMouseEnter={(e: any) => e.target.style.color = "#000"}
+                                                                                onMouseLeave={(e: any) => e.target.style.color = "#666"}
+                                                                            >
+                                                                                {step.txHash.slice(0, 6)}...{step.txHash.slice(-4)}
+                                                                            </a>
+                                                                        ) : 'N/A'}
                                                                     </Typography>
                                                                 </Box>
-                                                                <Typography variant="caption" fontWeight={600} fontFamily="monospace" color="#666" fontSize={10}>
-                                                                    {step.txHash ? (
-                                                                        <a
-                                                                            href={getExplorerUrl(step.chainName, step.txHash)}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            style={{ color: "#666", textDecoration: "none", borderBottom: "1px dotted #666" }}
-                                                                            onMouseEnter={(e: any) => e.target.style.color = "#000"}
-                                                                            onMouseLeave={(e: any) => e.target.style.color = "#666"}
-                                                                        >
-                                                                            {step.txHash.slice(0, 6)}...{step.txHash.slice(-4)}
-                                                                        </a>
-                                                                    ) : 'N/A'}
-                                                                </Typography>
                                                             </Box>
-                                                        </Box>
 
-                                                        {/* Right Side: Status & Amount */}
-                                                        <Box textAlign="right" display="flex" flexDirection="column" alignItems="flex-end" gap={0.5}>
-                                                            <Box display="flex" alignItems="center" gap={0.5}>
-                                                                <Typography fontWeight={800} fontSize={13}>${step.amount}</Typography>
-                                                                {step.assetOrigin && (
-                                                                    <TokenLogo token={step.assetOrigin} size={16} />
-                                                                )}
+                                                            {/* Right Side: Status & Amount */}
+                                                            <Box textAlign="right" display="flex" flexDirection="column" alignItems="flex-end" gap={0.5}>
+                                                                <Box display="flex" alignItems="center" gap={0.5}>
+                                                                    <Typography fontWeight={800} fontSize={13}>${step.amount}</Typography>
+                                                                    {step.assetOrigin && (
+                                                                        <TokenLogo token={step.assetOrigin} size={16} />
+                                                                    )}
+                                                                </Box>
+                                                                <Chip
+                                                                    label={step.status}
+                                                                    size="small"
+                                                                    sx={{
+                                                                        bgcolor: step.status === "SUCCESS" ? "#00DC8C" : "#FFD700",
+                                                                        fontWeight: 900,
+                                                                        border: "1.5px solid #000",
+                                                                        fontSize: 8,
+                                                                        height: 16,
+                                                                        px: 0.5
+                                                                    }}
+                                                                />
                                                             </Box>
-                                                            <Chip
-                                                                label={step.status}
-                                                                size="small"
-                                                                sx={{
-                                                                    bgcolor: step.status === "SUCCESS" ? "#00DC8C" : "#FFD700",
-                                                                    fontWeight: 900,
-                                                                    border: "1.5px solid #000",
-                                                                    fontSize: 8,
-                                                                    height: 16,
-                                                                    px: 0.5
-                                                                }}
-                                                            />
                                                         </Box>
                                                     </Box>
-                                                </Box>
-                                            );
-                                        })}
+                                                );
+                                            })}
 
-                                        {/* Toggle Button */}
-                                        {steps.length > 5 && (
-                                            <Box sx={{ p: 2, textAlign: "center", borderTop: "2px solid #000" }}>
-                                                <Typography
-                                                    onClick={() => setIsExpanded(!isExpanded)}
-                                                    sx={{
-                                                        cursor: "pointer",
-                                                        fontWeight: 800,
-                                                        textTransform: "uppercase",
-                                                        fontSize: 12,
-                                                        textDecoration: "underline",
-                                                        "&:hover": { color: "#555" }
-                                                    }}
-                                                >
-                                                    {isExpanded ? "Ver menos" : `Ver más (+${steps.length - 5})`}
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                    </>
-                                );
-                            })()}
-                        </Box>
+                                            {/* Toggle Button */}
+                                            {steps.length > 5 && (
+                                                <Box sx={{ p: 2, textAlign: "center", borderTop: "2px solid #000" }}>
+                                                    <Typography
+                                                        onClick={() => setIsExpanded(!isExpanded)}
+                                                        sx={{
+                                                            cursor: "pointer",
+                                                            fontWeight: 800,
+                                                            textTransform: "uppercase",
+                                                            fontSize: 12,
+                                                            textDecoration: "underline",
+                                                            "&:hover": { color: "#555" }
+                                                        }}
+                                                    >
+                                                        {isExpanded ? "Ver menos" : `Ver más (+${steps.length - 5})`}
+                                                    </Typography>
+                                                </Box>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </Box>
+                        )}
                     </>
                 )}
             </Box>
@@ -799,55 +823,81 @@ export default function HistoryListPage() {
                                         borderRadius: 3,
                                         bgcolor: "#fff",
                                         boxShadow: "4px 4px 0px #000",
-                                        p: 3
+                                        p: 3,
+                                        position: "relative",
+                                        overflow: "hidden"
                                     }}
                                 >
-                                    <Box display="flex" alignItems="center" gap={1} mb={2}>
-                                        <AssessmentIcon sx={{ color: "#000" }} />
-                                        <Typography fontWeight={900} textTransform="uppercase">Métricas Clave</Typography>
+                                    {/* BACKGROUND CHART */}
+                                    <Box sx={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "100%", zIndex: 0, opacity: 0.2 }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={weeklySendsData}>
+                                                <defs>
+                                                    <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#00DC8C" stopOpacity={0.8} />
+                                                        <stop offset="95%" stopColor="#00DC8C" stopOpacity={0} />
+                                                    </linearGradient>
+                                                </defs>
+                                                <Area
+                                                    type="monotone"
+                                                    dataKey="value"
+                                                    stroke="#00DC8C"
+                                                    fillOpacity={1}
+                                                    fill="url(#colorAmount)"
+                                                    strokeWidth={3}
+                                                />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
                                     </Box>
 
-                                    <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
-                                        {/* SEND STATS */}
-                                        <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                            <Typography variant="caption" fontWeight={700} color="#666">TOTAL ENVÍOS</Typography>
-                                            <Typography variant="h5" fontWeight={900}>{stats.totalSends}</Typography>
-                                        </Box>
-                                        <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                            <Typography variant="caption" fontWeight={700} color="#666">TOTAL ENVIADO</Typography>
-                                            <Typography variant="h5" fontWeight={900} color="#FF2E2E">${stats.totalSentAmount.toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
+                                    <Box position="relative" zIndex={1}>
+                                        <Box display="flex" alignItems="center" gap={1} mb={2}>
+                                            <AssessmentIcon sx={{ color: "#000" }} />
+                                            <Typography fontWeight={900} textTransform="uppercase">Métricas Clave</Typography>
                                         </Box>
 
-                                        {/* RECEIVE STATS */}
-                                        <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                            <Typography variant="caption" fontWeight={700} color="#666">TOTAL RECIBIDOS</Typography>
-                                            <Typography variant="h5" fontWeight={900}>{stats.totalReceives}</Typography>
-                                        </Box>
-                                        <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                            <Typography variant="caption" fontWeight={700} color="#666">TOTAL RECIBIDO</Typography>
-                                            <Typography variant="h5" fontWeight={900} color="#008A57">${stats.totalReceivedAmount.toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
-                                        </Box>
+                                        <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
+                                            {/* SEND STATS */}
+                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
+                                                <Typography variant="caption" fontWeight={700} color="#666">TOTAL ENVÍOS</Typography>
+                                                <Typography variant="h5" fontWeight={900}>{stats.totalSends}</Typography>
+                                            </Box>
+                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
+                                                <Typography variant="caption" fontWeight={700} color="#666">TOTAL ENVIADO</Typography>
+                                                <Typography variant="h5" fontWeight={900} color="#FF2E2E">${stats.totalSentAmount.toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
+                                            </Box>
 
-                                        {/* OTHER STATS */}
-                                        <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                            <Typography variant="caption" fontWeight={700} color="#666">TOP COIN</Typography>
-                                            <Box display="flex" alignItems="center" gap={1}>
-                                                <Typography variant="h5" fontWeight={900}>{stats.mostUsedToken}</Typography>
-                                                {stats.mostUsedToken !== "N/A" && <TokenLogo token={stats.mostUsedToken} size={28} />}
+                                            {/* RECEIVE STATS */}
+                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
+                                                <Typography variant="caption" fontWeight={700} color="#666">TOTAL RECIBIDOS</Typography>
+                                                <Typography variant="h5" fontWeight={900}>{stats.totalReceives}</Typography>
+                                            </Box>
+                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
+                                                <Typography variant="caption" fontWeight={700} color="#666">TOTAL RECIBIDO</Typography>
+                                                <Typography variant="h5" fontWeight={900} color="#008A57">${stats.totalReceivedAmount.toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
+                                            </Box>
+
+                                            {/* OTHER STATS */}
+                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
+                                                <Typography variant="caption" fontWeight={700} color="#666">TOP COIN</Typography>
+                                                <Box display="flex" alignItems="center" gap={1}>
+                                                    <Typography variant="h5" fontWeight={900}>{stats.mostUsedToken}</Typography>
+                                                    {stats.mostUsedToken !== "N/A" && <TokenLogo token={stats.mostUsedToken} size={28} />}
+                                                </Box>
+                                            </Box>
+                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
+                                                <Typography variant="caption" fontWeight={700} color="#666">MAYOR ENVÍO</Typography>
+                                                <Typography variant="h5" fontWeight={900}>${stats.maxSent}</Typography>
+                                            </Box>
+                                            {/* Total Fees */}
+                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000", gridColumn: "1 / -1" }}>
+                                                <Typography variant="caption" fontWeight={700} color="#666">TOTAL FEES PAGADOS</Typography>
+                                                <Typography variant="h5" fontWeight={900} color="#FF8C00">
+                                                    ${stats.totalFeesPaid.toLocaleString('en-US', { maximumFractionDigits: 6 })}
+                                                </Typography>
                                             </Box>
                                         </Box>
-                                        <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                            <Typography variant="caption" fontWeight={700} color="#666">MAYOR ENVÍO</Typography>
-                                            <Typography variant="h5" fontWeight={900}>${stats.maxSent}</Typography>
-                                        </Box>
-                                        {/* Total Fees */}
-                                        <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000", gridColumn: "1 / -1" }}>
-                                            <Typography variant="caption" fontWeight={700} color="#666">TOTAL FEES PAGADOS</Typography>
-                                            <Typography variant="h5" fontWeight={900} color="#FF8C00">
-                                                ${stats.totalFeesPaid.toLocaleString('en-US', { maximumFractionDigits: 6 })}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
+                                    </Box> {/* End relative content wrapper */}
                                 </Box>
 
                                 {/* Daily Spend Bar Chart */}
