@@ -198,6 +198,7 @@ export const useSendMoneyModal = () => {
 
         const executedRoutes: any[] = [];
         let totalSentAmount = 0;
+        let totalFeePaid = 0;
 
         // Loop Allocations
         for (const allocation of routeSummary!.allocations) {
@@ -299,7 +300,8 @@ export const useSendMoneyModal = () => {
                             status: "SUCCESS",
                             txHash: result.transactionHash
                         });
-                        totalSentAmount += amountFloat;
+                        totalSentAmount += Number(totalAmount); // Track total SIGNED amount (Principal + Fee)
+                        totalFeePaid += currentFee;
 
                     } else {
                         throw new Error(result.errorReason);
@@ -343,7 +345,8 @@ export const useSendMoneyModal = () => {
                     tokenSymbol: watch("sourceToken") || "USDC",
                     decimals: 6,
                     createdAt: Date.now(),
-                    route: executedRoutes
+                    route: executedRoutes,
+                    fee: totalFeePaid // [NEW] Save total fee paid
                 };
 
                 await fetch("/api/transactions", {

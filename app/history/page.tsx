@@ -304,26 +304,35 @@ const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onC
                         </Box>
 
                         {/* FINANCIALS Row (New) */}
-                        {transaction.estimatedReceived && (
-                            <Box display="grid" gridTemplateColumns="1fr 1fr 1fr">
-                                <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
-                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">ENVIADO</Typography>
-                                    <Typography fontWeight={800} fontSize={14}>${Number(transaction.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
-                                </Box>
-                                <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
-                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">RECIBIDO (EST)</Typography>
-                                    <Typography fontWeight={800} fontSize={14} color="#00DC8C">
-                                        ${Number(transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ p: 1.5 }}>
-                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">DIFERENCIA</Typography>
-                                    <Typography fontWeight={800} fontSize={14} color="error.main">
-                                        -${(transaction.amount - transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
-                                    </Typography>
-                                </Box>
+                        <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
+                            <Box display="flex" justifyContent="space-between">
+                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>ENVIA</Typography>
+                                <Typography fontWeight={800} fontSize={14}>${Number(transaction.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
                             </Box>
-                        )}
+                            {transaction.fee > 0 && (
+                                <Box display="flex" justifyContent="space-between">
+                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>FEE PLATAFORMA</Typography>
+                                    <Typography fontWeight={800} fontSize={14} color="error.main">-${Number(transaction.fee).toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
+                                </Box>
+                            )}
+                            {transaction.estimatedReceived && (
+                                <>
+                                    <Box display="flex" justifyContent="space-between">
+                                        <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>RECIBE (EST.)</Typography>
+                                        <Typography fontWeight={800} fontSize={14} color="#00DC8C">
+                                            ${Number(transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })} {transaction.tokenSymbol || "USDC"}
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ borderTop: "1px dashed #ccc", my: 0.5 }} />
+                                    <Box display="flex" justifyContent="space-between">
+                                        <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>DIFERENCIA</Typography>
+                                        <Typography fontWeight={800} fontSize={14} color="error.main">
+                                            -${(transaction.amount - transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
+                                        </Typography>
+                                    </Box>
+                                </>
+                            )}
+                        </Box>
 
                     </Box>
                 </Box>
@@ -467,6 +476,7 @@ export default function HistoryListPage() {
         totalReceives: 0,
         totalReceivedAmount: 0,
         mostUsedToken: "N/A",
+        totalFeesPaid: 0, // [NEW] - Initialize
         weeklyActivity: [] as any[]
     });
     const [loading, setLoading] = useState(true);
@@ -514,11 +524,12 @@ export default function HistoryListPage() {
                             addressTo: tx.toAddress || "Unknown",
                             chainTo: tx.destinationChain || "Unknown",
                             txHash: tx.route?.[0]?.txHash || "",
-                            fee: 0,
+                            // fee: 0, // Removed duplicate
                             route: tx.route,
                             estimatedReceived: tx.estimatedReceived, // [NEW] Map from API
                             tokenSymbol: tx.tokenSymbol,
-                            createdAt: tx.createdAt // [NEW] Needed for filtering by date
+                            createdAt: tx.createdAt, // [NEW] Needed for filtering by date
+                            fee: tx.fee || 0 // [NEW] Map fee from ID
                         };
                     });
                     setTransactions(mapped);
@@ -828,6 +839,13 @@ export default function HistoryListPage() {
                                         <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
                                             <Typography variant="caption" fontWeight={700} color="#666">MAYOR ENVÍO</Typography>
                                             <Typography variant="h5" fontWeight={900}>${stats.maxSent}</Typography>
+                                        </Box>
+                                        {/* Total Fees */}
+                                        <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000", gridColumn: "1 / -1" }}>
+                                            <Typography variant="caption" fontWeight={700} color="#666">TOTAL FEES PAGADOS</Typography>
+                                            <Typography variant="h5" fontWeight={900} color="#FF8C00">
+                                                ${stats.totalFeesPaid.toLocaleString('en-US', { maximumFractionDigits: 6 })}
+                                            </Typography>
                                         </Box>
                                     </Box>
                                 </Box>
