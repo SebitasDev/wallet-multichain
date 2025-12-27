@@ -1,4 +1,5 @@
-import { Card, Box } from "@mui/material";
+import { Box } from "@mui/material";
+import { NeoCard } from "@/app/components/atoms/NeoCard";
 import { Address } from "abitype";
 
 import { useAddressCard } from "@/app/dashboard/hooks/wallet/useAddressCard";
@@ -31,7 +32,7 @@ export const AddressCard = ({ address, walletName }: IAddressCardProps) => {
     } = useAddressCard({ address, walletName });
 
     return (
-        <Card
+        <NeoCard
             className="tour-address-card"
             elevation={0}
             sx={{
@@ -78,6 +79,6 @@ export const AddressCard = ({ address, walletName }: IAddressCardProps) => {
                 showMore={showMore}
                 toggleShowMore={toggleShowMore}
             />
-        </Card>
+        </NeoCard>
     );
 };

@@ -12,7 +12,7 @@ import { BlendHeader } from "./blend/BlendHeader";
 import { BlendStats } from "./blend/BlendStats";
 import { BlendActionForm } from "./blend/BlendActionForm";
 import { BlendYieldChart } from "./blend/BlendYieldChart";
-
+import { NeoButton } from "@/app/components/atoms/NeoButton";
 export const BlendLending = () => {
     const { mainWallet } = useXOWalletStore();
     const { currentPassword } = useWalletPasswordStore();
@@ -158,28 +158,12 @@ export const BlendLending = () => {
                         Necesitas configurar tu wallet de Stellar para usar Blend Lending.
                     </Typography>
                     <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                        <Button
+                        <NeoButton
+                            variant="text"
                             startIcon={<ArrowBackIcon />}
-                            sx={{
-                                px: 4,
-                                py: 1.5,
-                                border: "3px solid #000",
-                                borderRadius: 3,
-                                bgcolor: "#fff",
-                                color: "#000",
-                                fontWeight: 800,
-                                fontSize: 16,
-                                textTransform: "uppercase",
-                                boxShadow: "4px 4px 0px #000",
-                                "&:hover": {
-                                    bgcolor: "#f5f5f5",
-                                    boxShadow: "5px 5px 0px #000",
-                                    transform: "translate(-1px, -1px)",
-                                },
-                            }}
                         >
                             Volver al Dashboard
-                        </Button>
+                        </NeoButton>
                     </Link>
                 </Box>
             </Box>
@@ -285,32 +269,21 @@ export const BlendLending = () => {
                             <Typography sx={{ fontSize: 14, color: "#555", mb: 2 }}>
                                 Para user {selectedAsset} en Stellar, primero necesitas habilitarlo (Trustline).
                             </Typography>
-                            <Button
+                            <NeoButton
                                 onClick={() => handleAction(0, "enable")}
                                 disabled={loadingTx}
+                                variant="contained"
+                                color="success"
+                                fullWidth={false}
                                 sx={{
-                                    px: 4,
-                                    py: 1.5,
-                                    border: "3px solid #000",
-                                    borderRadius: 2,
                                     bgcolor: "#00DC8C",
-                                    color: "#000",
-                                    fontWeight: 800,
-                                    boxShadow: "4px 4px 0px #000",
                                     "&:hover": {
                                         bgcolor: "#00c47d",
-                                        boxShadow: "5px 5px 0px #000",
-                                        transform: "translate(-1px, -1px)",
-                                    },
-                                    "&:disabled": {
-                                        bgcolor: "#ccc",
-                                        boxShadow: "none",
-                                        border: "3px solid #666",
                                     }
                                 }}
                             >
                                 {loadingTx ? "Activando..." : `Activar ${selectedAsset}`}
-                            </Button>
+                            </NeoButton>
                         </Box>
                     ) : (
                         <BlendActionForm
