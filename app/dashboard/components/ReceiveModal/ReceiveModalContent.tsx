@@ -35,7 +35,7 @@ export const ReceiveModalContent = ({
     chains,
     selectedChain,
     setSelectedChain,
-    currentChain,
+    // currentChain,
     qrValue,
     currentAddress
 }: ReceiveModalContentProps) => {
@@ -97,36 +97,7 @@ export const ReceiveModalContent = ({
 
                 </Stack>
 
-                {/* CHAIN INFO */}
-                <Box
-                    sx={{
-                        p: 2,
-                        borderRadius: 3,
-                        background: "#f5f5f5",
-                        border: "2px solid #000000",
-                        textAlign: "center",
-                    }}
-                >
-                    <Stack direction="row" justifyContent="center" alignItems="center" spacing={1.5}>
-                        <Box sx={{
-                            width: 28,
-                            height: 28,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            "& svg": {
-                                width: "100%",
-                                height: "100%",
-                            }
-                        }}>
-                            <currentChain.icon />
-                        </Box>
-                        <Typography fontWeight={800} fontSize={16}>{currentChain?.label}</Typography>
-                    </Stack>
-                    <Typography variant="body2" color="#666666" fontWeight={600} sx={{ mt: 1, fontSize: 13 }}>
-                        Usa esta dirección solo en redes compatibles.
-                    </Typography>
-                </Box>
+
 
                 {/* QR CODE */}
                 <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
