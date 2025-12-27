@@ -18,7 +18,7 @@ import { Address } from "abitype";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
-import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
+import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { useEffect } from "react";
 
 interface IChainItemProps {

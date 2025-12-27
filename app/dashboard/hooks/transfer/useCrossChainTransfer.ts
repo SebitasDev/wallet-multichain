@@ -11,7 +11,7 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
-import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
+import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { bridgeApi, transactionsApi, CreateTransactionRequest } from "@/app/services/api";
