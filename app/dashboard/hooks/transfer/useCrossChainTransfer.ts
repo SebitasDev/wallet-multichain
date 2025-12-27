@@ -13,6 +13,7 @@ import { NETWORKS } from "@/app/constants/chainsInformation";
 import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
 import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
+import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 
 // Types
 export const STELLAR_CHAIN_KEY = "Stellar";
@@ -222,7 +223,7 @@ const useMaxTransferAmount = (
 };
 
 export const useCrossChainTransfer = () => {
-    const [open, setOpen] = useState(false);
+    const { crossChainOpen: open, openCrossChain: setOpen, closeCrossChain: closeModal } = useDashboardModalsStore();
     const [privateKey, setPrivateKey] = useState<`0x${string}` | null>(null);
     const [stellarPrivateKey, setStellarPrivateKey] = useState<string | null>(null);
     const [provider, setProvider] = useState<any>(null);
@@ -354,10 +355,10 @@ export const useCrossChainTransfer = () => {
         });
     }, [watchAmount, fee]);
 
-    const openModal = () => setOpen(true);
-    const closeModal = () => {
+    const openModal = () => setOpen();
+    const handleCloseModal = () => {
         reset();
-        setOpen(false);
+        closeModal();
     };
 
     const onSubmit = async (data: FormValues) => {
@@ -592,7 +593,7 @@ export const useCrossChainTransfer = () => {
         simulation,
         simulateTransfer,
         openModal,
-        closeModal,
+        closeModal: handleCloseModal,
         onSubmit: handleSubmit(onSubmit),
     };
 };

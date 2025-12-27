@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 
 export const useTopBar = () => {
     const router = useRouter();
-    const { openAdd, openReceive } = useDashboardModalsStore();
+    const { openAdd, openReceive, openCrossChain } = useDashboardModalsStore();
     const { setSendModal } = useSendMoneyStore();
     const { wallets } = useWalletStore();
 
@@ -28,11 +28,16 @@ export const useTopBar = () => {
         router.push("/dashboard/yield");
     };
 
+    const handleCrossChain = () => {
+        openCrossChain();
+    };
+
     return {
         handleSend,
         handleReceive,
         handleAdd,
         handleSavings,
+        handleCrossChain,
         wallets
     };
 };

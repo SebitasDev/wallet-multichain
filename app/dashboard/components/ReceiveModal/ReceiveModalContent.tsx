@@ -94,65 +94,7 @@ export const ReceiveModalContent = ({
                         </TextField>
                     </Box>
 
-                    <Box sx={{ flex: 1 }}>
-                        <Typography
-                            fontWeight={700}
-                            fontSize={13}
-                            sx={{
-                                mb: 1,
-                                textTransform: "uppercase",
-                                letterSpacing: 0.5,
-                                color: "#666666"
-                            }}
-                        >
-                            Chain
-                        </Typography>
-                        <TextField
-                            select
-                            fullWidth
-                            size="medium"
-                            value={selectedChain}
-                            onChange={(e) => setSelectedChain(e.target.value)}
-                            InputProps={{
-                                sx: {
-                                    borderRadius: 2,
-                                    background: "#f5f5f5",
-                                    border: "2px solid #000000",
-                                    fontWeight: 600,
-                                    "&:hover": {
-                                        background: "#ffffff",
-                                    },
-                                    "&.Mui-focused": {
-                                        background: "#ffffff",
-                                    }
-                                },
-                            }}
-                        >
-                            {chains.map((c) => {
-                                const Icon = c.icon;
-                                return (
-                                    <MenuItem key={c.id} value={c.id}>
-                                        <Stack direction="row" alignItems="center" spacing={1.5}>
-                                            <Box sx={{
-                                                width: 24,
-                                                height: 24,
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                "& svg": {
-                                                    width: "100%",
-                                                    height: "100%",
-                                                }
-                                            }}>
-                                                <Icon />
-                                            </Box>
-                                            <Typography fontWeight={600}>{c.label}</Typography>
-                                        </Stack>
-                                    </MenuItem>
-                                );
-                            })}
-                        </TextField>
-                    </Box>
+
                 </Stack>
 
                 {/* CHAIN INFO */}

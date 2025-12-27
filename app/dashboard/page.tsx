@@ -9,11 +9,12 @@ import { AddressCard } from "./components/AddressCard";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 
-import { GenerateWalletButton } from "@/app/dashboard/components/GenerateWalletButton";
-import { SendMoneyMainWallet } from "@/app/dashboard/components/SendMoneyMainWallet";
+
+
 import { CrossChainTransferModal } from "@/app/dashboard/components/CrossChainTransferModal";
 import dynamic from "next/dynamic";
 import { TopBar } from "@/app/dashboard/components/TopBar";
+import { SidebarMainActions } from "@/app/dashboard/components/SidebarMainActions";
 
 const DashboardTour = dynamic(
     () => import("@/app/dashboard/components/DashboardTour").then((mod) => mod.DashboardTour),
@@ -56,7 +57,7 @@ export default function Dashboard() {
                         alignItems: "stretch",
                         gap: { xs: 1.5, md: 2 },
                         width: "100%",
-                        maxWidth: { xs: 280, md: 300 },
+                        maxWidth: { xs: 320, md: 360 },
                         mx: { xs: "auto", md: 0 },
                     }}
                 >
@@ -79,7 +80,7 @@ export default function Dashboard() {
                                 mb: 1,
                             }}
                         >
-                            Funciones Main Wallet
+                            Funciones Childrens Wallets
                         </Typography>
                         <Box
                             sx={{
@@ -93,9 +94,10 @@ export default function Dashboard() {
                         />
                     </Box>
 
-                    <GenerateWalletButton />
-                    <SendMoneyMainWallet />
+
+
                     <CrossChainTransferModal />
+                    <SidebarMainActions />
                 </Box>
             </Box>
 
