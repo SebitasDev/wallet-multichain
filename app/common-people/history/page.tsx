@@ -9,6 +9,7 @@ import { transactionsApi } from "@/app/services/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { TransactionDetailModal } from "./components/TransactionDetailModal";
 
 export default function CommonHistoryPage() {
     const router = useRouter();
@@ -20,6 +21,7 @@ export default function CommonHistoryPage() {
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [selectedTx, setSelectedTx] = useState<any | null>(null);
     const LIMIT = 6;
 
     useEffect(() => {
@@ -45,6 +47,7 @@ export default function CommonHistoryPage() {
                             token: tx.tokenSymbol || "USDC",
                             status: tx.status,
                             color: isSender ? "#fee2e2" : "#dcfce7", // Red/Green bg for icon
+                            hash: tx.hash
                         };
                     });
                     setTransactions(mapped);
@@ -136,6 +139,7 @@ export default function CommonHistoryPage() {
                             {transactions.map((tx) => (
                                 <Box
                                     key={tx.id}
+                                    onClick={() => setSelectedTx(tx)}
                                     sx={{
                                         display: "flex",
                                         alignItems: "center",
@@ -145,6 +149,7 @@ export default function CommonHistoryPage() {
                                         backgroundColor: "rgba(255,255,255,0.05)", // Transparent Items
                                         border: "1px solid transparent",
                                         transition: "all 0.2s",
+                                        cursor: "pointer",
                                         "&:hover": {
                                             backgroundColor: "rgba(255,255,255,0.1)",
                                             border: "1px solid rgba(255,255,255,0.2)",
@@ -233,6 +238,12 @@ export default function CommonHistoryPage() {
                     )}
                 </Box>
             </Container>
+
+            <TransactionDetailModal
+                open={!!selectedTx}
+                onClose={() => setSelectedTx(null)}
+                transaction={selectedTx}
+            />
         </Box>
     );
 }

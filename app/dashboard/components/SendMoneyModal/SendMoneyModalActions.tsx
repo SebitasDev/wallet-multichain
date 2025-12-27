@@ -1,4 +1,5 @@
 import { Button, DialogActions, CircularProgress } from "@mui/material";
+import { useLanguageStore } from "@/app/store/useLanguageStore";
 
 interface SendMoneyModalActionsProps {
     onClose: () => void;
@@ -9,6 +10,8 @@ interface SendMoneyModalActionsProps {
 }
 
 export const SendMoneyModalActions = ({ onClose, onAction, loading, disabled, routeReady }: SendMoneyModalActionsProps) => {
+    const { language } = useLanguageStore();
+
     return (
         <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 2, background: "#ffffff" }}>
             <Button
@@ -37,7 +40,7 @@ export const SendMoneyModalActions = ({ onClose, onAction, loading, disabled, ro
                     },
                 }}
             >
-                Cancelar
+                {language === "es" ? "Cancelar" : "Cancel"}
             </Button>
 
             <Button
@@ -71,9 +74,9 @@ export const SendMoneyModalActions = ({ onClose, onAction, loading, disabled, ro
                 {loading ? (
                     <>
                         <CircularProgress size={20} sx={{ color: "white", mr: 1 }} />
-                        Cargando...
+                        {language === "es" ? "Cargando..." : "Loading..."}
                     </>
-                ) : routeReady ? "Confirmar" : "Aceptar"}
+                ) : routeReady ? (language === "es" ? "Confirmar" : "Confirm") : (language === "es" ? "Aceptar" : "Accept")}
             </Button>
         </DialogActions>
     );

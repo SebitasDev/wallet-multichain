@@ -12,6 +12,7 @@ import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { TokenSelector } from "../CrossChainTransferModal/TokenSelector";
 import { SendForm } from "@/app/lib/zod/sendSchema";
+import { useLanguageStore } from "@/app/store/useLanguageStore";
 
 type Props = {
     control: Control<SendForm>;
@@ -28,6 +29,7 @@ type Props = {
 // We will adapt it here.
 
 export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, watch, maxSendAmount, isExceedingMax }: Props) => {
+    const { language } = useLanguageStore();
     const selectedChain = watch("sendChain");
 
     return (
@@ -44,7 +46,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                         color: "#666666"
                     }}
                 >
-                    Chain destino
+                    {language === "es" ? "Red de destino" : "Destination Network"}
                 </Typography>
                 <Controller
                     control={control}
@@ -104,7 +106,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
             {/* TOKEN ORIGEN */}
             <Box>
                 <TokenSelector
-                    label="Token (Se enviará)"
+                    label={language === "es" ? "Token a enviar" : "Token to send"}
                     name="sourceToken"
                     control={control as any} // Cast compatible control
                     chain={selectedChain as any}
@@ -123,7 +125,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                         color: "#666666"
                     }}
                 >
-                    Address destino
+                    {language === "es" ? "Dirección de destino" : "Destination Address"}
                 </Typography>
                 <Controller
                     control={control}
@@ -172,7 +174,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                             color: "#666666"
                         }}
                     >
-                        Monto (USDC)
+                        {language === "es" ? "Monto (USDC)" : "Amount (USDC)"}
                     </Typography>
                     <Typography
                         fontSize={11}
@@ -190,7 +192,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                             setValue("sendAmount", maxSendAmount.toString(), { shouldValidate: true });
                         }}
                     >
-                        Máx: {maxSendAmount} USDC
+                        {language === "es" ? "Máx" : "Max"}: {maxSendAmount} USDC
                     </Typography>
                 </Stack>
                 <Controller
@@ -206,7 +208,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                             disabled={sendLoading}
                             {...field}
                             error={!!errors.sendAmount || isExceedingMax}
-                            helperText={errors.sendAmount?.message || (isExceedingMax ? "Monto excede el máximo disponible" : "")}
+                            helperText={errors.sendAmount?.message || (isExceedingMax ? (language === "es" ? "Monto excede el máximo disponible" : "Amount exceeds available balance") : "")}
                             InputProps={{
                                 sx: {
                                     borderRadius: 2,
@@ -242,7 +244,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                         color: "#666666"
                     }}
                 >
-                    Password de la wallet
+                    {language === "es" ? "Contraseña de la billetera" : "Wallet Password"}
                 </Typography>
                 <Controller
                     control={control}
@@ -325,10 +327,10 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                             label={
                                 <Box>
                                     <Typography fontWeight={800} fontSize={14} color="#000000">
-                                        Optimizar ruta
+                                        {language === "es" ? "Optimizar ruta" : "Optimize Route"}
                                     </Typography>
                                     <Typography variant="caption" color="#666666" fontWeight={600} fontSize={12}>
-                                        Encuentra la ruta más eficiente para tu transacción
+                                        {language === "es" ? "Encuentra la ruta más eficiente para tu transacción" : "Find the most efficient route for your transaction"}
                                     </Typography>
                                 </Box>
                             }
