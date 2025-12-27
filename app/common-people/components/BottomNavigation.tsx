@@ -111,9 +111,9 @@ export const BottomNavigation = () => {
 
                 {[
                     { label: language === "es" ? "Perfil" : "Profile", icon: Person, path: "/common-people/profile" },
-                    { label: language === "es" ? "Tu dinero" : "Your Money", icon: AccountBalanceWallet, path: "/common-people/dashboard" },
+                    // { label: language === "es" ? "Tu dinero" : "Your Money", icon: AccountBalanceWallet, path: "/common-people/dashboard" }, // Removed as requested
                     { label: language === "es" ? "Actividad" : "Activity", icon: GridView, path: "/common-people/history" },
-                    { label: language === "es" ? "Tarjetas" : "Cards", icon: Send, path: "/cards" }
+                    // { label: language === "es" ? "Tarjetas" : "Cards", icon: Send, path: "/cards" } // Removed as requested
                 ].map((link) => (
                     <Box key={link.label}
                         onClick={() => router.push(link.path)}
@@ -138,37 +138,38 @@ export const BottomNavigation = () => {
                     </Box>
                 ))}
 
-                <Typography fontSize={14} color="black" fontWeight={900} sx={{ mb: 0.5, mt: 3, textTransform: "uppercase", letterSpacing: "1px" }}>
-                    {language === "es" ? "Servicios" : "Services"}
-                </Typography>
+                {/* Servicios Header removed as requested */}
+                {/* "Cuentas y servicios" and "Cobrar" removed */}
 
-                {[
-                    { label: language === "es" ? "Cuentas y servicios" : "Accounts & Services", icon: GridView, path: "/apps" },
-                    { label: language === "es" ? "Cobrar" : "Receive", icon: Send, path: "/pay" },
-                    { label: language === "es" ? "Salir" : "Exit", icon: Logout, path: "/" }
-                ].map((link) => (
-                    <Box key={link.label}
-                        onClick={() => router.push(link.path)}
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 2,
-                            p: 1,
-                            cursor: "pointer",
-                            color: "black",
-                            borderRadius: 1,
-                            border: "1px solid transparent",
-                            "&:hover": {
-                                backgroundColor: "#fff059",
-                                border: "2px solid #000000",
-                                boxShadow: "2px 2px 0px #000000",
-                                transform: "translate(-1px, -1px)"
-                            }
-                        }}>
-                        <link.icon sx={{ fontSize: 20 }} />
-                        <Typography fontWeight={700} fontSize={14}>{link.label}</Typography>
-                    </Box>
-                ))}
+                {/* Exposing Salir separatedly since Services section is gone */}
+                <Box sx={{ mt: 2, borderTop: "2px solid #000000", pt: 2 }}>
+                    {[
+                        { label: language === "es" ? "Salir" : "Exit", icon: Logout, path: "/" }
+                    ].map((link) => (
+                        <Box key={link.label}
+                            onClick={() => router.push(link.path)}
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 2,
+                                p: 1,
+                                cursor: "pointer",
+                                color: "black",
+                                borderRadius: 1,
+                                border: "1px solid transparent",
+                                "&:hover": {
+                                    backgroundColor: "#ff4d4d", // Red for exit
+                                    border: "2px solid #000000",
+                                    boxShadow: "2px 2px 0px #000000",
+                                    transform: "translate(-1px, -1px)"
+                                }
+                            }}>
+                            <link.icon sx={{ fontSize: 20 }} />
+                            <Typography fontWeight={700} fontSize={14}>{link.label}</Typography>
+                        </Box>
+                    ))}
+                </Box>
+
             </Box>
 
             {/* MOBILE ONLY LINKS */}
