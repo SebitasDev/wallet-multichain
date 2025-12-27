@@ -1,6 +1,7 @@
 import { Box, Typography, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SendIcon from "@mui/icons-material/Send";
+import { useLanguageStore } from "@/app/store/useLanguageStore";
 
 interface SendMoneyModalHeaderProps {
     onClose: () => void;
@@ -8,6 +9,8 @@ interface SendMoneyModalHeaderProps {
 }
 
 export const SendMoneyModalHeader = ({ onClose, disabled }: SendMoneyModalHeaderProps) => {
+    const { language } = useLanguageStore();
+
     return (
         <Box
             sx={{
@@ -38,10 +41,12 @@ export const SendMoneyModalHeader = ({ onClose, disabled }: SendMoneyModalHeader
 
             <Box sx={{ flex: 1 }}>
                 <Typography fontWeight={800} fontSize={18} sx={{ lineHeight: 1.2 }}>
-                    Enviar fondos
+                    {language === "es" ? "Enviar fondos" : "Send Funds"}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.8, fontSize: 13 }}>
-                    Elige la chain destino e ingresa address, monto y contraseña.
+                    {language === "es"
+                        ? "Elige la red de destino e ingresa dirección, monto y contraseña."
+                        : "Choose the destination network and enter address, amount, and password."}
                 </Typography>
             </Box>
 

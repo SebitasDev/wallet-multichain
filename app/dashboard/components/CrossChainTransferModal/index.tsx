@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import {
     Button,
     Dialog,
@@ -33,7 +35,11 @@ const DESTINATION_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY
     ...SOURCE_CHAIN_OPTIONS
 ];
 
-export const CrossChainTransferModal = () => {
+interface CrossChainTransferModalProps {
+    trigger?: React.ReactElement;
+}
+
+export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProps) => {
     const {
         open,
         address,
@@ -70,7 +76,48 @@ export const CrossChainTransferModal = () => {
 
     return (
         <>
-
+            {trigger ? (
+                React.cloneElement(trigger as React.ReactElement<{ onClick: () => void }>, { onClick: openModal })
+            ) : (
+                <Button
+                    variant="contained"
+                    id="tour-bridge"
+                    onClick={openModal}
+                    disabled={!address || (!privateKey && !provider)}
+                    sx={{
+                        background: "#00DC8C",
+                        fontWeight: 800,
+                        color: "white",
+                        letterSpacing: "0.5px",
+                        px: 3.4,
+                        py: 1.5,
+                        minHeight: 50,
+                        borderRadius: 3,
+                        textTransform: "none",
+                        border: "3px solid #000000",
+                        boxShadow: "4px 4px 0px #000000",
+                        whiteSpace: "nowrap",
+                        width: "100%",
+                        minWidth: 0,
+                        maxWidth: 240,
+                        transition: "all 0.2s",
+                        "&:hover": {
+                            background: "#00CC7C",
+                            transform: "translate(2px, 2px)",
+                            boxShadow: "2px 2px 0px #000000",
+                        },
+                        "&:disabled": {
+                            background: "#cccccc",
+                            color: "#666666",
+                            border: "3px solid #999999",
+                            boxShadow: "none",
+                            transform: "none",
+                        },
+                    }}
+                >
+                    Cross-Chain
+                </Button>
+            )}
 
             <Dialog
                 open={open}

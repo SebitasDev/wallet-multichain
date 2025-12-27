@@ -81,7 +81,7 @@ export const TopBarProfile = () => {
                             },
                         }}
                     >
-                        <MenuItem onClick={handleClose}>
+                        <MenuItem onClick={() => { handleClose(); router.push("/dashboard/profile"); }}>
                             <ListItemIcon>
                                 <PersonIcon fontSize="small" sx={{ color: "black" }} />
                             </ListItemIcon>

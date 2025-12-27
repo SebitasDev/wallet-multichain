@@ -6,6 +6,7 @@ import React, { useState, useEffect } from "react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
 import { useXOWalletStore } from "../store/useXOWalletStore";
+
 import { HistoryTransactionList } from "./components/HistoryTransactionList";
 import { HistoryMetrics } from "./components/HistoryMetrics";
 import { HistoryTransactionDetail } from "./components/HistoryTransactionDetail";
