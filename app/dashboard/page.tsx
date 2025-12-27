@@ -96,7 +96,7 @@ export default function Dashboard() {
 
 
 
-                    <CrossChainTransferModal />
+                    <CrossChainTransferModal trigger={<Box sx={{ display: "none" }} />} />
                     <SidebarMainActions />
                 </Box>
             </Box>

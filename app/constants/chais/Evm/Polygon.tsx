@@ -55,7 +55,7 @@ export const POLYGON: ChainConfig = {
                     decimals: 6
                 },
                 {
-                    assetId: "nep245:v2_1.omni.hot.tg:137_qiStmoQJDQPTebaPjgx5VBxZv6L",
+                    assetId: "nep245:v2_1.omni.hot.tg:137_11111111111111111111",
                     name: "POL",
                     decimals: 18
                 },

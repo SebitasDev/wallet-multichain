@@ -311,7 +311,7 @@ export const useCrossChainTransfer = () => {
     useEffect(() => { setValue("sourceToken", "USDC"); }, [watchSourceChain, setValue]);
     useEffect(() => { setValue("destToken", "USDC"); }, [watchDestChain, setValue]);
 
-    const isCrossChain = watchSourceChain !== watchDestChain;
+    const isCrossChain = watchSourceChain !== watchDestChain || watchSourceToken !== watchDestToken;
 
     // Derived State
     const { maxAmount, balance } = useMaxTransferAmount(address, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, stellarPrivateKey);
@@ -530,15 +530,18 @@ export const useCrossChainTransfer = () => {
                 });
                 toast.error(data.error || "Error al simular");
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error("Simulation error:", e);
+            // Try to extract specific error from response if available
+            const errorMessage = e?.response?.data?.error || e?.message || "Error de conexión";
+
             setSimulation({
                 estimated: "",
-                error: "Error de conexión",
+                error: errorMessage,
                 done: true,
                 loading: false
             });
-            toast.error("Error al conectar con el servidor");
+            toast.error(errorMessage);
         }
     };
 
