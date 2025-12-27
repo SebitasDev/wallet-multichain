@@ -352,7 +352,7 @@ export const useSendMoneyModal = () => {
                     destinationChain: toValidChain,
                     totalAmount: totalSentAmount,
                     status: "PENDING",
-                    tokenSymbol: executedRoutes.length > 0 ? executedRoutes[0].assetOrigin : (watch("sourceToken") || "USDC"),
+                    tokenSymbol: watch("sourceToken") || "USDC",
                     decimals: 6,
                     createdAt: Date.now(),
                     route: executedRoutes,
