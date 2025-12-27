@@ -50,7 +50,7 @@ export const AmountInput = ({
                         border: "1px solid #00DC8C",
                     }}
                 >
-                    Mínimo: {minAmount} {token}
+                    Mín: {minAmount} {token}
                 </Typography>
             )}
             <Typography
