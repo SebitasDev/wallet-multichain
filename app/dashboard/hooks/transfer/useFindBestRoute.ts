@@ -82,12 +82,12 @@ export const useFindBestRoute = () => {
                 }
 
 
-                if (chainAmount - 0.01 - getOriginFee(chain.chainId) <= 0) continue;
+                if (chainAmount - getOriginFee(chain.chainId) <= 0) continue;
 
                 balances.push({
                     from: wallet.address,
                     networkId: chain.chainId,
-                    available: chainAmount - 0.01 - getOriginFee(chain.chainId)
+                    available: chainAmount - getOriginFee(chain.chainId)
                 });
             }
         }

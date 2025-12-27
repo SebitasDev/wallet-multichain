@@ -4,6 +4,7 @@ import { Address } from "abitype";
 import { ChainConfig } from "@/app/types/chain";
 import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
 import { UsdtIcon } from "@/app/components/atoms/UsdtIcon";
+import { EthIcon } from "@/app/components/atoms/EthIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
@@ -26,6 +27,12 @@ export const ARBITRUM: ChainConfig = {
             decimals: 18,
             address: (isDevelopment ? "0x912CE59144191C1204E64559FE8253a0e49E6548" : "0x912CE59144191C1204E64559FE8253a0e49E6548") as Address,
             icon: <ArbIcon />
+        },
+        {
+            name: "ETH",
+            decimals: 18,
+            address: "0x0000000000000000000000000000000000000000" as Address,
+            icon: <EthIcon />
         }
     ],
     evm: {
@@ -59,8 +66,8 @@ export const ARBITRUM: ChainConfig = {
                     decimals: 6
                 },
                 {
-                    assetId: "nep141:arb-0x912ce59144191c1204e64559fe8253a0e49e6548.omft.near",
-                    name: "ARB",
+                    assetId: "nep141:arb.omft.near",
+                    name: "ETH",
                     decimals: 18
                 }
             ],

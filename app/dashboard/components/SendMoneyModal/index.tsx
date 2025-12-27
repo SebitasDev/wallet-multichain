@@ -24,6 +24,23 @@ export const SendMoneyModal = () => {
 
     const hasBlockingErrors = Object.values(simulationErrors).some(Boolean);
 
+    // DEBUG: Log disabled state reasons
+    const isProcessing = routeReady && routeDetails.some(w => w.chains.some(c => c.status !== 'idle' && c.status !== 'done' && c.status !== 'error'));
+    if (isOpen) {
+        console.log("[SendMoneyModal] Debug Disabled State:", {
+            canSend,
+            routeReady,
+            isEditing,
+            hasBlockingErrors,
+            simulationErrors,
+            isProcessing,
+            allocationsLength: routeSummary?.allocations?.length,
+            sendAmount: watch("sendAmount"),
+            passwordFilled: !!watch("sendPassword"),
+            isExceedingMax
+        });
+    }
+
     return (
         <Dialog
             open={isOpen}

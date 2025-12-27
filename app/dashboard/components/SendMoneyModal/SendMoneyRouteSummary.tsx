@@ -47,7 +47,9 @@ export const SendMoneyRouteSummary = ({ routeSummary, selected, watch, simulatio
             // Check CCTP Support
             const isCCTP =
                 (sourceConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
-                    destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP) && isUSDC;
+                    destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP) &&
+                isUSDC &&
+                (watch("sourceToken") || "USDC").toUpperCase() === "USDC";
 
             if (isCCTP) {
                 // CCTP Priority: Assume 1:1 (Principal)
@@ -107,7 +109,7 @@ export const SendMoneyRouteSummary = ({ routeSummary, selected, watch, simulatio
                         RECIBE (EST.)
                     </Typography>
                     <Typography variant="body2" fontWeight={700} color="#00DC8C" fontSize={{ xs: 12, sm: 13 }}>
-                        {formatCurrency(totalReceived, 6)} <span style={{ color: "#000000", fontSize: "11px" }}>USDC</span>
+                        {formatCurrency(totalReceived, 6)} <span style={{ color: "#000000", fontSize: "11px" }}>{watch("sourceToken")}</span>
                     </Typography>
                 </Stack>
 

@@ -100,9 +100,16 @@ export const SendMoneyModalRoute = (
                     const isCCTP =
                         sourceConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
                         destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
-                        (chain.token || "USDC").toUpperCase() === "USDC";
+                        (chain.token || "USDC").toUpperCase() === "USDC" &&
+                        (watch("sourceToken") || "USDC").toUpperCase() === "USDC";
 
                     if (isCCTP) {
+                        // Manual Simulation for CCTP (1:1)
+                        if (chain.amount > 0) {
+                            setSimulationResults(prev => ({ ...prev, [chain.chainId]: chain.amount.toFixed(6) }));
+                            setSimulationError(chain.chainId, false);
+                            setSimulationErrorMessages(prev => ({ ...prev, [chain.chainId]: null }));
+                        }
                         return;
                     }
 
