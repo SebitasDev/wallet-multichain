@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
+import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
 import { useFacilitator } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";

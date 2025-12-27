@@ -2,7 +2,7 @@
 
 import { Box, Typography, Button, Grid } from "@mui/material";
 import FlagIcon from "@mui/icons-material/Flag";
-import { useCTF } from "../hooks/useCTF";
+import { useCTF } from "../hooks/features/useCTF";
 import { PasswordModal } from "../components/PasswordModal";
 
 import { useState } from "react";

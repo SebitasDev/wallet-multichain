@@ -1,486 +1,14 @@
 "use client";
 
-import { Box, Typography, IconButton, Card, CardActionArea, Chip, Avatar, CircularProgress } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CallMadeIcon from "@mui/icons-material/CallMade";
-import CallReceivedIcon from "@mui/icons-material/CallReceived";
-import BarChartIcon from "@mui/icons-material/BarChart";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import CloseIcon from "@mui/icons-material/Close";
-import LinkIcon from "@mui/icons-material/Link";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import { Box } from "@mui/material";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import {
-    ResponsiveContainer,
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    Tooltip,
-    CartesianGrid,
-    AreaChart,
-    Area
-} from "recharts";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
-
-// Import Atom Icons locally for the Detail view
-import { BaseIcon } from "../components/atoms/BaseIcon";
-import { OPIcon } from "../components/atoms/OPIcon";
-import { EthIcon } from "../components/atoms/EthIcon";
-import ArbIcon from "../components/atoms/ArbIcon";
-import PolygonIcon from "../components/atoms/PolygonIcon";
-import { AvalancheIcon } from "../components/atoms/AvalancheIcon";
-import { BnbIcon } from "../components/atoms/BnbIcon";
-import { StellarIcon } from "../components/atoms/StellarIcon";
-import { MonadIcon } from "../components/atoms/MonadIcon";
-import { UnichainIcon } from "../components/atoms/UnichainIcon";
-import { WorldChainIcon } from "../components/atoms/WorldChainIcon";
-import { UsdcIcon } from "../components/atoms/UsdcIcon";
-import { UsdtIcon } from "../components/atoms/UsdtIcon";
 import { useXOWalletStore } from "../store/useXOWalletStore";
-
-// ----------------------------------------------------------------------
-// DATA & CONFIG
-// ----------------------------------------------------------------------
-
-const CHAIN_COMPONENTS: Record<string, React.ElementType> = {
-    "Base": BaseIcon,
-    "Optimism": OPIcon,
-    "Ethereum": EthIcon,
-    "Arbitrum": ArbIcon,
-    "Polygon": PolygonIcon,
-    "Avalanche": AvalancheIcon,
-    "BNB": BnbIcon,
-    "Binance": BnbIcon,
-    "Binance Smart Chain": BnbIcon,
-    "BSC": BnbIcon,
-    "Stellar": StellarIcon,
-    "Monad": MonadIcon,
-    "Unichain": UnichainIcon,
-    "World Chain": WorldChainIcon,
-};
-
-const TOKEN_COMPONENTS: Record<string, React.ElementType> = {
-    "USDC": UsdcIcon,
-    "USDT": UsdtIcon,
-    "BNB": BnbIcon,
-    "ETH": EthIcon,
-    "WETH": EthIcon,
-    "MATIC": PolygonIcon,
-    "AVAX": AvalancheIcon,
-    "XLM": StellarIcon,
-    "OP": OPIcon,
-    "ARB": ArbIcon,
-    "MON": MonadIcon,
-};
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-        return (
-            <Box sx={{
-                bgcolor: '#fff',
-                border: '2px solid #000',
-                boxShadow: '4px 4px 0px #000',
-                p: 1.5,
-                borderRadius: 2
-            }}>
-                <Typography fontWeight={900} fontSize={12} textTransform="uppercase" color="#666" mb={0.5}>
-                    {label}
-                </Typography>
-                <Typography fontWeight={900} fontSize={16} color="#000">
-                    ${payload[0].value.toLocaleString('en-US', { maximumFractionDigits: 6 })}
-                </Typography>
-                <Typography variant="caption" fontWeight={700} color="#00DC8C">
-                    En envíos
-                </Typography>
-            </Box>
-        );
-    }
-    return null;
-};
-
-// ----------------------------------------------------------------------
-// HELPER COMPONENTS
-// ----------------------------------------------------------------------
-
-const ChainLogo = ({ chain }: { chain: string }) => {
-    const IconComponent = CHAIN_COMPONENTS[chain];
-    if (IconComponent) return <IconComponent />;
-    return (
-        <Avatar sx={{ width: 16, height: 16, bgcolor: "#333" }}>
-            <LinkIcon sx={{ fontSize: 10, color: "#fff" }} />
-        </Avatar>
-    );
-};
-
-const TokenLogo = ({ token, size = 16 }: { token: string, size?: number }) => {
-    const IconComponent = TOKEN_COMPONENTS[token] || TOKEN_COMPONENTS[token.toUpperCase()];
-
-    // Customize size for Icons that accept it, or wrap standard ones
-    if (IconComponent) {
-        // Some icons like UsdcIcon might accept size, others might not. 
-        // For consistency in this specific codebase where icons seem to be varied:
-        // We'll wrap in a Box to enforce size if needed, or pass size prop if supported.
-        // Looking at BnbIcon, it returns an img with fixed 24x24 but style access?
-        // Let's wrap in a styled Box to handle visual sizing broadly.
-        return (
-            <Box sx={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', '& > *': { width: '100%', height: '100%' } }}>
-                <IconComponent />
-            </Box>
-        );
-    }
-
-    return (
-        <Avatar sx={{ width: size, height: size, bgcolor: "#000", fontSize: size * 0.5, fontWeight: 900 }}>
-            {token.charAt(0)}
-        </Avatar>
-    );
-};
-
-const getExplorerUrl = (chain: string, hash: string) => {
-    const baselines: Record<string, string> = {
-        "Ethereum": "https://etherscan.io/tx/",
-        "Polygon": "https://polygonscan.com/tx/",
-        "BNB": "https://bscscan.com/tx/",
-        "Arbitrum": "https://arbiscan.io/tx/",
-        "Optimism": "https://optimistic.etherscan.io/tx/",
-        "Avalanche": "https://snowtrace.io/tx/",
-        "Base": "https://basescan.org/tx/",
-        "Stellar": "https://stellar.expert/explorer/public/tx/",
-        "Monad": "https://explorer.monad.xyz/tx/", // Hypothetical URL
-        "Unichain": "https://unichain-explorer.com/tx/", // Hypothetical URL
-        "World Chain": "https://worldchain-explorer.com/tx/", // Hypothetical URL,
-        "Unknown": "#"
-    };
-    const base = baselines[chain] || baselines[Object.keys(baselines).find(k => chain.toLowerCase().includes(k.toLowerCase())) || "Unknown"];
-    if (base === "#" || !hash) return "#";
-    return `${base}${hash}`;
-};
-
-// Transaction Detail Component (Embedded) - COMPACT VERSION
-const TransactionDetailView = ({ transaction, onClose }: { transaction: any, onClose: () => void }) => {
-    const [isExpanded, setIsExpanded] = useState(false); // State to control View More in items list
-    const [showRoute, setShowRoute] = useState(true); // State to toggle Execution Route section
-    if (!transaction) return null;
-
-    return (
-        <Box sx={{ height: "100%", overflowY: "auto", pr: 1 }}>
-            {/* Header / Close Button */}
-
-
-            {/* Content Card - COMPACT */}
-            <Box
-                sx={{
-                    bgcolor: "#fff",
-                    border: "3px solid #000",
-                    borderRadius: 3,
-                    boxShadow: "4px 4px 0px #000",
-                    overflow: "hidden"
-                }}
-            >
-                {/* Main Info */}
-                <Box sx={{ p: 2.5, borderBottom: "3px solid #000", bgcolor: "#fff" }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                        <Box>
-                            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                                <Chip
-                                    label={transaction.status}
-                                    size="small"
-                                    sx={{
-                                        borderRadius: 1,
-                                        bgcolor: transaction.status === "SUCCESS" ? "#00DC8C" : transaction.status === "FAILED" ? "#FF2E2E" : "#FFF59D",
-                                        color: "#000",
-                                        fontWeight: 900,
-                                        border: "1.5px solid #000",
-                                        boxShadow: "1.5px 1.5px 0px #000",
-                                        fontSize: 10,
-                                        height: 22,
-                                        px: 0.5
-                                    }}
-                                />
-                                <Typography variant="subtitle1" fontWeight={800}>
-                                    {transaction.type === "SEND" ? "Envío" : transaction.type === "RECEIVE" ? "Recepción" : "Operación"}
-                                </Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color="#666" fontWeight={700} fontFamily="monospace" fontSize={11} display="block">
-                                    ID: {transaction.id.slice(0, 12)}...
-                                </Typography>
-                                {transaction.estimatedReceived && transaction.totalAmount && (
-                                    <Typography variant="caption" fontWeight={800} color="#666" fontSize={10}>
-                                        Est. Recibido: ${Number(transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
-                                    </Typography>
-                                )}
-                            </Box>
-                        </Box>
-                        <Box textAlign="right">
-                            <IconButton
-                                onClick={onClose}
-                                size="small"
-                                sx={{
-                                    border: "2px solid #000",
-                                    bgcolor: "#fff",
-                                    borderRadius: 2,
-                                    width: 24, height: 24,
-                                    boxShadow: "2px 2px 0px #000",
-                                    mb: 1,
-                                    "&:hover": { bgcolor: "#f5f5f5", transform: "translate(1px, 1px)", boxShadow: "1px 1px 0px #000" }
-                                }}
-                            >
-                                <CloseIcon sx={{ color: "#000", fontWeight: "bold", fontSize: 14 }} />
-                            </IconButton>
-                            <Box display="flex" alignItems="center" justifyContent="flex-end" gap={1}>
-                                <Typography variant="h4" fontWeight={900} color="#000">
-                                    ${(transaction.type === "RECEIVE"
-                                        ? (transaction.estimatedReceived || transaction.amount)
-                                        : transaction.amount
-                                    ).toLocaleString('en-US', { maximumFractionDigits: 6 })}
-                                </Typography>
-                                <Box display="flex" alignItems="center" gap={0.5} mt={0.5}>
-                                    <TokenLogo token={transaction.token} size={24} />
-                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={14}>
-                                        {transaction.token}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Box>
-                    </Box>
-
-                    {/* Grid Info */}
-                    <Box
-                        display="grid"
-                        gridTemplateColumns="1fr"
-                        gap={0}
-                        sx={{
-                            bgcolor: "#f8f8f8",
-                            border: "2px solid #000",
-                            borderRadius: 2,
-                            overflow: "hidden"
-                        }}
-                    >
-                        {/* DE / PARA Row */}
-                        <Box display="grid" gridTemplateColumns="1fr 1fr" sx={{ borderBottom: "2px solid #000" }}>
-                            <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
-                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">DE</Typography>
-                                <Box display="flex" alignItems="center" gap={0.5}>
-                                    <Typography fontWeight={700} fontSize={14} fontFamily="monospace">
-                                        {transaction.addressFrom.slice(0, 6)}...{transaction.addressFrom.slice(-4)}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                            <Box sx={{ p: 1.5 }}>
-                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">PARA</Typography>
-                                <Box display="flex" alignItems="center" gap={0.5}>
-                                    <Typography fontWeight={700} fontSize={14} fontFamily="monospace">
-                                        {transaction.addressTo.slice(0, 6)}...{transaction.addressTo.slice(-4)}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Box>
-
-                        {/* CHAIN / HASH Row */}
-                        <Box display="grid" gridTemplateColumns="1fr 1fr" sx={{ borderBottom: "2px solid #000" }}>
-                            <Box sx={{ p: 1.5, borderRight: "2px solid #000" }}>
-                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">CHAIN</Typography>
-                                <Box display="flex" alignItems="center" gap={0.5}>
-                                    <ChainLogo chain={transaction.chainTo} />
-                                    <Typography fontWeight={800} fontSize={14}>{transaction.chainTo}</Typography>
-                                </Box>
-                            </Box>
-                            <Box sx={{ p: 1.5 }}>
-                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={11} mb={0.5} display="block">HASH</Typography>
-                                <Typography fontWeight={700} fontSize={14} fontFamily="monospace" sx={{ wordBreak: "break-all", lineHeight: 1.1 }}>
-                                    {transaction.txHash ? (
-                                        <a
-                                            href={getExplorerUrl(transaction.chainTo, transaction.txHash)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{ color: "inherit", textDecoration: "underline", textDecorationThickness: "2px" }}
-                                        >
-                                            {transaction.txHash.slice(0, 10)}...{transaction.txHash.slice(-8)}
-                                        </a>
-                                    ) : "N/A"}
-                                </Typography>
-                            </Box>
-                        </Box>
-
-                        {/* FINANCIALS Row (New) */}
-                        <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-                            <Box display="flex" justifyContent="space-between">
-                                <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>ENVIA</Typography>
-                                <Typography fontWeight={800} fontSize={14}>${Number(transaction.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
-                            </Box>
-                            {transaction.fee > 0 && (
-                                <Box display="flex" justifyContent="space-between">
-                                    <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>FEE PLATAFORMA</Typography>
-                                    <Typography fontWeight={800} fontSize={14} color="error.main">-${Number(transaction.fee).toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
-                                </Box>
-                            )}
-                            {transaction.estimatedReceived && (
-                                <>
-                                    <Box display="flex" justifyContent="space-between">
-                                        <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>RECIBE (EST.)</Typography>
-                                        <Typography fontWeight={800} fontSize={14} color="#00DC8C">
-                                            ${Number(transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })} {transaction.tokenSymbol || "USDC"}
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ borderTop: "1px dashed #ccc", my: 0.5 }} />
-                                    <Box display="flex" justifyContent="space-between">
-                                        <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>DIFERENCIA</Typography>
-                                        <Typography fontWeight={800} fontSize={14} color="error.main">
-                                            -${(transaction.amount - transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
-                                        </Typography>
-                                    </Box>
-                                </>
-                            )}
-                        </Box>
-
-                    </Box>
-                </Box>
-
-                {/* Sub-Transactions / Route */}
-                {transaction.route && transaction.route.length > 0 && (
-                    <>
-                        <Box
-                            onClick={() => setShowRoute(!showRoute)}
-                            sx={{
-                                bgcolor: "#FFD700",
-                                p: 1,
-                                borderBottom: "2.5px solid #000",
-                                borderTop: "3px solid #000",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                cursor: "pointer",
-                                "&:hover": { opacity: 0.9 }
-                            }}
-                        >
-                            <Box sx={{ width: 24 }} /> {/* Spacer to center title if needed, or just let space-between work */}
-                            <Typography fontWeight={900} textTransform="uppercase" fontSize={11} letterSpacing={1} textAlign="center">
-                                Ruta de Ejecución
-                            </Typography>
-                            <Box sx={{ width: 24, display: "flex", justifyContent: "center" }}>
-                                {showRoute ? <ExpandLessIcon sx={{ fontSize: 16, color: "#000" }} /> : <ExpandMoreIcon sx={{ fontSize: 16, color: "#000" }} />}
-                            </Box>
-                        </Box>
-                        {showRoute && (
-                            <Box>
-                                {(() => {
-                                    const steps = transaction.route;
-                                    const visibleSteps = isExpanded ? steps : steps.slice(0, 5);
-
-                                    return (
-                                        <>
-                                            {visibleSteps.map((step: any, index: number) => {
-                                                return (
-                                                    <Box key={index} sx={{ borderBottom: "1px solid #eee" }}>
-                                                        <Box sx={{ p: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between", "&:hover": { bgcolor: "#fff9c4" } }}>
-                                                            <Box display="flex" alignItems="center" gap={1.5}>
-                                                                {/* Step Number */}
-                                                                <Box
-                                                                    sx={{
-                                                                        width: 20, height: 20,
-                                                                        borderRadius: "50%",
-                                                                        bgcolor: "#3CD2FF",
-                                                                        border: "2px solid #000",
-                                                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                                                        fontWeight: 900,
-                                                                        fontSize: 10,
-                                                                        boxShadow: "1px 1px 0px #000",
-                                                                        flexShrink: 0
-                                                                    }}
-                                                                >
-                                                                    {index + 1}
-                                                                </Box>
-
-                                                                {/* Content */}
-                                                                <Box>
-                                                                    <Box display="flex" alignItems="center" gap={0.5}>
-                                                                        <ChainLogo chain={step.chainName} />
-                                                                        <Typography fontWeight={800} fontSize={13}>
-                                                                            {step.chainName}
-                                                                        </Typography>
-                                                                    </Box>
-                                                                    <Typography variant="caption" fontWeight={600} fontFamily="monospace" color="#666" fontSize={10}>
-                                                                        {step.txHash ? (
-                                                                            <a
-                                                                                href={getExplorerUrl(step.chainName, step.txHash)}
-                                                                                target="_blank"
-                                                                                rel="noopener noreferrer"
-                                                                                style={{ color: "#666", textDecoration: "none", borderBottom: "1px dotted #666" }}
-                                                                                onMouseEnter={(e: any) => e.target.style.color = "#000"}
-                                                                                onMouseLeave={(e: any) => e.target.style.color = "#666"}
-                                                                            >
-                                                                                {step.txHash.slice(0, 6)}...{step.txHash.slice(-4)}
-                                                                            </a>
-                                                                        ) : 'N/A'}
-                                                                    </Typography>
-                                                                </Box>
-                                                            </Box>
-
-                                                            {/* Right Side: Status & Amount */}
-                                                            <Box textAlign="right" display="flex" flexDirection="column" alignItems="flex-end" gap={0.5}>
-                                                                <Box display="flex" alignItems="center" gap={0.5}>
-                                                                    <Typography fontWeight={800} fontSize={13}>${step.amount}</Typography>
-                                                                    {step.assetOrigin && (
-                                                                        <TokenLogo token={step.assetOrigin} size={16} />
-                                                                    )}
-                                                                </Box>
-                                                                <Chip
-                                                                    label={step.status}
-                                                                    size="small"
-                                                                    sx={{
-                                                                        bgcolor: step.status === "SUCCESS" ? "#00DC8C" : "#FFD700",
-                                                                        fontWeight: 900,
-                                                                        border: "1.5px solid #000",
-                                                                        fontSize: 8,
-                                                                        height: 16,
-                                                                        px: 0.5
-                                                                    }}
-                                                                />
-                                                            </Box>
-                                                        </Box>
-                                                    </Box>
-                                                );
-                                            })}
-
-                                            {/* Toggle Button */}
-                                            {steps.length > 5 && (
-                                                <Box sx={{ p: 2, textAlign: "center", borderTop: "2px solid #000" }}>
-                                                    <Typography
-                                                        onClick={() => setIsExpanded(!isExpanded)}
-                                                        sx={{
-                                                            cursor: "pointer",
-                                                            fontWeight: 800,
-                                                            textTransform: "uppercase",
-                                                            fontSize: 12,
-                                                            textDecoration: "underline",
-                                                            "&:hover": { color: "#555" }
-                                                        }}
-                                                    >
-                                                        {isExpanded ? "Ver menos" : `Ver más (+${steps.length - 5})`}
-                                                    </Typography>
-                                                </Box>
-                                            )}
-                                        </>
-                                    );
-                                })()}
-                            </Box>
-                        )}
-                    </>
-                )}
-            </Box>
-        </Box>
-    );
-};
-
-// ----------------------------------------------------------------------
-// MAIN PAGE COMPONENT
-// ----------------------------------------------------------------------
+import { HistoryTransactionList } from "./components/HistoryTransactionList";
+import { HistoryMetrics } from "./components/HistoryMetrics";
+import { HistoryTransactionDetail } from "./components/HistoryTransactionDetail";
 
 export default function HistoryListPage() {
     const router = useRouter();
@@ -500,11 +28,11 @@ export default function HistoryListPage() {
         totalReceives: 0,
         totalReceivedAmount: 0,
         mostUsedToken: "N/A",
-        totalFeesPaid: 0, // [NEW] - Initialize
+        totalFeesPaid: 0,
         weeklyActivity: [] as any[]
     });
     const [loading, setLoading] = useState(true);
-    const [refreshTrigger, setRefreshTrigger] = useState(0); // [NEW] Trigger for manual refresh
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // Prioritize XO Wallet address if available, otherwise fallback to Main Wallet
     const address = xoWallet?.address || mainWallet?.address;
@@ -526,21 +54,18 @@ export default function HistoryListPage() {
                 const res = await fetch(`/api/transactions?address=${address}&page=${page}&limit=${LIMIT}`);
                 const data = await res.json();
                 if (data.success) {
-                    // Map API data to UI format
                     const mapped = data.transactions.map((tx: any) => {
-                        // Fuzzy check for isSender: if the stored fromAddress starts with our address (or vice versa)
-                        // This handles cases where one might have a suffix (e.g. 0x...B)
                         const cleanUserAddr = address.toLowerCase().startsWith('0x') ? address.toLowerCase().substring(0, 42) : address.toLowerCase();
                         const cleanTxFrom = tx.fromAddress.toLowerCase().startsWith('0x') ? tx.fromAddress.toLowerCase().substring(0, 42) : tx.fromAddress.toLowerCase();
 
-                        const isSender = cleanTxFrom === cleanUserAddr; // Robust comparison
+                        const isSender = cleanTxFrom === cleanUserAddr;
 
                         return {
                             id: tx.id,
                             type: isSender ? "SEND" : "RECEIVE",
                             date: format(new Date(tx.createdAt), "dd MMM yyyy, HH:mm"),
                             amount: tx.totalAmount,
-                            token: tx.tokenSymbol || "USDC", // Fallback, but now we should have it
+                            token: tx.tokenSymbol || "USDC",
                             status: tx.status,
                             from: tx.fromAddress,
                             to: tx.toAddress || "Unknown",
@@ -548,16 +73,14 @@ export default function HistoryListPage() {
                             addressTo: tx.toAddress || "Unknown",
                             chainTo: tx.destinationChain || "Unknown",
                             txHash: tx.route?.[0]?.txHash || "",
-                            // fee: 0, // Removed duplicate
                             route: tx.route,
-                            estimatedReceived: tx.estimatedReceived, // [NEW] Map from API
+                            estimatedReceived: tx.estimatedReceived,
                             tokenSymbol: tx.tokenSymbol,
-                            createdAt: tx.createdAt, // [NEW] Needed for filtering by date
-                            fee: tx.fee || 0 // [NEW] Map fee from ID
+                            createdAt: tx.createdAt,
+                            fee: tx.fee || 0
                         };
                     });
                     setTransactions(mapped);
-                    // Update Page Info
                     if (data.pagination) {
                         setTotalPages(data.pagination.totalPages);
                     }
@@ -587,24 +110,17 @@ export default function HistoryListPage() {
     }, [address, page, refreshTrigger]);
 
 
-    // --- NEW LOGIC: Weekly Chart Data (Current Week) ---
+    // --- Monthly Chart Data (Current Week) ---
     const today = new Date();
-    // Get start and end of current week (Sunday to Saturday)
     const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 0 });
     const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 0 });
-
-    // Generate array of days for the current week
     const weekDays = eachDayOfInterval({ start: startOfCurrentWeek, end: endOfCurrentWeek });
 
     const weeklySendsData = weekDays.map(day => {
         const dateStr = format(day, "yyyy-MM-dd");
-        // Find stats for this day
         const dayStat = stats.weeklyActivity.find((item: any) => item._id === dateStr);
         const dayTotal = dayStat ? dayStat.totalAmount : 0;
-
-        // Format day name (e.g., "Lun", "Mar")
         const dayName = format(day, "eee", { locale: es });
-        // Capitalize first letter
         const formattedName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
 
         return {
@@ -613,337 +129,40 @@ export default function HistoryListPage() {
         };
     });
 
-    // Helper to find selected tx
     const selectedTx = transactions.find(t => t.id === selectedTxId);
 
     return (
         <Box sx={{ minHeight: "100vh", bgcolor: "#f0f0f0", display: "flex", flexDirection: "column" }}>
-
-
             <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: "flex", flexDirection: { xs: "column", lg: "row" }, gap: { xs: 2, lg: 4 }, alignItems: "stretch" }}>
 
-                    {/* LEFT COLUMN: Transactions List (50%) */}
-                    <Box sx={{ flex: 1, minWidth: 0, width: "100%", display: "flex", flexDirection: "column", p: { xs: 2, md: 3 } }}>
-                        {/* Header Moved Here */}
-                        <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
-                            <IconButton
-                                onClick={() => router.push("/dashboard")}
-                                sx={{
-                                    border: "3px solid #000",
-                                    bgcolor: "#fff",
-                                    borderRadius: 2,
-                                    boxShadow: "4px 4px 0px #000",
-                                    "&:hover": { bgcolor: "#f5f5f5", transform: "translate(2px, 2px)", boxShadow: "2px 2px 0px #000" }
-                                }}
-                            >
-                                <ArrowBackIcon sx={{ color: "#000", fontWeight: "bold" }} />
-                            </IconButton>
-                            <Typography variant="h4" fontWeight={900} sx={{ textTransform: "uppercase", letterSpacing: 1 }}>
-                                Historial
-                            </Typography>
-                            <IconButton
-                                onClick={handleRefresh}
-                                sx={{
-                                    border: "2px solid #000",
-                                    bgcolor: "#fff",
-                                    borderRadius: 2,
-                                    width: 40, height: 40,
-                                    boxShadow: "3px 3px 0px #000",
-                                    "&:hover": { bgcolor: "#f5f5f5", transform: "translate(1px, 1px)", boxShadow: "2px 2px 0px #000" },
-                                    "&:active": { transform: "translate(3px, 3px)", boxShadow: "0px 0px 0px #000" }
-                                }}
-                            >
-                                <RefreshIcon sx={{ color: "#000", fontWeight: "bold" }} />
-                            </IconButton>
-                        </Box>
-
-                        {loading ? (
-                            <Box display="flex" justifyContent="center" p={4}>
-                                <CircularProgress sx={{ color: "#000" }} />
-                            </Box>
-                        ) : (
-                            <Box display="flex" flexDirection="column" gap={2} sx={{
-                                pr: 1,
-                                pb: 2
-                            }}>
-                                {transactions.length === 0 && (
-                                    <Typography variant="body1" textAlign="center" color="text.secondary">No hay transacciones aún.</Typography>
-                                )}
-                                {transactions.map((tx) => (
-                                    <Card
-                                        key={tx.id}
-                                        sx={{
-                                            flexShrink: 0, // Prevent shrinking
-                                            border: selectedTxId === tx.id ? "4px solid #000" : "3px solid #000",
-                                            borderRadius: 3,
-                                            // Dynamic Background based on Action when selected
-                                            bgcolor: selectedTxId === tx.id
-                                                ? "#fff9c4" // Standard Yellow highlight for all
-                                                : "#fff",
-                                            boxShadow: selectedTxId === tx.id ? "2px 2px 0px #000" : "4px 4px 0px #000", // "Pressed" effect if selected
-                                            transform: selectedTxId === tx.id ? "translate(2px, 2px)" : "none",
-                                            transition: "all 0.1s",
-                                            "&:hover": {
-                                                transform: selectedTxId === tx.id ? "translate(2px, 2px)" : "translate(-2px, -2px)",
-                                                boxShadow: selectedTxId === tx.id ? "2px 2px 0px #000" : "6px 6px 0px #000"
-                                            }
-                                        }}
-                                    >
-                                        <CardActionArea
-                                            onClick={() => setSelectedTxId(tx.id)}
-                                            sx={{ p: 2.5 }}
-                                        >
-                                            <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
-                                                {/* Left: Icon + Info */}
-                                                <Box display="flex" alignItems="center" gap={2} flex={1} overflow="hidden" minWidth={0}>
-                                                    <Box
-                                                        sx={{
-                                                            width: 52, height: 52,
-                                                            minWidth: 52, // Prevent shrinking
-                                                            borderRadius: 2,
-                                                            border: "2.5px solid #000",
-                                                            display: "flex", alignItems: "center", justifyContent: "center",
-                                                            // Send = Orange, Receive = Green, Savings = Yellow
-                                                            bgcolor: tx.type === "SEND" ? "#FFAB40" : tx.type === "RECEIVE" ? "#00DC8C" : "#FFD700"
-                                                        }}
-                                                    >
-                                                        {tx.type === "SEND" && <CallMadeIcon sx={{ color: "#000", fontSize: 28 }} />}
-                                                        {tx.type === "RECEIVE" && <CallReceivedIcon sx={{ color: "#000", fontSize: 28 }} />}
-                                                        {tx.type === "SAVINGS" && <Typography fontSize={24}>🏦</Typography>}
-                                                    </Box>
-                                                    <Box flex={1} overflow="hidden" minWidth={0}>
-                                                        <Typography fontWeight={900} fontSize={18} noWrap sx={{ lineHeight: 1.2, mb: 0.5 }}>
-                                                            {tx.type === "SEND" ? "Envío" : tx.type === "RECEIVE" ? "Recibido" : "Yield Deposit"}
-                                                        </Typography>
-                                                        <Typography variant="body2" fontWeight={700} color="#666" noWrap sx={{ lineHeight: 1.2 }}>
-                                                            {tx.date} • {tx.type === "SEND" ? tx.to : tx.from || tx.to}
-                                                        </Typography>
-                                                        {tx.estimatedReceived && tx.type === "SEND" && (
-                                                            <Typography variant="caption" fontWeight={800} color="#666" sx={{ fontSize: 10, bgcolor: "#eee", px: 0.5, borderRadius: 0.5, display: "inline-block", mt: 0.5 }}>
-                                                                Est: ${Number(tx.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
-                                                            </Typography>
-                                                        )}
-                                                    </Box>
-                                                </Box>
-
-                                                {/* Right: Amount + Status */}
-                                                <Box textAlign="right" flexShrink={0} ml={2}>
-                                                    <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
-                                                        <Typography fontWeight={900} fontSize={18} color={tx.type === "SEND" ? "#FF2E2E" : "#008a57"}>
-                                                            {tx.type === "SEND" ? "-" : "+"}${Number(tx.type === "RECEIVE" ? (tx.estimatedReceived || tx.amount) : tx.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}
-                                                        </Typography>
-                                                        <TokenLogo token={tx.token} size={20} />
-                                                    </Box>
-                                                    <Chip
-                                                        label={tx.status}
-                                                        size="small"
-                                                        sx={{
-                                                            height: 24,
-                                                            fontSize: 11,
-                                                            fontWeight: 900,
-                                                            border: "2px solid #000",
-                                                            bgcolor: tx.status === "SUCCESS" ? "#00DC8C" : tx.status === "FAILED" ? "#FF2E2E" : "#FFF59D",
-                                                            color: tx.status === "FAILED" ? "#fff" : "#000",
-                                                            mt: 0.5
-                                                        }}
-                                                    />
-                                                </Box>
-                                            </Box>
-                                        </CardActionArea>
-                                    </Card>
-                                ))}
-
-                                {/* Pagination Controls */}
-                                {totalPages > 1 && (
-                                    <Box display="flex" justifyContent="center" alignItems="center" gap={2} mt={2}>
-                                        <IconButton
-                                            disabled={page === 1}
-                                            onClick={() => setPage(p => Math.max(1, p - 1))}
-                                            sx={{
-                                                border: "2px solid #000",
-                                                bgcolor: page === 1 ? "#e0e0e0" : "#fff",
-                                                color: page === 1 ? "#999" : "#000",
-                                                boxShadow: page === 1 ? "none" : "3px 3px 0px #000",
-                                                "&:hover": {
-                                                    bgcolor: page === 1 ? "#e0e0e0" : "#f5f5f5",
-                                                    transform: page === 1 ? "none" : "translate(1px, 1px)",
-                                                    boxShadow: page === 1 ? "none" : "2px 2px 0px #000"
-                                                }
-                                            }}
-                                        >
-                                            <ArrowBackIcon />
-                                        </IconButton>
-                                        <Typography fontWeight={900} fontSize={14}>
-                                            Página {page} de {totalPages}
-                                        </Typography>
-                                        <IconButton
-                                            disabled={page === totalPages}
-                                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                            sx={{
-                                                border: "2px solid #000",
-                                                bgcolor: page === totalPages ? "#e0e0e0" : "#fff",
-                                                color: page === totalPages ? "#999" : "#000",
-                                                boxShadow: page === totalPages ? "none" : "3px 3px 0px #000",
-                                                "&:hover": {
-                                                    bgcolor: page === totalPages ? "#e0e0e0" : "#f5f5f5",
-                                                    transform: page === totalPages ? "none" : "translate(1px, 1px)",
-                                                    boxShadow: page === totalPages ? "none" : "2px 2px 0px #000"
-                                                }
-                                            }}
-                                        >
-                                            {/* Rotate ArrowBack to make it ArrowForward since we already imported ArrowBack */}
-                                            <ArrowBackIcon sx={{ transform: "rotate(180deg)" }} />
-                                        </IconButton>
-                                    </Box>
-                                )}
-                            </Box>
-                        )}
-
-                    </Box>
+                    {/* LEFT COLUMN: Transactions List */}
+                    <HistoryTransactionList
+                        loading={loading}
+                        transactions={transactions}
+                        selectedTxId={selectedTxId}
+                        setSelectedTxId={setSelectedTxId}
+                        page={page}
+                        totalPages={totalPages}
+                        setPage={setPage}
+                        handleRefresh={handleRefresh}
+                    />
 
                     {/* DIVIDER LINE (Visible only on Desktop) */}
                     <Box sx={{ display: { xs: "none", lg: "block" }, width: "4px", bgcolor: "#000", opacity: 0.2, borderRadius: 1 }} />
 
-                    {/* RIGHT COLUMN: Metrics OR Detail (50%) */}
+                    {/* RIGHT COLUMN: Metrics OR Detail */}
                     <Box sx={{ flex: 1, minWidth: 0, width: "100%", pt: 12, px: { xs: 2, md: 3 }, pb: { xs: 2, md: 3 } }}>
                         {selectedTx ? (
-                            // SHOW DETAIL VIEW
-                            <TransactionDetailView
+                            <HistoryTransactionDetail
                                 transaction={selectedTx}
                                 onClose={() => setSelectedTxId(null)}
                             />
                         ) : (
-                            // SHOW METRICS VIEW
-                            <Box display="flex" flexDirection="column" gap={3}>
-                                {/* QUICK STATS CARD */}
-                                <Box
-                                    sx={{
-                                        border: "3px solid #000",
-                                        borderRadius: 3,
-                                        bgcolor: "#fff",
-                                        boxShadow: "4px 4px 0px #000",
-                                        p: 3,
-                                        position: "relative",
-                                        overflow: "hidden"
-                                    }}
-                                >
-                                    {/* BACKGROUND CHART */}
-                                    <Box sx={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "100%", zIndex: 0, opacity: 0.2 }}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={weeklySendsData}>
-                                                <defs>
-                                                    <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#00DC8C" stopOpacity={0.8} />
-                                                        <stop offset="95%" stopColor="#00DC8C" stopOpacity={0} />
-                                                    </linearGradient>
-                                                </defs>
-                                                <Area
-                                                    type="monotone"
-                                                    dataKey="value"
-                                                    stroke="#00DC8C"
-                                                    fillOpacity={1}
-                                                    fill="url(#colorAmount)"
-                                                    strokeWidth={3}
-                                                />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    </Box>
-
-                                    <Box position="relative" zIndex={1}>
-                                        <Box display="flex" alignItems="center" gap={1} mb={2}>
-                                            <AssessmentIcon sx={{ color: "#000" }} />
-                                            <Typography fontWeight={900} textTransform="uppercase">Métricas Clave</Typography>
-                                        </Box>
-
-                                        <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
-                                            {/* SEND STATS */}
-                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                                <Typography variant="caption" fontWeight={700} color="#666">TOTAL ENVÍOS</Typography>
-                                                <Typography variant="h5" fontWeight={900}>{stats.totalSends}</Typography>
-                                            </Box>
-                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                                <Typography variant="caption" fontWeight={700} color="#666">TOTAL ENVIADO</Typography>
-                                                <Typography variant="h5" fontWeight={900} color="#FF2E2E">${stats.totalSentAmount.toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
-                                            </Box>
-
-                                            {/* RECEIVE STATS */}
-                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                                <Typography variant="caption" fontWeight={700} color="#666">TOTAL RECIBIDOS</Typography>
-                                                <Typography variant="h5" fontWeight={900}>{stats.totalReceives}</Typography>
-                                            </Box>
-                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                                <Typography variant="caption" fontWeight={700} color="#666">TOTAL RECIBIDO</Typography>
-                                                <Typography variant="h5" fontWeight={900} color="#008A57">${stats.totalReceivedAmount.toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
-                                            </Box>
-
-                                            {/* OTHER STATS */}
-                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                                <Typography variant="caption" fontWeight={700} color="#666">TOP COIN</Typography>
-                                                <Box display="flex" alignItems="center" gap={1}>
-                                                    <Typography variant="h5" fontWeight={900}>{stats.mostUsedToken}</Typography>
-                                                    {stats.mostUsedToken !== "N/A" && <TokenLogo token={stats.mostUsedToken} size={28} />}
-                                                </Box>
-                                            </Box>
-                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000" }}>
-                                                <Typography variant="caption" fontWeight={700} color="#666">MAYOR ENVÍO</Typography>
-                                                <Typography variant="h5" fontWeight={900}>${stats.maxSent}</Typography>
-                                            </Box>
-                                            {/* Total Fees */}
-                                            <Box sx={{ bgcolor: "#f8f8f8", p: 1.5, borderRadius: 2, border: "2px solid #000", gridColumn: "1 / -1" }}>
-                                                <Typography variant="caption" fontWeight={700} color="#666">TOTAL FEES PAGADOS</Typography>
-                                                <Typography variant="h5" fontWeight={900} color="#FF8C00">
-                                                    ${stats.totalFeesPaid.toLocaleString('en-US', { maximumFractionDigits: 6 })}
-                                                </Typography>
-                                            </Box>
-                                        </Box>
-                                    </Box> {/* End relative content wrapper */}
-                                </Box>
-
-                                {/* Daily Spend Bar Chart */}
-                                <Box
-                                    sx={{
-                                        border: "3px solid #000",
-                                        borderRadius: 3,
-                                        bgcolor: "#fff",
-                                        boxShadow: "4px 4px 0px #000",
-                                        p: 3,
-                                        height: 300
-                                    }}
-                                >
-                                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            <BarChartIcon />
-                                            <Typography fontWeight={900} textTransform="uppercase">Envíos por Día (Semana Actual)</Typography>
-                                        </Box>
-                                    </Box>
-
-                                    <Box sx={{ width: "100%", height: "85%" }}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={weeklySendsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#000" strokeOpacity={0.1} />
-                                                <XAxis
-                                                    dataKey="name"
-                                                    tick={{ fontSize: 11, fontWeight: 800, fill: '#000' }}
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    dy={10}
-                                                />
-                                                <YAxis hide domain={[0, "dataMax"]} />
-                                                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f5f5f5', opacity: 0.5 }} />
-                                                <Bar
-                                                    dataKey="value"
-                                                    fill="#FFAB40"
-                                                    stroke="#000"
-                                                    strokeWidth={2}
-                                                    radius={[6, 6, 0, 0]}
-                                                    maxBarSize={50}
-                                                />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </Box>
-                                </Box>
-                            </Box>
+                            <HistoryMetrics
+                                stats={stats}
+                                weeklySendsData={weeklySendsData}
+                            />
                         )}
                     </Box>
                 </Box>

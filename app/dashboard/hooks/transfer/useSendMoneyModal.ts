@@ -2,7 +2,7 @@ import { SendForm, sendSchema } from "@/app/lib/zod/sendSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { JSX, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { AllocationSummary } from "../types";
+import { AllocationSummary, Wallet } from "../../types";
 import { useFindBestRoute } from "./useFindBestRoute";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useSessionWalletStore } from "@/app/store/useSessionWalletStore";
@@ -11,7 +11,7 @@ import { toast } from "react-toastify";
 import { Address } from "viem";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
-import { useBridgeUsdcStream } from "@/app/dashboard/hooks/useBridgeUsdcStream";
+import { useBridgeUsdcStream } from "@/app/dashboard/hooks/transfer/useBridgeUsdcStream";
 import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 

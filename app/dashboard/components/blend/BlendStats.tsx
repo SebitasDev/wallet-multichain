@@ -2,7 +2,7 @@ import { Box, Typography } from "@mui/material";
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import WalletIcon from '@mui/icons-material/Wallet';
-import { useLiveBalance } from "../../hooks/useLiveBalance";
+import { useLiveBalance } from "../../hooks/common/useLiveBalance";
 
 interface BlendStatsProps {
     apy: number;

@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { Address } from "abitype";
 
-import { useXOContracts } from "@/app/dashboard/hooks/useXOConnect";
+import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
 import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";

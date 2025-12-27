@@ -1,7 +1,7 @@
 import { Card, Box } from "@mui/material";
 import { Address } from "abitype";
 
-import { useAddressCard } from "@/app/dashboard/hooks/useAddressCard";
+import { useAddressCard } from "@/app/dashboard/hooks/wallet/useAddressCard";
 import { AddressCardHeader } from "./AddressCardHeader";
 import { AddressCardInfo } from "./AddressCardInfo";
 import { AddressChainList } from "./AddressChainList";

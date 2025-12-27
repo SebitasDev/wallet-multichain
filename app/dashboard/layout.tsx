@@ -7,8 +7,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { PasswordModal } from "./components/PasswordModal";
-import { XOContractsProvider } from "@/app/dashboard/hooks/useXOConnect";
-import { EmbeddedProvider } from "@/app/dashboard/hooks/embebed";
+import { XOContractsProvider } from "@/app/dashboard/hooks/wallet/useXOConnect";
+import { EmbeddedProvider } from "@/app/dashboard/hooks/dashboard/embedded";
 import { ToastContainerCustom } from "@/app/components/atoms/ToastContainerCustom";
 
 export default function DashboardLayout({

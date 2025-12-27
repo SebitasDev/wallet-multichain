@@ -1,6 +1,6 @@
 import { Box, Typography, TextField, MenuItem, Stack } from "@mui/material";
 import { Control, Controller } from "react-hook-form";
-import { FormValues, availableChains } from "@/app/dashboard/hooks/useSendMoneyMainWallet";
+import { FormValues, availableChains } from "@/app/dashboard/hooks/transfer/useSendMoneyMainWallet";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 
 interface SendMoneyModalFormProps {

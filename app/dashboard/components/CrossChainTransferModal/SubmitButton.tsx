@@ -37,6 +37,6 @@ export const SubmitButton = ({ onClick, isLoading, isDisabled }: SubmitButtonPro
             },
         }}
     >
-        {isLoading ? "Procesando..." : "Enviar (Cross-Chain)"}
+        {isLoading ? "Procesando..." : "Enviar"}
     </Button>
 );
