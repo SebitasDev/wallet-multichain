@@ -51,8 +51,5 @@ export const miscApi = {
         return response.data;
     },
 
-    x402Pay: async (data: any) => {
-        const response = await api.post("/x402-pay", data);
-        return response.data;
-    },
+
 };

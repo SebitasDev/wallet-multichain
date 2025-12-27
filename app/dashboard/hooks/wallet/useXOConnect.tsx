@@ -20,7 +20,7 @@ import {
 import { Keypair } from "stellar-sdk";
 import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
 import { base, polygon } from "viem/chains";
-import { useXOPayer } from "@/app/dashboard/hooks/transfer/useXOPayer";
+
 import { useXOWalletManager } from "./useXOWalletManager";
 
 
@@ -57,11 +57,7 @@ interface XOContractsContextType {
     client: any;
     isUsingXO: boolean;
     currentNetwork: (typeof NETWORKS)[AvailableChains];
-    payX402: (
-        amount: string,
-        recipientAddress: string,
-        targetChain: AvailableChains
-    ) => Promise<{ success: boolean; txHash?: string; error?: string }>;
+
     loadWallet: (mnemonic: string, password: string) => Promise<void>;
     resetWallet: () => Promise<void>;
     factoryReset: () => void;
@@ -99,7 +95,7 @@ export const XOContractsProvider = ({
         !!mainWallet.iv;
 
     // Sub-hooks
-    const { payX402 } = useXOPayer({ isUsingXO, xoProviderRef, address, password });
+
     const { loadWallet, resetWallet, factoryReset } = useXOWalletManager({
         password,
         isUsingXO,
@@ -236,7 +232,7 @@ export const XOContractsProvider = ({
                 client: useXOWalletStore.getState().xoClient,
                 isUsingXO,
                 currentNetwork,
-                payX402,
+
                 loadWallet,
                 resetWallet,
                 factoryReset,
