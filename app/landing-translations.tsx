@@ -210,7 +210,7 @@ export const faqs = [
 ];
 
 export const heroContent = {
-    badge: { es: "🚀 1llet", en: "🚀 1llet" },
+    badge: { es: "🚀 1LLET", en: "🚀 1LLET" },
     title: { es: "Domina el mundo multi-chain. La única wallet que necesitas.", en: "Master the multi-chain world. The only wallet you need." },
     subtitle: {
         es: "Gestiona todas tus wallets, envía USDC entre chains sin bridges, optimiza rutas automáticamente y mantén todo seguro con cifrado local.",
@@ -272,7 +272,7 @@ export const sectionTitles = {
 
 export const comparisonHeaders = {
     feature: { es: "Característica", en: "Feature" },
-    us: "1llet",
+    us: "1LLET",
     others: { es: "Otros", en: "Others" },
 };
 
@@ -327,8 +327,8 @@ export const footerCopy = {
         },
     ],
     copyright: {
-        es: "© 2025 1llet. Hecho con 💜 para criptobros.",
-        en: "© 2025 1llet. Built with 💜 for cryptobros.",
+        es: "© 2025 1LLET. Hecho con 💜 para criptobros.",
+        en: "© 2025 1LLET. Built with 💜 for cryptobros.",
     },
 };
 

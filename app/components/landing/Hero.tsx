@@ -147,7 +147,7 @@ export function Hero({ lang, onToggleLanguage }: { lang: Language; onToggleLangu
                                 </Box>
                                 <Box>
                                     <Typography fontWeight={900} color="#00DC8C" fontSize={20}>
-                                        ${stats ? stats.totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 }) : "..."}
+                                        ${stats ? stats.totalVolume.toLocaleString('en-US', { maximumFractionDigits: 2 }) : "..."}
                                     </Typography>
                                     <Typography variant="body2" color="#666666" fontWeight={600}>
                                         {lang === "es" ? "Volumen Total" : "Total Volume"}
