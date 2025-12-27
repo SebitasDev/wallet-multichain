@@ -2,7 +2,7 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
-import { AccountBalanceWallet, Send, GridView, Logout } from "@mui/icons-material";
+import { AccountBalanceWallet, Send, GridView, Logout, Person } from "@mui/icons-material";
 import { useRouter, usePathname } from "next/navigation";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 
@@ -110,6 +110,7 @@ export const BottomNavigation = () => {
                 </Typography>
 
                 {[
+                    { label: language === "es" ? "Perfil" : "Profile", icon: Person, path: "/common-people/profile" },
                     { label: language === "es" ? "Tu dinero" : "Your Money", icon: AccountBalanceWallet, path: "/common-people/dashboard" },
                     { label: language === "es" ? "Actividad" : "Activity", icon: GridView, path: "/common-people/history" },
                     { label: language === "es" ? "Tarjetas" : "Cards", icon: Send, path: "/cards" }

@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { Box, Typography, Button, Switch, Stack, Collapse } from "@mui/material";
-import { ArrowDownward, ArrowUpward, Login, ExpandMore, ExpandLess } from "@mui/icons-material";
+import { ArrowDownward, ArrowUpward, Login, ExpandMore, ExpandLess, Visibility, VisibilityOff } from "@mui/icons-material";
 import { ChainGrid } from "./ChainGrid";
 import { AssetModal } from "./AssetModal";
 import { ChainData } from "./ChainCard";
@@ -35,6 +35,7 @@ import { CrossChainTransferModal } from "@/app/dashboard/components/CrossChainTr
 export function WalletHeader() {
     const router = useRouter();
     const [expanded, setExpanded] = useState(false);
+    const [showBalance, setShowBalance] = useState(true);
     const [selectedChain, setSelectedChain] = useState<ChainData | null>(null);
     const { language, toggleLanguage } = useLanguageStore();
     const { useLocal, toggleCurrency } = useCurrencyStore();
@@ -207,6 +208,7 @@ export function WalletHeader() {
             {/* Welcome Message */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} id="common-welcome">
                 <Box
+                    onClick={() => router.push("/common-people/profile")}
                     sx={{
                         display: "flex",
                         alignItems: "center",
@@ -218,6 +220,11 @@ export function WalletHeader() {
                         borderRadius: 10,
                         border: "3px solid #000000",
                         boxShadow: "4px 4px 0px #000000",
+                        cursor: "pointer",
+                        transition: "transform 0.1s",
+                        "&:active": {
+                            transform: "scale(0.98)"
+                        }
                     }}
                 >
                     <Box
@@ -313,11 +320,15 @@ export function WalletHeader() {
                         </Box>
                     </Box>
 
-                    <Box display="flex" alignItems="baseline" mb={4}>
+                    <Box display="flex" alignItems="center" mb={4}>
                         <Typography variant="h2" fontWeight={900} sx={{ letterSpacing: "-0.05em", fontSize: "3rem", lineHeight: 1 }}>
-                            {loading && useLocal ? "..." : `${currentSymbol} ${integerPart}${decimalSeparator}`}
+                            {showBalance
+                                ? (loading && useLocal ? "..." : `${currentSymbol} ${integerPart}${decimalSeparator}`)
+                                : `${currentSymbol} ****`
+                            }
                         </Typography>
-                        {(!loading || !useLocal) && (
+
+                        {showBalance && (!loading || !useLocal) && (
                             <>
                                 <Typography fontWeight={900} sx={{ fontSize: "1.5rem", lineHeight: 1, ml: 0.5, position: "relative", top: -10 }}>
                                     {decimalPart}
@@ -327,6 +338,22 @@ export function WalletHeader() {
                                 </Typography>
                             </>
                         )}
+
+                        <Box
+                            onClick={() => setShowBalance(!showBalance)}
+                            sx={{
+                                ml: 2,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                p: 1,
+                                borderRadius: "50%",
+                                "&:hover": { backgroundColor: "rgba(0,0,0,0.05)" }
+                            }}
+                        >
+                            {showBalance ? <Visibility sx={{ fontSize: 24 }} /> : <VisibilityOff sx={{ fontSize: 24 }} />}
+                        </Box>
                     </Box>
 
                     <Stack direction="row" spacing={2} mb={3} id="common-actions">
