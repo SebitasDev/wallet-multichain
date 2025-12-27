@@ -12,6 +12,7 @@ import {
 } from "../types";
 import { FACILITATOR_ADDRESS } from "@/app/facilitator/config";
 import { NETWORKS } from "@/app/constants/chainsInformation";
+import { bridgeApi } from "@/app/services/api";
 
 // New EVM Functions
 import { createAuthorizationPayload } from "../evm/functions/createAuthorization";
@@ -189,21 +190,15 @@ export const useFacilitator = ({
                 // Step 2: Call Smart Router Endpoint
                 console.log(LOG_PREFIX, "Step 3/3: calling Smart Router /settle");
 
-                const response = await fetch("/api/bridge/settle", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        paymentPayload,
-                        sourceChain,
-                        destChain: destinationChain, // The router needs this to decide
-                        amount: amount,
-                        recipient: recipient,
-                        destToken: destToken,
-                        sourceToken: sourceToken
-                    })
+                const result = await bridgeApi.settle({
+                    paymentPayload,
+                    sourceChain,
+                    destChain: destinationChain, // The router needs this to decide
+                    amount: amount,
+                    recipient: recipient,
+                    destToken: destToken,
+                    sourceToken: sourceToken
                 });
-
-                const result = await response.json();
 
                 if (!result.success) {
                     throw new Error(result.errorReason || "Smart Router Settlement failed");

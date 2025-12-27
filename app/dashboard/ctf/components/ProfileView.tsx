@@ -7,6 +7,8 @@ import TimerIcon from "@mui/icons-material/Timer";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 
+import { ctfApi } from "@/app/services/api";
+
 interface ProfileStats {
     gamesCreated: number;
     gamesWon: number;
@@ -27,11 +29,12 @@ export function ProfileView({ userAddress }: ProfileViewProps) {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await fetch(`/api/ctf/profile?userAddress=${userAddress}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setStats(data);
-                }
+                const data = await ctfApi.getProfile(userAddress);
+                // The API returns the stats directly, check if it has success flag or just data
+                // Based on route analysis, it returns structured data directly (no success wrapper unless modified later)
+                // But let's assume it returns data compatible with ProfileStats + some metadata if any.
+                // The route returns { gamesCreated, gamesWon, ... } directly.
+                setStats(data as unknown as ProfileStats);
             } catch (error) {
                 console.error("Failed to fetch profile stats", error);
             } finally {

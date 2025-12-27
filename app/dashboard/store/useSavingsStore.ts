@@ -191,6 +191,8 @@ export const useSavingsStore = create<SavingsState>()(
     )
 );
 
+import { savingsApi } from "@/app/services/api";
+
 /**
  * Helper to fetch positions from API and update store
  */
@@ -200,8 +202,7 @@ export async function fetchSavingsPositions(walletAddress: string) {
     store.setLoading(true);
 
     try {
-        const response = await fetch(`/api/savings/positions/${walletAddress}`);
-        const data = await response.json();
+        const data = await savingsApi.getPositions(walletAddress);
 
         if (data.errorReason) {
             store.setError(data.errorReason);

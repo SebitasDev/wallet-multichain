@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { formatCurrency } from "@/app/utils/formatCurrency";
+import { miscApi } from "@/app/services/api";
 
 interface CurrencyState {
     code: string; // e.g., "MXN", "COP"
@@ -24,10 +25,9 @@ export const useLocalCurrency = () => {
                 let currencyCode = "USD";
                 try {
                     // Call our internal API proxy to avoid CORS
-                    const ipRes = await fetch("/api/location");
+                    const ipData = await miscApi.getLocation();
 
-                    if (ipRes.ok) {
-                        const ipData = await ipRes.json();
+                    if (ipData) {
                         console.log("Local Currency Debug - IP Data:", ipData); // Debug log
                         currencyCode = ipData.currency || "USD";
                     }

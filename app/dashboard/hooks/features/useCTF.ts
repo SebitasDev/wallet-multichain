@@ -10,6 +10,7 @@ import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
+import { ctfApi } from "@/app/services/api";
 
 // Deployed Address (Scroll Sepolia)
 const FACTORY_ADDRESS = "0x18fA0850E4b4E7Fba2CF39E827Ed87d412b5406B";
@@ -149,17 +150,15 @@ export const useCTF = () => {
             // 1. Fetch Games List from DB (Paginated)
             let gamesList: any[] = [];
             try {
-                const res = await fetch(`/api/ctf/list?page=${pageToFetch}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.metadata) {
-                        gamesList = data.games;
-                        setTotalPages(data.metadata.totalPages);
-                        setTotalGames(data.metadata.total);
-                    } else {
-                        // Fallback for old API structure (shouldn't happen)
-                        gamesList = Array.isArray(data) ? data : [];
-                    }
+                const data = await ctfApi.listGames({ page: pageToFetch });
+                if (data.metadata) {
+                    gamesList = data.games;
+                    setTotalPages(data.metadata.totalPages);
+                    setTotalGames(data.metadata.total);
+                } else {
+                    // Fallback for old API structure (shouldn't happen)
+                    // @ts-ignore
+                    gamesList = Array.isArray(data) ? data : (data.games || []);
                 }
             } catch (e) {
                 console.error("Failed to fetch games list from DB", e);
@@ -309,25 +308,18 @@ export const useCTF = () => {
             if (newGameAddress) {
                 console.log("Detected new game:", newGameAddress);
                 // Call API to index the game creation
-                const res = await fetch("/api/ctf/create", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
+                try {
+                    await ctfApi.createGame({
                         address: newGameAddress,
                         creator: account,
                         captureFee: captureFeeETH,
                         duration: durationSeconds,
                         txHash: hash,
                         rewardAmount // Pass reward amount to API
-                    })
-                });
-
-                if (!res.ok) {
-                    const errorData = await res.json();
-                    console.error("Failed to index game:", errorData);
-                    // Don't block UI success, just log it. 
-                } else {
+                    });
                     console.log("Game Created Successfully!");
+                } catch (apiError) {
+                    console.error("Failed to index game:", apiError);
                 }
 
                 // Go to page 1 to see new game
@@ -365,17 +357,13 @@ export const useCTF = () => {
             console.log("Joined game!");
 
             // Log Join
-            fetch("/api/ctf/capture", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    gameAddress: gameAddress,
-                    newHolder: account,
-                    previousHolder: null,
-                    amount: "0",
-                    txHash: hash,
-                    type: "JOIN"
-                })
+            ctfApi.capture({
+                gameAddress: gameAddress,
+                newHolder: account,
+                previousHolder: undefined,
+                amount: "0",
+                txHash: hash,
+                type: "JOIN"
             });
 
             // Optimistic UI Update (Instant Feedback)
@@ -425,17 +413,13 @@ export const useCTF = () => {
             const game = games.find(g => g.address === gameAddress);
             const previousHolder = game?.holder;
 
-            fetch("/api/ctf/capture", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    gameAddress: gameAddress,
-                    newHolder: account || mainWallet.address,
-                    previousHolder: previousHolder,
-                    amount: feeETH,
-                    txHash: hash,
-                    type: "CAPTURE"
-                })
+            ctfApi.capture({
+                gameAddress: gameAddress,
+                newHolder: account || mainWallet.address,
+                previousHolder: previousHolder,
+                amount: feeETH,
+                txHash: hash,
+                type: "CAPTURE"
             });
 
             // Optimistic UI Update (Instant Feedback)

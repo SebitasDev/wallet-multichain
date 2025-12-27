@@ -14,6 +14,7 @@ import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
 import { getBalanceFromChain } from "@/app/hook/useGetBalanceFromChain";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
+import { bridgeApi, transactionsApi, CreateTransactionRequest } from "@/app/services/api";
 
 // Types
 export const STELLAR_CHAIN_KEY = "Stellar";
@@ -440,11 +441,7 @@ export const useCrossChainTransfer = () => {
                         estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount // Use amount if no simulation (Direct/CCTP)
                     };
 
-                    await fetch("/api/transactions", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(txData)
-                    });
+                    await transactionsApi.create(txData as unknown as CreateTransactionRequest);
                     console.log("Transaction saved to DB");
 
                 } catch (dbError) {
@@ -506,22 +503,17 @@ export const useCrossChainTransfer = () => {
             const amountFloat = parseFloat(watchAmount);
             const totalAmountToSimulate = (amountFloat + fee).toFixed(6);
 
-            const res = await fetch("/api/bridge/quote", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    sourceChain: watchSourceChain,
-                    targetChain: watchDestChain,
-                    amount: totalAmountToSimulate,
-                    token: watchDestToken,
-                    sourceToken: watchSourceToken
-                })
+            const data = await bridgeApi.getQuote({
+                sourceChain: watchSourceChain,
+                targetChain: watchDestChain,
+                amount: totalAmountToSimulate,
+                token: watchDestToken,
+                sourceToken: watchSourceToken
             });
-            const data = await res.json();
 
             if (data.success) {
                 const newSimState = {
-                    estimated: data.estimatedReceived,
+                    estimated: data.estimatedReceived || "",
                     netAmount: data.netAmountBridged,
                     error: null,
                     done: true,
