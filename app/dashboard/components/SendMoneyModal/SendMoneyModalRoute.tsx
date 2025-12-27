@@ -395,7 +395,7 @@ export const SendMoneyModalRoute = (
                 </Button>
             </Stack>
 
-            <Stack spacing={5} pb={8}>
+            <Stack spacing={2} pb={4}>
                 {(routeSummary?.allocations || []).map((walletAlloc) => {
                     const currentWallet = wallets.find(w => w.address.toLowerCase() === walletAlloc.from.toLowerCase());
                     const walletName = currentWallet?.name || "Unknown Wallet";
