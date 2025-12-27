@@ -30,7 +30,8 @@ export async function GET(req: Request) {
                     _id: null,
                     totalCount: { $sum: 1 },
                     totalVolume: { $sum: "$totalAmount" },
-                    maxAmount: { $max: "$totalAmount" }
+                    maxAmount: { $max: "$totalAmount" },
+                    totalFees: { $sum: "$fee" } // [NEW]
                 }
             }
         ]);
@@ -110,6 +111,7 @@ export async function GET(req: Request) {
                 totalSends: sentStats[0]?.totalCount || 0,
                 totalSentAmount: sentStats[0]?.totalVolume || 0,
                 maxSent: sentStats[0]?.maxAmount || 0,
+                totalFeesPaid: sentStats[0]?.totalFees || 0, // [NEW]
                 totalReceives: receivedStats[0]?.totalCount || 0,
                 totalReceivedAmount: receivedStats[0]?.totalVolume || 0,
                 mostUsedToken: tokenStats[0]?._id || "N/A",

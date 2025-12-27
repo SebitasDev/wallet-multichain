@@ -19,7 +19,8 @@ const TransactionSchema = new Schema({
     route: [RouteSchema],
     createdAt: { type: Number, required: true, index: true }, // Timestamp
     tokenSymbol: { type: String },
-    decimals: { type: Number }
+    decimals: { type: Number },
+    fee: { type: Number } // [NEW] Fee paid for the transaction
 }, {
     timestamps: true // Adds createdAt (Date) and updatedAt (Date) automatically by Mongoose too, but we are using our own numeric createdAt for compatibility
 });
