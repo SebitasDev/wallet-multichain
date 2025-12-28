@@ -5,12 +5,40 @@ import { Close, ContentCopy, OpenInNew } from "@mui/icons-material";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
+import { UsdtIcon } from "@/app/components/atoms/UsdtIcon";
+import { EthIcon } from "@/app/components/atoms/EthIcon";
+import { BnbIcon } from "@/app/components/atoms/BnbIcon";
+import { AvalancheIcon } from "@/app/components/atoms/AvalancheIcon";
+import PolygonIcon from "@/app/components/atoms/PolygonIcon";
+import ArbIcon from "@/app/components/atoms/ArbIcon";
+import { OPIcon } from "@/app/components/atoms/OPIcon";
+import { StellarIcon } from "@/app/components/atoms/StellarIcon";
+import { WorldChainIcon } from "@/app/components/atoms/WorldChainIcon";
 
 interface TransactionDetailModalProps {
     open: boolean;
     onClose: () => void;
     transaction: any;
 }
+
+const CoinIcon = ({ token, size = 32 }: { token: string, size?: number }) => {
+    switch (token.toUpperCase()) {
+        case "USDC": return <UsdcIcon size={size} />;
+        case "USDT": return <UsdtIcon size={size} />;
+        case "ETH": return <EthIcon size={size} />;
+        case "BNB": return <BnbIcon size={size} />;
+        case "AVAX": return <AvalancheIcon size={size} />;
+        case "MATIC":
+        case "POL": return <PolygonIcon size={size} />;
+        case "ARB": return <ArbIcon size={size} />;
+        case "OP": return <OPIcon size={size} />;
+        case "XLM": return <StellarIcon size={size} />;
+        case "WLD": return <WorldChainIcon size={size} />;
+        default: return null;
+    }
+};
+
 
 export const TransactionDetailModal = ({ open, onClose, transaction }: TransactionDetailModalProps) => {
     const { language } = useLanguageStore();
@@ -20,6 +48,9 @@ export const TransactionDetailModal = ({ open, onClose, transaction }: Transacti
     const isReceive = transaction.type === "RECEIVE";
     const color = isReceive ? "#34d399" : "#f87171"; // bright green / red
     const amountSign = isReceive ? "+" : "-";
+
+    // ... (rest of component logic matches original, but I need to render existing parts correctly)
+    // I am replacing from imports down to amount render, so I will reconstruct the beginning of component
 
     return (
         <SwipeableDrawer
@@ -84,18 +115,21 @@ export const TransactionDetailModal = ({ open, onClose, transaction }: Transacti
                 </IconButton>
 
                 {/* Amount */}
-                <Typography
-                    variant="h2"
-                    fontWeight={900}
-                    sx={{
-                        color: color,
-                        fontSize: "2.5rem",
-                        mb: 0.5,
-                        textShadow: "2px 2px 0px #000000"
-                    }}
-                >
-                    {amountSign}{transaction.amount} {transaction.token}
-                </Typography>
+                <Box display="flex" alignItems="center" gap={1.5} mb={0.5}>
+                    <Typography
+                        variant="h2"
+                        fontWeight={900}
+                        sx={{
+                            color: color,
+                            fontSize: "2.5rem",
+                            textShadow: "2px 2px 0px #000000",
+                            lineHeight: 1
+                        }}
+                    >
+                        {amountSign}{transaction.amount} {transaction.token}
+                    </Typography>
+                    <CoinIcon token={transaction.token} size={40} />
+                </Box>
 
                 {/* Date */}
                 {/* Date */}

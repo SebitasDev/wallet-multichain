@@ -21,9 +21,10 @@ export interface ChainData {
 interface ChainCardProps {
     chain: ChainData;
     onClick: () => void;
+    hideBalance?: boolean;
 }
 
-export function ChainCard({ chain, onClick }: ChainCardProps) {
+export function ChainCard({ chain, onClick, hideBalance }: ChainCardProps) {
     return (
         <Box
             onClick={onClick}
@@ -111,11 +112,24 @@ export function ChainCard({ chain, onClick }: ChainCardProps) {
                 {/* Content */}
                 <Box>
                     <Typography variant="h6" fontWeight={800} sx={{ fontSize: "1.1rem", lineHeight: 1.2 }}>
-                        {chain.totalValue}
+                        {hideBalance ? "****" : chain.totalValue}
                     </Typography>
                     <Box display="flex" justifyContent="space-between" alignItems="flex-end">
-                        <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ textTransform: "uppercase", fontSize: "0.65rem" }}>
-                            {chain.assets[0]?.symbol || chain.name}
+                        <Typography
+                            variant="body2"
+                            fontWeight={700}
+                            color="text.secondary"
+                            sx={{
+                                textTransform: "uppercase",
+                                fontSize: "0.65rem",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                maxWidth: "55%", // Prevent overlap with icons
+                                mr: 1
+                            }}
+                        >
+                            {chain.name}
                         </Typography>
 
                         {/* Small Token Icons */}

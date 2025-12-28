@@ -23,7 +23,7 @@ import { LogoutModal } from "../components/LogoutModal";
 import { SupportModal } from "../components/SupportModal";
 
 // Functional Imports
-import { useCurrencyStore } from "@/app/store/useCurrencyStore";
+
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { ExportWalletModal } from "@/app/dashboard/components/ExportWalletModal";
@@ -102,7 +102,7 @@ function ProfileView() {
     const [seedPhrase, setSeedPhrase] = useState("");
 
     // Stores
-    const { useLocal, toggleCurrency } = useCurrencyStore();
+
     const { wallets, clearAll: clearWallets } = useWalletStore();
     const { currentPassword } = useWalletPasswordStore();
 
@@ -196,9 +196,9 @@ function ProfileView() {
             {/* Settings Group */}
             <Box sx={{ mb: 4 }}>
                 <ProfileOption
-                    icon={<FlagIcon countryCode={useLocal ? "ar" : "us"} />}
+                    icon={<FlagIcon countryCode="ar" />}
                     label={language === "es" ? "Moneda local" : "Local Currency"}
-                    value={useLocal ? "ARS" : "USD"}
+                    value="ARS"
                 />
 
 

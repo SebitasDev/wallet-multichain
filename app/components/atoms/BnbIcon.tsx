@@ -1,10 +1,10 @@
 
-export const BnbIcon = () => {
+export const BnbIcon = ({ size = 24 }: { size?: number }) => {
     return (
         <img
             src="https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png"
-            height="24"
-            width="24"
+            height={size}
+            width={size}
             alt="BNB"
             loading="lazy"
             decoding="async"

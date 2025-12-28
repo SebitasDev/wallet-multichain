@@ -9,7 +9,7 @@ interface UserState {
 export const useUserStore = create<UserState>()(
     persist(
         (set) => ({
-            name: "Santiago", // Default hardcoded as per previous visuals, but mutable
+            name: "Tobias", // Default hardcoded as per previous visuals, but mutable
             setName: (name) => set({ name }),
         }),
         {

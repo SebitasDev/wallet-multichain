@@ -1,3 +1,5 @@
+"use client";
+
 import { Box, Container, Typography, keyframes } from "@mui/material";
 import { Language, translate, chains, sectionTitles } from "@/app/landing-translations";
 import { SectionTitle } from "./SectionTitle";

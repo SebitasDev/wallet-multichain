@@ -25,6 +25,7 @@ interface LogoutModalProps {
     onConfirm: () => void;
 }
 
+// Logout Confirmation Modal
 export function LogoutModal({ open, onClose, onConfirm }: LogoutModalProps) {
     const { language } = useLanguageStore();
 
