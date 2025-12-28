@@ -480,9 +480,9 @@ export const useCrossChainTransfer = () => {
 
                 // Let's assume standard values for gas to avoid estimation calls that fail.
                 // [FIX] Massive increase to prevent AA95 Out of Gas during 7702 delegation
-                const callGasLimit = BigInt(2000000); // 2M
-                const verificationGasLimit = BigInt(1000000); // 1M
-                const preVerificationGas = BigInt(200000); // 200k
+                const callGasLimit = BigInt(500000); // 500k [FIX: Reduced for efficiency]
+                const verificationGasLimit = BigInt(500000); // 500k [FIX: Reduced]
+                const preVerificationGas = BigInt(100000); // 100k [FIX: Reduced]
                 const maxFeePerGas = BigInt(100); // Dummy, will be replaced by Relayer? No, signed!
                 const maxPriorityFeePerGas = BigInt(100);
 

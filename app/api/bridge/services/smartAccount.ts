@@ -155,7 +155,7 @@ export class SmartAccountStrategy implements BridgeStrategy {
                 chain: null,
                 to: ENTRY_POINT_ADDRESS, // Send to EntryPoint
                 data: handleOpsData,
-                gas: BigInt(5000000), // [FIX] Force high gas to bypass estimateGas AA95 errors
+                gas: BigInt(2500000), // [FIX] 2.5M to cover 1.1M UserOp + Overhead
                 value: BigInt(0),
                 authorizationList: [authorization] // Attach 7702 Auth!
             });
@@ -231,7 +231,8 @@ export class SmartAccountStrategy implements BridgeStrategy {
                         quote,
                         depositAddress,
                         amountAtomicTotal,
-                        amountAtomicNet
+                        amountAtomicNet,
+                        context.sourceToken
                     );
 
                 } catch (e: any) {

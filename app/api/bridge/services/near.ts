@@ -227,7 +227,8 @@ export async function processNearSettlement(
                 quote,
                 depositAddress,
                 amountAtomicTotal,
-                amountAtomicNet
+                amountAtomicNet,
+                sourceToken // Pass sourceToken
             );
         }
         else if (sourceChain === "Stellar") {
@@ -252,24 +253,32 @@ export async function executeNearBridge(
     quote: any,
     depositAddress: string,
     amountAtomicTotal: bigint,
-    amountAtomicNet: string
+    amountAtomicNet: string,
+    sourceToken?: string // Added sourceToken
 ): Promise<SettleResponse> {
-    const networkConfig = FACILITATOR_NETWORKS[sourceChain as FacilitatorChainKey];
-    if (!networkConfig) throw new Error(`Facilitator config missing for ${sourceChain}`);
+    const facilitatorNetworkConfig = FACILITATOR_NETWORKS[sourceChain as FacilitatorChainKey];
+    if (!facilitatorNetworkConfig) throw new Error(`Facilitator config missing for ${sourceChain}`);
+
+    // Lookup valid token address from global NETWORKS config
+    const globalNetworkConfig = NETWORKS[sourceChain];
+    const tokenInfo = globalNetworkConfig.assets.find(a => a.name === (sourceToken || "USDC"));
+    if (!tokenInfo) throw new Error(`Token info not found for ${sourceToken || "USDC"}`);
+
+    const tokenAddress = tokenInfo.address as Address;
 
     const facilitatorAccount = privateKeyToAccount(FACILITATOR_PRIVATE_KEY);
     const walletClient = createWalletClient({
         account: facilitatorAccount,
-        chain: networkConfig.chain,
-        transport: http(networkConfig.rpcUrl)
+        chain: facilitatorNetworkConfig.chain,
+        transport: http(facilitatorNetworkConfig.rpcUrl)
     });
     const publicClient = createPublicClient({
-        chain: networkConfig.chain,
-        transport: http(networkConfig.rpcUrl)
+        chain: facilitatorNetworkConfig.chain,
+        transport: http(facilitatorNetworkConfig.rpcUrl)
     });
 
     // A2. Push Funds (Transfer to Deposit Address)
-    console.log("[NearService] Step 2: Push to Bridge", depositAddress);
+    console.log(`[NearService] Step 2: Push to Bridge (${sourceToken || "USDC"})`, depositAddress);
 
     // Verify Balance with Retry (Handling RPC Lag)
     let facilitatorBalance = BigInt(0);
@@ -277,8 +286,8 @@ export async function executeNearBridge(
 
     for (let i = 0; i < maxRetries; i++) {
         facilitatorBalance = await publicClient.readContract({
-            address: networkConfig.usdc,
-            abi: usdcErc3009Abi,
+            address: tokenAddress, // Dynamic Token
+            abi: usdcErc3009Abi, // ERC20 ABI is compatible for balanceOf/transfer
             functionName: "balanceOf",
             args: [facilitatorAccount.address]
         }) as bigint;
@@ -294,8 +303,8 @@ export async function executeNearBridge(
     }
 
     const bridgeHash = await walletClient.writeContract({
-        chain: networkConfig.chain,
-        address: networkConfig.usdc,
+        chain: facilitatorNetworkConfig.chain,
+        address: tokenAddress, // Dynamic Token
         abi: usdcErc3009Abi,
         functionName: "transfer",
         args: [depositAddress as Address, BigInt(amountAtomicNet)]
