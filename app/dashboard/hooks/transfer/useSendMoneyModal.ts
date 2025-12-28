@@ -284,80 +284,212 @@ export const useSendMoneyModal = () => {
                     const useCCTP = isUSDC && supportCCTP;
 
                     if (!useCCTP) {
-                        console.log("[SendMoney] triggering 7702 Flow (Not CCTP)");
+                        const supports7702 = fromNet.evm?.supports7702;
 
-                        setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                        if (supports7702) {
+                            console.log("[SendMoney] Triggering 7702 Flow (Not CCTP, Supported)");
 
-                            ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, message: "Firmando Autorización..." } : c)
-                        } : w));
+                            setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                                ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, message: "Firmando Autorización..." } : c)
+                            } : w));
 
-                        const publicClient = createPublicClient({
-                            chain: fromNet.evm.chain,
-                            transport: http()
-                        });
+                            const publicClient = createPublicClient({
+                                chain: fromNet.evm.chain,
+                                transport: http()
+                            });
 
-                        // 1. Create & Sign Authorization
-                        const { account: smartAccount, owner } = await create7702Account(publicClient, unlockedKey as `0x${string}`);
+                            // 1. Create & Sign Authorization
+                            const { account: smartAccount, owner } = await create7702Account(publicClient, unlockedKey as `0x${string}`);
+                            const authorization = await createAuthorization(owner, publicClient, smartAccount);
 
-                        // We need to sign the Authorization for the Relayer to execute
-                        // The Generic Factory `createAuthorization` returns the signed auth object needed for 7702
-                        const authorization = await createAuthorization(owner, publicClient, smartAccount);
+                            const serializedAuthorization = {
+                                ...authorization,
+                                chainId: authorization.chainId.toString(),
+                                nonce: authorization.nonce.toString(),
+                            };
 
-                        // Serialize BigInts for JSON Transport
-                        const serializedAuthorization = {
-                            ...authorization,
-                            chainId: authorization.chainId.toString(),
-                            nonce: authorization.nonce.toString(),
-                        };
+                            setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                                ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, message: "Procesando Envío (Gasless)..." } : c)
+                            } : w));
 
-                        setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
-                            ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, message: "Procesando Envío (Gasless)..." } : c)
-                        } : w));
+                            const response = await axios.post("/api/bridge/settle", {
+                                sourceChain: fromValidChain,
+                                destChain: toValidChain,
+                                sourceToken: finalToken,
+                                destToken: watch("sourceToken"),
+                                amount: totalAmount,
+                                recipient: recipient,
+                                senderAddress: allocation.from,
+                                paymentPayload: {
+                                    authorization: serializedAuthorization,
+                                    type: "7702"
+                                }
+                            });
 
-                        // 2. Call Bridge Settle API directly (Relayer Execution)
-                        // We bypass the standard executeTransfer/bundler because we are doing Native 7702 Relayer
-                        const response = await axios.post("/api/bridge/settle", {
-                            sourceChain: fromValidChain,
-                            destChain: toValidChain,
-                            sourceToken: finalToken,
-                            destToken: watch("sourceToken"),
-                            amount: totalAmount,
-                            recipient: recipient,
-                            senderAddress: allocation.from,
-                            // Pass Authorization!
-                            paymentPayload: {
-                                authorization: serializedAuthorization,
-                                type: "7702"
+                            if (!response.data.success) {
+                                throw new Error(response.data.errorReason || "Transfer failed");
                             }
-                        });
 
+                            const txHash = response.data.transactionHash;
+                            console.log("Gasless Transfer Success:", txHash);
 
-                        if (!response.data.success) {
-                            throw new Error(response.data.errorReason || "Transfer failed");
+                            // Success Handling (duplicated from below for now to ensure flow continuity)
+                            executedRoutes.push({
+                                chainName: fromValidChain,
+                                amount: amountFloat,
+                                assetOrigin: finalToken,
+                                status: "SUCCESS",
+                                txHash: txHash
+                            });
+                            totalSentAmount += Number(totalAmount);
+                            totalFeePaid += currentFee;
+
+                            // Update UI to Done
+                            setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                                ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, status: "done", message: "Completado" } : c)
+                            } : w));
+
+                            transferBalance(
+                                allocation.from as Address,
+                                recipient as Address,
+                                fromNet.evm.chain.id.toString(),
+                                toNet.evm.chain.id.toString(),
+                                amountFloat
+                            );
+
+                            continue;
+
+                        } else {
+                            // [NEW] Refuel / Standard Flow (Non-7702 Chains like Avalanche)
+                            console.log("[SendMoney] Chain does not support 7702. Using Refuel/Standard Flow.");
+
+                            setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                                ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, message: "Verificando Gas..." } : c)
+                            } : w));
+
+                            const publicClient = createPublicClient({
+                                chain: fromNet.evm.chain,
+                                transport: http()
+                            });
+
+                            const walletClient = createWalletClient({
+                                account: privateKeyToAccount(unlockedKey as `0x${string}`),
+                                chain: fromNet.evm.chain,
+                                transport: http()
+                            });
+
+                            const account = privateKeyToAccount(unlockedKey as `0x${string}`);
+
+                            // 1. Check Native Balance
+                            const nativeBalance = await publicClient.getBalance({ address: account.address });
+
+                            // Estimate Gas for Transfer
+                            const tokenInfo = fromNet.assets.find(a => a.name === finalToken);
+                            if (!tokenInfo) throw new Error("Token info not found");
+
+                            const amountBigInt = BigInt(Math.floor(parseFloat(totalAmount) * 10 ** tokenInfo.decimals));
+
+                            // Hardcoded Facilitator Addr
+                            const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97";
+
+                            const gasEstimate = await publicClient.estimateContractGas({
+                                address: tokenInfo.address as Address,
+                                abi: erc20Abi,
+                                functionName: 'transfer',
+                                args: [FACILITATOR_ADDR as Address, amountBigInt],
+                                account
+                            });
+
+                            const gasPrice = await publicClient.getGasPrice();
+                            const estimatedGasCost = gasEstimate * gasPrice;
+
+                            console.log(`[Refuel] Estimate: ${gasEstimate}, Cost: ${formatEther(estimatedGasCost)} ${fromNet.chipLabel}`);
+
+                            if (nativeBalance < estimatedGasCost) {
+                                console.log("[Refuel] Insufficient Gas. Requesting Refuel...");
+                                setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                                    ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, message: "Solicitando Gasolina..." } : c)
+                                } : w));
+
+                                const refuelRes = await axios.post("/api/refuel", {
+                                    chain: fromValidChain,
+                                    address: account.address,
+                                    estimatedGasCost: formatEther(estimatedGasCost)
+                                });
+
+                                if (!refuelRes.data.success) {
+                                    throw new Error("Refuel Failed: " + refuelRes.data.error);
+                                }
+                                console.log("[Refuel] Success. Waiting for funds...");
+                                // Wait a bit for funds to index? Usually fast.
+                                await new Promise(r => setTimeout(r, 2000));
+                            } else {
+                                console.log("[Refuel] Sufficient Gas. Skipping Refuel.");
+                            }
+
+                            setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                                ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, message: "Enviando Tx Estándar..." } : c)
+                            } : w));
+
+                            // 2. Send Tx
+                            const txHash = await walletClient.writeContract({
+                                address: tokenInfo.address as Address,
+                                abi: erc20Abi,
+                                functionName: 'transfer',
+                                args: [FACILITATOR_ADDR as Address, amountBigInt],
+                                chain: fromNet.evm.chain,
+                                account
+                            });
+                            console.log("[Refuel] Tx Sent:", txHash);
+
+                            setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                                ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, message: "Procesando Puente..." } : c)
+                            } : w));
+
+                            // 3. Call Bridge Settle
+                            const response = await axios.post("/api/bridge/settle", {
+                                sourceChain: fromValidChain,
+                                destChain: toValidChain,
+                                sourceToken: finalToken,
+                                destToken: watch("sourceToken"),
+                                amount: totalAmount,
+                                recipient: recipient,
+                                senderAddress: allocation.from,
+                                paymentPayload: {
+                                    type: "STANDARD",
+                                    txHash: txHash
+                                }
+                            });
+
+                            if (!response.data.success) {
+                                throw new Error(response.data.errorReason || "Transfer failed");
+                            }
+
+                            // Success Logic (Unified)
+                            executedRoutes.push({
+                                chainName: fromValidChain,
+                                amount: amountFloat,
+                                assetOrigin: finalToken,
+                                status: "SUCCESS",
+                                txHash: txHash
+                            });
+                            totalSentAmount += Number(totalAmount);
+                            totalFeePaid += currentFee;
+
+                            setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                                ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, status: "done", message: "Completado" } : c)
+                            } : w));
+
+                            transferBalance(
+                                allocation.from as Address,
+                                recipient as Address,
+                                fromNet.evm.chain.id.toString(),
+                                toNet.evm.chain.id.toString(),
+                                amountFloat
+                            );
+
+                            continue;
                         }
-
-                        // Success! Update UI
-                        const txHash = response.data.transactionHash;
-                        console.log("Gasless Transfer Success:", txHash);
-
-                        // Fake result update to continue flow or break?
-                        // If we break here, we need to manually trigger "success" state in UI 
-                        // But the loop expects `executeTransfer`. 
-                        // Let's CONTINUE to next chain, skipping the standard logic below?
-                        // Or utilize the `result` from executeTransfer?
-
-                        // To allow the loop to continue properly and save to DB
-                        // We can't easily skip the next block without refactoring.
-                        // HACK: We continue, but we need to prevent `executeTransfer` from running again?
-                        // OR: We assume `executeTransfer` is what we replaced.
-
-                        // Actually, I should just modify `executeTransfer` to support this?
-                        // No, let's just `continue` the loop and handle the success here.
-
-                        // Save to DB (Mimicking executeTransfer's post-logic?)
-                        // The hook has internal state handling.
-                        // Let's just break/continue.
-                        continue;
                     }
                     // End [NEW]
 
