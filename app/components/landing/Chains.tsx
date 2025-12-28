@@ -59,8 +59,9 @@ export function Chains({ lang }: { lang: Language }) {
                                     },
                                 }}
                             >
+                                {/* Correct Layout: Icon, Name, Assets. No 0.00 Balance. */}
                                 <Box sx={{ "& svg": { fontSize: 48, color: chain.color } }}>{chain.icon}</Box>
-                                <Typography fontWeight={800} fontSize={18}>
+                                <Typography fontWeight={800} fontSize={18} sx={{ textTransform: "none" }}>
                                     {chain.name}
                                 </Typography>
 
@@ -68,15 +69,15 @@ export function Chains({ lang }: { lang: Language }) {
                                     <Box sx={{
                                         display: "flex",
                                         gap: 1,
-                                        mt: 0.5, // Reduced top margin slightly
+                                        mt: 0.5,
                                         p: 1,
                                         borderRadius: 2,
                                         background: "#f5f5f5",
-                                        "& svg, & img": { // Added & img selector
+                                        "& svg, & img": {
                                             fontSize: 20,
                                             width: 20,
                                             height: 20,
-                                            display: "block" // Enhance layout behavior
+                                            display: "block"
                                         }
                                     }}>
                                         {assets.map((asset) => (

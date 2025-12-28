@@ -57,7 +57,7 @@ export const useHeroBanner = () => {
                             toast.success("Trustline USDC creada automáticamente");
 
                             // Refresh balances after fix
-                            await refreshMainWalletBalances();
+                            await refreshMainWalletBalances(mainAddressEVM || undefined);
                         } catch (err) {
                             console.error("Failed to auto-create trustline", err);
                         }
@@ -71,7 +71,7 @@ export const useHeroBanner = () => {
 
     useEffect(() => {
         verifyStellarTrustline();
-        refreshMainWalletBalances(); // Initial deep fetch
+        refreshMainWalletBalances(mainAddressEVM || undefined); // Initial deep fetch
     }, [mainAddressStellar, mainAddressEVM, currentNetwork]);
 
     const handleRefreshMainWallet = async () => {
@@ -81,7 +81,7 @@ export const useHeroBanner = () => {
         try {
             await Promise.all([
                 verifyStellarTrustline(),
-                refreshMainWalletBalances()
+                refreshMainWalletBalances(mainAddressEVM || undefined)
             ]);
             toast.success("Main Wallet actualizada");
         } catch (error) {
