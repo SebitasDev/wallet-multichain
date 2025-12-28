@@ -509,7 +509,7 @@ export function WalletHeader() {
                     {/* Collapsible Content */}
                     <Collapse in={expanded}>
                         <Box mt={4} mb={2}>
-                            <ChainGrid chains={chains} onSelectChain={setSelectedChain} />
+                            <ChainGrid chains={chains} onSelectChain={setSelectedChain} hideBalance={!showBalance} />
                         </Box>
                     </Collapse>
                 </Box>
