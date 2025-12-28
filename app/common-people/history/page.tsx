@@ -191,7 +191,7 @@ export default function CommonHistoryPage() {
                                             fontSize={18}
                                             sx={{ color: tx.type === "RECEIVE" ? "#34d399" : "#fca5a5" }}
                                         >
-                                            {tx.type === "RECEIVE" ? "+" : "-"}{tx.amount} {tx.token}
+                                            {tx.type === "RECEIVE" ? "+" : "-"}{parseFloat(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.token}
                                         </Typography>
                                         <Typography fontSize={12} fontWeight="bold" sx={{ opacity: 0.6 }}>
                                             {tx.status}
