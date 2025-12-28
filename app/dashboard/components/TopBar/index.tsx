@@ -12,7 +12,7 @@ export function TopBar() {
     return (
         <Box
             sx={{
-                width: "100%",
+                width: { xs: "100%", md: "98%" },
                 mx: "auto",
                 display: "flex",
                 flexDirection: { xs: "column", sm: "row" },

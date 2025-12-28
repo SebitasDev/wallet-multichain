@@ -157,52 +157,107 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
                             autorización (gasless) y el facilitador ejecuta la TX.
                         </Alert>
 
-                        <Stack spacing={1}>
-                            <Typography
-                                fontWeight={700}
-                                fontSize={13}
+                        <Box position="relative">
+                            <Stack spacing={3}>
+                                <Stack spacing={1}>
+                                    <Typography
+                                        fontWeight={700}
+                                        fontSize={13}
+                                        sx={{
+                                            textTransform: "uppercase",
+                                            letterSpacing: 0.5,
+                                            color: "#666666"
+                                        }}
+                                    >
+                                        Chain y Token de Origen
+                                    </Typography>
+                                    <Stack direction="row" spacing={0}>
+                                        <Box sx={{ flex: 1.5 }}>
+                                            <ChainSelector
+                                                label="Chain origen"
+                                                name="sourceChain"
+                                                control={control}
+                                                options={SOURCE_CHAIN_OPTIONS}
+                                                hideLabel
+                                                inputSx={{
+                                                    borderTopRightRadius: 0,
+                                                    borderBottomRightRadius: 0,
+                                                    borderRight: "none"
+                                                }}
+                                            />
+                                        </Box>
+                                        <Box sx={{ flex: 1 }}>
+                                            <TokenSelector
+                                                label="Token origen"
+                                                name="sourceToken"
+                                                control={control}
+                                                chain={watchSourceChain}
+                                                hideLabel
+                                                inputSx={{
+                                                    borderTopLeftRadius: 0,
+                                                    borderBottomLeftRadius: 0
+                                                }}
+                                            />
+                                        </Box>
+                                    </Stack>
+                                </Stack>
+
+                                <Stack spacing={1}>
+                                    <Typography
+                                        fontWeight={700}
+                                        fontSize={13}
+                                        sx={{
+                                            textTransform: "uppercase",
+                                            letterSpacing: 0.5,
+                                            color: "#666666"
+                                        }}
+                                    >
+                                        Chain y Token de Destino
+                                    </Typography>
+                                    <Stack direction="row" spacing={0}>
+                                        <Box sx={{ flex: 1.5 }}>
+                                            <ChainSelector
+                                                label="Chain destino"
+                                                name="destChain"
+                                                control={control}
+                                                options={DESTINATION_CHAIN_OPTIONS}
+                                                hideLabel
+                                                inputSx={{
+                                                    borderTopRightRadius: 0,
+                                                    borderBottomRightRadius: 0,
+                                                    borderRight: "none"
+                                                }}
+                                            />
+                                        </Box>
+                                        <Box sx={{ flex: 1 }}>
+                                            <TokenSelector
+                                                label="Token destino"
+                                                name="destToken"
+                                                control={control}
+                                                chain={watchDestChain}
+                                                hideLabel
+                                                inputSx={{
+                                                    borderTopLeftRadius: 0,
+                                                    borderBottomLeftRadius: 0
+                                                }}
+                                            />
+                                        </Box>
+                                    </Stack>
+                                </Stack>
+                            </Stack>
+
+                            <Box
                                 sx={{
-                                    textTransform: "uppercase",
-                                    letterSpacing: 0.5,
-                                    color: "#666666"
+                                    position: "absolute",
+                                    top: "50%",
+                                    left: "50%",
+                                    transform: "translate(-50%, -50%)",
+                                    zIndex: 10,
+                                    bgcolor: "background.paper",
+                                    borderRadius: "50%",
+                                    boxShadow: "0 0 0 4px #FFFFFF" // Mask the inputs behind button
                                 }}
                             >
-                                Chain y Token de Origen
-                            </Typography>
-                            <Stack direction="row" spacing={0}>
-                                <Box sx={{ flex: 1.5 }}>
-                                    <ChainSelector
-                                        label="Chain origen"
-                                        name="sourceChain"
-                                        control={control}
-                                        options={SOURCE_CHAIN_OPTIONS}
-                                        hideLabel
-                                        inputSx={{
-                                            borderTopRightRadius: 0,
-                                            borderBottomRightRadius: 0,
-                                            borderRight: "none"
-                                        }}
-                                    />
-                                </Box>
-                                <Box sx={{ flex: 1 }}>
-                                    <TokenSelector
-                                        label="Token origen"
-                                        name="sourceToken"
-                                        control={control}
-                                        chain={watchSourceChain}
-                                        hideLabel
-                                        inputSx={{
-                                            borderTopLeftRadius: 0,
-                                            borderBottomLeftRadius: 0
-                                        }}
-                                    />
-                                </Box>
-                            </Stack>
-                        </Stack>
-
-
-                        <Box sx={{ display: "flex", justifyContent: "center", my: -1.5, zIndex: 1, position: "relative" }}>
-                            <Box sx={{ bgcolor: "background.paper", borderRadius: "50%" }}>
                                 <IconButton
                                     onClick={() => {
                                         const currentSource = watchSourceChain;
@@ -230,49 +285,6 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
                                 </IconButton>
                             </Box>
                         </Box>
-
-                        <Stack spacing={1}>
-                            <Typography
-                                fontWeight={700}
-                                fontSize={13}
-                                sx={{
-                                    textTransform: "uppercase",
-                                    letterSpacing: 0.5,
-                                    color: "#666666"
-                                }}
-                            >
-                                Chain y Token de Destino
-                            </Typography>
-                            <Stack direction="row" spacing={0}>
-                                <Box sx={{ flex: 1.5 }}>
-                                    <ChainSelector
-                                        label="Chain destino"
-                                        name="destChain"
-                                        control={control}
-                                        options={DESTINATION_CHAIN_OPTIONS}
-                                        hideLabel
-                                        inputSx={{
-                                            borderTopRightRadius: 0,
-                                            borderBottomRightRadius: 0,
-                                            borderRight: "none"
-                                        }}
-                                    />
-                                </Box>
-                                <Box sx={{ flex: 1 }}>
-                                    <TokenSelector
-                                        label="Token destino"
-                                        name="destToken"
-                                        control={control}
-                                        chain={watchDestChain}
-                                        hideLabel
-                                        inputSx={{
-                                            borderTopLeftRadius: 0,
-                                            borderBottomLeftRadius: 0
-                                        }}
-                                    />
-                                </Box>
-                            </Stack>
-                        </Stack>
 
                         <RecipientInput control={control} />
 

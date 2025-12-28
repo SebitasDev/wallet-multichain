@@ -72,8 +72,8 @@ export async function GET(req: Request) {
 
         // 4. Weekly Activity (Sends per Day)
         const today = new Date();
-        const start = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
-        const end = endOfWeek(today, { weekStartsOn: 0 });
+        const start = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+        const end = endOfWeek(today, { weekStartsOn: 1 });
 
         // Ensure createdAt is treated correctly. If it's a number (timestamp), we need to compare numbers.
         // Assuming createdAt IS a number based on schema.
