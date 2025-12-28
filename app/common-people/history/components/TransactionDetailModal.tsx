@@ -5,6 +5,8 @@ import { Close, ContentCopy, OpenInNew } from "@mui/icons-material";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
+import { UsdtIcon } from "@/app/components/atoms/UsdtIcon";
 
 interface TransactionDetailModalProps {
     open: boolean;
@@ -84,18 +86,21 @@ export const TransactionDetailModal = ({ open, onClose, transaction }: Transacti
                 </IconButton>
 
                 {/* Amount */}
-                <Typography
-                    variant="h2"
-                    fontWeight={900}
-                    sx={{
-                        color: color,
-                        fontSize: "2.5rem",
-                        mb: 0.5,
-                        textShadow: "2px 2px 0px #000000"
-                    }}
-                >
-                    {amountSign}{transaction.amount} {transaction.token}
-                </Typography>
+                <Box display="flex" alignItems="center" gap={1.5} mb={0.5}>
+                    <Typography
+                        variant="h2"
+                        fontWeight={900}
+                        sx={{
+                            color: color,
+                            fontSize: "2.5rem",
+                            textShadow: "2px 2px 0px #000000",
+                            lineHeight: 1
+                        }}
+                    >
+                        {amountSign}{transaction.amount} {transaction.token}
+                    </Typography>
+                    {transaction.token === "USDC" ? <UsdcIcon size={40} /> : transaction.token === "USDT" ? <UsdtIcon size={40} /> : null}
+                </Box>
 
                 {/* Date */}
                 {/* Date */}

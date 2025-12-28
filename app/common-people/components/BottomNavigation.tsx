@@ -124,6 +124,7 @@ export const BottomNavigation = () => {
 
                 {[
                     { label: language === "es" ? "Perfil" : "Profile", icon: Person, path: "/common-people/profile" },
+                    { label: language === "es" ? "Pagar" : "Pay", icon: Send, path: "/common-people/pay" },
                     // { label: language === "es" ? "Tu dinero" : "Your Money", icon: AccountBalanceWallet, path: "/common-people/dashboard" }, // Removed as requested
                     { label: language === "es" ? "Actividad" : "Activity", icon: GridView, path: "/common-people/history" },
                     // { label: language === "es" ? "Tarjetas" : "Cards", icon: Send, path: "/cards" } // Removed as requested

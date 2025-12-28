@@ -6,11 +6,23 @@ import { useRouter } from "next/navigation";
 import { BottomNavigation } from "../components/BottomNavigation";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 
+import { useState } from "react";
+import { PayActionModal, PayMethod } from "./components/PayActionModal";
+
 export default function PayPage() {
     const router = useRouter();
     const { language } = useLanguageStore();
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedMethod, setSelectedMethod] = useState<PayMethod | null>(null);
 
-    const paymentSections = [
+    const handleMethodClick = (method: PayMethod) => {
+        if (method.status === "active") {
+            setSelectedMethod(method);
+            setModalOpen(true);
+        }
+    };
+
+    const paymentSections: { title: string; countries: { name: string; flag: string; methods: PayMethod[] }[] }[] = [
         {
             title: language === "es" ? "Métodos locales" : "Local methods",
             countries: [
@@ -20,10 +32,11 @@ export default function PayPage() {
                     methods: [
                         {
                             title: "Mercado Pago",
-                            subtitle: language === "es" ? "Usando QR - Instantáneo y sin fees" : "Using QR - Instant & Zero fees",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
                             icon: <Handshake sx={{ color: "white" }} />,
                             color: "#009ee3",
-                            status: "active"
+                            status: "coming_soon",
+                            type: "mercadopago"
                         }
                     ]
                 }
@@ -38,10 +51,11 @@ export default function PayPage() {
                     methods: [
                         {
                             title: "PIX",
-                            subtitle: language === "es" ? "Usando QR - Instantáneo" : "Using QR - Instant",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
                             icon: <QrCode sx={{ color: "white" }} />,
                             color: "#32bcad",
-                            status: "active"
+                            status: "coming_soon",
+                            type: "pix"
                         }
                     ]
                 },
@@ -157,10 +171,11 @@ export default function PayPage() {
                     methods: [
                         {
                             title: "Bank Transfer",
-                            subtitle: language === "es" ? "Transferencia instantánea con número de cuenta" : "Instant transfer with account number",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
                             icon: <AccountBalance sx={{ color: "white" }} />,
                             color: "#008751",
-                            status: "active"
+                            status: "coming_soon",
+                            type: "bank"
                         }
                     ]
                 },
@@ -310,6 +325,12 @@ export default function PayPage() {
                 {/* Top Section */}
                 <Box sx={{ backgroundColor: "#2e3246", borderRadius: "16px", overflow: "hidden", mb: 3 }}>
                     <Box
+                        onClick={() => handleMethodClick({
+                            title: language === "es" ? "Número de teléfono" : "Phone Number",
+                            status: "coming_soon",
+                            type: "phone",
+                            color: "#00c853"
+                        })}
                         sx={{
                             display: "flex",
                             alignItems: "center",
@@ -318,7 +339,8 @@ export default function PayPage() {
                             cursor: "pointer",
                             transition: "background 0.2s",
                             "&:hover": { backgroundColor: "#3a3f55" },
-                            borderBottom: "1px solid #3f4357"
+                            borderBottom: "1px solid #3f4357",
+                            opacity: 0.7
                         }}
                     >
                         <Avatar sx={{ bgcolor: "#00c853", width: 40, height: 40 }}>
@@ -329,12 +351,18 @@ export default function PayPage() {
                                 {language === "es" ? "Número de teléfono" : "Phone Number"}
                             </Typography>
                             <Typography sx={{ color: "#9ca3af", fontSize: 13 }}>
-                                {language === "es" ? "Instantáneo y Gratis" : "Instant & Free"}
+                                {language === "es" ? "Próximamente" : "Coming soon"}
                             </Typography>
                         </Box>
                     </Box>
 
                     <Box
+                        onClick={() => handleMethodClick({
+                            title: language === "es" ? "Link de pago" : "Shareable Cash Link",
+                            status: "coming_soon",
+                            type: "link",
+                            color: "#00c853"
+                        })}
                         sx={{
                             display: "flex",
                             alignItems: "center",
@@ -342,7 +370,8 @@ export default function PayPage() {
                             p: 2,
                             cursor: "pointer",
                             transition: "background 0.2s",
-                            "&:hover": { backgroundColor: "#3a3f55" }
+                            "&:hover": { backgroundColor: "#3a3f55" },
+                            opacity: 0.7
                         }}
                     >
                         <Avatar sx={{ bgcolor: "#00c853", width: 40, height: 40 }}>
@@ -353,13 +382,12 @@ export default function PayPage() {
                                 {language === "es" ? "Link de pago" : "Shareable Cash Link"}
                             </Typography>
                             <Typography sx={{ color: "#9ca3af", fontSize: 13 }}>
-                                {language === "es" ? "Para cualquiera sin 1llet" : "To anyone not on 1llet yet"}
+                                {language === "es" ? "Próximamente" : "Coming soon"}
                             </Typography>
                         </Box>
                     </Box>
-
-
                 </Box>
+
                 {/* Render Payment Sections */}
                 {paymentSections.map((section, index) => (
                     <Box key={index}>
@@ -374,11 +402,7 @@ export default function PayPage() {
                                             title={method.title}
                                             subtitle={method.subtitle}
                                             color={method.color}
-                                            onClick={() => {
-                                                if (method.status === "active") {
-                                                    console.log("Clicked " + method.title);
-                                                }
-                                            }}
+                                            onClick={() => handleMethodClick(method)}
                                         />
                                     </Box>
                                 ))}
@@ -389,6 +413,11 @@ export default function PayPage() {
 
             </Container>
             <BottomNavigation />
+            <PayActionModal
+                open={modalOpen}
+                onClose={() => setModalOpen(false)}
+                method={selectedMethod}
+            />
         </Box>
     );
 }
