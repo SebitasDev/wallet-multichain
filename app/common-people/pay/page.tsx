@@ -4,9 +4,11 @@ import { Box, Typography, Container, Avatar } from "@mui/material";
 import { Send, Link as LinkIcon, Handshake, QrCode } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { BottomNavigation } from "../components/BottomNavigation";
+import { useLanguageStore } from "@/app/store/useLanguageStore";
 
 export default function PayPage() {
     const router = useRouter();
+    const { language } = useLanguageStore();
 
     const ActionCard = ({ icon, title, subtitle, color, onClick }: any) => (
         <Box
@@ -72,7 +74,7 @@ export default function PayPage() {
         }}>
             <Container maxWidth="sm">
                 <Typography variant="h4" sx={{ fontWeight: 900, mb: 4 }}>
-                    Pay to
+                    {language === "es" ? "Pagar a" : "Pay to"}
                 </Typography>
 
                 {/* Top Section */}
@@ -94,10 +96,10 @@ export default function PayPage() {
                         </Avatar>
                         <Box>
                             <Typography sx={{ color: "white", fontWeight: 700, fontSize: 16 }}>
-                                Número de teléfono
+                                {language === "es" ? "Número de teléfono" : "Phone Number"}
                             </Typography>
                             <Typography sx={{ color: "#9ca3af", fontSize: 13 }}>
-                                Instant & Free
+                                {language === "es" ? "Instantáneo y Gratis" : "Instant & Free"}
                             </Typography>
                         </Box>
                     </Box>
@@ -118,35 +120,35 @@ export default function PayPage() {
                         </Avatar>
                         <Box>
                             <Typography sx={{ color: "white", fontWeight: 700, fontSize: 16 }}>
-                                Shareable Cash Link
+                                {language === "es" ? "Link de pago" : "Shareable Cash Link"}
                             </Typography>
                             <Typography sx={{ color: "#9ca3af", fontSize: 13 }}>
-                                To anyone not on MiniPay yet
+                                {language === "es" ? "Para cualquiera sin 1llet" : "To anyone not on 1llet yet"}
                             </Typography>
                         </Box>
                     </Box>
+
+
                 </Box>
-
-
-                <SectionDivider label="Local methods" />
+                <SectionDivider label={language === "es" ? "Métodos locales" : "Local methods"} />
 
                 {/* Argentina */}
                 <CountryHeader flag="🇦🇷" name="Argentina" />
                 <ActionCard
                     icon={<Handshake sx={{ color: "white" }} />} // Placeholder for Mercado Pago handshake alike
                     title="Mercado Pago"
-                    subtitle="Using QR - Instant & Zero fees"
+                    subtitle={language === "es" ? "Usando QR - Instantáneo y sin fees" : "Using QR - Instant & Zero fees"}
                     color="#009ee3"
                 />
 
-                <SectionDivider label="Other methods" />
+                <SectionDivider label={language === "es" ? "Otros métodos" : "Other methods"} />
 
                 {/* Brazil */}
                 <CountryHeader flag="🇧🇷" name="Brazil" />
                 <ActionCard
                     icon={<QrCode sx={{ color: "white" }} />} // PIX symbol
                     title="PIX"
-                    subtitle="Using QR - Instant"
+                    subtitle={language === "es" ? "Usando QR - Instantáneo" : "Using QR - Instant"}
                     color="#32bcad"
                 />
 
@@ -154,7 +156,7 @@ export default function PayPage() {
                 <CountryHeader flag="🇨🇴" name="Colombia" />
                 {/* No items shown in screenshot, leaving placeholder or empty */}
                 <Box sx={{ opacity: 0.5, p: 2, border: "1px dashed #3f4357", borderRadius: 2, textAlign: "center" }}>
-                    <Typography fontSize={12} color="#9ca3af">Coming soon</Typography>
+                    <Typography fontSize={12} color="#9ca3af">{language === "es" ? "Próximamente" : "Coming soon"}</Typography>
                 </Box>
 
             </Container>

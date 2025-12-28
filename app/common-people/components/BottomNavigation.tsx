@@ -5,11 +5,23 @@ import { Box, Typography } from "@mui/material";
 import { AccountBalanceWallet, Send, GridView, Logout, Person } from "@mui/icons-material";
 import { useRouter, usePathname } from "next/navigation";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { useState } from "react";
+import { LogoutModal as ConfirmLogoutModal } from "@/app/common-people/components/LogoutModal";
+import { useWalletStore } from "@/app/store/useWalletsStore";
+import { toast } from "react-toastify";
 
 export const BottomNavigation = () => {
     const router = useRouter();
     const pathname = usePathname();
     const { language } = useLanguageStore();
+    const [logoutOpen, setLogoutOpen] = useState(false);
+    const { clearAll: clearWallets } = useWalletStore();
+
+    const handleLogout = () => {
+        clearWallets();
+        router.push("/");
+        toast.success(language === "es" ? "Desconectado correctamente" : "Disconnected successfully");
+    };
 
     const menuItems = [
         {
@@ -30,7 +42,8 @@ export const BottomNavigation = () => {
             id: "exit",
             label: language === "es" ? "Salir" : "Exit",
             icon: Logout,
-            path: "/",
+            path: "#", // Prevent auto-nav
+            action: () => setLogoutOpen(true), // Trigger modal
             isActive: false,
         },
     ];
@@ -143,31 +156,27 @@ export const BottomNavigation = () => {
 
                 {/* Exposing Salir separatedly since Services section is gone */}
                 <Box sx={{ mt: 2, borderTop: "2px solid #000000", pt: 2 }}>
-                    {[
-                        { label: language === "es" ? "Salir" : "Exit", icon: Logout, path: "/" }
-                    ].map((link) => (
-                        <Box key={link.label}
-                            onClick={() => router.push(link.path)}
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 2,
-                                p: 1,
-                                cursor: "pointer",
-                                color: "black",
-                                borderRadius: 1,
-                                border: "1px solid transparent",
-                                "&:hover": {
-                                    backgroundColor: "#ff4d4d", // Red for exit
-                                    border: "2px solid #000000",
-                                    boxShadow: "2px 2px 0px #000000",
-                                    transform: "translate(-1px, -1px)"
-                                }
-                            }}>
-                            <link.icon sx={{ fontSize: 20 }} />
-                            <Typography fontWeight={700} fontSize={14}>{link.label}</Typography>
-                        </Box>
-                    ))}
+                    <Box
+                        onClick={() => setLogoutOpen(true)}
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                            p: 1,
+                            cursor: "pointer",
+                            color: "black",
+                            borderRadius: 1,
+                            border: "1px solid transparent",
+                            "&:hover": {
+                                backgroundColor: "#ff4d4d", // Red for exit
+                                border: "2px solid #000000",
+                                boxShadow: "2px 2px 0px #000000",
+                                transform: "translate(-1px, -1px)"
+                            }
+                        }}>
+                        <Logout sx={{ fontSize: 20 }} />
+                        <Typography fontWeight={700} fontSize={14}>{language === "es" ? "Salir" : "Exit"}</Typography>
+                    </Box>
                 </Box>
 
             </Box>
@@ -177,7 +186,7 @@ export const BottomNavigation = () => {
                 {menuItems.map((item) => (
                     <Box
                         key={item.id}
-                        onClick={() => router.push(item.path)}
+                        onClick={() => item.action ? item.action() : router.push(item.path)}
                         sx={{
                             display: "flex",
                             flexDirection: "column",
@@ -198,6 +207,12 @@ export const BottomNavigation = () => {
                     </Box>
                 ))}
             </Box>
+            {/* Logout Modal */}
+            <ConfirmLogoutModal
+                open={logoutOpen}
+                onClose={() => setLogoutOpen(false)}
+                onConfirm={handleLogout}
+            />
         </Box>
     );
 };
