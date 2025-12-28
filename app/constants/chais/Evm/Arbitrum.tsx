@@ -38,6 +38,7 @@ export const ARBITRUM: ChainConfig = {
     evm: {
         chain: isDevelopment ? arbitrumSepolia : arbitrum,
         rpcUrl: isDevelopment ? "https://arb-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://arb-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
+        supports7702: true,
     },
     label: "Arbitrum",
     icon: <ArbIcon />,

@@ -11,7 +11,7 @@ export const FACILITATOR_FEE_USDC = BigInt(10000);
 
 export const FEE_RECIPIENT: Address = process.env.FACILITATOR_FEE_RECIPIENT as Address || "0x0000000000000000000000000000000000000000";
 
-export const FACILITATOR_ADDRESS: Address = (process.env.NEXT_PUBLIC_FACILITATOR_ADDRESS as Address) || "0x0000000000000000000000000000000000000000";
+export const FACILITATOR_ADDRESS: Address = (process.env.NEXT_PUBLIC_FACILITATOR_ADDRESS as Address) || "0xa08979ba1aac1c19dc659817c295c77018533a97";
 // ============================================
 // RE-EXPORTAR TIPOS DE CHAINS
 // ============================================

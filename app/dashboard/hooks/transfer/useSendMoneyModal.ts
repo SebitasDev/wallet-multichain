@@ -15,6 +15,10 @@ import { useBridgeUsdcStream } from "@/app/dashboard/hooks/transfer/useBridgeUsd
 import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { transactionsApi, CreateTransactionRequest } from "@/app/services/api";
+import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
+
+
+
 
 export type RouteStatus =
     | "idle"
@@ -184,6 +188,7 @@ export const useSendMoneyModal = () => {
 
     // Note: useFacilitator expects a base config. We can init with defaults or connection state.
     // For the LOOP, we will use the `overrideCredentials` param we added to `executeTransfer`.
+    const { executeHybridTransfer } = useHybridBridgeStrategy();
     const { executeTransfer } = useFacilitator({
         userAddress: "0x0000000000000000000000000000000000000000", // Dummy init, will override
     });
@@ -260,6 +265,67 @@ export const useSendMoneyModal = () => {
                 }
 
                 try {
+                    // Use watch("sourceToken") as source of truth to avoid chain loop variables confusing source/dest
+                    const sourceToken = watch("sourceToken") || "USDC";
+                    const isUSDC = sourceToken.toUpperCase().includes("USDC");
+                    const supportCCTP = fromNet.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP ?? false;
+
+
+                    // We generate 7702 Authorization IF:
+                    // 1. It is NOT USDC (e.g. USDT)
+                    // OR
+                    // 2. It IS USDC but the chain DOES NOT support CCTP (so we treat it like a generic token)
+                    const useCCTP = isUSDC && supportCCTP;
+
+                    if (!useCCTP) {
+                        // Check if we can proceed with Hybrid Strategy (7702 or Refuel)
+                        if (fromNet.evm) {
+                            const result = await executeHybridTransfer({
+                                sourceChain: fromValidChain,
+                                destChain: toValidChain,
+                                sourceToken: finalToken,
+                                destToken: watch("sourceToken"),
+                                amount: totalAmount,
+                                recipient: recipient,
+                                sender: allocation.from,
+                                privateKey: unlockedKey,
+                                onStatusUpdate: (msg) => {
+                                    setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                                        ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, message: msg } : c)
+                                    } : w));
+                                }
+                            });
+
+                            if (!result.success) {
+                                throw new Error(result.error || "Hybrid Transfer Failed");
+                            }
+
+                            executedRoutes.push({
+                                chainName: fromValidChain,
+                                amount: amountFloat,
+                                assetOrigin: finalToken,
+                                status: "SUCCESS",
+                                txHash: result.txHash
+                            });
+                            totalSentAmount += Number(totalAmount);
+                            totalFeePaid += currentFee;
+
+                            setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
+                                ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, status: "done", message: "Completado" } : c)
+                            } : w));
+
+                            transferBalance(
+                                allocation.from as Address,
+                                recipient as Address,
+                                fromNet.evm.chain.id.toString(),
+                                toNet.evm.chain.id.toString(),
+                                amountFloat
+                            );
+                            continue;
+                        }
+                    }
+
+
                     // EXECUTE UNIFIED TRANSFER
                     // This handles Same-Chain (Gasless) AND Cross-Chain (CCTP) automatically via Smart Router
 
@@ -356,7 +422,6 @@ export const useSendMoneyModal = () => {
                     decimals: 6,
                     createdAt: Date.now(),
                     route: executedRoutes,
-                    fee: totalFeePaid // [NEW] Save total fee paid
                 };
 
                 await transactionsApi.create(txData as unknown as CreateTransactionRequest);

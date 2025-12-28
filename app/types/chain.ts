@@ -48,6 +48,7 @@ export interface CrossChainInformation {
 export interface EvmInformation {
     chain: any;
     rpcUrl: string | null;
+    supports7702: boolean;
 }
 
 export interface NonEvmInformation {
