@@ -29,7 +29,7 @@ interface WalletState {
     setMainWallet: (data: any) => void;
     setXOWallet: (data: any) => void;
     setXOClient: (client: any) => void;
-    refreshMainWalletBalances: () => Promise<void>;
+    refreshMainWalletBalances: (overrideEVMAddress?: string) => Promise<void>;
 
     // New Getters
     getMainWalletTotalBalance: () => number;
@@ -61,10 +61,12 @@ export const useXOWalletStore = create<WalletState>()(
             setXOWallet: (data) => set({ xoWallet: data }),
             setXOClient: (client) => set({ xoClient: client }),
 
-            refreshMainWalletBalances: async () => {
+            refreshMainWalletBalances: async (overrideEVMAddress?: string) => {
                 const { mainWallet } = get();
+                const addressToUse = overrideEVMAddress || mainWallet.address;
+
                 // We need at least one address to be valid to fetch something
-                if (!mainWallet.address && !mainWallet.addressStellar) return;
+                if (!addressToUse && !mainWallet.addressStellar) return;
 
                 const networks = Object.values(NETWORKS);
                 const existingChainsMap = new Map(
@@ -72,7 +74,7 @@ export const useXOWalletStore = create<WalletState>()(
                 );
 
                 // 1. Fetch EVM Balances
-                const evmPromises = mainWallet.address ? networks.map(async (network) => {
+                const evmPromises = addressToUse ? networks.map(async (network) => {
                     if (!network.evm) return null;
 
                     const chainId = network.evm.chain.id.toString();
@@ -88,7 +90,7 @@ export const useXOWalletStore = create<WalletState>()(
                             try {
                                 const { balance } = await getBalanceFromChain(
                                     network.evm!.chain,
-                                    mainWallet.address as Address,
+                                    addressToUse as Address,
                                     asset.address as Address,
                                     asset.decimals
                                 );
