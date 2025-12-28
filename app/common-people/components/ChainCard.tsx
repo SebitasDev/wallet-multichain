@@ -115,8 +115,21 @@ export function ChainCard({ chain, onClick, hideBalance }: ChainCardProps) {
                         {hideBalance ? "****" : chain.totalValue}
                     </Typography>
                     <Box display="flex" justifyContent="space-between" alignItems="flex-end">
-                        <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ textTransform: "uppercase", fontSize: "0.65rem" }}>
-                            {chain.assets[0]?.symbol || chain.name}
+                        <Typography
+                            variant="body2"
+                            fontWeight={700}
+                            color="text.secondary"
+                            sx={{
+                                textTransform: "uppercase",
+                                fontSize: "0.65rem",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                maxWidth: "55%", // Prevent overlap with icons
+                                mr: 1
+                            }}
+                        >
+                            {chain.name}
                         </Typography>
 
                         {/* Small Token Icons */}
