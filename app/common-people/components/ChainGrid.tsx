@@ -5,9 +5,10 @@ import { ChainCard, ChainData } from "./ChainCard";
 interface ChainGridProps {
     chains: ChainData[];
     onSelectChain: (chain: ChainData) => void;
+    hideBalance?: boolean;
 }
 
-export function ChainGrid({ chains, onSelectChain }: ChainGridProps) {
+export function ChainGrid({ chains, onSelectChain, hideBalance }: ChainGridProps) {
     return (
         <Grid container spacing={2}>
             {chains.map((chain) => (
@@ -15,6 +16,7 @@ export function ChainGrid({ chains, onSelectChain }: ChainGridProps) {
                     <ChainCard
                         chain={chain}
                         onClick={() => onSelectChain(chain)}
+                        hideBalance={hideBalance}
                     />
                 </Grid>
             ))}

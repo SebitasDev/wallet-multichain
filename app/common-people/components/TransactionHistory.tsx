@@ -161,7 +161,7 @@ export function TransactionHistory() {
                                     fontSize: 18,
                                 }}
                             >
-                                {tx.type === "RECEIVE" ? "+" : "-"}{tx.amount} {tx.token}
+                                {tx.type === "RECEIVE" ? "+" : "-"}{parseFloat(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.token}
                             </Typography>
                         </ListItem>
                     ))}
