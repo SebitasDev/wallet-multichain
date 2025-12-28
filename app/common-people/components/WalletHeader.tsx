@@ -26,23 +26,40 @@ import {
 import { useLocalCurrency } from "@/app/hooks/useLocalCurrency";
 
 import { useCurrencyStore } from "@/app/store/useCurrencyStore";
-import { Loop, AttachMoney, Language, CompareArrows } from "@mui/icons-material"; // Icons
+import { Loop, AttachMoney, Language, CompareArrows, Refresh } from "@mui/icons-material"; // Icons
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useUserStore } from "@/app/store/useUserStore";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { CrossChainTransferModal } from "@/app/dashboard/components/CrossChainTransferModal";
+import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 
 export function WalletHeader() {
     const router = useRouter();
     const [expanded, setExpanded] = useState(false);
     const [showBalance, setShowBalance] = useState(true);
     const [selectedChain, setSelectedChain] = useState<ChainData | null>(null);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const { language, toggleLanguage } = useLanguageStore();
     const { name } = useUserStore();
     const { useLocal, toggleCurrency } = useCurrencyStore();
     const { openReceive } = useDashboardModalsStore();
     const { setSendModal } = useSendMoneyStore();
+    const { mainWallet, refreshMainWalletBalances } = useXOWalletStore();
+
+    // Calculate total balance across all chains
+    const totalBalance = (mainWallet.chains || []).reduce((acc, chain) => acc + (chain.amount || 0), 0);
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        try {
+            await refreshMainWalletBalances();
+        } catch (error) {
+            console.error("Failed to refresh balances:", error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     // Local currency hook
     const { code: localCode, formatParts: formatLocalParts, loading, symbol: localSymbol } = useLocalCurrency();
@@ -52,158 +69,113 @@ export function WalletHeader() {
     const currentCode = isLocal ? localCode : "USD";
     const currentSymbol = isLocal ? localSymbol : "$";
 
+    // Helper to format balance for display (reused from chains logic, but slightly different for split)
+    const formatMainBalance = (num: number) => {
+        const fixed = num.toFixed(6); // Max 6 decimals
+        const [int, dec] = fixed.split('.');
+        // Remove trailing zeros from decimal part
+        let cleanedDec = dec.replace(/0+$/, '');
+        // Ensure at least 2 decimals for main display aesthetics for USD?
+        // If 0 -> 00. If 0.1 -> 10.
+        if (cleanedDec.length < 2) {
+            cleanedDec = cleanedDec.padEnd(2, '0');
+        }
+        return { int, dec: cleanedDec };
+    };
+
     // Parse formatted parts
-    // If USD, we just mock the parts for 0.10 USD, otherwise use hook
     let integerPart = "0";
-    let decimalPart = "10";
+    let decimalPart = "00";
     let decimalSeparator = ".";
 
     if (isLocal) {
-        const parts = formatLocalParts(0.10);
+        const parts = formatLocalParts(totalBalance);
         integerPart = parts.filter(p => p.type === "integer" || p.type === "group").map(p => p.value).join("");
         decimalPart = parts.find(p => p.type === "fraction")?.value || "00";
         decimalSeparator = parts.find(p => p.type === "decimal")?.value || ".";
     } else {
-        // Default USD formatting for 0.10
-        integerPart = "0";
-        decimalPart = "10";
+        const formatted = formatMainBalance(totalBalance);
+        integerPart = formatted.int;
+        decimalPart = formatted.dec;
         decimalSeparator = ".";
     }
 
-
-    // Hardcoded chains data using real icons and assets
-    const chains: ChainData[] = [
-        {
-            id: "base",
-            name: "Base",
-            icon: BASE.icon,
-            totalValue: "0.10",
-            color: "#0052FF",
-            assets: BASE.assets.map(asset => ({
-                symbol: asset.name,
-                balance: asset.name === "USDC" ? "0.10" : "0.00",
-                value: asset.name === "USDC" ? "$0.10" : "$0.00",
-                icon: asset.icon
-            })),
-        },
-        {
-            id: "optimism",
-            name: "Optimism",
-            icon: OPTIMISM.icon,
-            totalValue: "0.00",
-            color: "#FF0420",
-            assets: OPTIMISM.assets.map(asset => ({
-                symbol: asset.name,
-                balance: "0.00",
-                value: "$0.00",
-                icon: asset.icon
-            })),
-        },
-        {
-            id: "arbitrum",
-            name: "Arbitrum",
-            icon: ARBITRUM.icon,
-            totalValue: "0.00",
-            color: "#12AAFF",
-            assets: ARBITRUM.assets.map(asset => ({
-                symbol: asset.name,
-                balance: "0.00",
-                value: "$0.00",
-                icon: asset.icon
-            })),
-        },
-        {
-            id: "polygon",
-            name: "Polygon",
-            icon: POLYGON.icon,
-            totalValue: "0.00",
-            color: "#8247E5",
-            assets: POLYGON.assets.map(asset => ({
-                symbol: asset.name,
-                balance: "0.00",
-                value: "$0.00",
-                icon: asset.icon
-            })),
-        },
-        {
-            id: "avalanche",
-            name: "Avalanche",
-            icon: AVALANCHE.icon,
-            totalValue: "0.00",
-            color: "#E84142",
-            assets: AVALANCHE.assets.map(asset => ({
-                symbol: asset.name,
-                balance: "0.00",
-                value: "$0.00",
-                icon: asset.icon
-            })),
-        },
-        {
-            id: "bnb",
-            name: "BNB Chain",
-            icon: BNB.icon,
-            totalValue: "0.00",
-            color: "#F3BA2F",
-            assets: BNB.assets.map(asset => ({
-                symbol: asset.name,
-                balance: "0.00",
-                value: "$0.00",
-                icon: asset.icon
-            })),
-        },
-        {
-            id: "unichain",
-            name: "Unichain",
-            icon: UNICHAIN.icon,
-            totalValue: "0.00",
-            color: "#FF007A",
-            assets: UNICHAIN.assets.map(asset => ({
-                symbol: asset.name,
-                balance: "0.00",
-                value: "$0.00",
-                icon: asset.icon
-            })),
-        },
-        {
-            id: "worldchain",
-            name: "World Chain",
-            icon: WORLD_CHAIN.icon,
-            totalValue: "0.00",
-            color: "#000000",
-            assets: WORLD_CHAIN.assets.map(asset => ({
-                symbol: asset.name,
-                balance: "0.00",
-                value: "$0.00",
-                icon: asset.icon
-            })),
-        },
-        {
-            id: "monad",
-            name: "Monad",
-            icon: Monad.icon,
-            totalValue: "0.00",
-            color: "#836EF9",
-            assets: Monad.assets.map(asset => ({
-                symbol: asset.name,
-                balance: "0.00",
-                value: "$0.00",
-                icon: asset.icon
-            })),
-        },
-        {
-            id: "stellar",
-            name: "Stellar",
-            icon: STELLAR.icon,
-            totalValue: "0.00",
-            color: "#3E1B3C",
-            assets: STELLAR.assets.map(asset => ({
-                symbol: asset.name,
-                balance: "0.00",
-                value: "$0.00",
-                icon: asset.icon
-            })),
-        },
+    // Template for static data (icons, colors, ids)
+    const staticChainsData = [
+        { id: "base", name: "Base", icon: BASE.icon, color: "#0052FF", configAssets: BASE.assets },
+        { id: "optimism", name: "Optimism", icon: OPTIMISM.icon, color: "#FF0420", configAssets: OPTIMISM.assets },
+        { id: "arbitrum", name: "Arbitrum", icon: ARBITRUM.icon, color: "#12AAFF", configAssets: ARBITRUM.assets },
+        { id: "polygon", name: "Polygon", icon: POLYGON.icon, color: "#8247E5", configAssets: POLYGON.assets },
+        { id: "avalanche", name: "Avalanche", icon: AVALANCHE.icon, color: "#E84142", configAssets: AVALANCHE.assets },
+        { id: "bnb", name: "BNB Chain", icon: BNB.icon, color: "#F3BA2F", configAssets: BNB.assets },
+        { id: "unichain", name: "Unichain", icon: UNICHAIN.icon, color: "#FF007A", configAssets: UNICHAIN.assets },
+        { id: "worldchain", name: "World Chain", icon: WORLD_CHAIN.icon, color: "#000000", configAssets: WORLD_CHAIN.assets },
+        { id: "monad", name: "Monad", icon: Monad.icon, color: "#836EF9", configAssets: Monad.assets },
+        { id: "stellar", name: "Stellar", icon: STELLAR.icon, color: "#3E1B3C", configAssets: STELLAR.assets },
     ];
+
+    // Helper to format balance: max 6 decimals, no rounding (truncation)
+    const formatBalance = (num: number) => {
+        if (!num) return "0.00";
+        // Convert to fixed string with high precision to avoid scientific notation
+        const fixed = num.toFixed(10);
+        // extract integer and up to 6 decimals
+        const [int, dec] = fixed.split('.');
+        const truncatedDec = dec.slice(0, 6);
+        // reconstruct
+        let val = `${int}.${truncatedDec}`;
+        // Remove trailing zeros, but keep at least two decimals if it was a float? 
+        // User wants "max 6". "0.14" is 2. "0.141234" is 6.
+        // If result is 0.140000 -> 0.14
+        val = val.replace(/0+$/, '').replace(/\.$/, '');
+        // Ensure "0.00" style for zero? Or just allow "0"? 
+        // Screenshot shows "0.00".
+        if (val === "0" || val === "") return "0.00";
+        // If it looks like "0.1", maybe "0.10" is better?
+        // Let's stick to strict truncation + cleanup. 
+        // If the user wants 2 decimals minimum, we might need check.
+        // Assuming "0.14" suffices.
+        return val;
+    };
+
+    const chains: ChainData[] = staticChainsData.map(chainMetadata => {
+        // Find corresponding chain in wallet store
+        let storeChainId = "unknown";
+        if (chainMetadata.id === "stellar") {
+            storeChainId = "stellar";
+        } else {
+            // @ts-ignore
+            storeChainId = chainMetadata.configAssets === BASE.assets ? BASE.evm?.chain.id.toString() :
+                chainMetadata.configAssets === OPTIMISM.assets ? OPTIMISM.evm?.chain.id.toString() :
+                    chainMetadata.configAssets === ARBITRUM.assets ? ARBITRUM.evm?.chain.id.toString() :
+                        chainMetadata.configAssets === POLYGON.assets ? POLYGON.evm?.chain.id.toString() :
+                            chainMetadata.configAssets === AVALANCHE.assets ? AVALANCHE.evm?.chain.id.toString() :
+                                chainMetadata.configAssets === BNB.assets ? BNB.evm?.chain.id.toString() :
+                                    chainMetadata.configAssets === UNICHAIN.assets ? UNICHAIN.evm?.chain.id.toString() :
+                                        chainMetadata.configAssets === WORLD_CHAIN.assets ? WORLD_CHAIN.evm?.chain.id.toString() :
+                                            chainMetadata.configAssets === Monad.assets ? Monad.evm?.chain.id.toString() : "unknown";
+        }
+
+        const walletChain = (mainWallet.chains || []).find(c => c.chainId === storeChainId);
+        const totalAmount = walletChain ? walletChain.amount : 0;
+
+        return {
+            id: chainMetadata.id,
+            name: chainMetadata.name,
+            icon: chainMetadata.icon,
+            totalValue: formatBalance(totalAmount),
+            color: chainMetadata.color,
+            assets: chainMetadata.configAssets.map(asset => {
+                const tokenBal = walletChain && walletChain.tokens ? (walletChain.tokens[asset.name] || 0) : 0;
+                return {
+                    symbol: asset.name,
+                    balance: formatBalance(tokenBal),
+                    value: `$${formatBalance(tokenBal)}`, // Same formatting for value for now
+                    icon: asset.icon
+                };
+            })
+        };
+    });
 
     return (
         <Box width="100%">
@@ -298,27 +270,59 @@ export function WalletHeader() {
                             {language === "es" ? "Total" : "Total Balance"}
                         </Typography>
 
-                        {/* Currency Toggle Button */}
-                        <Box
-                            onClick={toggleCurrency}
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 0.5,
-                                cursor: "pointer",
-                                px: 1,
-                                py: 0.5,
-                                backgroundColor: "rgba(0,0,0,0.1)",
-                                borderRadius: "8px",
-                                border: "1px solid black",
-                                transition: "all 0.2s",
-                                "&:hover": { backgroundColor: "rgba(0,0,0,0.2)" }
-                            }}
-                        >
-                            <Loop sx={{ fontSize: 16 }} />
-                            <Typography fontSize={12} fontWeight="bold">
-                                {useLocal ? "USD" : localCode}
-                            </Typography>
+                        <Box display="flex" gap={1}>
+                            {/* Refresh Button */}
+                            <Box
+                                onClick={handleRefresh}
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    px: 1,
+                                    py: 0.5,
+                                    backgroundColor: "rgba(0,0,0,0.1)",
+                                    borderRadius: "8px",
+                                    border: "1px solid black",
+                                    transition: "all 0.2s",
+                                    "&:hover": { backgroundColor: "rgba(0,0,0,0.2)" },
+                                    "&:active": { transform: "scale(0.95)" }
+                                }}
+                            >
+                                <Refresh
+                                    sx={{
+                                        fontSize: 16,
+                                        animation: isRefreshing ? "spin 1s linear infinite" : "none",
+                                        "@keyframes spin": {
+                                            "0%": { transform: "rotate(0deg)" },
+                                            "100%": { transform: "rotate(360deg)" }
+                                        }
+                                    }}
+                                />
+                            </Box>
+
+                            {/* Currency Toggle Button */}
+                            <Box
+                                onClick={toggleCurrency}
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    cursor: "pointer",
+                                    px: 1,
+                                    py: 0.5,
+                                    backgroundColor: "rgba(0,0,0,0.1)",
+                                    borderRadius: "8px",
+                                    border: "1px solid black",
+                                    transition: "all 0.2s",
+                                    "&:hover": { backgroundColor: "rgba(0,0,0,0.2)" }
+                                }}
+                            >
+                                <Loop sx={{ fontSize: 16 }} />
+                                <Typography fontSize={12} fontWeight="bold">
+                                    {useLocal ? "USD" : localCode}
+                                </Typography>
+                            </Box>
                         </Box>
                     </Box>
 

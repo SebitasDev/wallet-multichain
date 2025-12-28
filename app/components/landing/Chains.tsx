@@ -1,8 +1,12 @@
+"use client";
+
 import { Box, Container, Typography, keyframes } from "@mui/material";
 import { Language, translate, chains, sectionTitles } from "@/app/landing-translations";
 import { SectionTitle } from "./SectionTitle";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
+import { useXOWalletStore } from "@/app/store/useXOWalletStore";
+import { formatCurrency } from "@/app/utils/formatCurrency";
 
 const marquee = keyframes`
   0% { transform: translateX(-50%); }
@@ -10,6 +14,8 @@ const marquee = keyframes`
 `;
 
 export function Chains({ lang }: { lang: Language }) {
+    const mainWallet = useXOWalletStore(state => state.mainWallet);
+
     const getAssetsForChain = (chainName: string) => {
         // Map display name to NETWORKS key if needed, or assume they match
         // keys in NETWORKS: Optimism, Arbitrum, Base, Unichain, Polygon, Avalanche, WorldChain, Stellar, Monad, BNB
@@ -17,6 +23,19 @@ export function Chains({ lang }: { lang: Language }) {
         // Handle explicit mismatches if any
         const config = NETWORKS[key] || NETWORKS[chainName as ChainKey];
         return config?.assets || [];
+    };
+
+    const getBalanceForChain = (chainName: string) => {
+        const key = chainName.split(" ").join("") as ChainKey;
+        const config = NETWORKS[key] || NETWORKS[chainName as ChainKey];
+        if (!config) return 0;
+
+        // Handle Stellar special case or standard EVM
+        const chainId = config.evm?.chain.id.toString() || (chainName === "Stellar" ? "stellar" : "unknown");
+
+        // Find chain in mainWallet.chains
+        const chainInfo = (mainWallet.chains || []).find(c => c.chainId === chainId);
+        return chainInfo ? chainInfo.amount : 0;
     };
 
     return (
@@ -36,11 +55,13 @@ export function Chains({ lang }: { lang: Language }) {
                 >
                     {[...chains, ...chains].map((chain, index) => {
                         const assets = getAssetsForChain(chain.name);
+                        const balance = getBalanceForChain(chain.name);
+
                         return (
                             <Box
                                 key={`${chain.name}-${index}`}
                                 sx={{
-                                    width: 200,
+                                    width: 280, // Increased width for better balance display
                                     flexShrink: 0,
                                     p: 2,
                                     background: "#ffffff",
@@ -49,20 +70,47 @@ export function Chains({ lang }: { lang: Language }) {
                                     boxShadow: "4px 4px 0px #000000",
                                     display: "flex",
                                     flexDirection: "column",
-                                    alignItems: "center",
+                                    alignItems: "flex-start", // Left align as per screenshot
                                     gap: 1,
                                     position: "relative",
                                     transition: "all 0.2s",
+                                    overflow: "hidden", // Clip decorative elements
                                     "&:hover": {
                                         transform: "translate(-2px, -2px)",
                                         boxShadow: "6px 6px 0px #000000",
                                     },
                                 }}
                             >
-                                <Box sx={{ "& svg": { fontSize: 48, color: chain.color } }}>{chain.icon}</Box>
-                                <Typography fontWeight={800} fontSize={18}>
-                                    {chain.name}
-                                </Typography>
+                                {/* Decorative Icon Background */}
+                                <Box sx={{
+                                    position: "absolute",
+                                    top: -10,
+                                    left: -10,
+                                    opacity: 0.1,
+                                    "& svg": { fontSize: 100, color: chain.color },
+                                    transform: "rotate(-10deg)"
+                                }}>
+                                    {chain.icon}
+                                </Box>
+
+                                {/* Top Row: Balance and Icon */}
+                                <Box width="100%" display="flex" justifyContent="space-between" alignItems="center" zIndex={1}>
+                                    <Box>
+                                        <Typography fontWeight={900} fontSize={28} lineHeight={1}>
+                                            {balance.toFixed(2)}
+                                        </Typography>
+                                        <Typography fontWeight={800} fontSize={12} color="#666666" textTransform="uppercase">
+                                            {chain.name}
+                                        </Typography>
+                                    </Box>
+
+                                    <Box sx={{
+                                        "& svg": { fontSize: 32, color: chain.color },
+                                        filter: "drop-shadow(2px 2px 0px rgba(0,0,0,0.2))"
+                                    }}>
+                                        {chain.icon}
+                                    </Box>
+                                </Box>
 
                                 {assets.length > 0 && (
                                     <Box sx={{

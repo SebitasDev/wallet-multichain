@@ -58,41 +58,68 @@ export function useLocalCurrency() {
     });
 
     useEffect(() => {
-        const fetchLocation = async () => {
-            try {
-                // Using ipapi.co for simple IP geolocation
-                const response = await fetch("https://ipapi.co/json/");
-                const data = await response.json();
-                const detectedCurrency = data.currency || "USD";
+        const initializeCurrency = async () => {
+            let detectedCurrency = "USD";
+            let liveRate = 1;
 
-                // If we have a hardcoded rate for this currency, use it. Otherwise fallback to USD.
-                if (RATES[detectedCurrency]) {
-                    setCurrency({
-                        code: detectedCurrency,
-                        symbol: SYMBOLS[detectedCurrency] || "$",
-                        rate: RATES[detectedCurrency],
-                        loading: false,
-                    });
+            try {
+                // 1. Detect User Location & Currency
+                const locationResponse = await fetch("https://ipapi.co/json/");
+                if (!locationResponse.ok) throw new Error("Location fetch failed");
+                const locationData = await locationResponse.json();
+                detectedCurrency = locationData.currency || "USD";
+            } catch (error) {
+                console.warn("Failed to detect location, defaulting to USD", error);
+            }
+
+            try {
+                // 2. Fetch Live Exchange Rates (Base USD)
+                if (detectedCurrency === "ARS") {
+                    // Special case for Argentina: Use "Dolar Cripto" (USDT/USDC rate) for more realistic wallet value
+                    // Using dolarapi.com which is specialized for Argentina's multiple rates
+                    const arsResponse = await fetch("https://dolarapi.com/v1/dolares/cripto");
+                    if (arsResponse.ok) {
+                        const arsData = await arsResponse.json();
+                        // API returns object with { compra, venta, fecha }
+                        // Use 'venta' as conservative estimate or 'promedio' if available. 
+                        // Actually endpoint /cripto returns { compra: number, venta: number, ... }
+                        liveRate = arsData.venta || 1100;
+                    } else {
+                        // Fallback to official if dolarapi fails
+                        throw new Error("DolarAPI failed, trying standard API");
+                    }
                 } else {
-                    setCurrency({
-                        code: "USD",
-                        symbol: "$",
-                        rate: 1,
-                        loading: false,
-                    });
+                    // Standard global API for other currencies
+                    const ratesResponse = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+                    if (ratesResponse.ok) {
+                        const ratesData = await ratesResponse.json();
+                        if (ratesData.rates && ratesData.rates[detectedCurrency]) {
+                            liveRate = ratesData.rates[detectedCurrency];
+                        } else if (RATES[detectedCurrency]) {
+                            liveRate = RATES[detectedCurrency];
+                        }
+                    } else {
+                        liveRate = RATES[detectedCurrency] || 1;
+                    }
                 }
             } catch (error) {
-                console.error("Failed to detect location:", error);
-                setCurrency({
-                    code: "USD",
-                    symbol: "$",
-                    rate: 1,
-                    loading: false,
-                });
+                console.warn("Failed to fetch rates, using fallback", error);
+
+                // Secondary Fallback Attempt for ARS if DolarAPI failed but we haven't tried global API yet?
+                // For simplicity, just use hardcoded Fallback
+                liveRate = RATES[detectedCurrency] || 1;
             }
+
+            // 3. Update State
+            setCurrency({
+                code: detectedCurrency,
+                symbol: SYMBOLS[detectedCurrency] || "$",
+                rate: liveRate,
+                loading: false,
+            });
         };
 
-        fetchLocation();
+        initializeCurrency();
     }, []);
 
     const formatAmount = (usdAmount: number) => {

@@ -1,12 +1,12 @@
 import { Box } from "@mui/material";
 
-export const StellarIcon = () => {
+export const StellarIcon = ({ size = 28 }: { size?: number }) => {
     return (
         <Box
             component="svg"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 120 120"
-            sx={{ width: 28, height: 28 }}
+            sx={{ width: size, height: size }}
         >
             <circle cx="60" cy="60" r="60" fill="#000" />
 
