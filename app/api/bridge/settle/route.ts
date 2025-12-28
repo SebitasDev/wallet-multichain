@@ -44,8 +44,10 @@ export async function POST(request: NextRequest) {
             destToken,
             amount: typeof amount === 'number' ? amount.toString() : amount, // Ensure string
             recipient,
-            senderAddress
+            senderAddress,
+            privateKey: (body as any).overrideCredentials?.privateKey || (body as any).privateKey
         };
+
 
         // Execute Strategy
         const result = await bridgeManager.execute(context);

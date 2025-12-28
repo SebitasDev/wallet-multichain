@@ -15,14 +15,18 @@ export type ActiveWallet = "EVM" | "STELLAR";
 export const useHeroBanner = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeWallet, setActiveWallet] = useState<ActiveWallet>("EVM");
-    const [stellarUSDCBalance, setStellarUSDCBalance] = useState<number>(0);
-    const [evmUSDCBalance, setEvmUSDCBalance] = useState<number>(0);
 
     // XO (embedded) -> Current Network Provider info
     const { address: xoAddress, currentNetwork } = useXOContracts();
 
     // Local fallback main wallet
-    const { mainWallet, xoClient } = useXOWalletStore();
+    const {
+        mainWallet,
+        xoClient,
+        refreshMainWalletBalances,
+        getMainWalletTotalBalance,
+        getMainWalletBalanceByChain
+    } = useXOWalletStore();
 
     const {
         wallets,
@@ -34,8 +38,8 @@ export const useHeroBanner = () => {
     const mainAddressEVM = xoAddress ?? mainWallet.address ?? null;
     const mainAddressStellar = mainWallet.addressStellar ?? null;
 
-    const fetchMainWalletBalances = async () => {
-        // 1. Stellar
+    const verifyStellarTrustline = async () => {
+        // 1. Stellar Check
         if (mainAddressStellar) {
             try {
                 const balance = await getStellarUSDCBalance(mainAddressStellar);
@@ -52,45 +56,22 @@ export const useHeroBanner = () => {
                             await createUSDCTrustline({ stellarAddress: mainAddressStellar, secret });
                             toast.success("Trustline USDC creada automáticamente");
 
-                            // Retry fetch
-                            const newBalance = await getStellarUSDCBalance(mainAddressStellar);
-                            setStellarUSDCBalance(newBalance || 0);
+                            // Refresh balances after fix
+                            await refreshMainWalletBalances();
                         } catch (err) {
                             console.error("Failed to auto-create trustline", err);
-                            setStellarUSDCBalance(0);
                         }
-                    } else {
-                        setStellarUSDCBalance(0);
                     }
-                } else {
-                    setStellarUSDCBalance(balance);
                 }
             } catch (error: any) {
-                if (error?.response?.status === 404 || error?.message?.includes("404")) {
-                    setStellarUSDCBalance(0);
-                } else {
-                    console.error("Error cargando balance Stellar USDC", error);
-                }
-            }
-        }
-
-        // 2. EVM
-        if (mainAddressEVM && currentNetwork) {
-            try {
-                const { balance } = await getBalanceFromChain(
-                    currentNetwork.chain,
-                    mainAddressEVM as Address,
-                    currentNetwork.usdc as Address
-                );
-                setEvmUSDCBalance(Number(balance));
-            } catch (error) {
-                console.error("Error fetching EVM Main Balance", error);
+                // Ignore 404s or other errors here, allow refresh to handle
             }
         }
     };
 
     useEffect(() => {
-        fetchMainWalletBalances();
+        verifyStellarTrustline();
+        refreshMainWalletBalances(); // Initial deep fetch
     }, [mainAddressStellar, mainAddressEVM, currentNetwork]);
 
     const handleRefreshMainWallet = async () => {
@@ -98,7 +79,10 @@ export const useHeroBanner = () => {
         setIsRefreshing(true);
         toast.info("Actualizando Main Wallet...");
         try {
-            await fetchMainWalletBalances();
+            await Promise.all([
+                verifyStellarTrustline(),
+                refreshMainWalletBalances()
+            ]);
             toast.success("Main Wallet actualizada");
         } catch (error) {
             console.error("Error updating main wallet:", error);
@@ -123,6 +107,10 @@ export const useHeroBanner = () => {
             setIsRefreshing(false);
         }
     };
+
+    const stellarUSDCBalance = getMainWalletBalanceByChain("stellar");
+    const totalMainBalance = getMainWalletTotalBalance();
+    const evmUSDCBalance = Math.max(0, totalMainBalance - stellarUSDCBalance);
 
     const burnedBalances: Record<ActiveWallet, number> = {
         EVM: evmUSDCBalance,

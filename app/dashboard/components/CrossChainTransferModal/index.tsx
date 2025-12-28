@@ -16,6 +16,7 @@ import {
     Checkbox,
 } from "@mui/material";
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { useCrossChainTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
 import { NETWORKS } from "@/app/constants/chainsInformation";
@@ -49,7 +50,7 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
         error,
         routeError,
 
-        form: { control },
+        form: { control, setValue },
         watchAmount,
         watchDestChain,
         watchSourceChain, // Needed for TokenSelector
@@ -198,6 +199,37 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
                                 </Box>
                             </Stack>
                         </Stack>
+
+
+                        <Box sx={{ display: "flex", justifyContent: "center", my: -1.5, zIndex: 1, position: "relative" }}>
+                            <Box sx={{ bgcolor: "background.paper", borderRadius: "50%" }}>
+                                <IconButton
+                                    onClick={() => {
+                                        const currentSource = watchSourceChain;
+                                        const currentDest = watchDestChain;
+                                        const currentSourceToken = watchSourceToken;
+                                        const currentDestToken = watchDestToken;
+
+                                        setValue("sourceChain", currentDest);
+                                        setValue("destChain", currentSource);
+                                        setValue("sourceToken", currentDestToken);
+                                        setValue("destToken", currentSourceToken);
+                                    }}
+                                    sx={{
+                                        border: "1px solid #e0e0e0",
+                                        width: 32,
+                                        height: 32,
+                                        "&:hover": {
+                                            bgcolor: "#f5f5f5",
+                                            transform: "rotate(180deg)",
+                                            transition: "all 0.3s ease"
+                                        }
+                                    }}
+                                >
+                                    <SwapVertIcon fontSize="small" sx={{ color: "#666" }} />
+                                </IconButton>
+                            </Box>
+                        </Box>
 
                         <Stack spacing={1}>
                             <Typography
@@ -379,6 +411,7 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
                             },
                             "&:disabled": {
                                 opacity: 0.4,
+                                cursor: "not-allowed"
                             },
                         }}
                     >
@@ -426,7 +459,7 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
                         />
                     )}
                 </DialogActions>
-            </Dialog>
+            </Dialog >
         </>
     );
 };

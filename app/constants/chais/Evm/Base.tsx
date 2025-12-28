@@ -25,6 +25,7 @@ export const BASE: ChainConfig = {
     evm: {
         chain: isDevelopment ? baseSepolia : base,
         rpcUrl: isDevelopment ? "https://base-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://base-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
+        supports7702: true,
     },
     label: "Base",
     icon: <BaseIcon />,

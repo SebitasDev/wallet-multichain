@@ -7,6 +7,7 @@ import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
 import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
@@ -15,6 +16,13 @@ import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { bridgeApi, transactionsApi, CreateTransactionRequest } from "@/app/services/api";
+import { createPublicClient, http, encodeFunctionData } from "viem";
+import { create7702Account } from "@/app/smart-account/clientFactory";
+import { createAuthorization } from "@/app/smart-account/authorizationFactory";
+import { erc20Abi } from "@/app/savings/vaultAbi";
+
+import axios from "axios";
+
 
 // Types
 export const STELLAR_CHAIN_KEY = "Stellar";
@@ -27,6 +35,23 @@ export type FormValues = {
     sourceToken: string;
     destToken: string;
 };
+
+// Helper to serialize BigInts for JSON
+const serializeBigInt = (obj: any): any => {
+    if (typeof obj === "bigint") {
+        return obj.toString();
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(serializeBigInt);
+    }
+    if (typeof obj === "object" && obj !== null) {
+        return Object.fromEntries(
+            Object.entries(obj).map(([k, v]) => [k, serializeBigInt(v)])
+        );
+    }
+    return obj;
+};
+
 
 // -- Helper Hook: Route Validation --
 const useRouteValidation = (sourceChain: string, destChain: string, sourceToken: string, destToken: string) => {
@@ -277,6 +302,8 @@ export const useCrossChainTransfer = () => {
         setup();
     }, [isUsingXO, mainWallet, currentPassword]);
 
+    const { executeHybridTransfer } = useHybridBridgeStrategy();
+
     const {
         executeTransfer,
         getFee,
@@ -402,193 +429,265 @@ export const useCrossChainTransfer = () => {
 
         console.log(`Preparing transfer: Amount=${amount} + Fee=${currentFee} = Total=${finalAmount}`);
 
-        try {
-            const result = await executeTransfer({
-                amount: finalAmount,
-                sourceChain: data.sourceChain,
-                destinationChain: data.destChain as FacilitatorChainKey,
-                recipient: data.recipient,
-                destToken: data.destToken,
-                sourceToken: data.sourceToken,
-                facilitatorFee: fee,
-                sender: (data.sourceChain === "Stellar" ? mainWallet?.addressStellar : mainWallet?.address) || undefined
-            });
+        // [NEW] Native 7702 Relayer Strategy (Gasless Execution)
+        // Check if we should use 7702 Relayer instead of Standard/CCTP
+        const sourceToken = data.sourceToken || "USDC";
+        const isUSDC = sourceToken.toUpperCase().includes("USDC");
+        const networkConfig = NETWORKS[data.sourceChain];
+        const supportCCTP = networkConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP ?? false;
 
-            if (result.success) {
-                toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
+        console.log("[SendMoney Cross] SourceToken:", sourceToken, "IsUSDC:", isUSDC, "SupportCCTP:", supportCCTP);
+        // Trigger 7702 IF: (Not USDC) OR (Is USDC but No CCTP Support)
+        const useCCTP = isUSDC && supportCCTP;
 
-                // Save to DB
+        if (!useCCTP && privateKey) {
+            const supports7702 = networkConfig.evm?.supports7702;
+
+            // Only attempt hybrid strategy if 7702 is supported OR we want to attempt refuel flow on EVM
+            // But logic here seems to prioritize this path if !useCCTP.
+
+            if (networkConfig.evm) {
+                const result = await executeHybridTransfer({
+                    sourceChain: data.sourceChain,
+                    destChain: data.destChain,
+                    sourceToken: sourceToken,
+                    destToken: data.destToken,
+                    amount: finalAmount,
+                    recipient: data.recipient,
+                    sender: address,
+                    privateKey: privateKey,
+                    onStatusUpdate: (msg) => toast.info(msg)
+                });
+
+                if (!result.success) {
+                    console.error("Hybrid Transfer Failed:", result.error);
+                    toast.error("Error en la transferencia: " + result.error);
+                    return;
+                }
+
+                toast.success(`Transfer exitoso! TX: ${result.txHash?.slice(0, 10)}...`);
+
+                // Save to DB (Duplicated logic from below, encapsulated here for this branch)
                 try {
                     const txData = {
                         id: crypto.randomUUID(),
-                        fromAddress: address.toLowerCase(), // Normalize to lowercase for index efficiency
+                        fromAddress: address.toLowerCase(),
                         totalAmount: amount,
-                        status: "PENDING", // Requested by user
+                        status: "PENDING",
                         tokenSymbol: data.destToken,
                         decimals: 6,
-                        toAddress: data.recipient.trim().toLowerCase(), // [NEW] Normalize recipient
-                        destinationChain: data.destChain, // [NEW]
+                        toAddress: data.recipient.trim().toLowerCase(),
+                        destinationChain: data.destChain,
                         createdAt: Date.now(),
                         route: [
                             {
-                                chainName: data.sourceChain, // Source chain as requested
+                                chainName: data.sourceChain,
                                 amount: amount,
-                                assetOrigin: data.sourceToken, // Use sourceToken for outgoing asset
+                                assetOrigin: data.sourceToken,
                                 status: "PENDING",
-                                txHash: result.transactionHash
+                                txHash: result.txHash
                             }
                         ],
-                        estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount // Use amount if no simulation (Direct/CCTP)
+                        estimatedReceived: simulationRef.current && simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount
                     };
-
                     await transactionsApi.create(txData as unknown as CreateTransactionRequest);
-                    console.log("Transaction saved to DB");
-
                 } catch (dbError) {
                     console.error("Failed to save transaction to DB:", dbError);
-                    // Don't block UI flow for BG error
                 }
 
-                if (result.burnTransactionHash) {
-                    toast.info(`Burn TX: ${result.burnTransactionHash.slice(0, 10)}... Circle minteará automáticamente.`);
-                }
-                closeModal();
-            } else {
-                toast.error(`Error: ${result.errorReason || "Unknown Error"}`);
-                console.error("Transfer failed result:", result);
+                return; // Exit function after successful hybrid transfer
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Error al procesar el transfer");
         }
+
+
+
+try {
+    const result = await executeTransfer({
+        amount: finalAmount,
+        sourceChain: data.sourceChain,
+        destinationChain: data.destChain as FacilitatorChainKey,
+        recipient: data.recipient,
+        destToken: data.destToken,
+        sourceToken: data.sourceToken,
+        facilitatorFee: fee,
+        sender: (data.sourceChain === "Stellar" ? mainWallet?.addressStellar : mainWallet?.address) || undefined
+    });
+
+    if (result.success) {
+        toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
+
+        // Save to DB
+        try {
+            const txData = {
+                id: crypto.randomUUID(),
+                fromAddress: address.toLowerCase(), // Normalize to lowercase for index efficiency
+                totalAmount: amount,
+                status: "PENDING", // Requested by user
+                tokenSymbol: data.destToken,
+                decimals: 6,
+                toAddress: data.recipient.trim().toLowerCase(), // [NEW] Normalize recipient
+                destinationChain: data.destChain, // [NEW]
+                createdAt: Date.now(),
+                route: [
+                    {
+                        chainName: data.sourceChain, // Source chain as requested
+                        amount: amount,
+                        assetOrigin: data.sourceToken, // Use sourceToken for outgoing asset
+                        status: "PENDING",
+                        txHash: result.transactionHash
+                    }
+                ],
+                estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount // Use amount if no simulation (Direct/CCTP)
+            };
+
+            await transactionsApi.create(txData as unknown as CreateTransactionRequest);
+            console.log("Transaction saved to DB");
+
+        } catch (dbError) {
+            console.error("Failed to save transaction to DB:", dbError);
+            // Don't block UI flow for BG error
+        }
+
+        if (result.burnTransactionHash) {
+            toast.info(`Burn TX: ${result.burnTransactionHash.slice(0, 10)}... Circle minteará automáticamente.`);
+        }
+        closeModal();
+    } else {
+        toast.error(`Error: ${result.errorReason || "Unknown Error"} `);
+        console.error("Transfer failed result:", result);
+    }
+} catch (err) {
+    console.error(err);
+    toast.error("Error al procesar el transfer");
+}
     };
 
-    // Simulation State
-    const [simulation, setSimulation] = useState<{
-        estimated: string;
-        error: string | null;
-        done: boolean;
-        loading: boolean;
-        netAmount?: number;
-    }>({ estimated: "", error: null, done: false, loading: false });
+// Simulation State
+const [simulation, setSimulation] = useState<{
+    estimated: string;
+    error: string | null;
+    done: boolean;
+    loading: boolean;
+    netAmount?: number;
+}>({ estimated: "", error: null, done: false, loading: false });
 
-    // [FIX] Use Ref to avoid stale closure in onSubmit
-    const simulationRef = useRef<typeof simulation>(simulation);
+// [FIX] Use Ref to avoid stale closure in onSubmit
+const simulationRef = useRef<typeof simulation>(simulation);
 
-    // Sync ref with state
-    useEffect(() => {
-        simulationRef.current = simulation;
-    }, [simulation]);
+// Sync ref with state
+useEffect(() => {
+    simulationRef.current = simulation;
+}, [simulation]);
 
-    // Reset simulation when inputs change
-    useEffect(() => {
-        setSimulation({ estimated: "", error: null, done: false, loading: false });
-    }, [watchAmount, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken]);
+// Reset simulation when inputs change
+useEffect(() => {
+    setSimulation({ estimated: "", error: null, done: false, loading: false });
+}, [watchAmount, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken]);
 
-    const simulateTransfer = async () => {
-        if (!watchAmount || isNaN(parseFloat(watchAmount))) {
-            toast.error("Ingresa un monto válido");
-            return;
-        }
+const simulateTransfer = async () => {
+    if (!watchAmount || isNaN(parseFloat(watchAmount))) {
+        toast.error("Ingresa un monto válido");
+        return;
+    }
 
-        setSimulation(prev => ({ ...prev, loading: true, error: null, done: false }));
-        try {
-            // Determine Fee logic matching execution
-            const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
-            const baseFee = (watchSourceChain === watchDestChain)
-                ? (watchSourceToken !== watchDestToken ? 0.02 : 0.01)
-                : 0.02;
-            const fee = isDev ? 0 : baseFee;
+    setSimulation(prev => ({ ...prev, loading: true, error: null, done: false }));
+    try {
+        // Determine Fee logic matching execution
+        const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+        const baseFee = (watchSourceChain === watchDestChain)
+            ? (watchSourceToken !== watchDestToken ? 0.02 : 0.01)
+            : 0.02;
+        const fee = isDev ? 0 : baseFee;
 
-            const amountFloat = parseFloat(watchAmount);
-            const totalAmountToSimulate = (amountFloat + fee).toFixed(6);
+        const amountFloat = parseFloat(watchAmount);
+        const totalAmountToSimulate = (amountFloat + fee).toFixed(6);
 
-            const data = await bridgeApi.getQuote({
-                sourceChain: watchSourceChain,
-                targetChain: watchDestChain,
-                amount: totalAmountToSimulate,
-                token: watchDestToken,
-                sourceToken: watchSourceToken
-            });
+        const data = await bridgeApi.getQuote({
+            sourceChain: watchSourceChain,
+            targetChain: watchDestChain,
+            amount: totalAmountToSimulate,
+            token: watchDestToken,
+            sourceToken: watchSourceToken
+        });
 
-            if (data.success) {
-                const newSimState = {
-                    estimated: data.estimatedReceived || "",
-                    netAmount: data.netAmountBridged,
-                    error: null,
-                    done: true,
-                    loading: false
-                };
-                setSimulation(newSimState);
-                simulationRef.current = newSimState; // Update ref immediately
-            } else {
-                setSimulation({
-                    estimated: "",
-                    error: data.error || "Error al simular",
-                    done: true,
-                    loading: false
-                });
-                toast.error(data.error || "Error al simular");
-            }
-        } catch (e: any) {
-            console.error("Simulation error:", e);
-            // Try to extract specific error from response if available
-            const errorMessage = e?.response?.data?.error || e?.message || "Error de conexión";
-
+        if (data.success) {
+            const newSimState = {
+                estimated: data.estimatedReceived || "",
+                netAmount: data.netAmountBridged,
+                error: null,
+                done: true,
+                loading: false
+            };
+            setSimulation(newSimState);
+            simulationRef.current = newSimState; // Update ref immediately
+        } else {
             setSimulation({
                 estimated: "",
-                error: errorMessage,
+                error: data.error || "Error al simular",
                 done: true,
                 loading: false
             });
-            toast.error(errorMessage);
+            toast.error(data.error || "Error al simular");
         }
-    };
+    } catch (e: any) {
+        console.error("Simulation error:", e);
+        // Try to extract specific error from response if available
+        const errorMessage = e?.response?.data?.error || e?.message || "Error de conexión";
 
-    const isCCTPRoute = useMemo(() => {
-        if (!isCrossChain) return false;
-        if (watchSourceChain === "Stellar" || watchDestChain === "Stellar") return false;
+        setSimulation({
+            estimated: "",
+            error: errorMessage,
+            done: true,
+            loading: false
+        });
+        toast.error(errorMessage);
+    }
+};
 
-        const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
-        const destConfig = NETWORKS[watchDestChain as keyof typeof NETWORKS];
+const isCCTPRoute = useMemo(() => {
+    if (!isCrossChain) return false;
+    if (watchSourceChain === "Stellar" || watchDestChain === "Stellar") return false;
 
-        if (!sourceConfig || !destConfig) return false;
+    const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
+    const destConfig = NETWORKS[watchDestChain as keyof typeof NETWORKS];
 
-        if (watchSourceToken !== "USDC" || watchDestToken !== "USDC") return false;
+    if (!sourceConfig || !destConfig) return false;
 
-        const sourceCCTP = sourceConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
-        const destCCTP = destConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
+    if (watchSourceToken !== "USDC" || watchDestToken !== "USDC") return false;
 
-        return !!(sourceCCTP && destCCTP);
-    }, [watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, isCrossChain]);
+    const sourceCCTP = sourceConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
+    const destCCTP = destConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
 
-    return {
-        open,
-        address,
-        privateKey,
-        provider,
-        isLoading,
-        error,
-        form,
-        routeError,
-        watchAmount,
-        watchSourceChain,
-        watchDestChain,
-        watchSourceToken,
-        watchDestToken,
-        isCrossChain,
-        isCCTPRoute,
-        minAmount,
-        isAmountValid,
-        isExceedingMax,
-        maxAmount,
-        balance,
-        fee,
-        total,
-        simulation,
-        simulateTransfer,
-        openModal,
-        closeModal: handleCloseModal,
-        onSubmit: handleSubmit(onSubmit),
-    };
+    return !!(sourceCCTP && destCCTP);
+}, [watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, isCrossChain]);
+
+return {
+    open,
+    address,
+    privateKey,
+    provider,
+    isLoading,
+    error,
+    form,
+    routeError,
+    watchAmount,
+    watchSourceChain,
+    watchDestChain,
+    watchSourceToken,
+    watchDestToken,
+    isCrossChain,
+    isCCTPRoute,
+    minAmount,
+    isAmountValid,
+    isExceedingMax,
+    maxAmount,
+    balance,
+    fee,
+    total,
+    simulation,
+    simulateTransfer,
+    openModal,
+    closeModal: handleCloseModal,
+    onSubmit: handleSubmit(onSubmit),
+};
 };

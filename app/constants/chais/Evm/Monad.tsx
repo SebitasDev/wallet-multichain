@@ -31,6 +31,7 @@ export const Monad: ChainConfig = {
     evm: {
         chain: isDevelopment ? monadTestnet : monad,
         rpcUrl: isDevelopment ? monadTestnet.rpcUrls.default.http[0] : monad.rpcUrls.default.http[0],
+        supports7702: true,
     },
     label: "Monad",
     icon: <MonadIcon />,

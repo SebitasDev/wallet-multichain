@@ -11,7 +11,7 @@ import { Address } from "abitype";
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { calculateTotalFees } from "@/app/utils/calculateFees";
 
-interface ChainInfo {
+export interface ChainInfo {
     chainId: string;
     amount: number;
     tokens: Record<string, number>; // New storage for individual token balances
