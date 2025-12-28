@@ -3,6 +3,7 @@
 import { Box, Typography, Container, Avatar } from "@mui/material";
 import { Send, Link as LinkIcon, Handshake, QrCode } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
+import { BottomNavigation } from "../components/BottomNavigation";
 
 export default function PayPage() {
     const router = useRouter();
@@ -66,7 +67,8 @@ export default function PayPage() {
             overflowY: "auto",
             pb: 12, // Space for bottom nav
             pt: 4,
-            px: 2
+            px: 2,
+            pl: { xs: 2, md: "280px" } // Sidebar offset + padding
         }}>
             <Container maxWidth="sm">
                 <Typography variant="h4" sx={{ fontWeight: 900, mb: 4 }}>
@@ -156,6 +158,7 @@ export default function PayPage() {
                 </Box>
 
             </Container>
+            <BottomNavigation />
         </Box>
     );
 }

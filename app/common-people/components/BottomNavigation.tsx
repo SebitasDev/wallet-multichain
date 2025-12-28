@@ -17,14 +17,14 @@ export const BottomNavigation = () => {
             label: "Wallet",
             icon: AccountBalanceWallet,
             path: "/common-people/dashboard",
-            isActive: true, // Hardcoded for now
+            isActive: pathname === "/common-people/dashboard",
         },
         {
             id: "pay",
             label: language === "es" ? "Pagar" : "Pay",
             icon: Send,
             path: "/common-people/pay",
-            isActive: false,
+            isActive: pathname.includes("/common-people/pay"),
         },
         {
             id: "exit",
