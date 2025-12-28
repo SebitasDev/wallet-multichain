@@ -467,6 +467,9 @@ export const useCrossChainTransfer = () => {
 
                 toast.success(`Transfer exitoso! TX: ${result.txHash?.slice(0, 10)}...`);
 
+                // Reset and close modal immediately to prevent user staring at "Sending..."
+                handleCloseModal();
+
                 // Save to DB (Duplicated logic from below, encapsulated here for this branch)
                 try {
                     const txData = {
@@ -495,6 +498,7 @@ export const useCrossChainTransfer = () => {
                     console.error("Failed to save transaction to DB:", dbError);
                 }
 
+                handleCloseModal(); // Reset and close
                 return; // Exit function after successful hybrid transfer
             }
         }
@@ -551,7 +555,7 @@ export const useCrossChainTransfer = () => {
                 if (result.burnTransactionHash) {
                     toast.info(`Burn TX: ${result.burnTransactionHash.slice(0, 10)}... Circle minteará automáticamente.`);
                 }
-                closeModal();
+                handleCloseModal(); // Reset and close
             } else {
                 toast.error(`Error: ${result.errorReason || "Unknown Error"} `);
                 console.error("Transfer failed result:", result);

@@ -113,8 +113,8 @@ export default function HistoryListPage() {
 
     // --- Monthly Chart Data (Current Week) ---
     const today = new Date();
-    const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 0 });
-    const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 0 });
+    const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 });
+    const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 1 });
     const weekDays = eachDayOfInterval({ start: startOfCurrentWeek, end: endOfCurrentWeek });
 
     const weeklySendsData = weekDays.map(day => {
