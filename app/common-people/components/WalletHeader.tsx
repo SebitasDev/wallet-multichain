@@ -28,6 +28,7 @@ import { useLocalCurrency } from "@/app/hooks/useLocalCurrency";
 import { useCurrencyStore } from "@/app/store/useCurrencyStore";
 import { Loop, AttachMoney, Language, CompareArrows } from "@mui/icons-material"; // Icons
 import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { useUserStore } from "@/app/store/useUserStore";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { CrossChainTransferModal } from "@/app/dashboard/components/CrossChainTransferModal";
@@ -38,6 +39,7 @@ export function WalletHeader() {
     const [showBalance, setShowBalance] = useState(true);
     const [selectedChain, setSelectedChain] = useState<ChainData | null>(null);
     const { language, toggleLanguage } = useLanguageStore();
+    const { name } = useUserStore();
     const { useLocal, toggleCurrency } = useCurrencyStore();
     const { openReceive } = useDashboardModalsStore();
     const { setSendModal } = useSendMoneyStore();
@@ -241,7 +243,7 @@ export function WalletHeader() {
                             border: "2px solid #000000",
                         }}
                     >
-                        S
+                        {name.charAt(0).toUpperCase()}
                     </Box>
                     <Typography fontWeight="bold" fontSize={14}>
                         {language === "es" ? "¡Bienvenido a 1llet! 👋" : "Welcome to 1llet! 👋"}
