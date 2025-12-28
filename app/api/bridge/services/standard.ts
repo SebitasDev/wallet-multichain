@@ -3,6 +3,7 @@ import { SettleResponse } from "@/app/facilitator/types";
 import { executeNearBridge, getNearQuote } from "./near";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { createPublicClient, http } from "viem";
+import { FACILITATOR_ADDRESS } from "@/app/facilitator/config";
 
 export class StandardBridgeStrategy implements BridgeStrategy {
     name = "StandardBridge";
@@ -46,7 +47,6 @@ export class StandardBridgeStrategy implements BridgeStrategy {
 
             // Verify it was a transfer to Facilitator
             // We can parse logs to be sure
-            const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97"; // Hardcoded for now matching hook
             // In future import from config
 
             // Simple Log finding for ERC20 Transfer
@@ -56,7 +56,7 @@ export class StandardBridgeStrategy implements BridgeStrategy {
             const log = receipt.logs.find((l: any) =>
                 l.topics[0] === transferTopic &&
                 // topic[2] is 'to' (padded)
-                l.topics[2]?.toLowerCase().includes(FACILITATOR_ADDR.toLowerCase().slice(2))
+                l.topics[2]?.toLowerCase().includes(FACILITATOR_ADDRESS.toLowerCase().slice(2))
             );
 
             if (!log) {

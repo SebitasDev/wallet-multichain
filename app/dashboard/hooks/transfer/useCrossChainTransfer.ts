@@ -7,6 +7,7 @@ import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
 import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
@@ -301,6 +302,8 @@ export const useCrossChainTransfer = () => {
         setup();
     }, [isUsingXO, mainWallet, currentPassword]);
 
+    const { executeHybridTransfer } = useHybridBridgeStrategy();
+
     const {
         executeTransfer,
         getFee,
@@ -440,509 +443,251 @@ export const useCrossChainTransfer = () => {
         if (!useCCTP && privateKey) {
             const supports7702 = networkConfig.evm?.supports7702;
 
-            if (supports7702) {
-                console.log("[SendMoney Cross] Triggering 7702 Flow");
-                toast.info("Procesando Envío (Gasless)...");
+            // Only attempt hybrid strategy if 7702 is supported OR we want to attempt refuel flow on EVM
+            // But logic here seems to prioritize this path if !useCCTP.
 
-                const publicClient = createPublicClient({
-                    chain: networkConfig.evm!.chain,
-                    transport: http()
+            if (networkConfig.evm) {
+                const result = await executeHybridTransfer({
+                    sourceChain: data.sourceChain,
+                    destChain: data.destChain,
+                    sourceToken: sourceToken,
+                    destToken: data.destToken,
+                    amount: finalAmount,
+                    recipient: data.recipient,
+                    sender: address,
+                    privateKey: privateKey,
+                    onStatusUpdate: (msg) => toast.info(msg)
                 });
 
-                try {
-                    // 1. Create & Sign Authorization
-                    // Assuming privateKey is available (decrypted above)
-                    const { account: smartAccount, owner } = await create7702Account(publicClient, privateKey);
-                    // Authorization to upgrade the EOA to Smart Account code
-                    const authorization = await createAuthorization(owner, publicClient, smartAccount);
-
-
-                    // 2. Prepare & Sign UserOperation (Standard 4337 Execution)
-                    // We must sign a UserOp so the EntryPoint can validate us (we are not the owner directly calling)
-
-                    const tokenInfo = networkConfig.assets.find(a => a.name === sourceToken);
-                    if (!tokenInfo) throw new Error("Token info not found");
-
-                    const decimals = tokenInfo.decimals;
-                    const amountBigInt = BigInt(Math.floor(parseFloat(finalAmount) * 10 ** decimals));
-
-                    const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97"; // Hardcode fallback for safety
-                    // Ideally use import { FACILITATOR_ADDRESS } from "@/app/facilitator/config"; 
-                    // but let's ensure we use the one known to work first.
-
-                    const transferCallData = encodeFunctionData({
-                        abi: erc20Abi,
-                        functionName: "transfer",
-                        args: [FACILITATOR_ADDR as Address, amountBigInt]
-                    });
-
-                    // Prepare User Op
-                    // Since we don't have a Bundler Client connected to the Smart Account, `signUserOperation` might fail estimating gas.
-                    // We need to construct a partial UserOp and force defaults if needed.
-
-                    // Let's assume standard values for gas to avoid estimation calls that fail.
-                    // [FIX] Massive increase to prevent AA95 Out of Gas during 7702 delegation
-                    const callGasLimit = BigInt(500000); // 500k [FIX: Reduced for efficiency]
-                    const verificationGasLimit = BigInt(500000); // 500k [FIX: Reduced]
-                    const preVerificationGas = BigInt(100000); // 100k [FIX: Reduced]
-                    const maxFeePerGas = BigInt(100); // Dummy, will be replaced by Relayer? No, signed!
-                    const maxPriorityFeePerGas = BigInt(100);
-
-                    // Helper ABI for SimpleAccount.execute
-                    const executeAbi = [{
-                        inputs: [
-                            { name: "dest", type: "address" },
-                            { name: "value", type: "uint256" },
-                            { name: "func", type: "bytes" }
-                        ],
-                        name: "execute",
-                        outputs: [],
-                        stateMutability: "nonpayable",
-                        type: "function"
-                    }] as const;
-
-                    const executeCallData = encodeFunctionData({
-                        abi: executeAbi,
-                        functionName: "execute",
-                        args: [tokenInfo.address as Address, BigInt(0), transferCallData]
-                    });
-
-                    // Construct the UserOp object manually or via helper
-                    // viem's `smartAccount` has `signUserOperation` which takes Partial<UserOp>.
-
-                    // Get dynamic nonce
-                    const nonce = await smartAccount.getNonce();
-                    console.log("[SendMoney Cross] Triggering 7702 Flow with nonce:", nonce);
-
-                    // Let's attempt to use `signUserOperation` but providing all gas values to skip estiamtion?
-                    const userOpRequest = {
-                        callData: executeCallData,
-                        callGasLimit,
-                        verificationGasLimit,
-                        preVerificationGas,
-                        maxFeePerGas: BigInt(0), // [FIX] Gasless: User pays 0. Relayer pays tx gas.
-                        maxPriorityFeePerGas: BigInt(0), // [FIX] Gasless
-                        nonce, // [FIX] Dynamic Nonce
-                        signature: "0x" as `0x${string} `,
-                        initCode: "0x" as `0x${string} `
-                    };
-
-
-                    // Let's attempt to use `signUserOperation` but providing all gas values to skip estiamtion?
-                    const signature = await smartAccount.signUserOperation(userOpRequest);
-
-                    const userOp = {
-                        ...userOpRequest,
-                        sender: address as Address,
-                        signature: signature
-                    };
-
-                    console.log("[SendMoney Cross] Generated UserOp:", userOp);
-                    // Serialize UserOp
-                    const serializedUserOp = serializeBigInt(userOp);
-
-                    console.log("[SendMoney Cross] Serialized UserOp:", serializedUserOp);
-
-                    const serializedAuthorization = serializeBigInt(authorization);
-
-                    // 2. Call Bridge Settle API directly
-                    const response = await axios.post("/api/bridge/settle", {
-                        sourceChain: data.sourceChain,
-                        destChain: data.destChain, // Keep original chain key
-                        sourceToken: sourceToken,
-                        destToken: data.destToken,
-                        amount: finalAmount, // Amount + Fee
-                        recipient: data.recipient,
-                        senderAddress: address,
-                        paymentPayload: {
-                            authorization: serializedAuthorization,
-                            userOp: serializedUserOp, // [NEW] Pass UserOp
-                            type: "7702"
-                        }
-                    });
-
-
-                    // Success! matches executeTransfer result shape
-                    const result = {
-                        success: true,
-                        transactionHash: response.data.transactionHash,
-                        netAmount: response.data.netAmount,
-                        fee: "0" // Relayer paid gas
-                    };
-
-                    toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
-                    // Save to DB
-                    try {
-                        const txData = {
-                            id: crypto.randomUUID(),
-                            fromAddress: address.toLowerCase(),
-                            totalAmount: amount,
-                            status: "PENDING",
-                            tokenSymbol: data.destToken,
-                            decimals: 6,
-                            toAddress: data.recipient.trim().toLowerCase(),
-                            destinationChain: data.destChain,
-                            createdAt: Date.now(),
-                            route: [
-                                {
-                                    chainName: data.sourceChain,
-                                    amount: amount,
-                                    assetOrigin: data.sourceToken,
-                                    status: "PENDING",
-                                    txHash: result.transactionHash
-                                }
-                            ],
-                            estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount
-                        };
-                        await transactionsApi.create(txData as unknown as CreateTransactionRequest);
-                    } catch (dbError) {
-                        console.error("Failed to save transaction to DB:", dbError);
-                    }
-
-                    closeModal();
-                    return; // EXIT FUNCTION, SKIP STANDARD EXECUTION
-
-                } catch (e: any) {
-                    console.error("7702 Error:", e);
-                    toast.error(e.message || "Error en envío Gasless");
+                if (!result.success) {
+                    console.error("Hybrid Transfer Failed:", result.error);
+                    toast.error("Error en la transferencia: " + result.error);
                     return;
                 }
-            } else {
-                // [NEW] Refuel / Standard Flow (Non-7702 Chains like Avalanche)
-                console.log("[SendMoney Cross] Chain does not support 7702. Using Refuel/Standard Flow.");
-                toast.info("Iniciando modo compatible (Refuel)... ⛽");
 
-                const publicClient = createPublicClient({
-                    chain: networkConfig.evm!.chain,
-                    transport: http()
-                });
+                toast.success(`Transfer exitoso! TX: ${result.txHash?.slice(0, 10)}...`);
 
-                const { createWalletClient, parseEther, formatEther } = await import("viem");
-                const { privateKeyToAccount } = await import("viem/accounts");
-
-                // Initialize Wallet Client locally for User
-                const account = privateKeyToAccount(privateKey);
-                const userWalletClient = createWalletClient({
-                    account,
-                    chain: networkConfig.evm!.chain,
-                    transport: http()
-                });
-
+                // Save to DB (Duplicated logic from below, encapsulated here for this branch)
                 try {
-                    const tokenInfo = networkConfig.assets.find(a => a.name === sourceToken);
-                    if (!tokenInfo) throw new Error("Token info not found");
-                    const decimals = tokenInfo.decimals;
-                    const amountBigInt = BigInt(Math.floor(parseFloat(finalAmount) * 10 ** decimals));
-                    const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97";
-
-                    // 1. Estimate Gas
-                    let gasEstimate = BigInt(60000); // Default ERC20 Transfer
-                    try {
-                        gasEstimate = await publicClient.estimateContractGas({
-                            address: tokenInfo.address as Address,
-                            abi: erc20Abi,
-                            functionName: 'transfer',
-                            args: [FACILITATOR_ADDR as Address, amountBigInt],
-                            account: address as Address
-                        });
-                        console.log("[Refuel] Estimated Gas:", gasEstimate);
-                    } catch (e) { console.warn("Gas estimation failed, using default", e); }
-
-                    const gasPrice = await publicClient.getGasPrice();
-                    const totalGasCost = gasEstimate * gasPrice;
-                    const totalGasCostEth = formatEther(totalGasCost);
-
-                    console.log(`[Refuel] Cost: ${totalGasCostEth} ${networkConfig.chipLabel} `);
-
-                    // 2. Check Balance
-                    const balance = await publicClient.getBalance({ address: address as Address });
-                    console.log(`[Refuel] User Balance: ${formatEther(balance)} `);
-
-                    if (balance < totalGasCost) {
-                        const needed = formatEther(totalGasCost - balance); // Actually ask for full cost usually safer?
-                        // Let's ask for the full estimated cost + buffer handled by API
-                        console.log("[Refuel] Insufficient Gas. Requesting Refuel...");
-                        toast.info(`Solicitando gasolina(${networkConfig.chipLabel})...`);
-
-                        // Call Refuel API
-                        const refuelRes = await axios.post("/api/refuel", {
-                            chain: data.sourceChain,
-                            address: address,
-                            estimatedGasCost: totalGasCostEth
-                        });
-
-                        if (refuelRes.data.success) {
-                            toast.success("Gasolina Recibida! ⛽✅");
-                            // Wait a bit for chain indexer? Usually API waits for send.
-                            // We might need a small delay if RPC is lagging.
-                            await new Promise(r => setTimeout(r, 3000));
-                        } else {
-                            throw new Error("Fallo al solicitar Gasolina: " + refuelRes.data.error);
-                        }
-                    }
-
-                    // 3. Send Transaction
-                    toast.info("Enviando fondos al puente...");
-                    const txHash = await userWalletClient.writeContract({
-                        address: tokenInfo.address as Address,
-                        abi: erc20Abi,
-                        functionName: 'transfer',
-                        args: [FACILITATOR_ADDR as Address, amountBigInt],
-                        chain: networkConfig.evm!.chain,
-                        account
-                    });
-
-                    console.log("[Refuel] Tx Sent:", txHash);
-                    toast.success("Fondos Enviados! Procesando Puente...");
-
-                    // 4. Call Bridge Settle
-                    // We wait a bit or just fire standard settle.
-                    const response = await axios.post("/api/bridge/settle", {
-                        sourceChain: data.sourceChain,
-                        destChain: data.destChain,
-                        sourceToken: sourceToken,
-                        destToken: data.destToken,
-                        amount: finalAmount,
-                        recipient: data.recipient,
-                        senderAddress: address,
-                        paymentPayload: {
-                            type: "STANDARD",
-                            txHash: txHash
-                        }
-                    });
-
-                    // Success Handle (Copy Paste from above or Refactor)
-                    const result = {
-                        success: true,
-                        transactionHash: response.data.transactionHash || txHash,
-                        netAmount: response.data.netAmount,
-                        fee: "0"
-                    };
-
-                    toast.success(`Transfer Completo!`);
-                    // Save to DB Code Duplication (Ideally refactor but ok for inline)
-                    try {
-                        const txData = {
-                            id: crypto.randomUUID(),
-                            fromAddress: address.toLowerCase(),
-                            totalAmount: amount,
-                            status: "PENDING",
-                            tokenSymbol: data.destToken,
-                            decimals: 6,
-                            toAddress: data.recipient.trim().toLowerCase(),
-                            destinationChain: data.destChain,
-                            createdAt: Date.now(),
-                            route: [{
+                    const txData = {
+                        id: crypto.randomUUID(),
+                        fromAddress: address.toLowerCase(),
+                        totalAmount: amount,
+                        status: "PENDING",
+                        tokenSymbol: data.destToken,
+                        decimals: 6,
+                        toAddress: data.recipient.trim().toLowerCase(),
+                        destinationChain: data.destChain,
+                        createdAt: Date.now(),
+                        route: [
+                            {
                                 chainName: data.sourceChain,
                                 amount: amount,
                                 assetOrigin: data.sourceToken,
                                 status: "PENDING",
-                                txHash: result.transactionHash
-                            }],
-                            estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount
-                        };
-                        await transactionsApi.create(txData as unknown as CreateTransactionRequest);
-                    } catch (dbError) { console.error("DB Error", dbError); }
-
-                    closeModal();
-                    return;
-
-                } catch (e: any) {
-                    console.error("[Refuel] Error:", e);
-                    toast.error(e.message || "Error en Refuel/Transfer");
-                    return;
-                }
-            }
-        }
-
-
-        try {
-            const result = await executeTransfer({
-                amount: finalAmount,
-                sourceChain: data.sourceChain,
-                destinationChain: data.destChain as FacilitatorChainKey,
-                recipient: data.recipient,
-                destToken: data.destToken,
-                sourceToken: data.sourceToken,
-                facilitatorFee: fee,
-                sender: (data.sourceChain === "Stellar" ? mainWallet?.addressStellar : mainWallet?.address) || undefined
-            });
-
-            if (result.success) {
-                toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
-
-                // Save to DB
-                try {
-                    const txData = {
-                        id: crypto.randomUUID(),
-                        fromAddress: address.toLowerCase(), // Normalize to lowercase for index efficiency
-                        totalAmount: amount,
-                        status: "PENDING", // Requested by user
-                        tokenSymbol: data.destToken,
-                        decimals: 6,
-                        toAddress: data.recipient.trim().toLowerCase(), // [NEW] Normalize recipient
-                        destinationChain: data.destChain, // [NEW]
-                        createdAt: Date.now(),
-                        route: [
-                            {
-                                chainName: data.sourceChain, // Source chain as requested
-                                amount: amount,
-                                assetOrigin: data.sourceToken, // Use sourceToken for outgoing asset
-                                status: "PENDING",
-                                txHash: result.transactionHash
+                                txHash: result.txHash
                             }
                         ],
-                        estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount // Use amount if no simulation (Direct/CCTP)
+                        estimatedReceived: simulationRef.current && simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount
                     };
-
                     await transactionsApi.create(txData as unknown as CreateTransactionRequest);
-                    console.log("Transaction saved to DB");
-
                 } catch (dbError) {
                     console.error("Failed to save transaction to DB:", dbError);
-                    // Don't block UI flow for BG error
                 }
 
-                if (result.burnTransactionHash) {
-                    toast.info(`Burn TX: ${result.burnTransactionHash.slice(0, 10)}... Circle minteará automáticamente.`);
-                }
-                closeModal();
-            } else {
-                toast.error(`Error: ${result.errorReason || "Unknown Error"} `);
-                console.error("Transfer failed result:", result);
+                return; // Exit function after successful hybrid transfer
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Error al procesar el transfer");
         }
+
+
+
+try {
+    const result = await executeTransfer({
+        amount: finalAmount,
+        sourceChain: data.sourceChain,
+        destinationChain: data.destChain as FacilitatorChainKey,
+        recipient: data.recipient,
+        destToken: data.destToken,
+        sourceToken: data.sourceToken,
+        facilitatorFee: fee,
+        sender: (data.sourceChain === "Stellar" ? mainWallet?.addressStellar : mainWallet?.address) || undefined
+    });
+
+    if (result.success) {
+        toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
+
+        // Save to DB
+        try {
+            const txData = {
+                id: crypto.randomUUID(),
+                fromAddress: address.toLowerCase(), // Normalize to lowercase for index efficiency
+                totalAmount: amount,
+                status: "PENDING", // Requested by user
+                tokenSymbol: data.destToken,
+                decimals: 6,
+                toAddress: data.recipient.trim().toLowerCase(), // [NEW] Normalize recipient
+                destinationChain: data.destChain, // [NEW]
+                createdAt: Date.now(),
+                route: [
+                    {
+                        chainName: data.sourceChain, // Source chain as requested
+                        amount: amount,
+                        assetOrigin: data.sourceToken, // Use sourceToken for outgoing asset
+                        status: "PENDING",
+                        txHash: result.transactionHash
+                    }
+                ],
+                estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount // Use amount if no simulation (Direct/CCTP)
+            };
+
+            await transactionsApi.create(txData as unknown as CreateTransactionRequest);
+            console.log("Transaction saved to DB");
+
+        } catch (dbError) {
+            console.error("Failed to save transaction to DB:", dbError);
+            // Don't block UI flow for BG error
+        }
+
+        if (result.burnTransactionHash) {
+            toast.info(`Burn TX: ${result.burnTransactionHash.slice(0, 10)}... Circle minteará automáticamente.`);
+        }
+        closeModal();
+    } else {
+        toast.error(`Error: ${result.errorReason || "Unknown Error"} `);
+        console.error("Transfer failed result:", result);
+    }
+} catch (err) {
+    console.error(err);
+    toast.error("Error al procesar el transfer");
+}
     };
 
-    // Simulation State
-    const [simulation, setSimulation] = useState<{
-        estimated: string;
-        error: string | null;
-        done: boolean;
-        loading: boolean;
-        netAmount?: number;
-    }>({ estimated: "", error: null, done: false, loading: false });
+// Simulation State
+const [simulation, setSimulation] = useState<{
+    estimated: string;
+    error: string | null;
+    done: boolean;
+    loading: boolean;
+    netAmount?: number;
+}>({ estimated: "", error: null, done: false, loading: false });
 
-    // [FIX] Use Ref to avoid stale closure in onSubmit
-    const simulationRef = useRef<typeof simulation>(simulation);
+// [FIX] Use Ref to avoid stale closure in onSubmit
+const simulationRef = useRef<typeof simulation>(simulation);
 
-    // Sync ref with state
-    useEffect(() => {
-        simulationRef.current = simulation;
-    }, [simulation]);
+// Sync ref with state
+useEffect(() => {
+    simulationRef.current = simulation;
+}, [simulation]);
 
-    // Reset simulation when inputs change
-    useEffect(() => {
-        setSimulation({ estimated: "", error: null, done: false, loading: false });
-    }, [watchAmount, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken]);
+// Reset simulation when inputs change
+useEffect(() => {
+    setSimulation({ estimated: "", error: null, done: false, loading: false });
+}, [watchAmount, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken]);
 
-    const simulateTransfer = async () => {
-        if (!watchAmount || isNaN(parseFloat(watchAmount))) {
-            toast.error("Ingresa un monto válido");
-            return;
-        }
+const simulateTransfer = async () => {
+    if (!watchAmount || isNaN(parseFloat(watchAmount))) {
+        toast.error("Ingresa un monto válido");
+        return;
+    }
 
-        setSimulation(prev => ({ ...prev, loading: true, error: null, done: false }));
-        try {
-            // Determine Fee logic matching execution
-            const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
-            const baseFee = (watchSourceChain === watchDestChain)
-                ? (watchSourceToken !== watchDestToken ? 0.02 : 0.01)
-                : 0.02;
-            const fee = isDev ? 0 : baseFee;
+    setSimulation(prev => ({ ...prev, loading: true, error: null, done: false }));
+    try {
+        // Determine Fee logic matching execution
+        const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+        const baseFee = (watchSourceChain === watchDestChain)
+            ? (watchSourceToken !== watchDestToken ? 0.02 : 0.01)
+            : 0.02;
+        const fee = isDev ? 0 : baseFee;
 
-            const amountFloat = parseFloat(watchAmount);
-            const totalAmountToSimulate = (amountFloat + fee).toFixed(6);
+        const amountFloat = parseFloat(watchAmount);
+        const totalAmountToSimulate = (amountFloat + fee).toFixed(6);
 
-            const data = await bridgeApi.getQuote({
-                sourceChain: watchSourceChain,
-                targetChain: watchDestChain,
-                amount: totalAmountToSimulate,
-                token: watchDestToken,
-                sourceToken: watchSourceToken
-            });
+        const data = await bridgeApi.getQuote({
+            sourceChain: watchSourceChain,
+            targetChain: watchDestChain,
+            amount: totalAmountToSimulate,
+            token: watchDestToken,
+            sourceToken: watchSourceToken
+        });
 
-            if (data.success) {
-                const newSimState = {
-                    estimated: data.estimatedReceived || "",
-                    netAmount: data.netAmountBridged,
-                    error: null,
-                    done: true,
-                    loading: false
-                };
-                setSimulation(newSimState);
-                simulationRef.current = newSimState; // Update ref immediately
-            } else {
-                setSimulation({
-                    estimated: "",
-                    error: data.error || "Error al simular",
-                    done: true,
-                    loading: false
-                });
-                toast.error(data.error || "Error al simular");
-            }
-        } catch (e: any) {
-            console.error("Simulation error:", e);
-            // Try to extract specific error from response if available
-            const errorMessage = e?.response?.data?.error || e?.message || "Error de conexión";
-
+        if (data.success) {
+            const newSimState = {
+                estimated: data.estimatedReceived || "",
+                netAmount: data.netAmountBridged,
+                error: null,
+                done: true,
+                loading: false
+            };
+            setSimulation(newSimState);
+            simulationRef.current = newSimState; // Update ref immediately
+        } else {
             setSimulation({
                 estimated: "",
-                error: errorMessage,
+                error: data.error || "Error al simular",
                 done: true,
                 loading: false
             });
-            toast.error(errorMessage);
+            toast.error(data.error || "Error al simular");
         }
-    };
+    } catch (e: any) {
+        console.error("Simulation error:", e);
+        // Try to extract specific error from response if available
+        const errorMessage = e?.response?.data?.error || e?.message || "Error de conexión";
 
-    const isCCTPRoute = useMemo(() => {
-        if (!isCrossChain) return false;
-        if (watchSourceChain === "Stellar" || watchDestChain === "Stellar") return false;
+        setSimulation({
+            estimated: "",
+            error: errorMessage,
+            done: true,
+            loading: false
+        });
+        toast.error(errorMessage);
+    }
+};
 
-        const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
-        const destConfig = NETWORKS[watchDestChain as keyof typeof NETWORKS];
+const isCCTPRoute = useMemo(() => {
+    if (!isCrossChain) return false;
+    if (watchSourceChain === "Stellar" || watchDestChain === "Stellar") return false;
 
-        if (!sourceConfig || !destConfig) return false;
+    const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
+    const destConfig = NETWORKS[watchDestChain as keyof typeof NETWORKS];
 
-        if (watchSourceToken !== "USDC" || watchDestToken !== "USDC") return false;
+    if (!sourceConfig || !destConfig) return false;
 
-        const sourceCCTP = sourceConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
-        const destCCTP = destConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
+    if (watchSourceToken !== "USDC" || watchDestToken !== "USDC") return false;
 
-        return !!(sourceCCTP && destCCTP);
-    }, [watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, isCrossChain]);
+    const sourceCCTP = sourceConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
+    const destCCTP = destConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
 
-    return {
-        open,
-        address,
-        privateKey,
-        provider,
-        isLoading,
-        error,
-        form,
-        routeError,
-        watchAmount,
-        watchSourceChain,
-        watchDestChain,
-        watchSourceToken,
-        watchDestToken,
-        isCrossChain,
-        isCCTPRoute,
-        minAmount,
-        isAmountValid,
-        isExceedingMax,
-        maxAmount,
-        balance,
-        fee,
-        total,
-        simulation,
-        simulateTransfer,
-        openModal,
-        closeModal: handleCloseModal,
-        onSubmit: handleSubmit(onSubmit),
-    };
+    return !!(sourceCCTP && destCCTP);
+}, [watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, isCrossChain]);
+
+return {
+    open,
+    address,
+    privateKey,
+    provider,
+    isLoading,
+    error,
+    form,
+    routeError,
+    watchAmount,
+    watchSourceChain,
+    watchDestChain,
+    watchSourceToken,
+    watchDestToken,
+    isCrossChain,
+    isCCTPRoute,
+    minAmount,
+    isAmountValid,
+    isExceedingMax,
+    maxAmount,
+    balance,
+    fee,
+    total,
+    simulation,
+    simulateTransfer,
+    openModal,
+    closeModal: handleCloseModal,
+    onSubmit: handleSubmit(onSubmit),
+};
 };

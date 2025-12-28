@@ -22,7 +22,7 @@ export const useHeroBanner = () => {
     const { address: xoAddress, currentNetwork } = useXOContracts();
 
     // Local fallback main wallet
-    const { mainWallet, xoClient } = useXOWalletStore();
+    const { mainWallet, xoClient, refreshMainWalletBalances } = useXOWalletStore();
 
     const {
         wallets,
@@ -91,6 +91,7 @@ export const useHeroBanner = () => {
 
     useEffect(() => {
         fetchMainWalletBalances();
+        refreshMainWalletBalances(); // Initial deep fetch
     }, [mainAddressStellar, mainAddressEVM, currentNetwork]);
 
     const handleRefreshMainWallet = async () => {
@@ -98,7 +99,10 @@ export const useHeroBanner = () => {
         setIsRefreshing(true);
         toast.info("Actualizando Main Wallet...");
         try {
-            await fetchMainWalletBalances();
+            await Promise.all([
+                fetchMainWalletBalances(),
+                refreshMainWalletBalances()
+            ]);
             toast.success("Main Wallet actualizada");
         } catch (error) {
             console.error("Error updating main wallet:", error);
