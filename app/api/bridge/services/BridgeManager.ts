@@ -2,6 +2,7 @@ import { BridgeStrategy, BridgeContext } from "./types";
 import { GaslessStrategy } from "./gasless";
 import { CCTPStrategy } from "./cctp";
 import { NearStrategy } from "./near";
+import { SmartAccountStrategy } from "./smartAccount";
 import { SettleResponse } from "@/app/facilitator/types";
 
 export class BridgeManager {
@@ -12,6 +13,7 @@ export class BridgeManager {
         this.strategies = [
             new GaslessStrategy(),
             new CCTPStrategy(),
+            new SmartAccountStrategy(),
             new NearStrategy()
         ];
     }

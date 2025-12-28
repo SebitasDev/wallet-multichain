@@ -10,7 +10,9 @@ export interface BridgeContext {
     amount: string;
     recipient: string;
     senderAddress?: string;
+    privateKey?: string;
 }
+
 
 export interface BridgeStrategy {
     name: string;
