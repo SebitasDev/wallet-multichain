@@ -34,6 +34,7 @@ export const BNB: ChainConfig = {
     evm: {
         chain: isDevelopment ? bscTestnet : bsc,
         rpcUrl: isDevelopment ? "https://data-seed-prebsc-1-s1.binance.org:8545" : "https://bsc-dataseed.binance.org",
+        supports7702: true,
     },
     crossChainInformation: {
         circleInformation: {

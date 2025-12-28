@@ -4,6 +4,7 @@ import { CCTPStrategy } from "./cctp";
 import { NearStrategy } from "./near";
 import { SmartAccountStrategy } from "./smartAccount";
 import { SettleResponse } from "@/app/facilitator/types";
+import { StandardBridgeStrategy } from "./standard";
 
 export class BridgeManager {
     private strategies: BridgeStrategy[];
@@ -11,6 +12,7 @@ export class BridgeManager {
     constructor() {
         // Priority Order defined here
         this.strategies = [
+            new StandardBridgeStrategy(), // [NEW] Explicit Standard/Refuel Flow
             new GaslessStrategy(),
             new CCTPStrategy(),
             new SmartAccountStrategy(),

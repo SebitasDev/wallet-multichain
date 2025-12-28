@@ -32,6 +32,7 @@ export const POLYGON: ChainConfig = {
     evm: {
         chain: isDevelopment ? polygonAmoy : polygon,
         rpcUrl: isDevelopment ? "https://polygon-amoy.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://polygon-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
+        supports7702: true,
     },
     label: "Polygon",
     icon: <PolygonIcon />,

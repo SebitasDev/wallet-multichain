@@ -434,176 +434,324 @@ export const useCrossChainTransfer = () => {
         const supportCCTP = networkConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP ?? false;
 
         console.log("[SendMoney Cross] SourceToken:", sourceToken, "IsUSDC:", isUSDC, "SupportCCTP:", supportCCTP);
-
         // Trigger 7702 IF: (Not USDC) OR (Is USDC but No CCTP Support)
         const useCCTP = isUSDC && supportCCTP;
 
         if (!useCCTP && privateKey) {
-            console.log("[SendMoney Cross] Triggering 7702 Flow");
-            toast.info("Procesando Envío (Gasless)...");
+            const supports7702 = networkConfig.evm?.supports7702;
 
-            const publicClient = createPublicClient({
-                chain: networkConfig.evm!.chain,
-                transport: http()
-            });
+            if (supports7702) {
+                console.log("[SendMoney Cross] Triggering 7702 Flow");
+                toast.info("Procesando Envío (Gasless)...");
 
-            try {
-                // 1. Create & Sign Authorization
-                // Assuming privateKey is available (decrypted above)
-                const { account: smartAccount, owner } = await create7702Account(publicClient, privateKey);
-                // Authorization to upgrade the EOA to Smart Account code
-                const authorization = await createAuthorization(owner, publicClient, smartAccount);
-
-
-                // 2. Prepare & Sign UserOperation (Standard 4337 Execution)
-                // We must sign a UserOp so the EntryPoint can validate us (we are not the owner directly calling)
-
-                const tokenInfo = networkConfig.assets.find(a => a.name === sourceToken);
-                if (!tokenInfo) throw new Error("Token info not found");
-
-                const decimals = tokenInfo.decimals;
-                const amountBigInt = BigInt(Math.floor(parseFloat(finalAmount) * 10 ** decimals));
-
-                const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97"; // Hardcode fallback for safety
-                // Ideally use import { FACILITATOR_ADDRESS } from "@/app/facilitator/config"; 
-                // but let's ensure we use the one known to work first.
-
-                const transferCallData = encodeFunctionData({
-                    abi: erc20Abi,
-                    functionName: "transfer",
-                    args: [FACILITATOR_ADDR as Address, amountBigInt]
+                const publicClient = createPublicClient({
+                    chain: networkConfig.evm!.chain,
+                    transport: http()
                 });
 
-                // Prepare User Op
-                // Since we don't have a Bundler Client connected to the Smart Account, `signUserOperation` might fail estimating gas.
-                // We need to construct a partial UserOp and force defaults if needed.
-
-                // Let's assume standard values for gas to avoid estimation calls that fail.
-                // [FIX] Massive increase to prevent AA95 Out of Gas during 7702 delegation
-                const callGasLimit = BigInt(500000); // 500k [FIX: Reduced for efficiency]
-                const verificationGasLimit = BigInt(500000); // 500k [FIX: Reduced]
-                const preVerificationGas = BigInt(100000); // 100k [FIX: Reduced]
-                const maxFeePerGas = BigInt(100); // Dummy, will be replaced by Relayer? No, signed!
-                const maxPriorityFeePerGas = BigInt(100);
-
-                // Helper ABI for SimpleAccount.execute
-                const executeAbi = [{
-                    inputs: [
-                        { name: "dest", type: "address" },
-                        { name: "value", type: "uint256" },
-                        { name: "func", type: "bytes" }
-                    ],
-                    name: "execute",
-                    outputs: [],
-                    stateMutability: "nonpayable",
-                    type: "function"
-                }] as const;
-
-                const executeCallData = encodeFunctionData({
-                    abi: executeAbi,
-                    functionName: "execute",
-                    args: [tokenInfo.address as Address, BigInt(0), transferCallData]
-                });
-
-                // Construct the UserOp object manually or via helper
-                // viem's `smartAccount` has `signUserOperation` which takes Partial<UserOp>.
-
-                // Get dynamic nonce
-                const nonce = await smartAccount.getNonce();
-                console.log("[SendMoney Cross] Triggering 7702 Flow with nonce:", nonce);
-
-                // Let's attempt to use `signUserOperation` but providing all gas values to skip estiamtion?
-                const userOpRequest = {
-                    callData: executeCallData,
-                    callGasLimit,
-                    verificationGasLimit,
-                    preVerificationGas,
-                    maxFeePerGas: BigInt(0), // [FIX] Gasless: User pays 0. Relayer pays tx gas.
-                    maxPriorityFeePerGas: BigInt(0), // [FIX] Gasless
-                    nonce, // [FIX] Dynamic Nonce
-                    signature: "0x" as `0x${string}`,
-                    initCode: "0x" as `0x${string}`
-                };
-
-
-                // Let's attempt to use `signUserOperation` but providing all gas values to skip estiamtion?
-                const signature = await smartAccount.signUserOperation(userOpRequest);
-
-                const userOp = {
-                    ...userOpRequest,
-                    sender: address as Address,
-                    signature: signature
-                };
-
-                console.log("[SendMoney Cross] Generated UserOp:", userOp);
-                // Serialize UserOp
-                const serializedUserOp = serializeBigInt(userOp);
-
-                console.log("[SendMoney Cross] Serialized UserOp:", serializedUserOp);
-
-                const serializedAuthorization = serializeBigInt(authorization);
-
-                // 2. Call Bridge Settle API directly
-                const response = await axios.post("/api/bridge/settle", {
-                    sourceChain: data.sourceChain,
-                    destChain: data.destChain, // Keep original chain key
-                    sourceToken: sourceToken,
-                    destToken: data.destToken,
-                    amount: finalAmount, // Amount + Fee
-                    recipient: data.recipient,
-                    senderAddress: address,
-                    paymentPayload: {
-                        authorization: serializedAuthorization,
-                        userOp: serializedUserOp, // [NEW] Pass UserOp
-                        type: "7702"
-                    }
-                });
-
-
-                // Success! matches executeTransfer result shape
-                const result = {
-                    success: true,
-                    transactionHash: response.data.transactionHash,
-                    netAmount: response.data.netAmount,
-                    fee: "0" // Relayer paid gas
-                };
-
-                toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
-                // Save to DB
                 try {
-                    const txData = {
-                        id: crypto.randomUUID(),
-                        fromAddress: address.toLowerCase(),
-                        totalAmount: amount,
-                        status: "PENDING",
-                        tokenSymbol: data.destToken,
-                        decimals: 6,
-                        toAddress: data.recipient.trim().toLowerCase(),
-                        destinationChain: data.destChain,
-                        createdAt: Date.now(),
-                        route: [
-                            {
+                    // 1. Create & Sign Authorization
+                    // Assuming privateKey is available (decrypted above)
+                    const { account: smartAccount, owner } = await create7702Account(publicClient, privateKey);
+                    // Authorization to upgrade the EOA to Smart Account code
+                    const authorization = await createAuthorization(owner, publicClient, smartAccount);
+
+
+                    // 2. Prepare & Sign UserOperation (Standard 4337 Execution)
+                    // We must sign a UserOp so the EntryPoint can validate us (we are not the owner directly calling)
+
+                    const tokenInfo = networkConfig.assets.find(a => a.name === sourceToken);
+                    if (!tokenInfo) throw new Error("Token info not found");
+
+                    const decimals = tokenInfo.decimals;
+                    const amountBigInt = BigInt(Math.floor(parseFloat(finalAmount) * 10 ** decimals));
+
+                    const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97"; // Hardcode fallback for safety
+                    // Ideally use import { FACILITATOR_ADDRESS } from "@/app/facilitator/config"; 
+                    // but let's ensure we use the one known to work first.
+
+                    const transferCallData = encodeFunctionData({
+                        abi: erc20Abi,
+                        functionName: "transfer",
+                        args: [FACILITATOR_ADDR as Address, amountBigInt]
+                    });
+
+                    // Prepare User Op
+                    // Since we don't have a Bundler Client connected to the Smart Account, `signUserOperation` might fail estimating gas.
+                    // We need to construct a partial UserOp and force defaults if needed.
+
+                    // Let's assume standard values for gas to avoid estimation calls that fail.
+                    // [FIX] Massive increase to prevent AA95 Out of Gas during 7702 delegation
+                    const callGasLimit = BigInt(500000); // 500k [FIX: Reduced for efficiency]
+                    const verificationGasLimit = BigInt(500000); // 500k [FIX: Reduced]
+                    const preVerificationGas = BigInt(100000); // 100k [FIX: Reduced]
+                    const maxFeePerGas = BigInt(100); // Dummy, will be replaced by Relayer? No, signed!
+                    const maxPriorityFeePerGas = BigInt(100);
+
+                    // Helper ABI for SimpleAccount.execute
+                    const executeAbi = [{
+                        inputs: [
+                            { name: "dest", type: "address" },
+                            { name: "value", type: "uint256" },
+                            { name: "func", type: "bytes" }
+                        ],
+                        name: "execute",
+                        outputs: [],
+                        stateMutability: "nonpayable",
+                        type: "function"
+                    }] as const;
+
+                    const executeCallData = encodeFunctionData({
+                        abi: executeAbi,
+                        functionName: "execute",
+                        args: [tokenInfo.address as Address, BigInt(0), transferCallData]
+                    });
+
+                    // Construct the UserOp object manually or via helper
+                    // viem's `smartAccount` has `signUserOperation` which takes Partial<UserOp>.
+
+                    // Get dynamic nonce
+                    const nonce = await smartAccount.getNonce();
+                    console.log("[SendMoney Cross] Triggering 7702 Flow with nonce:", nonce);
+
+                    // Let's attempt to use `signUserOperation` but providing all gas values to skip estiamtion?
+                    const userOpRequest = {
+                        callData: executeCallData,
+                        callGasLimit,
+                        verificationGasLimit,
+                        preVerificationGas,
+                        maxFeePerGas: BigInt(0), // [FIX] Gasless: User pays 0. Relayer pays tx gas.
+                        maxPriorityFeePerGas: BigInt(0), // [FIX] Gasless
+                        nonce, // [FIX] Dynamic Nonce
+                        signature: "0x" as `0x${string} `,
+                        initCode: "0x" as `0x${string} `
+                    };
+
+
+                    // Let's attempt to use `signUserOperation` but providing all gas values to skip estiamtion?
+                    const signature = await smartAccount.signUserOperation(userOpRequest);
+
+                    const userOp = {
+                        ...userOpRequest,
+                        sender: address as Address,
+                        signature: signature
+                    };
+
+                    console.log("[SendMoney Cross] Generated UserOp:", userOp);
+                    // Serialize UserOp
+                    const serializedUserOp = serializeBigInt(userOp);
+
+                    console.log("[SendMoney Cross] Serialized UserOp:", serializedUserOp);
+
+                    const serializedAuthorization = serializeBigInt(authorization);
+
+                    // 2. Call Bridge Settle API directly
+                    const response = await axios.post("/api/bridge/settle", {
+                        sourceChain: data.sourceChain,
+                        destChain: data.destChain, // Keep original chain key
+                        sourceToken: sourceToken,
+                        destToken: data.destToken,
+                        amount: finalAmount, // Amount + Fee
+                        recipient: data.recipient,
+                        senderAddress: address,
+                        paymentPayload: {
+                            authorization: serializedAuthorization,
+                            userOp: serializedUserOp, // [NEW] Pass UserOp
+                            type: "7702"
+                        }
+                    });
+
+
+                    // Success! matches executeTransfer result shape
+                    const result = {
+                        success: true,
+                        transactionHash: response.data.transactionHash,
+                        netAmount: response.data.netAmount,
+                        fee: "0" // Relayer paid gas
+                    };
+
+                    toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
+                    // Save to DB
+                    try {
+                        const txData = {
+                            id: crypto.randomUUID(),
+                            fromAddress: address.toLowerCase(),
+                            totalAmount: amount,
+                            status: "PENDING",
+                            tokenSymbol: data.destToken,
+                            decimals: 6,
+                            toAddress: data.recipient.trim().toLowerCase(),
+                            destinationChain: data.destChain,
+                            createdAt: Date.now(),
+                            route: [
+                                {
+                                    chainName: data.sourceChain,
+                                    amount: amount,
+                                    assetOrigin: data.sourceToken,
+                                    status: "PENDING",
+                                    txHash: result.transactionHash
+                                }
+                            ],
+                            estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount
+                        };
+                        await transactionsApi.create(txData as unknown as CreateTransactionRequest);
+                    } catch (dbError) {
+                        console.error("Failed to save transaction to DB:", dbError);
+                    }
+
+                    closeModal();
+                    return; // EXIT FUNCTION, SKIP STANDARD EXECUTION
+
+                } catch (e: any) {
+                    console.error("7702 Error:", e);
+                    toast.error(e.message || "Error en envío Gasless");
+                    return;
+                }
+            } else {
+                // [NEW] Refuel / Standard Flow (Non-7702 Chains like Avalanche)
+                console.log("[SendMoney Cross] Chain does not support 7702. Using Refuel/Standard Flow.");
+                toast.info("Iniciando modo compatible (Refuel)... ⛽");
+
+                const publicClient = createPublicClient({
+                    chain: networkConfig.evm!.chain,
+                    transport: http()
+                });
+
+                const { createWalletClient, parseEther, formatEther } = await import("viem");
+                const { privateKeyToAccount } = await import("viem/accounts");
+
+                // Initialize Wallet Client locally for User
+                const account = privateKeyToAccount(privateKey);
+                const userWalletClient = createWalletClient({
+                    account,
+                    chain: networkConfig.evm!.chain,
+                    transport: http()
+                });
+
+                try {
+                    const tokenInfo = networkConfig.assets.find(a => a.name === sourceToken);
+                    if (!tokenInfo) throw new Error("Token info not found");
+                    const decimals = tokenInfo.decimals;
+                    const amountBigInt = BigInt(Math.floor(parseFloat(finalAmount) * 10 ** decimals));
+                    const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97";
+
+                    // 1. Estimate Gas
+                    let gasEstimate = BigInt(60000); // Default ERC20 Transfer
+                    try {
+                        gasEstimate = await publicClient.estimateContractGas({
+                            address: tokenInfo.address as Address,
+                            abi: erc20Abi,
+                            functionName: 'transfer',
+                            args: [FACILITATOR_ADDR as Address, amountBigInt],
+                            account: address as Address
+                        });
+                        console.log("[Refuel] Estimated Gas:", gasEstimate);
+                    } catch (e) { console.warn("Gas estimation failed, using default", e); }
+
+                    const gasPrice = await publicClient.getGasPrice();
+                    const totalGasCost = gasEstimate * gasPrice;
+                    const totalGasCostEth = formatEther(totalGasCost);
+
+                    console.log(`[Refuel] Cost: ${totalGasCostEth} ${networkConfig.chipLabel} `);
+
+                    // 2. Check Balance
+                    const balance = await publicClient.getBalance({ address: address as Address });
+                    console.log(`[Refuel] User Balance: ${formatEther(balance)} `);
+
+                    if (balance < totalGasCost) {
+                        const needed = formatEther(totalGasCost - balance); // Actually ask for full cost usually safer?
+                        // Let's ask for the full estimated cost + buffer handled by API
+                        console.log("[Refuel] Insufficient Gas. Requesting Refuel...");
+                        toast.info(`Solicitando gasolina(${networkConfig.chipLabel})...`);
+
+                        // Call Refuel API
+                        const refuelRes = await axios.post("/api/refuel", {
+                            chain: data.sourceChain,
+                            address: address,
+                            estimatedGasCost: totalGasCostEth
+                        });
+
+                        if (refuelRes.data.success) {
+                            toast.success("Gasolina Recibida! ⛽✅");
+                            // Wait a bit for chain indexer? Usually API waits for send.
+                            // We might need a small delay if RPC is lagging.
+                            await new Promise(r => setTimeout(r, 3000));
+                        } else {
+                            throw new Error("Fallo al solicitar Gasolina: " + refuelRes.data.error);
+                        }
+                    }
+
+                    // 3. Send Transaction
+                    toast.info("Enviando fondos al puente...");
+                    const txHash = await userWalletClient.writeContract({
+                        address: tokenInfo.address as Address,
+                        abi: erc20Abi,
+                        functionName: 'transfer',
+                        args: [FACILITATOR_ADDR as Address, amountBigInt],
+                        chain: networkConfig.evm!.chain,
+                        account
+                    });
+
+                    console.log("[Refuel] Tx Sent:", txHash);
+                    toast.success("Fondos Enviados! Procesando Puente...");
+
+                    // 4. Call Bridge Settle
+                    // We wait a bit or just fire standard settle.
+                    const response = await axios.post("/api/bridge/settle", {
+                        sourceChain: data.sourceChain,
+                        destChain: data.destChain,
+                        sourceToken: sourceToken,
+                        destToken: data.destToken,
+                        amount: finalAmount,
+                        recipient: data.recipient,
+                        senderAddress: address,
+                        paymentPayload: {
+                            type: "STANDARD",
+                            txHash: txHash
+                        }
+                    });
+
+                    // Success Handle (Copy Paste from above or Refactor)
+                    const result = {
+                        success: true,
+                        transactionHash: response.data.transactionHash || txHash,
+                        netAmount: response.data.netAmount,
+                        fee: "0"
+                    };
+
+                    toast.success(`Transfer Completo!`);
+                    // Save to DB Code Duplication (Ideally refactor but ok for inline)
+                    try {
+                        const txData = {
+                            id: crypto.randomUUID(),
+                            fromAddress: address.toLowerCase(),
+                            totalAmount: amount,
+                            status: "PENDING",
+                            tokenSymbol: data.destToken,
+                            decimals: 6,
+                            toAddress: data.recipient.trim().toLowerCase(),
+                            destinationChain: data.destChain,
+                            createdAt: Date.now(),
+                            route: [{
                                 chainName: data.sourceChain,
                                 amount: amount,
                                 assetOrigin: data.sourceToken,
                                 status: "PENDING",
                                 txHash: result.transactionHash
-                            }
-                        ],
-                        estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount
-                    };
-                    await transactionsApi.create(txData as unknown as CreateTransactionRequest);
-                } catch (dbError) {
-                    console.error("Failed to save transaction to DB:", dbError);
+                            }],
+                            estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount
+                        };
+                        await transactionsApi.create(txData as unknown as CreateTransactionRequest);
+                    } catch (dbError) { console.error("DB Error", dbError); }
+
+                    closeModal();
+                    return;
+
+                } catch (e: any) {
+                    console.error("[Refuel] Error:", e);
+                    toast.error(e.message || "Error en Refuel/Transfer");
+                    return;
                 }
-
-                closeModal();
-                return; // EXIT FUNCTION, SKIP STANDARD EXECUTION
-
-            } catch (e: any) {
-                console.error("7702 Error:", e);
-                toast.error(e.message || "Error en envío Gasless");
-                return;
             }
         }
 
@@ -660,7 +808,7 @@ export const useCrossChainTransfer = () => {
                 }
                 closeModal();
             } else {
-                toast.error(`Error: ${result.errorReason || "Unknown Error"}`);
+                toast.error(`Error: ${result.errorReason || "Unknown Error"} `);
                 console.error("Transfer failed result:", result);
             }
         } catch (err) {
