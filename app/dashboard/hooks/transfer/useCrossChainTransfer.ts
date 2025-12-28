@@ -302,12 +302,12 @@ export const useCrossChainTransfer = () => {
         setup();
     }, [isUsingXO, mainWallet, currentPassword]);
 
-    const { executeHybridTransfer } = useHybridBridgeStrategy();
+    const { executeHybridTransfer, isLoading: isHybridLoading } = useHybridBridgeStrategy();
 
     const {
         executeTransfer,
         getFee,
-        isLoading,
+        isLoading: isFacilitatorLoading,
         error,
     } = useFacilitator({
         provider: provider || undefined,
@@ -501,193 +501,193 @@ export const useCrossChainTransfer = () => {
 
 
 
-try {
-    const result = await executeTransfer({
-        amount: finalAmount,
-        sourceChain: data.sourceChain,
-        destinationChain: data.destChain as FacilitatorChainKey,
-        recipient: data.recipient,
-        destToken: data.destToken,
-        sourceToken: data.sourceToken,
-        facilitatorFee: fee,
-        sender: (data.sourceChain === "Stellar" ? mainWallet?.addressStellar : mainWallet?.address) || undefined
-    });
-
-    if (result.success) {
-        toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
-
-        // Save to DB
         try {
-            const txData = {
-                id: crypto.randomUUID(),
-                fromAddress: address.toLowerCase(), // Normalize to lowercase for index efficiency
-                totalAmount: amount,
-                status: "PENDING", // Requested by user
-                tokenSymbol: data.destToken,
-                decimals: 6,
-                toAddress: data.recipient.trim().toLowerCase(), // [NEW] Normalize recipient
-                destinationChain: data.destChain, // [NEW]
-                createdAt: Date.now(),
-                route: [
-                    {
-                        chainName: data.sourceChain, // Source chain as requested
-                        amount: amount,
-                        assetOrigin: data.sourceToken, // Use sourceToken for outgoing asset
-                        status: "PENDING",
-                        txHash: result.transactionHash
-                    }
-                ],
-                estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount // Use amount if no simulation (Direct/CCTP)
-            };
+            const result = await executeTransfer({
+                amount: finalAmount,
+                sourceChain: data.sourceChain,
+                destinationChain: data.destChain as FacilitatorChainKey,
+                recipient: data.recipient,
+                destToken: data.destToken,
+                sourceToken: data.sourceToken,
+                facilitatorFee: fee,
+                sender: (data.sourceChain === "Stellar" ? mainWallet?.addressStellar : mainWallet?.address) || undefined
+            });
 
-            await transactionsApi.create(txData as unknown as CreateTransactionRequest);
-            console.log("Transaction saved to DB");
+            if (result.success) {
+                toast.success(`Transfer exitoso! TX: ${result.transactionHash?.slice(0, 10)}...`);
 
-        } catch (dbError) {
-            console.error("Failed to save transaction to DB:", dbError);
-            // Don't block UI flow for BG error
+                // Save to DB
+                try {
+                    const txData = {
+                        id: crypto.randomUUID(),
+                        fromAddress: address.toLowerCase(), // Normalize to lowercase for index efficiency
+                        totalAmount: amount,
+                        status: "PENDING", // Requested by user
+                        tokenSymbol: data.destToken,
+                        decimals: 6,
+                        toAddress: data.recipient.trim().toLowerCase(), // [NEW] Normalize recipient
+                        destinationChain: data.destChain, // [NEW]
+                        createdAt: Date.now(),
+                        route: [
+                            {
+                                chainName: data.sourceChain, // Source chain as requested
+                                amount: amount,
+                                assetOrigin: data.sourceToken, // Use sourceToken for outgoing asset
+                                status: "PENDING",
+                                txHash: result.transactionHash
+                            }
+                        ],
+                        estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount // Use amount if no simulation (Direct/CCTP)
+                    };
+
+                    await transactionsApi.create(txData as unknown as CreateTransactionRequest);
+                    console.log("Transaction saved to DB");
+
+                } catch (dbError) {
+                    console.error("Failed to save transaction to DB:", dbError);
+                    // Don't block UI flow for BG error
+                }
+
+                if (result.burnTransactionHash) {
+                    toast.info(`Burn TX: ${result.burnTransactionHash.slice(0, 10)}... Circle minteará automáticamente.`);
+                }
+                closeModal();
+            } else {
+                toast.error(`Error: ${result.errorReason || "Unknown Error"} `);
+                console.error("Transfer failed result:", result);
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Error al procesar el transfer");
         }
-
-        if (result.burnTransactionHash) {
-            toast.info(`Burn TX: ${result.burnTransactionHash.slice(0, 10)}... Circle minteará automáticamente.`);
-        }
-        closeModal();
-    } else {
-        toast.error(`Error: ${result.errorReason || "Unknown Error"} `);
-        console.error("Transfer failed result:", result);
-    }
-} catch (err) {
-    console.error(err);
-    toast.error("Error al procesar el transfer");
-}
     };
 
-// Simulation State
-const [simulation, setSimulation] = useState<{
-    estimated: string;
-    error: string | null;
-    done: boolean;
-    loading: boolean;
-    netAmount?: number;
-}>({ estimated: "", error: null, done: false, loading: false });
+    // Simulation State
+    const [simulation, setSimulation] = useState<{
+        estimated: string;
+        error: string | null;
+        done: boolean;
+        loading: boolean;
+        netAmount?: number;
+    }>({ estimated: "", error: null, done: false, loading: false });
 
-// [FIX] Use Ref to avoid stale closure in onSubmit
-const simulationRef = useRef<typeof simulation>(simulation);
+    // [FIX] Use Ref to avoid stale closure in onSubmit
+    const simulationRef = useRef<typeof simulation>(simulation);
 
-// Sync ref with state
-useEffect(() => {
-    simulationRef.current = simulation;
-}, [simulation]);
+    // Sync ref with state
+    useEffect(() => {
+        simulationRef.current = simulation;
+    }, [simulation]);
 
-// Reset simulation when inputs change
-useEffect(() => {
-    setSimulation({ estimated: "", error: null, done: false, loading: false });
-}, [watchAmount, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken]);
+    // Reset simulation when inputs change
+    useEffect(() => {
+        setSimulation({ estimated: "", error: null, done: false, loading: false });
+    }, [watchAmount, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken]);
 
-const simulateTransfer = async () => {
-    if (!watchAmount || isNaN(parseFloat(watchAmount))) {
-        toast.error("Ingresa un monto válido");
-        return;
-    }
+    const simulateTransfer = async () => {
+        if (!watchAmount || isNaN(parseFloat(watchAmount))) {
+            toast.error("Ingresa un monto válido");
+            return;
+        }
 
-    setSimulation(prev => ({ ...prev, loading: true, error: null, done: false }));
-    try {
-        // Determine Fee logic matching execution
-        const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
-        const baseFee = (watchSourceChain === watchDestChain)
-            ? (watchSourceToken !== watchDestToken ? 0.02 : 0.01)
-            : 0.02;
-        const fee = isDev ? 0 : baseFee;
+        setSimulation(prev => ({ ...prev, loading: true, error: null, done: false }));
+        try {
+            // Determine Fee logic matching execution
+            const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+            const baseFee = (watchSourceChain === watchDestChain)
+                ? (watchSourceToken !== watchDestToken ? 0.02 : 0.01)
+                : 0.02;
+            const fee = isDev ? 0 : baseFee;
 
-        const amountFloat = parseFloat(watchAmount);
-        const totalAmountToSimulate = (amountFloat + fee).toFixed(6);
+            const amountFloat = parseFloat(watchAmount);
+            const totalAmountToSimulate = (amountFloat + fee).toFixed(6);
 
-        const data = await bridgeApi.getQuote({
-            sourceChain: watchSourceChain,
-            targetChain: watchDestChain,
-            amount: totalAmountToSimulate,
-            token: watchDestToken,
-            sourceToken: watchSourceToken
-        });
+            const data = await bridgeApi.getQuote({
+                sourceChain: watchSourceChain,
+                targetChain: watchDestChain,
+                amount: totalAmountToSimulate,
+                token: watchDestToken,
+                sourceToken: watchSourceToken
+            });
 
-        if (data.success) {
-            const newSimState = {
-                estimated: data.estimatedReceived || "",
-                netAmount: data.netAmountBridged,
-                error: null,
-                done: true,
-                loading: false
-            };
-            setSimulation(newSimState);
-            simulationRef.current = newSimState; // Update ref immediately
-        } else {
+            if (data.success) {
+                const newSimState = {
+                    estimated: data.estimatedReceived || "",
+                    netAmount: data.netAmountBridged,
+                    error: null,
+                    done: true,
+                    loading: false
+                };
+                setSimulation(newSimState);
+                simulationRef.current = newSimState; // Update ref immediately
+            } else {
+                setSimulation({
+                    estimated: "",
+                    error: data.error || "Error al simular",
+                    done: true,
+                    loading: false
+                });
+                toast.error(data.error || "Error al simular");
+            }
+        } catch (e: any) {
+            console.error("Simulation error:", e);
+            // Try to extract specific error from response if available
+            const errorMessage = e?.response?.data?.error || e?.message || "Error de conexión";
+
             setSimulation({
                 estimated: "",
-                error: data.error || "Error al simular",
+                error: errorMessage,
                 done: true,
                 loading: false
             });
-            toast.error(data.error || "Error al simular");
+            toast.error(errorMessage);
         }
-    } catch (e: any) {
-        console.error("Simulation error:", e);
-        // Try to extract specific error from response if available
-        const errorMessage = e?.response?.data?.error || e?.message || "Error de conexión";
+    };
 
-        setSimulation({
-            estimated: "",
-            error: errorMessage,
-            done: true,
-            loading: false
-        });
-        toast.error(errorMessage);
-    }
-};
+    const isCCTPRoute = useMemo(() => {
+        if (!isCrossChain) return false;
+        if (watchSourceChain === "Stellar" || watchDestChain === "Stellar") return false;
 
-const isCCTPRoute = useMemo(() => {
-    if (!isCrossChain) return false;
-    if (watchSourceChain === "Stellar" || watchDestChain === "Stellar") return false;
+        const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
+        const destConfig = NETWORKS[watchDestChain as keyof typeof NETWORKS];
 
-    const sourceConfig = NETWORKS[watchSourceChain as keyof typeof NETWORKS];
-    const destConfig = NETWORKS[watchDestChain as keyof typeof NETWORKS];
+        if (!sourceConfig || !destConfig) return false;
 
-    if (!sourceConfig || !destConfig) return false;
+        if (watchSourceToken !== "USDC" || watchDestToken !== "USDC") return false;
 
-    if (watchSourceToken !== "USDC" || watchDestToken !== "USDC") return false;
+        const sourceCCTP = sourceConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
+        const destCCTP = destConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
 
-    const sourceCCTP = sourceConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
-    const destCCTP = destConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
+        return !!(sourceCCTP && destCCTP);
+    }, [watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, isCrossChain]);
 
-    return !!(sourceCCTP && destCCTP);
-}, [watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, isCrossChain]);
-
-return {
-    open,
-    address,
-    privateKey,
-    provider,
-    isLoading,
-    error,
-    form,
-    routeError,
-    watchAmount,
-    watchSourceChain,
-    watchDestChain,
-    watchSourceToken,
-    watchDestToken,
-    isCrossChain,
-    isCCTPRoute,
-    minAmount,
-    isAmountValid,
-    isExceedingMax,
-    maxAmount,
-    balance,
-    fee,
-    total,
-    simulation,
-    simulateTransfer,
-    openModal,
-    closeModal: handleCloseModal,
-    onSubmit: handleSubmit(onSubmit),
-};
+    return {
+        open,
+        address,
+        privateKey,
+        provider,
+        isLoading: isFacilitatorLoading || isHybridLoading,
+        error,
+        form,
+        routeError,
+        watchAmount,
+        watchSourceChain,
+        watchDestChain,
+        watchSourceToken,
+        watchDestToken,
+        isCrossChain,
+        isCCTPRoute,
+        minAmount,
+        isAmountValid,
+        isExceedingMax,
+        maxAmount,
+        balance,
+        fee,
+        total,
+        simulation,
+        simulateTransfer,
+        openModal,
+        closeModal: handleCloseModal,
+        onSubmit: handleSubmit(onSubmit),
+    };
 };
