@@ -162,11 +162,16 @@ export class SmartAccountStrategy implements BridgeStrategy {
 
             console.log(`[Relayer] 7702 UserOp Sent: ${hash}`);
 
-            const receipt = await publicClient.waitForTransactionReceipt({ hash });
+            // [Modified Strategy] Fire & Forget UserOp Validation
+            // The user reports that 'handleOps' can show as Reverted on execution even if the token transfer succeeds.
+            // We skip waiting for the receipt and rely entirely on the 'executeNearBridge' balance check (Step 2) to confirm funds.
+            console.log("[SmartAccountStrategy] Skipping Receipt Wait. trusting 'executeNearBridge' to verify funds...");
 
-            if (receipt.status !== "success") {
-                return { success: false, errorReason: "Relayer Transaction Failed", transactionHash: hash };
-            }
+            /* 
+            try {
+                // ... (Receipt waiting logic removed/commented)
+            } catch ...
+            */
 
             // 3. Trigger Cross-Chain Logic
 
@@ -206,38 +211,46 @@ export class SmartAccountStrategy implements BridgeStrategy {
             const sourceNear = network.crossChainInformation?.nearIntentInformation?.support;
             const destNear = destConfig?.crossChainInformation?.nearIntentInformation?.support;
 
-            if (sourceNear && destNear) {
-                console.log("[SmartAccountStrategy] Route Selected: Reference Bridge (NEAR/1-Click)");
+            // Priority 2: Reference Bridge (NEAR / 1-Click)
+            // Strategy: Attempt to Quote. If successful, Execute.
+            // This bypasses potential config flag issues (sourceNear/destNear) and relies on the SDK/API to validate.
+            console.log("[SmartAccountStrategy] Attempting Reference Bridge (NEAR/1-Click)...");
 
-                try {
-                    // 1. Get Quote (to find Deposit Address)
-                    const { quote, depositAddress, amountAtomicTotal, amountAtomicNet } = await getNearQuote(
-                        sourceChain,
-                        destChain,
-                        amount,
-                        context.destToken,
-                        context.sourceToken,
-                        recipient,
-                        userOp.sender
-                    );
+            try {
+                // 1. Get Quote (to find Deposit Address)
+                // This will throw if the route/assets are unsupported
+                const { quote, depositAddress, amountAtomicTotal, amountAtomicNet } = await getNearQuote(
+                    sourceChain,
+                    destChain,
+                    amount,
+                    context.destToken,
+                    context.sourceToken,
+                    recipient,
+                    userOp.sender
+                );
 
-                    // 2. Execute Bridge Transfer
-                    return await executeNearBridge(
-                        sourceChain,
-                        destChain,
-                        amount,
-                        recipient as string,
-                        hash, // Using UserOp hash as the "Pull Hash" reference
-                        quote,
-                        depositAddress,
-                        amountAtomicTotal,
-                        amountAtomicNet,
-                        context.sourceToken
-                    );
+                console.log("[SmartAccountStrategy] Quote Received. Executing Bridge...");
 
-                } catch (e: any) {
-                    console.error("[SmartAccountStrategy] NEAR Bridge Error:", e);
-                    return { success: false, errorReason: e.message || "Reference Bridge Failed" };
+                // 2. Execute Bridge Transfer
+                return await executeNearBridge(
+                    sourceChain,
+                    destChain,
+                    amount,
+                    recipient as string,
+                    hash, // Using UserOp hash as the "Pull Hash" reference
+                    quote,
+                    depositAddress,
+                    amountAtomicTotal,
+                    amountAtomicNet,
+                    context.sourceToken
+                );
+
+            } catch (e: any) {
+                // Only log error if this was intended to be a bridge transfer (not same chain)
+                // If getNearQuote fails because "Not a supported route", that's fine, we fall through.
+                console.warn("[SmartAccountStrategy] NEAR Bridge Attempt Failed (or Not Supported):", e.message);
+                if (sourceChain !== destChain) {
+                    console.error("[SmartAccountStrategy] Critical Bridge Error Trace:", e);
                 }
             }
 

@@ -292,13 +292,17 @@ export async function executeNearBridge(
             args: [facilitatorAccount.address]
         }) as bigint;
 
-        if (facilitatorBalance >= amountAtomicTotal) break;
+        if (facilitatorBalance >= amountAtomicTotal) {
+            console.log(`[NearService] Balance Verified: ${facilitatorBalance} >= ${amountAtomicTotal}`);
+            break;
+        }
 
         console.log(`[NearService] Balance lag detected. Retrying ${i + 1}/${maxRetries}... (Has: ${facilitatorBalance}, Needs: ${amountAtomicTotal})`);
         await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
     if (facilitatorBalance < amountAtomicTotal) {
+        console.error(`[NearService] Insufficient Balance. Has: ${facilitatorBalance}, Needs: ${amountAtomicTotal}`);
         throw new Error(`Insufficient facilitator balance after retries. Has: ${facilitatorBalance}, Needs: ${amountAtomicTotal}`);
     }
 
