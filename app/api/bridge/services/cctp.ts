@@ -122,6 +122,7 @@ export async function processCCTPSettlement(
     // Parse signature
     const { v, r, s } = parseSignature(signature);
 
+
     // Step 1: TransferWithAuthorization (User -> Facilitator)
     let transferHash: `0x${string}`;
     try {
@@ -152,14 +153,45 @@ export async function processCCTPSettlement(
         };
     }
 
+    return executeCCTPBridge(sourceChain, amount, crossChainConfig, recipient, transferHash, authorization.from);
+}
+
+export async function executeCCTPBridge(
+    sourceChain: FacilitatorChainKey,
+    amount: string,
+    crossChainConfig: CrossChainConfig,
+    recipient: Address | undefined,
+    transferHash: `0x${string}`,
+    payerAddress: Address
+): Promise<SettleResponse> {
+    if (!FACILITATOR_PRIVATE_KEY) {
+        return { success: false, errorReason: "Facilitator not configured" };
+    }
+
+    const networkConfig = FACILITATOR_NETWORKS[sourceChain];
+    if (!networkConfig) {
+        return { success: false, errorReason: `Unsupported chain: ${sourceChain}` };
+    }
+
+    // Setup clients
+    const facilitatorAccount = privateKeyToAccount(FACILITATOR_PRIVATE_KEY);
+    const publicClient = createPublicClient({
+        chain: networkConfig.chain,
+        transport: http(networkConfig.rpcUrl)
+    });
+    const walletClient = createWalletClient({
+        account: facilitatorAccount,
+        chain: networkConfig.chain,
+        transport: http(networkConfig.rpcUrl)
+    });
+
     // Convert human readable string (e.g. "0.01") to atomic units (6 decimals)
     const amountBigInt = BigInt(Math.floor(parseFloat(amount) * 1_000_000));
     const fee = calculateFee();
 
-    // Verify Balances (Safety Check)
     // Verify Balances (Safety Check) with Retry for RPC Consistency
     let facilitatorBalance = BigInt(0);
-    const maxRetries = 5;
+    const maxRetries = 10; // Increased retries for stability
 
     for (let i = 0; i < maxRetries; i++) {
         facilitatorBalance = await publicClient.readContract({
@@ -172,7 +204,7 @@ export async function processCCTPSettlement(
         if (facilitatorBalance >= amountBigInt) break;
 
         console.log(`[CCTP] Balance lag detected. Retrying ${i + 1}/${maxRetries}... (Has: ${facilitatorBalance}, Needs: ${amountBigInt})`);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3s
     }
 
     if (facilitatorBalance < amountBigInt) {
@@ -195,8 +227,6 @@ export async function processCCTPSettlement(
         await publicClient.waitForTransactionReceipt({ hash: approveHash });
     } catch (e) {
         console.error("Approval failed", e);
-        // Continue? If approval existed, it might be fine, but writeContract usually fails if revert.
-        // Assuming strict failure for now.
         return {
             success: false,
             transactionHash: transferHash,
@@ -252,8 +282,6 @@ export async function processCCTPSettlement(
         );
     } catch (e) {
         console.warn("Attestation timeout", e);
-        // Timeout means funds are burned but not minted yet. 
-        // We return partial success so UI knows process started.
         return {
             success: true, // Functionally a "pending" state 
             transactionHash: transferHash,
@@ -308,10 +336,6 @@ export async function processCCTPSettlement(
 
     } catch (e) {
         console.error("Mint failed", e);
-        // Funds are burned and attestation exists, so it's technically a "pending" mint, not a total failure.
-        // Returning success with error note so UI can show "Partial Success" or similar?
-        // Actually, for now, let's treat it as success but with a warning in logs, 
-        // because the user can technically retry minting with the attestation.
         return {
             success: true,
             transactionHash: transferHash,
@@ -325,7 +349,7 @@ export async function processCCTPSettlement(
         transactionHash: transferHash,
         burnTransactionHash: burnHash,
         mintTransactionHash: mintHash,
-        payer: authorization.from,
+        payer: payerAddress,
         fee: fee.toString(),
         netAmount: amountBigInt.toString(),
         attestation: {

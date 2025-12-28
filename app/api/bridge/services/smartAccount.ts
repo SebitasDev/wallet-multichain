@@ -7,8 +7,11 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { BridgeStrategy, BridgeContext } from "./types";
-import { SettleResponse } from "@/app/facilitator/types";
+import { SettleResponse, CrossChainConfig } from "@/app/facilitator/types";
+import { FacilitatorChainKey } from "@/app/facilitator/config";
 import { NETWORKS } from "@/app/constants/chainsInformation";
+import { executeCCTPBridge } from "./cctp";
+import { getNearQuote, executeNearBridge } from "./near"; // Added import
 
 const RELAYER_PRIVATE_KEY = (process.env.RELAYER_PRIVATE_KEY || process.env.FACILITATOR_PRIVATE_KEY) as `0x${string}`;
 
@@ -29,7 +32,7 @@ export class SmartAccountStrategy implements BridgeStrategy {
     }
 
     async execute(context: BridgeContext): Promise<SettleResponse> {
-        const { sourceChain, amount, recipient, sourceToken, paymentPayload } = context;
+        const { sourceChain, destChain, amount, recipient, sourceToken, paymentPayload } = context;
 
         if (!RELAYER_PRIVATE_KEY) {
             return { success: false, errorReason: "Relayer Private Key missing" };
@@ -152,6 +155,7 @@ export class SmartAccountStrategy implements BridgeStrategy {
                 chain: null,
                 to: ENTRY_POINT_ADDRESS, // Send to EntryPoint
                 data: handleOpsData,
+                gas: BigInt(5000000), // [FIX] Force high gas to bypass estimateGas AA95 errors
                 value: BigInt(0),
                 authorizationList: [authorization] // Attach 7702 Auth!
             });
@@ -164,8 +168,81 @@ export class SmartAccountStrategy implements BridgeStrategy {
                 return { success: false, errorReason: "Relayer Transaction Failed", transactionHash: hash };
             }
 
-            // Should also check if UserOp was successful (emit event), but for now tx success is good.
+            // 3. Trigger Cross-Chain Logic
 
+            // Priority 1: CCTP (Circle)
+            // Conditions: Source & Dest support CCTP, Token is USDC (or unspecified/default)
+            const destConfig = NETWORKS[destChain];
+            const sourceCCTP = network.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
+            const destCCTP = destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
+            const isUSDC = (sourceToken === "USDC" || !sourceToken); // Default to USDC if undefined
+
+            if (sourceCCTP && destCCTP && isUSDC) {
+                console.log("[SmartAccountStrategy] Route Selected: CCTP (Circle)");
+
+                const destinationDomain = destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.domain;
+                if (destinationDomain === undefined) {
+                    return { success: false, errorReason: "Destination chain CCTP domain missing" };
+                }
+
+                const crossChainConfig: CrossChainConfig = {
+                    destinationChain: destChain as FacilitatorChainKey,
+                    destinationDomain: destinationDomain,
+                    mintRecipient: recipient as Address
+                };
+
+                return await executeCCTPBridge(
+                    sourceChain as FacilitatorChainKey,
+                    amount,
+                    crossChainConfig,
+                    recipient as Address,
+                    hash,
+                    userOp.sender
+                );
+            }
+
+            // Priority 2: Reference Bridge (NEAR / 1-Click)
+            // Conditions: Source & Dest support Near Intents
+            const sourceNear = network.crossChainInformation?.nearIntentInformation?.support;
+            const destNear = destConfig?.crossChainInformation?.nearIntentInformation?.support;
+
+            if (sourceNear && destNear) {
+                console.log("[SmartAccountStrategy] Route Selected: Reference Bridge (NEAR/1-Click)");
+
+                try {
+                    // 1. Get Quote (to find Deposit Address)
+                    const { quote, depositAddress, amountAtomicTotal, amountAtomicNet } = await getNearQuote(
+                        sourceChain,
+                        destChain,
+                        amount,
+                        context.destToken,
+                        context.sourceToken,
+                        recipient,
+                        userOp.sender
+                    );
+
+                    // 2. Execute Bridge Transfer
+                    return await executeNearBridge(
+                        sourceChain,
+                        destChain,
+                        amount,
+                        recipient as string,
+                        hash, // Using UserOp hash as the "Pull Hash" reference
+                        quote,
+                        depositAddress,
+                        amountAtomicTotal,
+                        amountAtomicNet
+                    );
+
+                } catch (e: any) {
+                    console.error("[SmartAccountStrategy] NEAR Bridge Error:", e);
+                    return { success: false, errorReason: e.message || "Reference Bridge Failed" };
+                }
+            }
+
+            console.log("[SmartAccountStrategy] No suitable bridge route found for", sourceChain, "->", destChain);
+
+            // Fallback if no specific bridge logic triggered (e.g. Same Chain Transfer)
             return {
                 success: true,
                 transactionHash: hash,

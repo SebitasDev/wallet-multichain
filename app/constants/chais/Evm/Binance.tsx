@@ -21,7 +21,7 @@ export const BNB: ChainConfig = {
         {
             name: "USDT",
             decimals: 18,
-            address: "0xb46d67fb63770052a07d5b7c14ed858a8c90f825", // BSC Mainnet USDT
+            address: "0x55d398326f99059fF775485246999027B3197955", // BSC Mainnet USDT
             icon: <UsdtIcon />
         },
         {

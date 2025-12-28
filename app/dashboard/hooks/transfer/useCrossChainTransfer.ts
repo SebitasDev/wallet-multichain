@@ -479,9 +479,10 @@ export const useCrossChainTransfer = () => {
                 // We need to construct a partial UserOp and force defaults if needed.
 
                 // Let's assume standard values for gas to avoid estimation calls that fail.
-                const callGasLimit = BigInt(200000); // 200k
-                const verificationGasLimit = BigInt(100000); // 100k
-                const preVerificationGas = BigInt(50000); // 50k
+                // [FIX] Massive increase to prevent AA95 Out of Gas during 7702 delegation
+                const callGasLimit = BigInt(2000000); // 2M
+                const verificationGasLimit = BigInt(1000000); // 1M
+                const preVerificationGas = BigInt(200000); // 200k
                 const maxFeePerGas = BigInt(100); // Dummy, will be replaced by Relayer? No, signed!
                 const maxPriorityFeePerGas = BigInt(100);
 
