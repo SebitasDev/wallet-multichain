@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Typography, Container, Avatar } from "@mui/material";
-import { Send, Link as LinkIcon, Handshake, QrCode } from "@mui/icons-material";
+import { Send, Link as LinkIcon, Handshake, QrCode, AccountBalance, AccountBalanceWallet, Smartphone, CurrencyRupee, LocalTaxi } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { BottomNavigation } from "../components/BottomNavigation";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
@@ -9,6 +9,236 @@ import { useLanguageStore } from "@/app/store/useLanguageStore";
 export default function PayPage() {
     const router = useRouter();
     const { language } = useLanguageStore();
+
+    const paymentSections = [
+        {
+            title: language === "es" ? "Métodos locales" : "Local methods",
+            countries: [
+                {
+                    name: "Argentina",
+                    flag: "🇦🇷",
+                    methods: [
+                        {
+                            title: "Mercado Pago",
+                            subtitle: language === "es" ? "Usando QR - Instantáneo y sin fees" : "Using QR - Instant & Zero fees",
+                            icon: <Handshake sx={{ color: "white" }} />,
+                            color: "#009ee3",
+                            status: "active"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            title: language === "es" ? "Otros métodos" : "Other methods",
+            countries: [
+                {
+                    name: "Brazil",
+                    flag: "🇧🇷",
+                    methods: [
+                        {
+                            title: "PIX",
+                            subtitle: language === "es" ? "Usando QR - Instantáneo" : "Using QR - Instant",
+                            icon: <QrCode sx={{ color: "white" }} />,
+                            color: "#32bcad",
+                            status: "active"
+                        }
+                    ]
+                },
+                {
+                    name: "Colombia",
+                    flag: "🇨🇴",
+                    methods: [
+                        {
+                            title: "Movii",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <AccountBalanceWallet sx={{ color: "white" }} />,
+                            color: "#ff00bf",
+                            status: "coming_soon"
+                        }
+                    ]
+                },
+                {
+                    name: "Ghana",
+                    flag: "🇬🇭",
+                    methods: [
+                        {
+                            title: "AirtelTigo",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <Smartphone sx={{ color: "white" }} />,
+                            color: "#0033a1",
+                            status: "coming_soon"
+                        },
+                        {
+                            title: "MTN",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <Smartphone sx={{ color: "white" }} />,
+                            color: "#ffcc00",
+                            status: "coming_soon"
+                        },
+                        {
+                            title: "Vodafone",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <Smartphone sx={{ color: "white" }} />,
+                            color: "#e60000",
+                            status: "coming_soon"
+                        }
+                    ]
+                },
+                {
+                    name: "India",
+                    flag: "🇮🇳",
+                    methods: [
+                        {
+                            title: "UPI",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <CurrencyRupee sx={{ color: "white" }} />,
+                            color: "#1c2b5a",
+                            status: "coming_soon"
+                        }
+                    ]
+                },
+                {
+                    name: "Indonesia",
+                    flag: "🇮🇩",
+                    methods: [
+                        {
+                            title: "ShopeePay",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <AccountBalanceWallet sx={{ color: "white" }} />,
+                            color: "#ee4d2d",
+                            status: "coming_soon"
+                        },
+                        {
+                            title: "GoPay",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <AccountBalanceWallet sx={{ color: "white" }} />,
+                            color: "#00a5cf",
+                            status: "coming_soon"
+                        }
+                    ]
+                },
+                {
+                    name: "Kenya",
+                    flag: "🇰🇪",
+                    methods: [
+                        {
+                            title: "Airtel Money",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <Smartphone sx={{ color: "white" }} />,
+                            color: "#ff0000",
+                            status: "coming_soon"
+                        },
+                        {
+                            title: "M-Pesa",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <Smartphone sx={{ color: "white" }} />,
+                            color: "#4f9234",
+                            status: "coming_soon"
+                        }
+                    ]
+                },
+                {
+                    name: "Malawi",
+                    flag: "🇲🇼",
+                    methods: [
+                        {
+                            title: "Airtel Money",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <Smartphone sx={{ color: "white" }} />,
+                            color: "#ff0000",
+                            status: "coming_soon"
+                        }
+                    ]
+                },
+                {
+                    name: "Nigeria",
+                    flag: "🇳🇬",
+                    methods: [
+                        {
+                            title: "Bank Transfer",
+                            subtitle: language === "es" ? "Transferencia instantánea con número de cuenta" : "Instant transfer with account number",
+                            icon: <AccountBalance sx={{ color: "white" }} />,
+                            color: "#008751",
+                            status: "active"
+                        }
+                    ]
+                },
+                {
+                    name: "Philippines",
+                    flag: "🇵🇭",
+                    methods: [
+                        {
+                            title: "GCash",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <Smartphone sx={{ color: "white" }} />,
+                            color: "#007bff",
+                            status: "coming_soon"
+                        }
+                    ]
+                },
+                {
+                    name: "Singapore",
+                    flag: "🇸🇬",
+                    methods: [
+                        {
+                            title: "GrabPay",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <LocalTaxi sx={{ color: "white" }} />,
+                            color: "#00b140",
+                            status: "coming_soon"
+                        },
+                        {
+                            title: "GCash",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <Smartphone sx={{ color: "white" }} />,
+                            color: "#007bff",
+                            status: "coming_soon"
+                        }
+                    ]
+                },
+                {
+                    name: "South Africa",
+                    flag: "🇿🇦",
+                    methods: [
+                        {
+                            title: "Bank Transfer",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <AccountBalance sx={{ color: "white" }} />,
+                            color: "#6b7280",
+                            status: "coming_soon"
+                        }
+                    ]
+                },
+                {
+                    name: "Thailand",
+                    flag: "🇹🇭",
+                    methods: [
+                        {
+                            title: "Prompt Pay",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <QrCode sx={{ color: "white" }} />,
+                            color: "#003d7c",
+                            status: "coming_soon"
+                        }
+                    ]
+                },
+                {
+                    name: "Zambia",
+                    flag: "🇿🇲",
+                    methods: [
+                        {
+                            title: "Airtel Money",
+                            subtitle: language === "es" ? "Próximamente" : "Coming soon",
+                            icon: <Smartphone sx={{ color: "white" }} />,
+                            color: "#ff0000",
+                            status: "coming_soon"
+                        }
+                    ]
+                }
+            ]
+        }
+    ];
 
     const ActionCard = ({ icon, title, subtitle, color, onClick }: any) => (
         <Box
@@ -130,34 +360,32 @@ export default function PayPage() {
 
 
                 </Box>
-                <SectionDivider label={language === "es" ? "Métodos locales" : "Local methods"} />
-
-                {/* Argentina */}
-                <CountryHeader flag="🇦🇷" name="Argentina" />
-                <ActionCard
-                    icon={<Handshake sx={{ color: "white" }} />} // Placeholder for Mercado Pago handshake alike
-                    title="Mercado Pago"
-                    subtitle={language === "es" ? "Usando QR - Instantáneo y sin fees" : "Using QR - Instant & Zero fees"}
-                    color="#009ee3"
-                />
-
-                <SectionDivider label={language === "es" ? "Otros métodos" : "Other methods"} />
-
-                {/* Brazil */}
-                <CountryHeader flag="🇧🇷" name="Brazil" />
-                <ActionCard
-                    icon={<QrCode sx={{ color: "white" }} />} // PIX symbol
-                    title="PIX"
-                    subtitle={language === "es" ? "Usando QR - Instantáneo" : "Using QR - Instant"}
-                    color="#32bcad"
-                />
-
-                {/* Colombia */}
-                <CountryHeader flag="🇨🇴" name="Colombia" />
-                {/* No items shown in screenshot, leaving placeholder or empty */}
-                <Box sx={{ opacity: 0.5, p: 2, border: "1px dashed #3f4357", borderRadius: 2, textAlign: "center" }}>
-                    <Typography fontSize={12} color="#9ca3af">{language === "es" ? "Próximamente" : "Coming soon"}</Typography>
-                </Box>
+                {/* Render Payment Sections */}
+                {paymentSections.map((section, index) => (
+                    <Box key={index}>
+                        <SectionDivider label={section.title} />
+                        {section.countries.map((country, cIndex) => (
+                            <Box key={cIndex} mb={2}>
+                                <CountryHeader flag={country.flag} name={country.name} />
+                                {country.methods.map((method, mIndex) => (
+                                    <Box key={mIndex} sx={{ opacity: method.status === "coming_soon" ? 0.7 : 1 }}>
+                                        <ActionCard
+                                            icon={method.icon}
+                                            title={method.title}
+                                            subtitle={method.subtitle}
+                                            color={method.color}
+                                            onClick={() => {
+                                                if (method.status === "active") {
+                                                    console.log("Clicked " + method.title);
+                                                }
+                                            }}
+                                        />
+                                    </Box>
+                                ))}
+                            </Box>
+                        ))}
+                    </Box>
+                ))}
 
             </Container>
             <BottomNavigation />
