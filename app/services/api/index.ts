@@ -4,3 +4,4 @@ export * from "./ctf";
 export * from "./savings";
 export * from "./transactions";
 export * from "./misc";
+export * from "./prices";

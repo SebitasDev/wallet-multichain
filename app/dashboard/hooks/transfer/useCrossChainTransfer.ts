@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { Address } from "abitype";
@@ -8,21 +8,14 @@ import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
-import { useWalletStore } from "@/app/store/useWalletsStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
+import { useTokenPrice } from "@/app/hooks/useTokenPrice";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { bridgeApi, transactionsApi, CreateTransactionRequest } from "@/app/services/api";
-import { createPublicClient, http, encodeFunctionData } from "viem";
-import { create7702Account } from "@/app/smart-account/clientFactory";
-import { createAuthorization } from "@/app/smart-account/authorizationFactory";
-import { erc20Abi } from "@/app/savings/vaultAbi";
-
-import axios from "axios";
-
 
 // Types
 export const STELLAR_CHAIN_KEY = "Stellar";
@@ -340,6 +333,26 @@ export const useCrossChainTransfer = () => {
 
     const isCrossChain = watchSourceChain !== watchDestChain || watchSourceToken !== watchDestToken;
 
+    // Price Fetching Logic
+    const currentCoinGeckoId = useMemo(() => {
+        if (!NETWORKS[watchSourceChain]) return undefined;
+        // Find asset in config
+        const asset = NETWORKS[watchSourceChain].assets.find(a => a.name === watchSourceToken);
+        return asset?.coingeckoId;
+    }, [watchSourceChain, watchSourceToken]);
+
+    const { price: tokenPrice, loading: tokenPriceLoading } = useTokenPrice(currentCoinGeckoId);
+
+    // [NEW] Destination Token Price Logic
+    const currentDestCoinGeckoId = useMemo(() => {
+        if (!NETWORKS[watchDestChain]) return undefined;
+        // Find asset in config
+        const asset = NETWORKS[watchDestChain].assets.find(a => a.name === watchDestToken);
+        return asset?.coingeckoId;
+    }, [watchDestChain, watchDestToken]);
+
+    const { price: destTokenPrice, loading: destTokenPriceLoading } = useTokenPrice(currentDestCoinGeckoId);
+
     // Derived State
     const { maxAmount, balance } = useMaxTransferAmount(address, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, stellarPrivateKey);
     const routeError = useRouteValidation(watchSourceChain, watchDestChain, watchSourceToken, watchDestToken);
@@ -366,12 +379,26 @@ export const useCrossChainTransfer = () => {
         if (process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development") return "0";
         if (!watchAmount) return "0.00";
 
+        let usdFee = 0.02; // Default Cross-chain
         if (watchSourceChain === watchDestChain) {
             // Swap = 0.02, Transfer = 0.01
-            return watchSourceToken !== watchDestToken ? "0.02" : "0.01";
+            usdFee = watchSourceToken !== watchDestToken ? 0.02 : 0.01;
         }
-        return "0.02"; // Cross-chain
-    }, [watchAmount, watchDestChain, watchSourceChain, watchSourceToken, watchDestToken]);
+
+        // If dealing with USDC, fee is just the USD amount
+        const isUSDC = watchSourceToken.includes("USDC");
+        if (isUSDC) return usdFee.toFixed(2);
+
+        // If Native/Other, convert USD fee to Token Amount
+        if (tokenPrice && tokenPrice > 0) {
+            const nativeFee = usdFee / tokenPrice;
+            // Return with high precision for crypto
+            return nativeFee.toFixed(8); // e.g. 0.000033 BNB
+        }
+
+        // Fallback if no price available (user must ensure enough buffer, or we default to 0 for safety/error)
+        return "0.00";
+    }, [watchAmount, watchDestChain, watchSourceChain, watchSourceToken, watchDestToken, tokenPrice]);
 
     const total = useMemo(() => {
         const amount = parseFloat(watchAmount || "0");
@@ -522,10 +549,16 @@ export const useCrossChainTransfer = () => {
 
                 // Save to DB
                 try {
+                    const usdValue = tokenPrice && !isNaN(amount) ? amount * tokenPrice : 0;
+                    const estimatedRec = simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount;
+                    const receivedUsdValue = destTokenPrice && !isNaN(estimatedRec) ? estimatedRec * destTokenPrice : 0;
+
                     const txData = {
                         id: crypto.randomUUID(),
                         fromAddress: address.toLowerCase(), // Normalize to lowercase for index efficiency
                         totalAmount: amount,
+                        usdValue: parseFloat(usdValue.toFixed(6)), // [NEW] Persist USD Value
+                        receivedUsdValue: parseFloat(receivedUsdValue.toFixed(6)), // [NEW] Persist Received USD Value
                         status: "PENDING", // Requested by user
                         tokenSymbol: data.destToken,
                         decimals: 6,
@@ -541,7 +574,7 @@ export const useCrossChainTransfer = () => {
                                 txHash: result.transactionHash
                             }
                         ],
-                        estimatedReceived: simulationRef.current.estimated ? parseFloat(simulationRef.current.estimated) : amount // Use amount if no simulation (Direct/CCTP)
+                        estimatedReceived: estimatedRec
                     };
 
                     await transactionsApi.create(txData as unknown as CreateTransactionRequest);
@@ -693,5 +726,9 @@ export const useCrossChainTransfer = () => {
         openModal,
         closeModal: handleCloseModal,
         onSubmit: handleSubmit(onSubmit),
+        tokenPrice,
+        tokenPriceLoading,
+        destTokenPrice,
+        destTokenPriceLoading
     };
 };

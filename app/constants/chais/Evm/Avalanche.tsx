@@ -13,19 +13,22 @@ export const AVALANCHE: ChainConfig = {
             name: "USDC",
             decimals: 6,
             address: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address,
-            icon: <UsdcIcon />
+            icon: <UsdcIcon />,
+            coingeckoId: "usd-coin"
         },
         {
             name: "AVAX",
             decimals: 18,
             address: "0x0000000000000000000000000000000000000000" as Address,
-            icon: <AvalancheIcon />
+            icon: <AvalancheIcon />,
+            coingeckoId: "avalanche-2"
         },
         {
             name: "USDT",
             decimals: 6,
             address: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7" as Address,
-            icon: <UsdtIcon />
+            icon: <UsdtIcon />,
+            coingeckoId: "tether"
         }
     ],
     evm: {

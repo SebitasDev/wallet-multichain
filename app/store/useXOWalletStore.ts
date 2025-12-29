@@ -5,6 +5,7 @@ import { NETWORKS } from "@/app/constants/chainsInformation";
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { Address } from "viem";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
+import { pricesApi } from "@/app/services/api/prices";
 
 interface WalletState {
     mainWallet: {
@@ -73,7 +74,23 @@ export const useXOWalletStore = create<WalletState>()(
                     (mainWallet.chains || []).map((c) => [c.chainId, c])
                 );
 
-                // 1. Fetch EVM Balances
+                // 1. Collect all Coingecko IDs
+                const allAssetIds = new Set<string>();
+                networks.forEach(network => {
+                    if (network.evm) {
+                        network.assets.forEach(asset => {
+                            if (asset.coingeckoId) allAssetIds.add(asset.coingeckoId);
+                        });
+                    }
+                });
+                // Add Stellar
+                allAssetIds.add("stellar"); // XLM
+                allAssetIds.add("usd-coin"); // USDC
+
+                // 2. Fetch Prices
+                const prices = await pricesApi.getPrices(Array.from(allAssetIds));
+
+                // 3. Fetch EVM Balances & Calculate USD
                 const evmPromises = addressToUse ? networks.map(async (network) => {
                     if (!network.evm) return null;
 
@@ -83,6 +100,7 @@ export const useXOWalletStore = create<WalletState>()(
 
                     try {
                         const tokenBalances: Record<string, number> = { ...currentTokens };
+                        let chainTotalUsd = 0;
 
                         // Iterate all assets
                         await Promise.all(network.assets.map(async (asset) => {
@@ -94,7 +112,20 @@ export const useXOWalletStore = create<WalletState>()(
                                     asset.address as Address,
                                     asset.decimals
                                 );
-                                tokenBalances[asset.name] = Number(balance || 0);
+                                const numBalance = Number(balance || 0);
+                                const safeBalance = isNaN(numBalance) ? 0 : numBalance;
+                                tokenBalances[asset.name] = safeBalance;
+
+                                // Calculate USD
+                                let price = 0;
+                                if (asset.coingeckoId && prices[asset.coingeckoId] && typeof prices[asset.coingeckoId].usd === 'number') {
+                                    price = prices[asset.coingeckoId].usd;
+                                } else if (asset.name.includes("USD")) {
+                                    price = 1;
+                                }
+
+                                chainTotalUsd += safeBalance * price;
+
                             } catch (e) {
                                 // Ignore error, keep old value or 0
                             }
@@ -102,7 +133,7 @@ export const useXOWalletStore = create<WalletState>()(
 
                         return {
                             chainId,
-                            amount: tokenBalances["USDC"] || 0,
+                            amount: isNaN(chainTotalUsd) ? 0 : chainTotalUsd, // Store Total USD Value (Safety check)
                             tokens: tokenBalances
                         };
                     } catch (err) {
@@ -115,7 +146,7 @@ export const useXOWalletStore = create<WalletState>()(
                     }
                 }) : [];
 
-                // 2. Fetch Stellar Balance
+                // 4. Fetch Stellar Balance
                 const stellarPromise = (async () => {
                     if (!mainWallet.addressStellar) return null;
                     const chainId = "stellar";
@@ -124,10 +155,11 @@ export const useXOWalletStore = create<WalletState>()(
                     try {
                         const balance = await getStellarUSDCBalance(mainWallet.addressStellar);
                         const safeBalance = balance || 0;
+                        const usdcPrice = prices["usd-coin"]?.usd || 1;
 
                         return {
                             chainId,
-                            amount: safeBalance,
+                            amount: safeBalance * usdcPrice, // USD Value
                             tokens: { "USDC": safeBalance }
                         };
                     } catch (err) {

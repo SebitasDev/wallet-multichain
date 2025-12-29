@@ -11,6 +11,7 @@ type AmountInputProps = {
     maxAmount: number;
     isExceedingMax?: boolean;
     token?: string; // Add optional token prop
+    tokenPrice?: number | null; // Add price prop
 };
 
 export const AmountInput = ({
@@ -22,8 +23,9 @@ export const AmountInput = ({
     maxAmount,
     isExceedingMax,
     token = "USDC", // Default to USDC if not provided
-    balance = 0
-}: AmountInputProps & { balance?: number }) => (
+    balance = 0,
+    tokenPrice = null
+}: AmountInputProps & { balance?: number, tokenPrice?: number | null }) => (
     <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
             <Typography
@@ -136,5 +138,26 @@ export const AmountInput = ({
         >
             Balance: {balance.toFixed(6)} {token}
         </Typography>
+
+        {/* USD Equivalent Display */}
+        {tokenPrice && watchAmount && !isNaN(parseFloat(watchAmount)) && (
+            <Typography
+                align="right"
+                sx={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#00DC8C",
+                    mt: 0.2
+                }}
+            >
+                ≈ ${(() => {
+                    const val = parseFloat(watchAmount) * tokenPrice;
+                    const str = val.toFixed(10);
+                    const dot = str.indexOf('.');
+                    if (dot === -1) return val;
+                    return str.slice(0, dot + 7);
+                })()} USD
+            </Typography>
+        )}
     </Box >
 );

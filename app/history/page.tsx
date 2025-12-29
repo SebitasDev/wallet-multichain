@@ -79,7 +79,9 @@ export default function HistoryListPage() {
                             estimatedReceived: tx.estimatedReceived,
                             tokenSymbol: tx.tokenSymbol,
                             createdAt: tx.createdAt,
-                            fee: tx.fee || 0
+                            fee: tx.fee || 0,
+                            usdValue: tx.usdValue, // [NEW] Pass USD Value
+                            receivedUsdValue: tx.receivedUsdValue // [NEW] Pass Received USD Value
                         };
                     });
                     setTransactions(mapped);
