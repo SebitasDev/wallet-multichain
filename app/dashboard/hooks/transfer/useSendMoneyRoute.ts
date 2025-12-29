@@ -154,9 +154,14 @@ export const useSendMoneyRoute = ({
     const handleRemoveChain = (walletAddress: string, chainId: string, id?: string) => {
         if (!routeSummary) return;
 
-        // [FIX] Clear error for this chain
+        // [FIX] Clear error for this chain (and ID if exists)
         setSimulationError(chainId, false);
-        setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
+        if (id) {
+            setSimulationError(id, false);
+            setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null, [id]: null }));
+        } else {
+            setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
+        }
 
         const newAllocations = routeSummary.allocations.map(alloc => {
             if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
@@ -200,11 +205,11 @@ export const useSendMoneyRoute = ({
         if (id) {
             setSimulationResults(prev => ({ ...prev, [id]: null }));
             setSimulationErrorMessages(prev => ({ ...prev, [id]: null }));
-            setSimulationError(id, true);
+            setSimulationError(id, false); // [FIX] Reset error on change
         } else {
             // Fallback for logic where id might be missing (shouldn't happen with new logic)
             setSimulationResults(prev => ({ ...prev, [chainId]: null })); // Legacy
-            setSimulationError(chainId, true);
+            setSimulationError(chainId, false); // [FIX] Reset error on change
         }
         updateSummary(newAllocations);
     };
@@ -228,10 +233,10 @@ export const useSendMoneyRoute = ({
         if (id) {
             setSimulationResults(prev => ({ ...prev, [id]: null }));
             setSimulationErrorMessages(prev => ({ ...prev, [id]: null }));
-            setSimulationError(id, true);
+            setSimulationError(id, false); // [FIX] Reset error on change
         } else {
             setSimulationResults(prev => ({ ...prev, [chainId]: null }));
-            setSimulationError(chainId, true);
+            setSimulationError(chainId, false); // [FIX] Reset error on change
         }
         updateSummary(newAllocations);
     };
