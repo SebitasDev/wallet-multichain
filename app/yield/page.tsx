@@ -49,7 +49,7 @@ export default function YieldSelectionPage() {
                         }}
                     >
                         <CardActionArea
-                            onClick={() => router.push("/dashboard/yield/evm")}
+                            onClick={() => router.push("/yield/evm")}
                             sx={{ height: "100%", p: 4 }}
                         >
                             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
@@ -92,7 +92,7 @@ export default function YieldSelectionPage() {
                         }}
                     >
                         <CardActionArea
-                            onClick={() => router.push("/dashboard/yield/stellar")}
+                            onClick={() => router.push("/yield/stellar")}
                             sx={{ height: "100%", p: 4 }}
                         >
                             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>

@@ -1,9 +1,9 @@
 "use client";
 
-import { Box, Typography, Button, CircularProgress, Stack, Container } from "@mui/material";
-import { ArrowBack, NorthEast, SouthWest, ChevronLeft, ChevronRight } from "@mui/icons-material";
+import { Box, Typography, Button, CircularProgress, Stack, Container, IconButton } from "@mui/material";
+import { ArrowBack, NorthEast, SouthWest, ChevronLeft, ChevronRight, Refresh } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { transactionsApi } from "@/app/services/api";
 import { format } from "date-fns";
@@ -24,46 +24,48 @@ export default function CommonHistoryPage() {
     const [selectedTx, setSelectedTx] = useState<any | null>(null);
     const LIMIT = 6;
 
-    useEffect(() => {
-        const fetchHistory = async () => {
-            if (!address) {
-                setLoading(false);
-                return;
-            }
-            setLoading(true);
-            try {
-                const data = await transactionsApi.getAll({ address, page, limit: LIMIT });
-                if (data.success && data.transactions) {
-                    const mapped = data.transactions.map((tx: any) => {
-                        const cleanUserAddr = address.toLowerCase();
-                        const cleanTxFrom = tx.fromAddress.toLowerCase();
-                        const isSender = cleanTxFrom === cleanUserAddr;
+    const fetchHistory = useCallback(async () => {
+        if (!address) {
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        try {
+            const data = await transactionsApi.getAll({ address, page, limit: LIMIT });
+            if (data.success && data.transactions) {
+                const mapped = data.transactions.map((tx: any) => {
+                    const cleanUserAddr = address.toLowerCase();
+                    const cleanTxFrom = tx.fromAddress.toLowerCase();
+                    const isSender = cleanTxFrom === cleanUserAddr;
 
-                        return {
-                            id: tx.id,
-                            type: isSender ? "SEND" : "RECEIVE",
-                            date: new Date(tx.createdAt),
-                            amount: tx.totalAmount,
-                            token: tx.tokenSymbol || "USDC",
-                            status: tx.status,
-                            color: isSender ? "#fee2e2" : "#dcfce7", // Red/Green bg for icon
-                            hash: tx.hash
-                        };
-                    });
-                    setTransactions(mapped);
-                    if (data.pagination) {
-                        setTotalPages(data.pagination.totalPages);
-                    }
+                    return {
+                        id: tx.id,
+                        type: isSender ? "SEND" : "RECEIVE",
+                        date: new Date(tx.createdAt),
+                        amount: tx.totalAmount,
+                        token: tx.tokenSymbol || "USDC",
+                        status: tx.status,
+                        color: isSender ? "#fee2e2" : "#dcfce7", // Red/Green bg for icon
+                        hash: tx.hash,
+                        fromAddress: tx.fromAddress,
+                        toAddress: tx.toAddress
+                    };
+                });
+                setTransactions(mapped);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.totalPages);
                 }
-            } catch (error) {
-                console.error("Failed to fetch history", error);
-            } finally {
-                setLoading(false);
             }
-        };
-
-        fetchHistory();
+        } catch (error) {
+            console.error("Failed to fetch history", error);
+        } finally {
+            setLoading(false);
+        }
     }, [address, page]);
+
+    useEffect(() => {
+        fetchHistory();
+    }, [fetchHistory]);
 
     const handleNext = () => {
         if (page < totalPages) setPage(p => p + 1);
@@ -82,33 +84,65 @@ export default function CommonHistoryPage() {
         }}>
             <Container maxWidth="md">
                 {/* Header */}
-                <Box display="flex" alignItems="center" gap={2} mb={4}>
-                    <Button
-                        onClick={() => router.back()}
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <Button
+                            onClick={() => router.back()}
+                            sx={{
+                                minWidth: 48,
+                                width: 48,
+                                height: 48,
+                                borderRadius: "50%",
+                                border: "2px solid #000000",
+                                color: "black",
+                                boxShadow: "4px 4px 0px #000000",
+                                backgroundColor: "#2dd4bf", // Teal accent
+                                "&:hover": {
+                                    transform: "translate(-2px, -2px)",
+                                    boxShadow: "6px 6px 0px #000000",
+                                },
+                                "&:active": {
+                                    transform: "translate(2px, 2px)",
+                                    boxShadow: "0px 0px 0px #000000",
+                                }
+                            }}
+                        >
+                            <ArrowBack />
+                        </Button>
+                        <Typography variant="h4" fontWeight={900}>
+                            {language === "es" ? "Historial" : "History"}
+                        </Typography>
+                    </Box>
+
+                    <IconButton
+                        onClick={fetchHistory}
+                        disabled={loading}
                         sx={{
-                            minWidth: 48,
-                            width: 48,
-                            height: 48,
-                            borderRadius: "50%",
-                            border: "2px solid #000000",
+                            border: "2px solid #000",
+                            bgcolor: "white",
                             color: "black",
-                            boxShadow: "4px 4px 0px #000000",
-                            backgroundColor: "#2dd4bf", // Teal accent
+                            boxShadow: "4px 4px 0px #000",
                             "&:hover": {
-                                transform: "translate(-2px, -2px)",
-                                boxShadow: "6px 6px 0px #000000",
+                                bgcolor: "#f3f4f6",
+                                transform: "translate(-1px, -1px)",
+                                boxShadow: "6px 6px 0px #000"
                             },
                             "&:active": {
                                 transform: "translate(2px, 2px)",
-                                boxShadow: "0px 0px 0px #000000",
+                                boxShadow: "0px 0px 0px #000"
                             }
                         }}
                     >
-                        <ArrowBack />
-                    </Button>
-                    <Typography variant="h4" fontWeight={900}>
-                        {language === "es" ? "Historial" : "History"}
-                    </Typography>
+                        <Refresh
+                            sx={{
+                                animation: loading ? "spin 1s linear infinite" : "none",
+                                "@keyframes spin": {
+                                    "0%": { transform: "rotate(0deg)" },
+                                    "100%": { transform: "rotate(360deg)" }
+                                }
+                            }}
+                        />
+                    </IconButton>
                 </Box>
 
                 {/* Main Content Container (Dark Style like Widget) */}

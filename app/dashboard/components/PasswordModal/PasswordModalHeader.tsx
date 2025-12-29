@@ -1,6 +1,8 @@
-import { Box, Typography, IconButton } from "@mui/material";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+"use client";
+
+import { Box, Typography, IconButton, Avatar } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import { useUserStore } from "@/app/store/useUserStore";
 
 interface PasswordModalHeaderProps {
     mode: "create" | "unlock";
@@ -10,49 +12,63 @@ interface PasswordModalHeaderProps {
 }
 
 export const PasswordModalHeader = ({ mode, title, description, onClose }: PasswordModalHeaderProps) => {
+    const { name, email } = useUserStore();
+
     // Default values based on mode
-    const defaultTitle = mode === "create" ? "Crea tu contraseña" : "Ingresa tu contraseña";
-    const defaultDesc = mode === "create"
-        ? "Protege tus wallets con una contraseña segura"
-        : "Desbloquea tu sesión para continuar";
+    const defaultTitle = mode === "create" ? "Crea tu clave" : "Ingresá tu clave";
 
     return (
         <Box
             sx={{
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                gap: 2,
-                mb: 3,
-                pb: 2.5,
-                borderBottom: "3px solid #000000",
-                position: "relative" // Ensure relative positioning for absolute children if needed, though flex handles it well
+                gap: 1.5,
+                mb: 2,
+                width: "100%",
+                position: "relative"
             }}
         >
-            <Box
+            {/* Close Button */}
+            {onClose && (
+                <IconButton
+                    onClick={onClose}
+                    sx={{
+                        position: "absolute",
+                        top: -10,
+                        right: 0,
+                        color: "white",
+                        "&:hover": { color: "#ccc" }
+                    }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            )}
+
+            {/* Avatar */}
+            <Avatar
                 sx={{
-                    width: 56,
+                    width: 56, // Smaller avatar
                     height: 56,
-                    borderRadius: 3,
-                    background: mode === "create" ? "#00DC8C" : "#7852FF",
-                    border: "3px solid #000000",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
+                    bgcolor: "#00DC8C", // Updated to teal
+                    border: "3px solid #00DC8C",
+                    fontSize: 22,
+                    fontWeight: 900,
+                    color: "black" // Changed text to black for better contrast on teal
                 }}
             >
-                <LockOutlinedIcon sx={{ fontSize: 28, color: "#ffffff" }} />
-            </Box>
+                {name.charAt(0).toUpperCase()}
+            </Avatar>
 
-            <Box flex={1}>
+            <Box textAlign="center">
                 <Typography
                     component="h2"
                     sx={{
-                        fontWeight: 900,
-                        fontSize: { xs: 20, md: 24 },
-                        color: "#000000",
-                        lineHeight: 1.2,
-                        mb: 0.5
+                        fontWeight: 700,
+                        fontSize: 18, // Smaller title
+                        color: "white",
+                        letterSpacing: 0.5,
+                        mb: 0
                     }}
                 >
                     {title || defaultTitle}
@@ -60,30 +76,14 @@ export const PasswordModalHeader = ({ mode, title, description, onClose }: Passw
                 <Typography
                     variant="body2"
                     sx={{
-                        color: "#666666",
-                        fontWeight: 600,
-                        fontSize: { xs: 12, md: 13 }
+                        color: "#999",
+                        fontWeight: 500,
+                        fontSize: 12 // Smaller subtitle
                     }}
                 >
-                    {description || defaultDesc}
+                    {description || "Necesitamos verificar que eres tú."}
                 </Typography>
             </Box>
-
-            {/* Close Button */}
-            {onClose && (
-                <IconButton
-                    onClick={onClose}
-                    sx={{
-                        position: "absolute",
-                        top: -12,
-                        right: -12,
-                        color: "#999",
-                        "&:hover": { color: "#000" }
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            )}
         </Box>
     );
 };

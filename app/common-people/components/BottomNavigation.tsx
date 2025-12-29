@@ -2,7 +2,7 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
-import { AccountBalanceWallet, Send, GridView, Logout, Person } from "@mui/icons-material";
+import { AccountBalanceWallet, Send, GridView, Logout, Person, Savings } from "@mui/icons-material";
 import { useRouter, usePathname } from "next/navigation";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useState } from "react";
@@ -125,6 +125,7 @@ export const BottomNavigation = () => {
                 {[
                     { label: language === "es" ? "Perfil" : "Profile", icon: Person, path: "/common-people/profile" },
                     { label: language === "es" ? "Pagar" : "Pay", icon: Send, path: "/common-people/pay" },
+                    { label: language === "es" ? "Rendimientos" : "Yield", icon: Savings, path: "/yield/stellar?source=common" },
                     // { label: language === "es" ? "Tu dinero" : "Your Money", icon: AccountBalanceWallet, path: "/common-people/dashboard" }, // Removed as requested
                     { label: language === "es" ? "Actividad" : "Activity", icon: GridView, path: "/common-people/history" },
                     // { label: language === "es" ? "Tarjetas" : "Cards", icon: Send, path: "/cards" } // Removed as requested

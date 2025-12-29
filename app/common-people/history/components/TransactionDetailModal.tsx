@@ -176,8 +176,10 @@ export const TransactionDetailModal = ({ open, onClose, transaction }: Transacti
                             <Typography fontSize={12} color="#9ca3af" fontWeight="bold">
                                 {isReceive ? (language === "es" ? "De" : "From") : (language === "es" ? "Para" : "To")}
                             </Typography>
-                            <Typography fontSize={16} fontWeight="bold">
-                                {isReceive ? "External Wallet" : "Recipient Address"} {/* Placeholder - ideally use truncated addr or ENS */}
+                            <Typography fontSize={14} fontWeight="bold" sx={{ wordBreak: "break-all" }}>
+                                {isReceive
+                                    ? (transaction.fromAddress || "Unknown")
+                                    : (transaction.toAddress || "Unknown")}
                             </Typography>
                         </Box>
                     </Box>
