@@ -163,9 +163,10 @@ export const SendMoneyRouteWallet = ({
                                         const isUSDC = (c.token || "USDC").toUpperCase() === "USDC";
                                         const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
                                         const fee = isDev ? 0 : baseFee;
-                                        return acc + c.amount + fee;
+                                        const price = c.price || 1;
+                                        return acc + (c.amount * price) + fee;
                                     }, 0),
-                                    6
+                                    2
                                 )}
                             </Typography>
                         </Box>

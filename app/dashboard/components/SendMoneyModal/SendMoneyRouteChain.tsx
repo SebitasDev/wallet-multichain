@@ -152,12 +152,12 @@ export const SendMoneyRouteChain = ({
                             sx={{ width: 140 }}
                         />
                         <Typography fontSize={10} color="#999999" fontWeight={600}>
-                            Max: {formatCurrency(maxUsable, 6)}
+                            Max: {parseFloat(maxUsable.toString()).toFixed(6)}
                         </Typography>
                     </Stack>
                 ) : (
                     <Typography fontWeight={800} fontSize={15}>
-                        {formatCurrency(r.amount, 6)}
+                        {parseFloat(r.amount).toFixed(6)} {r.token || "USDC"}
                     </Typography>
                 )}
             </Stack>

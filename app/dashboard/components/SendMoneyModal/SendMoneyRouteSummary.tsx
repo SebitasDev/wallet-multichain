@@ -66,7 +66,7 @@ export const SendMoneyRouteSummary = ({ routeSummary, selected, watch, simulatio
                 totalReceived += c.amount;
             } else if (isNearSupported) {
                 // Use simulation result
-                const simulated = parseFloat(simulationResults[c.chainId] || "0");
+                const simulated = parseFloat(simulationResults[c.id || c.chainId] || "0");
                 totalReceived += simulated;
             } else {
                 // Fallback (Direct/Other) -> Assume 1:1 Token
