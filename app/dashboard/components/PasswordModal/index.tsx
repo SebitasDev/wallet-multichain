@@ -62,13 +62,12 @@ export const PasswordModal = ({ open, mode, onSuccess, onClose, title, descripti
                     onSubmit={handleSubmit}
                     sx={{
                         width: "100%",
-                        maxWidth: 400,
+                        maxWidth: 480, // Increased from 400
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         position: "relative",
-                        // Scale down slightly on smaller desktops if needed to fit
-                        transform: { md: "scale(0.9)" },
+                        // transform: { md: "scale(0.9)" }, // Removed scaling
                         transformOrigin: "center center"
                     }}
                 >
