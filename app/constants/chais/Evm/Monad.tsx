@@ -13,19 +13,22 @@ export const Monad: ChainConfig = {
             name: "USDC",
             decimals: 6,
             address: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address,
-            icon: <UsdcIcon />
+            icon: <UsdcIcon />,
+            coingeckoId: "usd-coin"
         },
         {
             name: "USDT",
             decimals: 6,
             address: (isDevelopment ? "0xe7cd86e13AC4309349F30B3435a9d337750fC82D" : "0xe7cd86e13AC4309349F30B3435a9d337750fC82D") as Address,
-            icon: <UsdtIcon />
+            icon: <UsdtIcon />,
+            coingeckoId: "tether"
         },
         {
             name: "MON",
             decimals: 18,
             address: "0x0000000000000000000000000000000000000000" as Address,
-            icon: <MonadIcon />
+            icon: <MonadIcon />,
+            coingeckoId: "monad"
         }
     ],
     evm: {

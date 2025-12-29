@@ -29,8 +29,8 @@ export async function GET(req: Request) {
                 $group: {
                     _id: null,
                     totalCount: { $sum: 1 },
-                    totalVolume: { $sum: "$totalAmount" },
-                    maxAmount: { $max: "$totalAmount" },
+                    totalVolume: { $sum: { $ifNull: ["$usdValue", "$totalAmount"] } },
+                    maxAmount: { $max: { $ifNull: ["$usdValue", "$totalAmount"] } },
                     totalFees: { $sum: "$fee" } // [NEW]
                 }
             }
@@ -44,7 +44,7 @@ export async function GET(req: Request) {
                 $group: {
                     _id: null,
                     totalCount: { $sum: 1 },
-                    totalVolume: { $sum: "$totalAmount" }
+                    totalVolume: { $sum: { $ifNull: ["$receivedUsdValue", { $ifNull: ["$usdValue", "$totalAmount"] }] } } // Try receivedUSD, then fallback
                 }
             }
         ]);
@@ -92,7 +92,7 @@ export async function GET(req: Request) {
                     // Manual Timezone Shift (UTC-3)
                     // Subtract 3 hours (10800000 ms) from the timestamp to get local time represented as UTC-shifted date
                     date: { $toDate: { $subtract: ["$createdAt", 10800000] } },
-                    amount: "$totalAmount"
+                    amount: { $ifNull: ["$usdValue", "$totalAmount"] } // Use USD Value
                 }
             },
             {

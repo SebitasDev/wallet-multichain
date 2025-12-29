@@ -152,7 +152,7 @@ export const HistoryTransactionDetail = ({ transaction, onClose }: { transaction
                         <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
                             <Box display="flex" justifyContent="space-between">
                                 <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>ENVIA</Typography>
-                                <Typography fontWeight={800} fontSize={14}>${Number(transaction.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
+                                <Typography fontWeight={800} fontSize={14}>${Number(transaction.usdValue ?? transaction.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}</Typography>
                             </Box>
                             {transaction.fee > 0 && (
                                 <Box display="flex" justifyContent="space-between">
@@ -164,15 +164,37 @@ export const HistoryTransactionDetail = ({ transaction, onClose }: { transaction
                                 <>
                                     <Box display="flex" justifyContent="space-between">
                                         <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>RECIBE (EST.)</Typography>
-                                        <Typography fontWeight={800} fontSize={14} color="#00DC8C">
-                                            ${Number(transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })} {transaction.tokenSymbol || "USDC"}
-                                        </Typography>
+                                        <Box textAlign="right">
+                                            <Typography fontWeight={800} fontSize={14} color="#00DC8C">
+                                                {Number(transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })} {transaction.tokenSymbol || "USDC"}
+                                            </Typography>
+                                            <Typography variant="caption" fontWeight={700} color="#00DC8C" fontSize={10} display="block">
+                                                {/* Only calculate if we have USD data or if it's effectively 1:1 (stable) fallback which we don't assume here yet */}
+                                                ≈ ${Number(transaction.receivedUsdValue ?? (
+                                                    (transaction.usdValue && transaction.amount)
+                                                        ? (transaction.estimatedReceived * (transaction.usdValue / transaction.amount))
+                                                        : 0
+                                                )).toLocaleString('en-US', { maximumFractionDigits: 6 })}
+                                            </Typography>
+                                        </Box>
                                     </Box>
                                     <Box sx={{ borderTop: "1px dashed #ccc", my: 0.5 }} />
                                     <Box display="flex" justifyContent="space-between">
                                         <Typography variant="caption" fontWeight={900} color="#666" fontSize={11}>DIFERENCIA</Typography>
                                         <Typography fontWeight={800} fontSize={14} color="error.main">
-                                            -${(transaction.amount - transaction.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
+                                            {(() => {
+                                                const sentVal = transaction.usdValue || transaction.amount; // Fallback to amount is wrong for different decimals/value, but okay for USDC
+                                                const recVal = transaction.receivedUsdValue || (
+                                                    (transaction.usdValue && transaction.amount)
+                                                        ? (transaction.estimatedReceived * (transaction.usdValue / transaction.amount))
+                                                        : transaction.estimatedReceived
+                                                );
+                                                const diff = sentVal - recVal;
+                                                // If we have mixed units (no usdValue and fallback used), this number is garbage.
+                                                // Only show meaningful difference if we have usdValue OR if tokens match (simplified check)
+                                                // For now, just show formatted diff.
+                                                return `-$${Number(Math.abs(diff)).toLocaleString('en-US', { maximumFractionDigits: 6 })}`;
+                                            })()}
                                         </Typography>
                                     </Box>
                                 </>

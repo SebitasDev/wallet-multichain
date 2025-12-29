@@ -12,7 +12,8 @@ export const WORLD_CHAIN: ChainConfig = {
             name: "USDC",
             decimals: 6,
             address: (isDevelopment ? "0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88" : "0x79A02482A880bCe3F13E09da970dC34dB4cD24D1") as Address,
-            icon: <UsdcIcon />
+            icon: <UsdcIcon />,
+            coingeckoId: "usd-coin"
         }
     ],
     evm: {

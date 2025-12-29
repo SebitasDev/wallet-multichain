@@ -14,25 +14,29 @@ export const OPTIMISM: ChainConfig = {
             name: "USDC",
             decimals: 6,
             address: (isDevelopment ? "0x5fd84259d66Cd46123540766Be93DFE6D43130D7" : "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85") as Address,
-            icon: <UsdcIcon />
+            icon: <UsdcIcon />,
+            coingeckoId: "usd-coin"
         },
         {
             name: "USDT",
             decimals: 6,
             address: (isDevelopment ? "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58" : "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58") as Address,
-            icon: <UsdtIcon />
+            icon: <UsdtIcon />,
+            coingeckoId: "tether"
         },
         {
             name: "OP",
             decimals: 18,
             address: (isDevelopment ? "0x4200000000000000000000000000000000000042" : "0x4200000000000000000000000000000000000042") as Address,
-            icon: <OPIcon />
+            icon: <OPIcon />,
+            coingeckoId: "optimism"
         },
         {
             name: "ETH",
             decimals: 18,
             address: "0x0000000000000000000000000000000000000000" as Address,
-            icon: <EthIcon />
+            icon: <EthIcon />,
+            coingeckoId: "ethereum"
         }
     ],
     evm: {

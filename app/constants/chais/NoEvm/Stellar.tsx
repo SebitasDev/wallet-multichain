@@ -15,13 +15,15 @@ export const STELLAR: ChainConfig = {
             name: "USDC",
             decimals: 6,
             address: isDevelopment ? "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" : "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
-            icon: <UsdcIcon />
+            icon: <UsdcIcon />,
+            coingeckoId: "usd-coin"
         },
         {
             name: "XLM",
             decimals: 7,
             address: "native",
-            icon: <StellarIcon />
+            icon: <StellarIcon />,
+            coingeckoId: "stellar"
         }
     ],
     nonEvm: {
