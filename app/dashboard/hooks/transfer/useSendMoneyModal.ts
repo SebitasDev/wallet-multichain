@@ -16,6 +16,8 @@ import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { transactionsApi, CreateTransactionRequest } from "@/app/services/api";
 import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
+import { useTokenPrice } from "@/app/hooks/useTokenPrice";
+import { pricesApi } from "@/app/services/api/prices";
 
 
 
@@ -45,6 +47,9 @@ export type RouteDetail = {
 
 
 export const useSendMoneyModal = () => {
+    // [NEW] Consistent Dev Check
+    const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+
     const [sendLoading, setSendLoading] = useState(false);
     const [routeReady, setRouteReady] = useState(false);
     const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
@@ -91,6 +96,10 @@ export const useSendMoneyModal = () => {
         setRouteDetails(details);
     }, [routeSummary]);
 
+    // [NEW] Price Map State for passing to Route
+    const [priceMap, setPriceMap] = useState<Record<string, number>>({});
+
+    // Track Socket Steps
     useBridgeUsdcStream((e) => {
         console.log("📩 Evento recibido en useBridgeUsdcStream:", e);
 
@@ -137,6 +146,15 @@ export const useSendMoneyModal = () => {
         },
     });
 
+    // [NEW] Price Logic
+    const { price: tokenPrice } = useTokenPrice(
+        watch("sourceToken") !== "USDC"
+            ? (NETWORKS[watch("sendChain") as ChainKey]?.assets.find(a => a.name === watch("sourceToken"))?.coingeckoId || "usd-coin")
+            : undefined
+    );
+    const effectivePrice = watch("sourceToken") !== "USDC" ? (tokenPrice || 0) : 1;
+
+
     useEffect(() => {
         if (!isOpen) {
             reset({
@@ -167,12 +185,42 @@ export const useSendMoneyModal = () => {
         try {
             setSendLoading(true);
 
+            // [NEW] Multi-Token Price Fetching
+            // 1. Identify all tokens with balance > 0
+            const allAssetIds = new Set<string>();
+            wallets.forEach(w => {
+                w.chains.forEach(c => {
+                    const cKey = CHAIN_ID_TO_KEY[c.chainId];
+                    const net = NETWORKS[cKey as ChainKey];
+                    if (net && net.evm) {
+                        net.assets.forEach(a => {
+                            if (c.tokens?.[a.name] > 0 && a.coingeckoId) {
+                                allAssetIds.add(a.coingeckoId);
+                            }
+                        });
+                    }
+                });
+            });
+            allAssetIds.add("usd-coin"); // Ensure USDC base
+
+            // 2. Fetch Prices
+            const prices = await pricesApi.getPrices(Array.from(allAssetIds));
+            const priceMap: Record<string, number> = {};
+            Object.entries(prices).forEach(([id, p]: [string, any]) => {
+                if (p && typeof p.usd === 'number') priceMap[id] = p.usd;
+            });
+            // Manual overrides for stablecoins if API fails/missing
+            priceMap["usd-coin"] = priceMap["usd-coin"] || 1;
+
+            setPriceMap(priceMap); // [NEW] Save to State
+
             const summary = await allocateAcrossNetworks(
                 Number(sendAmount),
                 toAddress as Address,
                 sendChain,
                 watch("optimize"),
-                watch("sourceToken")
+                watch("sourceToken"),
+                priceMap // [NEW] Pass Full Price Map
             );
 
             setRouteSummary(summary);
@@ -210,7 +258,7 @@ export const useSendMoneyModal = () => {
         for (const allocation of routeSummary!.allocations) {
 
             // 1. Unlock Wallet (Get Private Key)
-            const unlockedKey = await unlockWallet(allocation.from, watch("sendPassword"));
+            const unlockedKey = await unlockWallet(allocation.from, watch("sendPassword") || "");
             if (!unlockedKey) {
                 toast.error(`No se pudo desbloquear la wallet ${allocation.from}`);
                 continue;
@@ -246,14 +294,12 @@ export const useSendMoneyModal = () => {
                     )
                 );
 
-                // Determine Fee (Same logic as useCrossChainTransfer)
-                // 0.01 for Same Chain, 0.02 for Cross Chain
-                const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+                // Determine Fee (Using Standard Logic 0.01 vs 0.02)
+
                 const baseFee = fromValidChain === toValidChain ? 0.01 : 0.02;
                 const currentFee = isDev ? 0 : baseFee;
 
                 // Add fee to the amount to be signed/transferred
-                // Because we removed the auto-add in createAuthorizationPayload
                 const totalAmount = (amountFloat + currentFee).toFixed(6);
 
                 // Sanitize Token verify it exists on chain
@@ -452,36 +498,24 @@ export const useSendMoneyModal = () => {
         return NETWORKS[key]?.crossChainInformation?.circleInformation?.aproxFromFee || 0.003;
     };
 
+
+    // [UPDATED] Max Balance = Total Portfolio Value in USD (as per user request)
     const maxSendAmount = wallets.reduce((total, wallet) => {
-        const walletTotal = wallet.chains.reduce((sum, chain) => {
-            const amount = Number(chain.amount);
-            // Dynamic Fee Calculation
-            const sourceChainKey = CHAIN_ID_TO_KEY[chain.chainId];
-            const destChainKey = watch("sendChain");
-
-            // Default to cross-chain fee (0.02) if unknown, effectively 0.01 if same chain
-            // User requested: "cobro o 0.01 o 0.02"
-            // If source == dest -> 0.01
-            // If source != dest -> 0.02
-            const isSameChain = sourceChainKey === destChainKey;
-            const dynamicMaxFee = isSameChain ? 0.01 : 0.02;
-
-            // We subtract the max possible fee for this specific route consideration
-            // available = Balance - Fee
-            const available = amount - dynamicMaxFee;
-
-            return available > 0 ? sum + available : sum;
+        const walletTotal = wallet.chains.reduce((sum, c) => {
+            // DEBUG LOG
+            console.log(`[MaxCheck] ${wallet.address} - ${c.chainId}: Amount=${c.amount} tokens=`, c.tokens);
+            return sum + (c.amount || 0);
         }, 0);
         return total + walletTotal;
     }, 0);
 
-    // Format to 6 decimals to match precision
+    // Format to 6 decimals for USD display
     const formattedMaxSendAmount = maxSendAmount > 0 ? parseFloat(maxSendAmount.toFixed(6)) : 0;
 
     const currentSendAmount = Number(watch("sendAmount") || 0);
     const isExceedingMax = currentSendAmount > formattedMaxSendAmount;
 
-    const canSend = !!watch("toAddress") && !!watch("sendAmount") && !!watch("sendPassword") && !isExceedingMax;
+    const canSend = !!watch("toAddress") && !!watch("sendAmount") && !isExceedingMax;
 
     const selected = NETWORKS[watch("sendChain") as ChainKey];
 
@@ -504,7 +538,8 @@ export const useSendMoneyModal = () => {
         setValue,
         maxSendAmount: formattedMaxSendAmount,
         isExceedingMax,
-        wallets
+        wallets,
+        priceMap // [NEW] Expose Prices
     }
 
 }

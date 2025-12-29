@@ -2,7 +2,7 @@ export type ChainInfo = {
   name: string;
   tag: string;
   color: string;
-  tokens: number;
+  tokens: Record<string, number> | number;
   value: number;
 };
 
@@ -20,7 +20,7 @@ export type AllocationSummary = {
   remainingToCover: number;
   allocations: Array<{
     from: string;
-    chains: Array<{ chainId: string; amount: number; token?: string }>;
+    chains: Array<{ chainId: string; amount: number; token?: string; id?: string; price?: number }>;
   }>;
   totalFees: number;
   commission: number;

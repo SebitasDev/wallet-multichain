@@ -214,6 +214,18 @@ export const useWalletStore = create<WalletStore>()(
                 const wallets = get().wallets;
                 const networks = Object.values(NETWORKS);
 
+                // 1. Get Prices for all assets first
+                const allAssetIds = new Set<string>();
+                networks.forEach(network => {
+                    if (network.evm) {
+                        network.assets.forEach(asset => {
+                            if (asset.coingeckoId) allAssetIds.add(asset.coingeckoId);
+                        });
+                    }
+                });
+                allAssetIds.add("usd-coin");
+                const prices = await pricesApi.getPrices(Array.from(allAssetIds));
+
                 const updatedWallets = await Promise.all(
                     wallets.map(async (wallet) => {
                         const existingChainsMap = new Map(
@@ -231,6 +243,7 @@ export const useWalletStore = create<WalletStore>()(
 
                                 try {
                                     const tokenBalances: Record<string, number> = { ...currentTokens };
+                                    let chainTotalUsd = 0;
 
                                     // Iterate all assets
                                     await Promise.all(network.assets.map(async (asset) => {
@@ -242,16 +255,27 @@ export const useWalletStore = create<WalletStore>()(
                                                 asset.address as Address,
                                                 asset.decimals
                                             );
-                                            tokenBalances[asset.name] = Number(balance || 0);
+                                            const numBal = Number(balance || 0);
+                                            const safeBal = isNaN(numBal) ? 0 : numBal;
+                                            tokenBalances[asset.name] = safeBal;
+
+                                            // Calculate USD
+                                            let price = 0;
+                                            if (asset.coingeckoId && prices[asset.coingeckoId] && typeof prices[asset.coingeckoId].usd === 'number') {
+                                                price = prices[asset.coingeckoId].usd;
+                                            } else if (asset.name.includes("USD")) {
+                                                price = 1;
+                                            }
+                                            chainTotalUsd += safeBal * price;
+
                                         } catch (e) {
                                             // If update fails, keep old value or 0
-                                            // console.warn(`Failed to update balance for ${asset.name} on ${network.label}`, e);
                                         }
                                     }));
 
                                     return {
                                         chainId,
-                                        amount: tokenBalances["USDC"] || 0, // Update legacy amount with fresh USDC balance
+                                        amount: isNaN(chainTotalUsd) ? 0 : chainTotalUsd,
                                         tokens: tokenBalances
                                     };
                                 } catch (err) {
@@ -385,19 +409,7 @@ export const useWalletStore = create<WalletStore>()(
 
                 return wallets.reduce((walletAcc, wallet) => {
                     const walletTotal = wallet.chains.reduce((chainAcc, c) => {
-                        // Find network config to get the specific fee
-                        const networkConfig = Object.values(NETWORKS).find(
-                            (net) => net.evm?.chain.id.toString() === c.chainId
-                        );
-
-                        // Get fee from config, or default to 0.003 if not found/configured
-                        const fee = networkConfig?.crossChainInformation?.circleInformation?.aproxFromFee ?? 0.003;
-
-                        // Calculate usable amount: Balance - Fee (now 0)
-                        // User requested to see full balance. Dynamic fee applied at Send.
-                        const usableAmount = Math.max(0, c.amount - fee);
-
-                        return chainAcc + usableAmount;
+                        return chainAcc + c.amount;
                     }, 0);
                     return walletAcc + walletTotal;
                 }, 0);

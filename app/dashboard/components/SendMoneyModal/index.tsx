@@ -1,5 +1,5 @@
-import { Dialog, DialogContent } from "@mui/material";
-import { useState } from "react";
+import { Dialog, DialogContent, Typography, Box } from "@mui/material";
+import { useState, useEffect } from "react";
 import { useSendMoneyModal } from "@/app/dashboard/hooks/transfer/useSendMoneyModal";
 import { SendMoneyModalHeader } from "./SendMoneyModalHeader";
 import { SendMoneyModalForm } from "./SendMoneyModalForm";
@@ -10,35 +10,32 @@ export const SendMoneyModal = () => {
     const {
         sendLoading, control, handleSubmit, errors, handleOnSend, handleOnConfirm,
         canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary, setValue,
-        maxSendAmount, isExceedingMax, watch, setRouteSummary, wallets
+        maxSendAmount, isExceedingMax, watch, setRouteSummary, wallets, priceMap
     } = useSendMoneyModal();
 
     const [isEditing, setIsEditing] = useState(false);
-    const [simulationErrors, setSimulationErrors] = useState<Record<string, boolean>>({}); // [NEW] Track blocking errors
+    const [hasBlockingErrors, setHasBlockingErrors] = useState(false);
 
     const handleClose = () => {
         setSendModal(false);
         setIsEditing(false);
-        setSimulationErrors({}); // Reset on close
+        setHasBlockingErrors(false);
     };
 
-    const hasBlockingErrors = Object.values(simulationErrors).some(Boolean);
-
-    // DEBUG: Log disabled state reasons
     const isProcessing = routeReady && routeDetails.some(w => w.chains.some(c => c.status !== 'idle' && c.status !== 'done' && c.status !== 'error'));
+
+    const disabledReasons: string[] = [];
+    if (!canSend) disabledReasons.push("Cannot Send (internal check)");
+    if (routeReady) {
+        if (!watch("sendPassword") || !watch("sendPassword")?.length) disabledReasons.push("Password Empty");
+        if (isEditing) disabledReasons.push("Edit Mode Active");
+        if (!routeSummary?.allocations?.length) disabledReasons.push("No Chains");
+        if (hasBlockingErrors) disabledReasons.push("Blocking Simulation Error");
+        if (isProcessing) disabledReasons.push("Processing Transaction");
+    }
+
     if (isOpen) {
-        console.log("[SendMoneyModal] Debug Disabled State:", {
-            canSend,
-            routeReady,
-            isEditing,
-            hasBlockingErrors,
-            simulationErrors,
-            isProcessing,
-            allocationsLength: routeSummary?.allocations?.length,
-            sendAmount: watch("sendAmount"),
-            passwordFilled: !!watch("sendPassword"),
-            isExceedingMax
-        });
+        console.log("[SendMoneyModal] Disabled Reasons:", disabledReasons);
     }
 
     return (
@@ -86,7 +83,10 @@ export const SendMoneyModal = () => {
                         watch={watch}
                         control={control}
                         setValue={setValue}
-                        setSimulationError={(id, hasError) => setSimulationErrors(prev => ({ ...prev, [id]: hasError }))} // [NEW]
+                        setHasBlockingErrors={setHasBlockingErrors}
+                        priceMap={priceMap}
+                        password={watch("sendPassword") || ""}
+                        setPassword={(val) => setValue("sendPassword", val, { shouldValidate: true, shouldDirty: true })}
                     />
                 )}
             </DialogContent>
@@ -95,7 +95,7 @@ export const SendMoneyModal = () => {
                 onClose={handleClose}
                 onAction={routeReady ? handleOnConfirm : handleSubmit(handleOnSend as any)}
                 loading={sendLoading}
-                disabled={!canSend || (routeReady && (isEditing || !routeSummary?.allocations?.length || hasBlockingErrors || routeDetails.some(w => w.chains.some(c => c.status !== 'idle' && c.status !== 'done' && c.status !== 'error'))))} // [NEW] Disable if processing (not idle/done/error)
+                disabled={!canSend || (routeReady && ((!watch("sendPassword") || !watch("sendPassword")?.length) || isEditing || !routeSummary?.allocations?.length || hasBlockingErrors || isProcessing))}
                 routeReady={routeReady}
             />
         </Dialog>

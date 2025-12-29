@@ -15,6 +15,7 @@ type UseSendMoneyRouteProps = {
     isEditing: boolean;
     watch: UseFormWatch<SendForm>;
     setSimulationError: (id: string, hasError: boolean) => void;
+    priceMap?: Record<string, number>; // [NEW]
 };
 
 export const useSendMoneyRoute = ({
@@ -24,7 +25,8 @@ export const useSendMoneyRoute = ({
     wallets,
     isEditing,
     watch,
-    setSimulationError
+    setSimulationError,
+    priceMap
 }: UseSendMoneyRouteProps) => {
     // Simulation State
     const [simulating, setSimulating] = useState<Record<string, boolean>>({});
@@ -36,13 +38,13 @@ export const useSendMoneyRoute = ({
     const [anchorElChain, setAnchorElChain] = useState<null | HTMLElement>(null);
     const [activeWalletForChainAdd, setActiveWalletForChainAdd] = useState<string | null>(null);
 
-    const handleSimulate = async (chainId: string, amount: number, token: string, sourceChainKey: string) => {
-        if (!amount || amount <= 0) return;
+    const handleSimulate = async (id: string, chainId: string, amount: number, token: string, sourceChainKey: string) => {
+        if (!amount || amount <= 0 || !id) return;
 
-        setSimulating(prev => ({ ...prev, [chainId]: true }));
-        setSimulationResults(prev => ({ ...prev, [chainId]: null }));
-        setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
-        setSimulationError(chainId, true);
+        setSimulating(prev => ({ ...prev, [id]: true }));
+        setSimulationResults(prev => ({ ...prev, [id]: null }));
+        setSimulationErrorMessages(prev => ({ ...prev, [id]: null }));
+        setSimulationError(id, true);
 
         try {
             const destChainKey = watch("sendChain");
@@ -62,20 +64,20 @@ export const useSendMoneyRoute = ({
             });
 
             if (data.success && data.estimatedReceived) {
-                setSimulationResults(prev => ({ ...prev, [chainId]: data.estimatedReceived }));
-                setSimulationError(chainId, false);
+                setSimulationResults(prev => ({ ...prev, [id]: data.estimatedReceived }));
+                setSimulationError(id, false);
             } else {
                 const errorMsg = data.error || "Simulation failed";
-                setSimulationErrorMessages(prev => ({ ...prev, [chainId]: errorMsg }));
-                setSimulationError(chainId, true);
+                setSimulationErrorMessages(prev => ({ ...prev, [id]: errorMsg }));
+                setSimulationError(id, true);
             }
         } catch (error) {
             console.error("Simulation error:", error);
             const errorMessage = (error as any)?.response?.data?.error || (error as any)?.message || "Failed to simulate";
-            setSimulationErrorMessages(prev => ({ ...prev, [chainId]: errorMessage }));
-            setSimulationError(chainId, true);
+            setSimulationErrorMessages(prev => ({ ...prev, [id]: errorMessage }));
+            setSimulationError(id, true);
         } finally {
-            setSimulating(prev => ({ ...prev, [chainId]: false }));
+            setSimulating(prev => ({ ...prev, [id]: false }));
         }
     };
 
@@ -103,16 +105,16 @@ export const useSendMoneyRoute = ({
 
                     if (isCCTP) {
                         // Manual Simulation for CCTP (1:1)
-                        if (chain.amount > 0) {
-                            setSimulationResults(prev => ({ ...prev, [chain.chainId]: chain.amount.toFixed(6) }));
-                            setSimulationError(chain.chainId, false);
-                            setSimulationErrorMessages(prev => ({ ...prev, [chain.chainId]: null }));
+                        if (chain.amount > 0 && chain.id) {
+                            setSimulationResults(prev => ({ ...prev, [chain.id!]: chain.amount.toFixed(6) }));
+                            setSimulationError(chain.id!, false);
+                            setSimulationErrorMessages(prev => ({ ...prev, [chain.id!]: null }));
                         }
                         return;
                     }
 
-                    if (isNearSupported && chain.amount > 0 && !simulationResults[chain.chainId] && !simulating[chain.chainId]) {
-                        handleSimulate(chain.chainId, chain.amount, chain.token || "USDC", sourceChainKey);
+                    if (isNearSupported && chain.amount > 0 && chain.id && !simulationResults[chain.id] && !simulating[chain.id]) {
+                        handleSimulate(chain.id, chain.chainId, chain.amount, chain.token || "USDC", sourceChainKey);
                     }
                 });
             });
@@ -136,8 +138,10 @@ export const useSendMoneyRoute = ({
         // [FIX] Clear errors for all chains in this wallet
         const walletAlloc = routeSummary.allocations.find(a => a.from.toLowerCase() === walletAddress.toLowerCase());
         walletAlloc?.chains.forEach(c => {
-            setSimulationError(c.chainId, false);
-            setSimulationErrorMessages(prev => ({ ...prev, [c.chainId]: null }));
+            if (c.id) {
+                setSimulationError(c.id, false);
+                setSimulationErrorMessages(prev => ({ ...prev, [c.id!]: null }));
+            }
         });
 
         const newAllocations = routeSummary.allocations.filter(
@@ -147,42 +151,70 @@ export const useSendMoneyRoute = ({
         updateSummary(newAllocations);
     };
 
-    const handleRemoveChain = (walletAddress: string, chainId: string) => {
+    const handleRemoveChain = (walletAddress: string, chainId: string, id?: string) => {
         if (!routeSummary) return;
 
-        // [FIX] Clear error for this chain
+        // [FIX] Clear error for this chain (and ID if exists)
         setSimulationError(chainId, false);
-        setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
+        if (id) {
+            setSimulationError(id, false);
+            setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null, [id]: null }));
+        } else {
+            setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
+        }
 
         const newAllocations = routeSummary.allocations.map(alloc => {
             if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
             return {
                 ...alloc,
-                chains: alloc.chains.filter(c => c.chainId !== chainId)
+                chains: alloc.chains.filter(c => {
+                    // Match by ID if available, otherwise ChainID (legacy/fallback)
+                    if (id && c.id) return c.id !== id;
+                    return c.chainId !== chainId;
+                })
             };
         }).filter(alloc => alloc.chains.length > 0);
 
         updateSummary(newAllocations);
     };
 
-    const handleTokenChange = (walletAddress: string, chainId: string, newToken: string) => {
+    const handleTokenChange = (walletAddress: string, chainId: string, newToken: string, id?: string) => {
         if (!routeSummary) return;
 
         const newAllocations = routeSummary.allocations.map(alloc => {
             if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
             return {
                 ...alloc,
-                chains: alloc.chains.map(c => c.chainId === chainId ? { ...c, token: newToken } : c)
+                chains: alloc.chains.map(c => {
+                    const isMatch = (id && c.id) ? c.id === id : c.chainId === chainId;
+                    // [FIX] Update Price for new Token
+                    let newPrice = c.price;
+                    if (isMatch) {
+                        const tokenAsset = NETWORKS[CHAIN_ID_TO_KEY[c.chainId] as ChainKey]?.assets.find(a => a.name === newToken);
+                        if (tokenAsset && priceMap) {
+                            newPrice = priceMap[tokenAsset.coingeckoId || ""] || 1;
+                        } else {
+                            newPrice = 1; // Fallback
+                        }
+                    }
+                    return isMatch ? { ...c, token: newToken, price: newPrice } : c;
+                })
             };
         });
 
-        setSimulationResults(prev => ({ ...prev, [chainId]: null }));
-        setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
-        setSimulationError(chainId, true);
+        if (id) {
+            setSimulationResults(prev => ({ ...prev, [id]: null }));
+            setSimulationErrorMessages(prev => ({ ...prev, [id]: null }));
+            setSimulationError(id, false); // [FIX] Reset error on change
+        } else {
+            // Fallback for logic where id might be missing (shouldn't happen with new logic)
+            setSimulationResults(prev => ({ ...prev, [chainId]: null })); // Legacy
+            setSimulationError(chainId, false); // [FIX] Reset error on change
+        }
         updateSummary(newAllocations);
     };
 
-    const handleAmountChange = (walletAddress: string, chainId: string, newAmount: string) => {
+    const handleAmountChange = (walletAddress: string, chainId: string, newAmount: string, id?: string) => {
         if (!routeSummary) return;
 
         const amount = parseFloat(newAmount) || 0;
@@ -191,13 +223,21 @@ export const useSendMoneyRoute = ({
             if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
             return {
                 ...alloc,
-                chains: alloc.chains.map(c => c.chainId === chainId ? { ...c, amount: amount } : c)
+                chains: alloc.chains.map(c => {
+                    const isMatch = (id && c.id) ? c.id === id : c.chainId === chainId;
+                    return isMatch ? { ...c, amount: amount } : c;
+                })
             };
         });
 
-        setSimulationResults(prev => ({ ...prev, [chainId]: null }));
-        setSimulationErrorMessages(prev => ({ ...prev, [chainId]: null }));
-        setSimulationError(chainId, true);
+        if (id) {
+            setSimulationResults(prev => ({ ...prev, [id]: null }));
+            setSimulationErrorMessages(prev => ({ ...prev, [id]: null }));
+            setSimulationError(id, false); // [FIX] Reset error on change
+        } else {
+            setSimulationResults(prev => ({ ...prev, [chainId]: null }));
+            setSimulationError(chainId, false); // [FIX] Reset error on change
+        }
         updateSummary(newAllocations);
     };
 
@@ -229,8 +269,6 @@ export const useSendMoneyRoute = ({
         const newAllocations = routeSummary.allocations.map(alloc => {
             if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
 
-            if (alloc.chains.some(c => c.chainId === chainId)) return alloc;
-
             return {
                 ...alloc,
                 chains: [
@@ -238,7 +276,9 @@ export const useSendMoneyRoute = ({
                     {
                         chainId: chainId,
                         amount: 0,
-                        token: "USDC"
+                        token: "USDC", // Default Token
+                        id: crypto.randomUUID(),
+                        price: (priceMap && priceMap["usd-coin"]) || 1 // Default USDC Price
                     }
                 ]
             };
@@ -274,22 +314,40 @@ export const useSendMoneyRoute = ({
                 const cId = (c.value || c.chainId || c.id || "").toString();
                 return cId === r.chainId;
             });
-            const chainBalance = currentChainDetail?.amount || 0;
+            // [FIX] Correct Balance Lookup (Tokens vs Native)
+            const tokenSymbol = r.token || "USDC";
+            const chainBalance = currentChainDetail?.tokens?.[tokenSymbol] || 0;
+
             const destChainId = selected.evm?.chain?.id?.toString() || "";
             const isSameChain = destChainId === r.chainId;
-            const isUSDC = (r.token || "USDC").toUpperCase() === "USDC";
+            const isUSDC = tokenSymbol.toUpperCase() === "USDC";
 
             const isDev = process.env.NODE_ENV === 'development';
             const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
-            const fee = isDev ? 0 : baseFee;
-            const maxUsable = Math.max(0, chainBalance - fee);
+            const feeUSD = isDev ? 0 : baseFee;
 
-            if (r.amount <= 0 || r.amount > maxUsable + 1e-9) return true;
-
+            // [FIX] Move Config/Key definitions UP for Price Lookup
             const sourceChainKey = CHAIN_ID_TO_KEY[r.chainId];
             const destChainKey = watch("sendChain");
             const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
             const destConfig = NETWORKS[destChainKey as keyof typeof NETWORKS];
+
+            // [FIX] Validation using Price (Correct ID Lookup)
+            let tokenPrice = r.price;
+            if (!tokenPrice && priceMap) {
+                const asset = sourceConfig?.assets?.find(a => a.name === tokenSymbol);
+                const geckoId = asset?.coingeckoId || (isUSDC ? "usd-coin" : "");
+                tokenPrice = priceMap[geckoId] || 1;
+            }
+            const safePrice = tokenPrice || 1;
+
+            const feeTokens = feeUSD / safePrice;
+            const maxUsable = Math.max(0, chainBalance - feeTokens);
+
+            // [FIX] Add Tolerance to match UI (1.0001)
+            const validationMax = maxUsable * 1.0001;
+
+            if (r.amount <= 0 || r.amount > validationMax) return true;
 
             const isNearSupported =
                 sourceConfig?.crossChainInformation?.nearIntentInformation?.support &&
@@ -303,7 +361,7 @@ export const useSendMoneyRoute = ({
             if (isCCTP) return false;
 
             if (isNearSupported && !isEditing) {
-                if (!simulationResults[r.chainId]) return true;
+                if (!simulationResults[r.id || r.chainId]) return true;
             }
 
             return false;

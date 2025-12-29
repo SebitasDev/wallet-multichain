@@ -11,12 +11,12 @@ import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
-import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
-import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 import { useTokenPrice } from "@/app/hooks/useTokenPrice";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { bridgeApi, transactionsApi, CreateTransactionRequest } from "@/app/services/api";
-
+import { useRouteValidation } from "./useRouteValidation";
+import { useMaxTransferAmount } from "./useMaxTransferAmount";
+import { useTransferFee } from "./useTransferFee";
 // Types
 export const STELLAR_CHAIN_KEY = "Stellar";
 
@@ -46,200 +46,7 @@ const serializeBigInt = (obj: any): any => {
 };
 
 
-// -- Helper Hook: Route Validation --
-const useRouteValidation = (sourceChain: string, destChain: string, sourceToken: string, destToken: string) => {
-    return useMemo(() => {
-        const getChainConfig = (key: string) => {
-            if (key === STELLAR_CHAIN_KEY) return STELLAR;
-            return NETWORKS[key as keyof typeof NETWORKS];
-        };
-
-        const sourceConfig = getChainConfig(sourceChain);
-        const destConfig = getChainConfig(destChain);
-
-        if (!sourceConfig || !destConfig) return null;
-
-        const isSourceNonEvm = !!sourceConfig.nonEvm;
-        const isDestNonEvm = !!destConfig.nonEvm;
-
-        // Case 1: Heterogeneous Chains (EVM <-> Non-EVM)
-        if (isSourceNonEvm !== isDestNonEvm) {
-            const evmConfig = isSourceNonEvm ? destConfig : sourceConfig;
-            const nonEvmConfig = isSourceNonEvm ? sourceConfig : destConfig;
-
-            if (!evmConfig.crossChainInformation.nearIntentInformation?.support) {
-                return `Ruta no disponible: ${evmConfig.label} no tiene soporte para conectar con ${nonEvmConfig.label}`;
-            }
-            if (!nonEvmConfig.crossChainInformation.nearIntentInformation?.support) {
-                return `Ruta no disponible: ${nonEvmConfig.label} no tiene soporte para puentes`;
-            }
-        }
-
-        // Case 2: Homogeneous EVM Chains (EVM <-> EVM)
-        if (!isSourceNonEvm && !isDestNonEvm) {
-            if (sourceToken === 'USDC' && destToken === 'USDC') {
-                const sourceCCTP = sourceConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
-                const destCCTP = destConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
-
-                if (sourceCCTP && destCCTP) return null;
-
-                const sourceNear = sourceConfig.crossChainInformation.nearIntentInformation?.support;
-                const destNear = destConfig.crossChainInformation.nearIntentInformation?.support;
-
-                if (sourceNear && destNear) return null;
-
-                return `Ruta no disponible para USDC: Se requiere soporte CCTP o Near Intents en ambas chains.`;
-            }
-        }
-
-        return null;
-    }, [sourceChain, destChain, sourceToken, destToken]);
-};
-
-// -- Helper Hook: Max Amount Calculation --
-const useMaxTransferAmount = (
-    address: string | undefined | null,
-    sourceChain: string,
-    destChain: string,
-    sourceToken: string,
-    destToken: string,
-    stellarPrivateKey: string | null
-) => {
-    const [maxAmount, setMaxAmount] = useState(0);
-    const [balance, setBalance] = useState(0);
-
-    // Calculate expected fee for Max calc (independent of amount entered)
-    const expectedFee = useMemo(() => {
-        if (process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development") return 0;
-
-        let feeVal = 0.02; // Default Cross-chain
-        if (sourceChain === destChain) {
-            feeVal = sourceToken !== destToken ? 0.02 : 0.01;
-        }
-        return feeVal;
-    }, [sourceChain, destChain, sourceToken, destToken]);
-
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchBalance = async () => {
-            if (!address) {
-                if (isMounted) {
-                    setMaxAmount(0);
-                    setBalance(0);
-                }
-                return;
-            }
-
-            // Stellar Logic
-            if (sourceChain === STELLAR_CHAIN_KEY) {
-                if (!stellarPrivateKey) {
-                    if (isMounted) {
-                        setMaxAmount(0);
-                        setBalance(0);
-                    }
-                    return;
-                }
-
-                try {
-                    const { Keypair } = await import("stellar-sdk");
-                    const keypair = Keypair.fromSecret(stellarPrivateKey);
-                    const publicKey = keypair.publicKey();
-
-                    if (sourceToken === "XLM") {
-                        // XLM is Native. Fee is paid in XLM.
-                        // Max = Balance - Reserve (1.0) - Fee
-                        const server = new (await import("stellar-sdk")).Horizon.Server("https://horizon.stellar.org");
-                        const account = await server.loadAccount(publicKey);
-                        const native = account.balances.find((b) => b.asset_type === "native");
-                        const bal = native ? parseFloat(native.balance) : 0;
-                        const max = bal - 1.1 - expectedFee;
-                        if (isMounted) {
-                            setBalance(bal);
-                            setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
-                        }
-                    } else {
-                        // USDC or other Asset. Fee is paid in Asset (simplification).
-                        const bal = await getStellarUSDCBalance(publicKey);
-                        if (bal !== null) {
-                            const max = bal - expectedFee;
-                            if (isMounted) {
-                                setBalance(bal);
-                                setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
-                            }
-                        } else {
-                            if (isMounted) {
-                                setMaxAmount(0);
-                                setBalance(0);
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error("Error fetching Stellar balance:", e);
-                    if (isMounted) {
-                        setMaxAmount(0);
-                        setBalance(0);
-                    }
-                }
-                return;
-            }
-
-            // EVM Logic
-            const networkConfig = NETWORKS[sourceChain as keyof typeof NETWORKS];
-            if (!networkConfig || !networkConfig.evm) {
-                if (isMounted) {
-                    setMaxAmount(0);
-                    setBalance(0);
-                }
-                return;
-            }
-
-            const tokenName = sourceToken || "USDC";
-            const assetInfo = networkConfig.assets.find(a => a.name === tokenName);
-            const tokenAddress = assetInfo?.address;
-
-            try {
-                if (tokenAddress) {
-                    const { balance: rawBal } = await getBalanceFromChain(
-                        networkConfig.evm.chain,
-                        address as Address,
-                        tokenAddress as Address,
-                        assetInfo?.decimals // [NEW] Pass decimals from config
-                    );
-                    const numBalance = Number(rawBal || 0);
-
-                    // For ERC20, we don't need gas reserve (paid in ETH).
-                    // But we MUST cover the facilitator fee which is added to the amount input.
-                    // MaxInput = Balance - Fee.
-                    const max = numBalance - expectedFee;
-
-                    // Add tiny buffer for rounding errors if needed, but exact math should work for ERC20.
-                    // However, Javascript math can be wonky. (0.2 + 0.01 = 0.21000000001)
-                    // Let's ceil the decimals to 6 before comparing.
-                    // Or better, subtract a tiny epsilon.
-
-                    // Also, we need to ensure that when we reverse calculate: (max + fee).toFixed(6) <= balance
-
-                    if (isMounted) {
-                        setBalance(numBalance);
-                        setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
-                    }
-                }
-            } catch (err) {
-                console.error("Error fetching max amount:", err);
-                if (isMounted) {
-                    setMaxAmount(0);
-                    setBalance(0);
-                }
-            }
-        };
-
-        fetchBalance();
-        return () => { isMounted = false; };
-    }, [address, sourceChain, destChain, sourceToken, destToken, stellarPrivateKey, expectedFee]);
-
-    return { maxAmount, balance };
-};
+// [DELETED LOCAL HOOKS: useRouteValidation, useMaxTransferAmount]
 
 export const useCrossChainTransfer = () => {
     const { crossChainOpen: open, openCrossChain: setOpen, closeCrossChain: closeModal } = useDashboardModalsStore();
@@ -248,7 +55,14 @@ export const useCrossChainTransfer = () => {
     const [provider, setProvider] = useState<any>(null);
 
     const { address, isUsingXO } = useXOContracts();
-    const mainWallet = useXOWalletStore((s) => s.mainWallet);
+    const encryptedPrivateKey = useXOWalletStore(s => s.mainWallet.encryptedPrivateKey);
+    const encryptedPrivateKeyStellar = useXOWalletStore(s => s.mainWallet.encryptedPrivateKeyStellar);
+    const salt = useXOWalletStore(s => s.mainWallet.salt);
+    const iv = useXOWalletStore(s => s.mainWallet.iv);
+    const addressStellarStored = useXOWalletStore(s => s.mainWallet.addressStellar);
+    const addressStored = useXOWalletStore(s => s.mainWallet.address);
+    const chains = useXOWalletStore(s => s.mainWallet.chains); // [NEW] Get cached chains
+
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
 
     // Setup Provider / Keys
@@ -267,33 +81,32 @@ export const useCrossChainTransfer = () => {
                 } catch (e) {
                     console.error("Error setting up XO provider:", e);
                 }
-            } else if (mainWallet.encryptedPrivateKey && currentPassword) {
+            } else if (encryptedPrivateKey && currentPassword) {
                 try {
                     const pk = await decryptPrivateKey(
-                        mainWallet.encryptedPrivateKey,
+                        encryptedPrivateKey,
                         currentPassword,
-                        mainWallet.salt!,
-                        mainWallet.iv!
+                        salt!,
+                        iv!
                     );
                     setPrivateKey(pk as `0x${string}`);
 
-                    if (mainWallet.encryptedPrivateKeyStellar) {
+                    if (encryptedPrivateKeyStellar) {
                         const pkStellar = await decryptPrivateKey(
-                            mainWallet.encryptedPrivateKeyStellar,
+                            encryptedPrivateKeyStellar,
                             currentPassword,
-                            mainWallet.salt!,
-                            mainWallet.iv!
+                            salt!,
+                            iv!
                         );
                         setStellarPrivateKey(pkStellar);
                     }
-                    console.log(">>> Private Key local cargada");
                 } catch (e) {
                     console.error("Error decrypting private key:", e);
                 }
             }
         };
         setup();
-    }, [isUsingXO, mainWallet, currentPassword]);
+    }, [isUsingXO, encryptedPrivateKey, encryptedPrivateKeyStellar, salt, iv, currentPassword]);
 
     const { executeHybridTransfer, isLoading: isHybridLoading } = useHybridBridgeStrategy();
 
@@ -333,11 +146,18 @@ export const useCrossChainTransfer = () => {
 
     const isCrossChain = watchSourceChain !== watchDestChain || watchSourceToken !== watchDestToken;
 
+    // -- Helper: Get Chain Config Safely --
+    const getChainConfig = (key: string) => {
+        if (key === STELLAR_CHAIN_KEY) return STELLAR;
+        return NETWORKS[key as keyof typeof NETWORKS];
+    };
+
     // Price Fetching Logic
     const currentCoinGeckoId = useMemo(() => {
-        if (!NETWORKS[watchSourceChain]) return undefined;
+        const config = getChainConfig(watchSourceChain);
+        if (!config) return undefined;
         // Find asset in config
-        const asset = NETWORKS[watchSourceChain].assets.find(a => a.name === watchSourceToken);
+        const asset = config.assets.find(a => a.name === watchSourceToken);
         return asset?.coingeckoId;
     }, [watchSourceChain, watchSourceToken]);
 
@@ -345,16 +165,26 @@ export const useCrossChainTransfer = () => {
 
     // [NEW] Destination Token Price Logic
     const currentDestCoinGeckoId = useMemo(() => {
-        if (!NETWORKS[watchDestChain]) return undefined;
+        const config = getChainConfig(watchDestChain);
+        if (!config) return undefined;
         // Find asset in config
-        const asset = NETWORKS[watchDestChain].assets.find(a => a.name === watchDestToken);
+        const asset = config.assets.find(a => a.name === watchDestToken);
         return asset?.coingeckoId;
     }, [watchDestChain, watchDestToken]);
 
     const { price: destTokenPrice, loading: destTokenPriceLoading } = useTokenPrice(currentDestCoinGeckoId);
 
-    // Derived State
-    const { maxAmount, balance } = useMaxTransferAmount(address, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, stellarPrivateKey);
+    // Derived State using Imported Hooks
+    const { maxAmount, balance } = useMaxTransferAmount(
+        address,
+        watchSourceChain,
+        watchDestChain,
+        watchSourceToken,
+        watchDestToken,
+        stellarPrivateKey,
+        chains
+    );
+
     const routeError = useRouteValidation(watchSourceChain, watchDestChain, watchSourceToken, watchDestToken);
 
     const minAmount = useMemo(() => {
@@ -375,40 +205,15 @@ export const useCrossChainTransfer = () => {
         return !isNaN(amount) && amount > maxAmount;
     }, [watchAmount, maxAmount]);
 
-    const fee = useMemo(() => {
-        if (process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development") return "0";
-        if (!watchAmount) return "0.00";
-
-        let usdFee = 0.02; // Default Cross-chain
-        if (watchSourceChain === watchDestChain) {
-            // Swap = 0.02, Transfer = 0.01
-            usdFee = watchSourceToken !== watchDestToken ? 0.02 : 0.01;
-        }
-
-        // If dealing with USDC, fee is just the USD amount
-        const isUSDC = watchSourceToken.includes("USDC");
-        if (isUSDC) return usdFee.toFixed(2);
-
-        // If Native/Other, convert USD fee to Token Amount
-        if (tokenPrice && tokenPrice > 0) {
-            const nativeFee = usdFee / tokenPrice;
-            // Return with high precision for crypto
-            return nativeFee.toFixed(8); // e.g. 0.000033 BNB
-        }
-
-        // Fallback if no price available (user must ensure enough buffer, or we default to 0 for safety/error)
-        return "0.00";
-    }, [watchAmount, watchDestChain, watchSourceChain, watchSourceToken, watchDestToken, tokenPrice]);
-
-    const total = useMemo(() => {
-        const amount = parseFloat(watchAmount || "0");
-        const feeVal = parseFloat(fee);
-        return (amount + feeVal).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 6,
-            useGrouping: false
-        });
-    }, [watchAmount, fee]);
+    // Use New Fee Hook
+    const { fee, total } = useTransferFee(
+        watchAmount,
+        watchSourceChain,
+        watchDestChain,
+        watchSourceToken,
+        watchDestToken,
+        tokenPrice || undefined
+    );
 
     const openModal = () => setOpen();
     const handleCloseModal = () => {
@@ -455,6 +260,78 @@ export const useCrossChainTransfer = () => {
         const finalAmount = (amount + currentFee).toFixed(6);
 
         console.log(`Preparing transfer: Amount=${amount} + Fee=${currentFee} = Total=${finalAmount}`);
+
+        // [NEW] Check for Direct Native Transfer (Same Chain + Same Token + Not USDC)
+        const isSameChain = data.sourceChain === data.destChain;
+        const isSameToken = data.sourceToken === data.destToken;
+        const isUSDCSource = data.sourceToken.toUpperCase().includes("USDC");
+
+        if (isSameChain && isSameToken && !isUSDCSource) {
+            // --- DIRECT NATIVE TRANSFER ---
+            console.log("[SendMoney] Executing Direct Native Transfer");
+            try {
+                const networkConfig = NETWORKS[data.sourceChain];
+                if (!networkConfig || !networkConfig.evm) throw new Error("Invalid chain config");
+
+                const tokenInfo = networkConfig.assets.find(a => a.name === data.sourceToken);
+                if (!tokenInfo) throw new Error("Token info not found");
+
+                // Double check it is indeed native (0x0 address)
+                if (tokenInfo.address !== "0x0000000000000000000000000000000000000000") {
+                    // If it's a standard ERC20 on same chain, we could also do direct transfer here, 
+                    // but sticking to "Native" requirement for now. 
+                    // (Actually, if it's same chain ERC20, we should probably just do direct ERC20 transfer too, but user asked specifically about Native Fee bypass)
+                    console.log("Not 0x0 address, falling back to standard flow (though likely should be direct too)");
+                } else {
+                    // Proceed with Native Transfer
+                    const amountBigInt = BigInt(Math.floor(parseFloat(data.amount) * 10 ** 18)); // Native is always 18? check decimals
+
+                    let txHash;
+
+                    if (isUsingXO && provider) {
+                        // Use XO Provider
+                        txHash = await provider.request({
+                            method: "eth_sendTransaction",
+                            params: [{
+                                from: address,
+                                to: data.recipient as Address,
+                                value: "0x" + amountBigInt.toString(16),
+                                data: "0x"
+                            }]
+                        });
+                    } else if (address && privateKey) {
+                        // Use Local Viem Client
+                        const { createWalletClient, http } = await import("viem");
+                        const { privateKeyToAccount } = await import("viem/accounts");
+
+                        const account = privateKeyToAccount(privateKey as `0x${string}`);
+                        const walletClient = createWalletClient({
+                            account,
+                            chain: networkConfig.evm.chain,
+                            transport: http()
+                        });
+
+                        txHash = await walletClient.sendTransaction({
+                            to: data.recipient as Address,
+                            value: amountBigInt,
+                            account,
+                            chain: networkConfig.evm.chain
+                        });
+                    } else {
+                        throw new Error("No provider or private key available");
+                    }
+
+                    toast.success(`Transferencia Directa Exitosa! TX: ${txHash?.slice(0, 10)}...`);
+                    handleCloseModal();
+                    return;
+                }
+
+            } catch (e: any) {
+                console.error("Direct transfer failed", e);
+                toast.error("Error en transferencia directa: " + e.message);
+                return;
+            }
+        }
 
         // [NEW] Native 7702 Relayer Strategy (Gasless Execution)
         // Check if we should use 7702 Relayer instead of Standard/CCTP
@@ -541,7 +418,7 @@ export const useCrossChainTransfer = () => {
                 destToken: data.destToken,
                 sourceToken: data.sourceToken,
                 facilitatorFee: fee,
-                sender: (data.sourceChain === "Stellar" ? mainWallet?.addressStellar : mainWallet?.address) || undefined
+                sender: (data.sourceChain === "Stellar" ? addressStellarStored : addressStored) || undefined
             });
 
             if (result.success) {

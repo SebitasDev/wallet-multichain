@@ -4,8 +4,9 @@ import { Box, Typography, IconButton, Button } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import BackspaceOutlinedIcon from "@mui/icons-material/BackspaceOutlined";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useUserStore } from "@/app/store/useUserStore";
+import { ResetWalletModal } from "./ResetWalletModal";
 
 interface PasswordModalFormProps {
     password: string;
@@ -29,6 +30,7 @@ export const PasswordModalForm = ({
     onSubmit
 }: PasswordModalFormProps) => {
     const { email } = useUserStore();
+    const [showResetModal, setShowResetModal] = useState(false);
     const MAX_LENGTH = 6;
 
     const handleNumberClick = (num: string) => {
@@ -101,6 +103,7 @@ export const PasswordModalForm = ({
             <Box mb={2} textAlign="center">
                 <Typography
                     variant="body2"
+
                     sx={{ color: "#00DC8C", fontWeight: 600, cursor: "pointer", fontSize: 12 }}
                 >
                     Olvidé mi clave
@@ -197,6 +200,16 @@ export const PasswordModalForm = ({
                     {error}
                 </Typography>
             )}
+
+            <ResetWalletModal
+                open={showResetModal}
+                onClose={() => setShowResetModal(false)}
+                onConfirm={() => {
+                    window.localStorage.clear();
+                    window.sessionStorage.clear();
+                    window.location.reload();
+                }}
+            />
         </Box>
     );
 };
