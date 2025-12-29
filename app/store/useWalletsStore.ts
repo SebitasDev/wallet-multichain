@@ -10,6 +10,7 @@ import { NETWORKS } from "@/app/constants/chainsInformation";
 import { Address } from "abitype";
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { calculateTotalFees } from "@/app/utils/calculateFees";
+import { pricesApi } from "@/app/services/api/prices";
 
 export interface ChainInfo {
     chainId: string;
@@ -85,6 +86,18 @@ export const useWalletStore = create<WalletStore>()(
                 );
                 if (exists) throw new Error("Esta wallet ya está agregada");
 
+                // 1. Get Prices for all assets
+                const allAssetIds = new Set<string>();
+                Object.values(NETWORKS).forEach(network => {
+                    if (network.evm) {
+                        network.assets.forEach(asset => {
+                            if (asset.coingeckoId) allAssetIds.add(asset.coingeckoId);
+                        });
+                    }
+                });
+                allAssetIds.add("usd-coin");
+                const prices = await pricesApi.getPrices(Array.from(allAssetIds));
+
                 const chains: ChainInfo[] = await Promise.all(
                     Object.values(NETWORKS).map(async (network) => {
                         if (!network.evm) {
@@ -96,8 +109,8 @@ export const useWalletStore = create<WalletStore>()(
                         }
 
                         try {
-                            // Initial fetch of USDC (legacy amount) and all tokens
                             const tokenBalances: Record<string, number> = {};
+                            let chainTotalUsd = 0;
 
                             // Iterate over all assets to fetch initial balances
                             await Promise.all(network.assets.map(async (asset) => {
@@ -109,16 +122,28 @@ export const useWalletStore = create<WalletStore>()(
                                         asset.address as Address,
                                         asset.decimals
                                     );
-                                    tokenBalances[asset.name] = Number(balance || 0);
+                                    const numBalance = Number(balance || 0);
+                                    const safeBalance = isNaN(numBalance) ? 0 : numBalance;
+                                    tokenBalances[asset.name] = safeBalance;
+
+                                    // Calculate USD
+                                    let price = 0;
+                                    if (asset.coingeckoId && prices[asset.coingeckoId] && typeof prices[asset.coingeckoId].usd === 'number') {
+                                        price = prices[asset.coingeckoId].usd;
+                                    } else if (asset.name.includes("USD")) {
+                                        price = 1;
+                                    }
+
+                                    chainTotalUsd += safeBalance * price;
                                 } catch (e) {
-                                    console.error(`Failed to fetch initial balance for ${asset.name} on ${network.label}`, e);
+                                    // console.error(`Failed to fetch initial balance for ${asset.name} on ${network.label}`, e);
                                     tokenBalances[asset.name] = 0;
                                 }
                             }));
 
                             return {
                                 chainId: network.evm.chain.id.toString(),
-                                amount: tokenBalances["USDC"] || 0, // Legacy support
+                                amount: isNaN(chainTotalUsd) ? 0 : chainTotalUsd, // Initial Total USD
                                 tokens: tokenBalances
                             };
                         } catch (err) {
@@ -256,6 +281,9 @@ export const useWalletStore = create<WalletStore>()(
             // -----------------------------
             // GET BALANCE DE UNA CADENA ESPECÍFICA
             // -----------------------------
+            // -----------------------------
+            // GET BALANCE DE UNA CADENA ESPECÍFICA
+            // -----------------------------
             getWalletBalanceByChain: async (walletAddress: Address, chainId: string) => {
                 const wallet = get().wallets.find(
                     (w) => w.address.toLowerCase() === walletAddress.toLowerCase()
@@ -263,7 +291,7 @@ export const useWalletStore = create<WalletStore>()(
                 if (!wallet) throw new Error("Wallet no encontrada");
 
                 const chainInfo = wallet.chains.find((c) => c.chainId === chainId);
-                if (!chainInfo) throw new Error("Chain no encontrada en esta wallet", chainInfo);
+                if (!chainInfo) throw new Error("Chain no encontrada en esta wallet");
 
                 try {
                     const network = Object.values(NETWORKS).find(
@@ -271,20 +299,49 @@ export const useWalletStore = create<WalletStore>()(
                     );
                     if (!network || !network.evm) throw new Error("Network config no encontrada");
 
-                    const usdcAsset = network.assets.find(a => a.name === "USDC");
-                    const usdcAddress = usdcAsset?.address;
-                    if (!usdcAddress) throw new Error("USDC address not found");
+                    // 1. Get Prices for this network's assets
+                    const assetIds = network.assets
+                        .map(a => a.coingeckoId)
+                        .filter((id): id is string => !!id);
+                    assetIds.push("usd-coin"); // Ensure USDC is there
+                    const prices = await pricesApi.getPrices(assetIds);
 
-                    const { balance } = await getBalanceFromChain(
-                        network.evm.chain,
-                        wallet.address as Address,
-                        usdcAddress as Address,
-                        usdcAsset.decimals // Pass decimals
-                    );
+                    const tokenBalances: Record<string, number> = { ...chainInfo.tokens };
+                    let chainTotalUsd = 0;
+
+                    // 2. Refresh all assets on this chain
+                    await Promise.all(network.assets.map(async (asset) => {
+                        if (!asset.address) return;
+                        try {
+                            const { balance } = await getBalanceFromChain(
+                                network.evm!.chain,
+                                wallet.address as Address,
+                                asset.address as Address,
+                                asset.decimals
+                            );
+                            const numBalance = Number(balance || 0);
+                            const safeBalance = isNaN(numBalance) ? 0 : numBalance;
+                            tokenBalances[asset.name] = safeBalance;
+
+                            // Calculate USD
+                            let price = 0;
+                            if (asset.coingeckoId && prices[asset.coingeckoId] && typeof prices[asset.coingeckoId].usd === 'number') {
+                                price = prices[asset.coingeckoId].usd;
+                            } else if (asset.name.includes("USD")) {
+                                price = 1;
+                            }
+
+                            chainTotalUsd += safeBalance * price;
+                        } catch (e) {
+                            // Ignore error
+                        }
+                    }));
+
+                    const safeTotalUsd = isNaN(chainTotalUsd) ? 0 : chainTotalUsd;
 
                     // Actualizar el balance en el store
                     const updatedChains = wallet.chains.map((c) =>
-                        c.chainId === chainId ? { ...c, amount: Number(balance || 0) } : c
+                        c.chainId === chainId ? { ...c, amount: safeTotalUsd, tokens: tokenBalances } : c
                     );
 
                     set({
@@ -295,7 +352,7 @@ export const useWalletStore = create<WalletStore>()(
                         ),
                     });
 
-                    return Number(balance || 0);
+                    return safeTotalUsd;
                 } catch (err) {
                     console.error(
                         `Error al obtener balance de wallet ${walletAddress} en chain ${chainId}`,
