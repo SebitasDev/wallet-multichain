@@ -60,10 +60,53 @@ export class StandardBridgeStrategy implements BridgeStrategy {
             );
 
             if (!log) {
-                // Maybe it's a Native Transfer? (Not supported for Bridge yet usually implies Wrapped)
-                // Or we missed it.
-                // For safety:
-                throw new Error("No ERC20 Transfer to Facilitator found in transaction logs");
+                // Check if it's a Native Transfer (AVAX, ETH)
+                console.log("[StandardBridgeStrategy] No ERC20 Logs found. Checking for Native Transfer...");
+
+                // Fetch full Transaction to check value
+                const tx = await publicClient.getTransaction({ hash: txHash });
+
+                if (!tx) {
+                    throw new Error("Transaction not found");
+                }
+
+                // Verify To matches Facilitator
+                if (tx.to?.toLowerCase() !== FACILITATOR_ADDRESS.toLowerCase()) {
+                    throw new Error(`Invalid Native Transfer Recipient. Expected ${FACILITATOR_ADDRESS}, got ${tx.to}`);
+                }
+
+                // Determine expected amount
+                // Native is always 18 decimals usually (AVAX, ETH, etc are 18)
+                // Use tokenConfig if available, but native address 0x0 implies 18 usually.
+                // We should check tokenConfig from sourceToken to be safe.
+                const tokenConfig = networkConfig.assets.find(a => a.name === (sourceToken || "USDC"));
+                const decimals = tokenConfig?.decimals || 18;
+                const expectedAmountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** decimals));
+
+                if (tx.value < expectedAmountBigInt) {
+                    throw new Error(`Insufficient Native Value. Expected ${expectedAmountBigInt}, got ${tx.value}`);
+                }
+
+                console.log("[StandardBridgeStrategy] Native Transaction Verified ✅");
+                // If valid native transfer, we proceed.
+            } else {
+                // ERC20 Verification Logic (Wrapped in block to match structure)
+                // Check Token Address
+                const tokenConfig = networkConfig.assets.find(a => a.name === (sourceToken || "USDC"));
+                if (tokenConfig && tokenConfig.address && log.address.toLowerCase() !== tokenConfig.address.toLowerCase()) {
+                    throw new Error(`Token Mismatch. Expected ${tokenConfig.address}, got ${log.address}`);
+                }
+
+                // Check Amount (Data part of log)
+                const decimals = tokenConfig?.decimals || 6;
+                const expectedAmountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** decimals));
+
+                const transferredAmount = BigInt(log.data);
+
+                if (transferredAmount < expectedAmountBigInt) {
+                    throw new Error(`Insufficient Amount Bridge. Expected ${expectedAmountBigInt}, got ${transferredAmount}`);
+                }
+                console.log("[StandardBridgeStrategy] ERC20 Transaction Verified ✅");
             }
 
             // Check Token Address

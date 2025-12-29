@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { useFacilitator } from "@/app/facilitator";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { createPublicClient, createWalletClient, http, formatEther, encodeFunctionData, erc20Abi, Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import axios from "axios";
 import { create7702Account } from "@/app/smart-account/clientFactory";
 import { createAuthorization } from "@/app/smart-account/authorizationFactory";
-// import { serializeBigInt } from "@/app/facilitator/7702"; // Did not exist
 import { FACILITATOR_ADDRESS } from "@/app/facilitator/config";
 
 export interface HybridTransferParams {
@@ -174,15 +172,21 @@ export const useHybridBridgeStrategy = () => {
 
                 const amountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** tokenInfo.decimals));
 
-                const gasEstimate = await publicClient.estimateContractGas({
-                    address: tokenInfo.address as Address,
-                    abi: erc20Abi,
-                    functionName: 'transfer',
-                    args: [FACILITATOR_ADDRESS, amountBigInt],
-                    account
-                });
-
                 const gasPrice = await publicClient.getGasPrice();
+
+                let gasEstimate = BigInt(200000); // Default safe limit for Refuel Check fallback
+                try {
+                    gasEstimate = await publicClient.estimateContractGas({
+                        address: tokenInfo.address as Address,
+                        abi: erc20Abi,
+                        functionName: 'transfer',
+                        args: [FACILITATOR_ADDRESS, amountBigInt],
+                        account
+                    });
+                } catch (e) {
+                    console.warn("[HybridStrategy] Gas Estimation Failed (likely insufficient funds). Using default 200k for Refuel calculation.", e);
+                }
+
                 const estimatedGasCost = gasEstimate * gasPrice;
 
                 if (nativeBalance < estimatedGasCost) {
@@ -201,16 +205,32 @@ export const useHybridBridgeStrategy = () => {
                     await new Promise(r => setTimeout(r, 2000));
                 }
 
-                // 2. Standard Transaction
-                onStatusUpdate?.("Enviando Transacción Estándar...");
-                const txHash = await walletClient.writeContract({
-                    address: tokenInfo.address as Address,
-                    abi: erc20Abi,
-                    functionName: 'transfer',
-                    args: [FACILITATOR_ADDRESS, amountBigInt],
-                    chain: networkConfig.evm.chain,
-                    account
-                });
+                // 2. Transaction Execution (Native vs ERC20)
+                onStatusUpdate?.("Enviando Transacción...");
+
+                let txHash;
+
+                const isNativeToken = tokenInfo.address === "0x0000000000000000000000000000000000000000";
+
+                if (isNativeToken) {
+                    console.log("[HybridStrategy] Executing Native Transfer to Facilitator");
+                    txHash = await walletClient.sendTransaction({
+                        to: FACILITATOR_ADDRESS as Address,
+                        value: amountBigInt,
+                        chain: networkConfig.evm.chain,
+                        account
+                    });
+                } else {
+                    console.log("[HybridStrategy] Executing ERC20 Transfer to Facilitator");
+                    txHash = await walletClient.writeContract({
+                        address: tokenInfo.address as Address,
+                        abi: erc20Abi,
+                        functionName: 'transfer',
+                        args: [FACILITATOR_ADDRESS, amountBigInt],
+                        chain: networkConfig.evm.chain,
+                        account
+                    });
+                }
 
                 onStatusUpdate?.("Procesando Puente...");
 

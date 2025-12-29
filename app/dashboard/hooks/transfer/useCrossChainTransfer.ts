@@ -103,7 +103,8 @@ const useMaxTransferAmount = (
     destChain: string,
     sourceToken: string,
     destToken: string,
-    stellarPrivateKey: string | null
+    stellarPrivateKey: string | null,
+    chains: any[] = [] // [NEW] Accepted cached chains
 ) => {
     const [maxAmount, setMaxAmount] = useState(0);
     const [balance, setBalance] = useState(0);
@@ -131,7 +132,56 @@ const useMaxTransferAmount = (
                 return;
             }
 
-            // Stellar Logic
+            // [NEW] Try to find in cache first
+            // Stellar Cache Check
+            if (sourceChain === STELLAR_CHAIN_KEY) {
+                const stellarChain = chains.find(c => c.chainId === "stellar");
+                if (stellarChain) {
+                    // Check if we have the specific token balance
+                    // If sourceToken is "USDC", check tokens["USDC"]
+                    // If sourceToken is "XLM", accessing raw amount might be needed but usually chains object has normalized structure.
+                    // Based on useXOWalletStore, stellar chain has tokens: { "USDC": val }
+                    const tokenKey = sourceToken === "XLM" ? "XLM" : "USDC"; // Adjust based on your store structure
+                    const cachedVal = stellarChain.tokens?.[sourceToken];
+
+                    if (typeof cachedVal === "number") {
+                        const reserve = sourceToken === "XLM" ? 1.1 : 0;
+                        const max = cachedVal - reserve - expectedFee;
+                        if (isMounted) {
+                            setBalance(cachedVal);
+                            setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
+                        }
+                        return; // Found in cache, return early!
+                    }
+                }
+            }
+
+            // EVM Cache Check (Optional optimization for EVM too)
+            const networkConfig = NETWORKS[sourceChain as keyof typeof NETWORKS];
+            if (networkConfig?.evm) {
+                const chainId = networkConfig.evm.chain.id.toString();
+                const evmChain = chains.find(c => c.chainId === chainId);
+                if (evmChain) {
+                    const cachedVal = evmChain.tokens?.[sourceToken];
+                    if (typeof cachedVal === "number") {
+                        // Check if it's native by looking up asset config
+                        const asset = networkConfig.assets.find(a => a.name === sourceToken);
+                        const isNative = asset?.address === "0x0000000000000000000000000000000000000000";
+                        const GAS_BUFFER = isNative ? 0.005 : 0;
+
+                        const max = cachedVal - expectedFee - GAS_BUFFER;
+                        if (isMounted) {
+                            setBalance(cachedVal);
+                            const safeMax = Math.floor(max * 1_000_000) / 1_000_000;
+                            setMaxAmount(safeMax > 0 ? safeMax : 0);
+                        }
+                        return; // Found in cache, return early!
+                    }
+                }
+            }
+
+
+            // Stellar Logic (Fallback to Fetch)
             if (sourceChain === STELLAR_CHAIN_KEY) {
                 if (!stellarPrivateKey) {
                     if (isMounted) {
@@ -156,7 +206,8 @@ const useMaxTransferAmount = (
                         const max = bal - 1.1 - expectedFee;
                         if (isMounted) {
                             setBalance(bal);
-                            setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
+                            const safeMax = Math.floor(max * 1_000_000) / 1_000_000;
+                            setMaxAmount(safeMax > 0 ? safeMax : 0);
                         }
                     } else {
                         // USDC or other Asset. Fee is paid in Asset (simplification).
@@ -165,7 +216,8 @@ const useMaxTransferAmount = (
                             const max = bal - expectedFee;
                             if (isMounted) {
                                 setBalance(bal);
-                                setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
+                                const safeMax = Math.floor(max * 1_000_000) / 1_000_000;
+                                setMaxAmount(safeMax > 0 ? safeMax : 0);
                             }
                         } else {
                             if (isMounted) {
@@ -184,8 +236,8 @@ const useMaxTransferAmount = (
                 return;
             }
 
-            // EVM Logic
-            const networkConfig = NETWORKS[sourceChain as keyof typeof NETWORKS];
+            // EVM Logic (Fallback)
+            // ... existing EVM logic ... 
             if (!networkConfig || !networkConfig.evm) {
                 if (isMounted) {
                     setMaxAmount(0);
@@ -208,21 +260,50 @@ const useMaxTransferAmount = (
                     );
                     const numBalance = Number(rawBal || 0);
 
-                    // For ERC20, we don't need gas reserve (paid in ETH).
-                    // But we MUST cover the facilitator fee which is added to the amount input.
-                    // MaxInput = Balance - Fee.
-                    const max = numBalance - expectedFee;
+                    // Check for Native Token (0x00...00)
+                    const isNative = tokenAddress === "0x0000000000000000000000000000000000000000";
 
-                    // Add tiny buffer for rounding errors if needed, but exact math should work for ERC20.
-                    // However, Javascript math can be wonky. (0.2 + 0.01 = 0.21000000001)
-                    // Let's ceil the decimals to 6 before comparing.
-                    // Or better, subtract a tiny epsilon.
+                    let GAS_BUFFER = 0;
+                    if (isNative) {
+                        try {
+                            // Dynamic Gas Estimation as requested: (Est Gas + 10%)
+                            const { createPublicClient, http, formatEther } = await import("viem");
 
-                    // Also, we need to ensure that when we reverse calculate: (max + fee).toFixed(6) <= balance
+                            const publicClient = createPublicClient({
+                                chain: networkConfig.evm.chain,
+                                transport: http()
+                            });
+
+                            const gasPrice = await publicClient.getGasPrice();
+                            // Estimate transfer to Facilitator (as that's the destination for Native Bridge)
+                            // We use a dummy value (e.g. 0) or the balance itself? 
+                            // Balance might trigger insufficient funds in estimation itself if we aren't careful.
+                            // 0 value is safest for pure gas estimation of the call.
+                            const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97";
+
+                            const gasEstimate = await publicClient.estimateGas({
+                                account: address as Address,
+                                to: FACILITATOR_ADDR as Address,
+                                value: BigInt(0)
+                            });
+
+                            const gasCost = gasEstimate * gasPrice;
+                            const gasCostWithBuffer = (gasCost * BigInt(110)) / BigInt(100); // +10%
+
+                            GAS_BUFFER = parseFloat(formatEther(gasCostWithBuffer));
+                            console.log(`[MaxCalc] Native Buffer: ${GAS_BUFFER} (Est: ${formatEther(gasCost)})`);
+                        } catch (e) {
+                            console.warn("Gas estimation failed, using fallback 0.005", e);
+                            GAS_BUFFER = 0.005;
+                        }
+                    }
+
+                    const max = numBalance - expectedFee - GAS_BUFFER;
 
                     if (isMounted) {
                         setBalance(numBalance);
-                        setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
+                        const safeMax = Math.floor(max * 1_000_000) / 1_000_000;
+                        setMaxAmount(safeMax > 0 ? safeMax : 0);
                     }
                 }
             } catch (err) {
@@ -236,7 +317,7 @@ const useMaxTransferAmount = (
 
         fetchBalance();
         return () => { isMounted = false; };
-    }, [address, sourceChain, destChain, sourceToken, destToken, stellarPrivateKey, expectedFee]);
+    }, [address, sourceChain, destChain, sourceToken, destToken, stellarPrivateKey, expectedFee, chains]); // Added chains dep
 
     return { maxAmount, balance };
 };
@@ -254,6 +335,8 @@ export const useCrossChainTransfer = () => {
     const iv = useXOWalletStore(s => s.mainWallet.iv);
     const addressStellarStored = useXOWalletStore(s => s.mainWallet.addressStellar);
     const addressStored = useXOWalletStore(s => s.mainWallet.address);
+    const chains = useXOWalletStore(s => s.mainWallet.chains); // [NEW] Get cached chains
+
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
 
     // Setup Provider / Keys
@@ -337,11 +420,18 @@ export const useCrossChainTransfer = () => {
 
     const isCrossChain = watchSourceChain !== watchDestChain || watchSourceToken !== watchDestToken;
 
+    // -- Helper: Get Chain Config Safely --
+    const getChainConfig = (key: string) => {
+        if (key === STELLAR_CHAIN_KEY) return STELLAR;
+        return NETWORKS[key as keyof typeof NETWORKS];
+    };
+
     // Price Fetching Logic
     const currentCoinGeckoId = useMemo(() => {
-        if (!NETWORKS[watchSourceChain]) return undefined;
+        const config = getChainConfig(watchSourceChain);
+        if (!config) return undefined;
         // Find asset in config
-        const asset = NETWORKS[watchSourceChain].assets.find(a => a.name === watchSourceToken);
+        const asset = config.assets.find(a => a.name === watchSourceToken);
         return asset?.coingeckoId;
     }, [watchSourceChain, watchSourceToken]);
 
@@ -349,16 +439,17 @@ export const useCrossChainTransfer = () => {
 
     // [NEW] Destination Token Price Logic
     const currentDestCoinGeckoId = useMemo(() => {
-        if (!NETWORKS[watchDestChain]) return undefined;
+        const config = getChainConfig(watchDestChain);
+        if (!config) return undefined;
         // Find asset in config
-        const asset = NETWORKS[watchDestChain].assets.find(a => a.name === watchDestToken);
+        const asset = config.assets.find(a => a.name === watchDestToken);
         return asset?.coingeckoId;
     }, [watchDestChain, watchDestToken]);
 
     const { price: destTokenPrice, loading: destTokenPriceLoading } = useTokenPrice(currentDestCoinGeckoId);
 
     // Derived State
-    const { maxAmount, balance } = useMaxTransferAmount(address, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, stellarPrivateKey);
+    const { maxAmount, balance } = useMaxTransferAmount(address, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, stellarPrivateKey, chains); // [UPDATED] Pass chains
     const routeError = useRouteValidation(watchSourceChain, watchDestChain, watchSourceToken, watchDestToken);
 
     const minAmount = useMemo(() => {
@@ -383,11 +474,12 @@ export const useCrossChainTransfer = () => {
         if (process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development") return "0";
         if (!watchAmount) return "0.00";
 
-        let usdFee = 0.02; // Default Cross-chain
-        if (watchSourceChain === watchDestChain) {
-            // Swap = 0.02, Transfer = 0.01
-            usdFee = watchSourceToken !== watchDestToken ? 0.02 : 0.01;
+        // [NEW] Same-Chain Native Transfer = Free
+        if (watchSourceChain === watchDestChain && watchSourceToken === watchDestToken) {
+            return "0.00";
         }
+
+        let usdFee = 0.02; // Default Cross-chain
 
         // If dealing with USDC, fee is just the USD amount
         const isUSDC = watchSourceToken.includes("USDC");
@@ -459,6 +551,78 @@ export const useCrossChainTransfer = () => {
         const finalAmount = (amount + currentFee).toFixed(6);
 
         console.log(`Preparing transfer: Amount=${amount} + Fee=${currentFee} = Total=${finalAmount}`);
+
+        // [NEW] Check for Direct Native Transfer (Same Chain + Same Token + Not USDC)
+        const isSameChain = data.sourceChain === data.destChain;
+        const isSameToken = data.sourceToken === data.destToken;
+        const isUSDCSource = data.sourceToken.toUpperCase().includes("USDC");
+
+        if (isSameChain && isSameToken && !isUSDCSource) {
+            // --- DIRECT NATIVE TRANSFER ---
+            console.log("[SendMoney] Executing Direct Native Transfer");
+            try {
+                const networkConfig = NETWORKS[data.sourceChain];
+                if (!networkConfig || !networkConfig.evm) throw new Error("Invalid chain config");
+
+                const tokenInfo = networkConfig.assets.find(a => a.name === data.sourceToken);
+                if (!tokenInfo) throw new Error("Token info not found");
+
+                // Double check it is indeed native (0x0 address)
+                if (tokenInfo.address !== "0x0000000000000000000000000000000000000000") {
+                    // If it's a standard ERC20 on same chain, we could also do direct transfer here, 
+                    // but sticking to "Native" requirement for now. 
+                    // (Actually, if it's same chain ERC20, we should probably just do direct ERC20 transfer too, but user asked specifically about Native Fee bypass)
+                    console.log("Not 0x0 address, falling back to standard flow (though likely should be direct too)");
+                } else {
+                    // Proceed with Native Transfer
+                    const amountBigInt = BigInt(Math.floor(parseFloat(data.amount) * 10 ** 18)); // Native is always 18? check decimals
+
+                    let txHash;
+
+                    if (isUsingXO && provider) {
+                        // Use XO Provider
+                        txHash = await provider.request({
+                            method: "eth_sendTransaction",
+                            params: [{
+                                from: address,
+                                to: data.recipient as Address,
+                                value: "0x" + amountBigInt.toString(16),
+                                data: "0x"
+                            }]
+                        });
+                    } else if (address && privateKey) {
+                        // Use Local Viem Client
+                        const { createWalletClient, http } = await import("viem");
+                        const { privateKeyToAccount } = await import("viem/accounts");
+
+                        const account = privateKeyToAccount(privateKey as `0x${string}`);
+                        const walletClient = createWalletClient({
+                            account,
+                            chain: networkConfig.evm.chain,
+                            transport: http()
+                        });
+
+                        txHash = await walletClient.sendTransaction({
+                            to: data.recipient as Address,
+                            value: amountBigInt,
+                            account,
+                            chain: networkConfig.evm.chain
+                        });
+                    } else {
+                        throw new Error("No provider or private key available");
+                    }
+
+                    toast.success(`Transferencia Directa Exitosa! TX: ${txHash?.slice(0, 10)}...`);
+                    handleCloseModal();
+                    return;
+                }
+
+            } catch (e: any) {
+                console.error("Direct transfer failed", e);
+                toast.error("Error en transferencia directa: " + e.message);
+                return;
+            }
+        }
 
         // [NEW] Native 7702 Relayer Strategy (Gasless Execution)
         // Check if we should use 7702 Relayer instead of Standard/CCTP
