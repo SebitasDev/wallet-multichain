@@ -12,7 +12,7 @@ export const Monad: ChainConfig = {
         {
             name: "USDC",
             decimals: 6,
-            address: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address,
+            address: (isDevelopment ? "0x754704Bc059F8C67012fEd69BC8A327a5aafb603" : "0x754704Bc059F8C67012fEd69BC8A327a5aafb603") as Address,
             icon: <UsdcIcon />,
             coingeckoId: "usd-coin"
         },
