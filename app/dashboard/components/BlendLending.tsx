@@ -4,6 +4,7 @@ import Link from "next/link";
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { toast } from "react-toastify";
+import { useSearchParams } from "next/navigation";
 import { useBlend } from "../hooks/features/useBlend";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
@@ -16,6 +17,9 @@ import { NeoButton } from "@/app/components/atoms/NeoButton";
 export const BlendLending = () => {
     const { mainWallet } = useXOWalletStore();
     const { currentPassword } = useWalletPasswordStore();
+    const searchParams = useSearchParams();
+    const source = searchParams.get("source");
+    const backPath = source === "common" ? "/common-people/dashboard" : "/dashboard";
 
     // Asset Selection State
     const [selectedAsset, setSelectedAsset] = useState<"USDC" | "USDGLO">("USDC");
@@ -157,7 +161,7 @@ export const BlendLending = () => {
                     >
                         Necesitas configurar tu wallet de Stellar para usar Blend Lending.
                     </Typography>
-                    <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                    <Link href={backPath} style={{ textDecoration: 'none' }}>
                         <NeoButton
                             variant="text"
                             startIcon={<ArrowBackIcon />}
@@ -173,7 +177,7 @@ export const BlendLending = () => {
     return (
         <Box sx={{ maxWidth: 1000, mx: "auto", p: { xs: 2, md: 4 } }}>
             <Box display="flex" flexDirection={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems="center" mb={4} gap={2}>
-                <BlendHeader address={mainWallet.addressStellar} />
+                <BlendHeader address={mainWallet.addressStellar} backPath={backPath} />
 
                 {/* Asset Toggle */}
                 <ToggleButtonGroup

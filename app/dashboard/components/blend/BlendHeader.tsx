@@ -6,13 +6,14 @@ import SavingsIcon from '@mui/icons-material/Savings';
 
 interface BlendHeaderProps {
     address: string;
+    backPath?: string;
 }
 
-export const BlendHeader = ({ address }: BlendHeaderProps) => {
+export const BlendHeader = ({ address, backPath = "/dashboard" }: BlendHeaderProps) => {
     return (
         <Box mb={4}>
             {/* Back Button */}
-            <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+            <Link href={backPath} style={{ textDecoration: 'none' }}>
                 <Button
                     startIcon={<ArrowBackIcon />}
                     sx={{

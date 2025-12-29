@@ -37,11 +37,10 @@ import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 export function WalletHeader() {
     const router = useRouter();
     const [expanded, setExpanded] = useState(false);
-    const [showBalance, setShowBalance] = useState(true);
     const [selectedChain, setSelectedChain] = useState<ChainData | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const { language, toggleLanguage } = useLanguageStore();
-    const { name } = useUserStore();
+    const { name, showBalance, setShowBalance } = useUserStore();
     const { useLocal, toggleCurrency } = useCurrencyStore();
     const { openReceive } = useDashboardModalsStore();
     const { setSendModal } = useSendMoneyStore();
@@ -62,7 +61,7 @@ export function WalletHeader() {
     };
 
     // Local currency hook
-    const { code: localCode, formatParts: formatLocalParts, loading, symbol: localSymbol } = useLocalCurrency();
+    const { code: localCode, formatParts: formatLocalParts, loading, symbol: localSymbol, rate: currencyRate } = useLocalCurrency();
 
     // Determine values based on preference
     const isLocal = useLocal && !loading;
@@ -159,18 +158,48 @@ export function WalletHeader() {
         const walletChain = (mainWallet.chains || []).find(c => c.chainId === storeChainId);
         const totalAmount = walletChain ? walletChain.amount : 0;
 
+        // Convert to local currency for totalValue string fallback/calculation if needed elsewhere
+        const finalValue = (isLocal && !loading) ? totalAmount * currencyRate : totalAmount;
+
+        // Helper to format any amount
+        const getFormattedParts = (amount: number) => {
+            if (isLocal) {
+                const parts = formatLocalParts(amount);
+                const integer = parts.filter(p => p.type === "integer" || p.type === "group").map(p => p.value).join("");
+                const decimal = parts.find(p => p.type === "fraction")?.value || "00";
+                return {
+                    symbol: localSymbol,
+                    integer,
+                    decimal,
+                    code: localCode
+                };
+            } else {
+                const { int, dec } = formatMainBalance(amount);
+                return {
+                    symbol: "$",
+                    integer: int,
+                    decimal: dec,
+                    code: undefined // Don't show USD code, just symbol
+                };
+            }
+        };
+
+        const formattedBalance = getFormattedParts(totalAmount);
+
         return {
             id: chainMetadata.id,
             name: chainMetadata.name,
             icon: chainMetadata.icon,
-            totalValue: formatBalance(totalAmount),
+            totalValue: formatBalance(finalValue),
+            formattedBalance,
             color: chainMetadata.color,
             assets: chainMetadata.configAssets.map(asset => {
                 const tokenBal = walletChain && walletChain.tokens ? (walletChain.tokens[asset.name] || 0) : 0;
                 return {
                     symbol: asset.name,
                     balance: formatBalance(tokenBal),
-                    value: `$${formatBalance(tokenBal)}`, // Same formatting for value for now
+                    value: `$${formatBalance(tokenBal)}`,
+                    formattedValue: getFormattedParts(tokenBal),
                     icon: asset.icon
                 };
             })

@@ -103,8 +103,17 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
                         <Typography variant="caption" fontWeight={500} color="rgba(255,255,255,0.6)" mb={0}>
                             Total Balance
                         </Typography>
-                        <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: "-0.03em" }}>
-                            {chain.totalValue}
+                        <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: "-0.03em", display: "flex", alignItems: "baseline" }}>
+                            {chain.formattedBalance ? (
+                                <>
+                                    <span style={{ fontSize: "0.6em", marginRight: 4, position: "relative", top: -6 }}>{chain.formattedBalance.symbol}</span>
+                                    <span>{chain.formattedBalance.integer}</span>
+                                    <span style={{ fontSize: "0.6em", position: "relative", top: -6 }}>.{chain.formattedBalance.decimal}</span>
+                                    {chain.formattedBalance.code && (
+                                        <span style={{ fontSize: "0.4em", marginLeft: 4, fontWeight: 700, position: "relative", top: -6 }}>{chain.formattedBalance.code}</span>
+                                    )}
+                                </>
+                            ) : chain.totalValue}
                         </Typography>
                     </Box>
 
@@ -168,8 +177,13 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
                                     <Typography fontWeight={700} fontSize={16}>
                                         {asset.balance}
                                     </Typography>
-                                    <Typography fontWeight={500} fontSize={13} color="text.secondary">
-                                        {asset.value}
+                                    <Typography fontWeight={500} fontSize={13} color="text.secondary" sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 0.5 }}>
+                                        {asset.formattedValue ? (
+                                            <>
+                                                <span>{asset.formattedValue.symbol}{asset.formattedValue.integer}.{asset.formattedValue.decimal}</span>
+                                                {asset.formattedValue.code && <span style={{ fontSize: "0.8em", opacity: 0.7 }}>{asset.formattedValue.code}</span>}
+                                            </>
+                                        ) : asset.value}
                                     </Typography>
                                 </Box>
                             </Box>

@@ -19,8 +19,14 @@ export const usePasswordModal = ({ mode, onSuccess }: UsePasswordModalProps) => 
     const isEmpty = useMemo(() => password.trim().length === 0, [password]);
     const errorId = "password-error"; // Needed for accessibility in the form
 
-    const handleSubmit = async (evt?: FormEvent<HTMLFormElement>) => {
-        if (evt) evt.preventDefault();
+    const handleSubmit = async (e?: FormEvent) => {
+        if (e) e.preventDefault();
+
+        // Strict 6 digit check
+        if (password.length !== 6) {
+            setError("La contraseña debe tener 6 dígitos.");
+            return;
+        }
 
         if (isEmpty) {
             setError("La contraseña no puede estar vacía");

@@ -25,7 +25,7 @@ export const useTopBar = () => {
     };
 
     const handleSavings = () => {
-        router.push("/dashboard/yield");
+        router.push("/yield");
     };
 
     const handleCrossChain = () => {

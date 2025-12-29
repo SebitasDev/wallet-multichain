@@ -77,7 +77,7 @@ export const HeroBannerMainWallet = ({
         }
 
         try {
-            // 2. Try to decrypt Mnemonic first
+            // 2. Try to decrypt Mnemonic first (Default)
             if (mainWallet.encryptedMnemonic && mainWallet.salt && mainWallet.iv) {
                 try {
                     const mnemonic = await decryptPrivateKey(
@@ -98,7 +98,7 @@ export const HeroBannerMainWallet = ({
                 }
             }
 
-            // 3. Fallback: Decrypt Private Key of Active Wallet
+            // 3. Fallback: Private Key of Active Wallet
             let encryptedKey = null;
             if (activeWallet === "EVM") encryptedKey = mainWallet.encryptedPrivateKey;
             else encryptedKey = mainWallet.encryptedPrivateKeyStellar;
@@ -118,6 +118,9 @@ export const HeroBannerMainWallet = ({
                 toast.error("No se encontró clave privada para esta wallet.");
                 setPasswordModalOpen(false);
             }
+
+            toast.error("No se encontró clave privada ni frase semilla.");
+            setPasswordModalOpen(false);
 
         } catch (error) {
             console.error("Export error:", error);

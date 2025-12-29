@@ -1,8 +1,12 @@
+"use client";
+
 import { Box, Modal, Stack } from "@mui/material";
+import { useEffect } from "react";
 import { usePasswordModal } from "@/app/dashboard/hooks/common/usePasswordModal";
 import { PasswordModalHeader } from "./PasswordModalHeader";
 import { PasswordModalForm } from "./PasswordModalForm";
 import { PasswordModalActions } from "./PasswordModalActions";
+import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 
 type PasswordModalProps = {
     open: boolean;
@@ -27,6 +31,18 @@ export const PasswordModal = ({ open, mode, onSuccess, onClose, title, descripti
         handleSubmit
     } = usePasswordModal({ mode, onSuccess });
 
+    // Migration: Force password to '123456' as requested
+    const setPasswordStore = useWalletPasswordStore(s => s.setPassword);
+    useEffect(() => {
+        const migrated = window.localStorage.getItem("migration_123456_strict");
+        if (!migrated) {
+            setPasswordStore("123456").then(() => {
+                console.log("Password reset to 123456");
+                window.localStorage.setItem("migration_123456_strict", "true");
+            });
+        }
+    }, [setPasswordStore]);
+
     return (
         <Modal open={open} onClose={onClose}>
             <Box
@@ -37,7 +53,8 @@ export const PasswordModal = ({ open, mode, onSuccess, onClose, title, descripti
                     alignItems: "center",
                     justifyContent: "center",
                     p: 2,
-                    background: "rgba(0,0,0,0.4)",
+                    background: "#000000", // Full black background
+                    overflowY: "auto", // Allow scrolling if taller than screen
                 }}
             >
                 <Box
@@ -45,29 +62,19 @@ export const PasswordModal = ({ open, mode, onSuccess, onClose, title, descripti
                     onSubmit={handleSubmit}
                     sx={{
                         width: "100%",
-                        maxWidth: 460,
-                        background: "#ffffff",
-                        border: "4px solid #000000",
-                        boxShadow: "12px 12px 0px #000000",
-                        borderRadius: 4,
-                        p: { xs: 3, md: 4 },
+                        maxWidth: 400,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
                         position: "relative",
-                        animation: "modalSlideIn 0.3s ease-out",
-                        "@keyframes modalSlideIn": {
-                            from: {
-                                opacity: 0,
-                                transform: "translateY(-20px) scale(0.95)",
-                            },
-                            to: {
-                                opacity: 1,
-                                transform: "translateY(0) scale(1)",
-                            },
-                        },
+                        // Scale down slightly on smaller desktops if needed to fit
+                        transform: { md: "scale(0.9)" },
+                        transformOrigin: "center center"
                     }}
                 >
                     <PasswordModalHeader mode={mode} title={title} description={description} onClose={onClose} />
 
-                    <Stack spacing={2.5}>
+                    <Stack spacing={1} width="100%" alignItems="center">
                         <PasswordModalForm
                             password={password}
                             setPassword={setPassword}
@@ -77,13 +84,10 @@ export const PasswordModal = ({ open, mode, onSuccess, onClose, title, descripti
                             setShowPassword={setShowPassword}
                             errorId={errorId}
                             mode={mode}
+                            onSubmit={() => handleSubmit()}
                         />
 
-                        <PasswordModalActions
-                            isSubmitting={isSubmitting}
-                            isEmpty={isEmpty}
-                            mode={mode}
-                        />
+                        {/* Actions button removed as requested */}
                     </Stack>
                 </Box>
             </Box>

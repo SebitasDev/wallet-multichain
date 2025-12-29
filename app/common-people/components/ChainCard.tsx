@@ -6,14 +6,23 @@ export interface Asset {
     symbol: string;
     balance: string;
     value: string;
+    formattedValue?: FormattedBalance;
     icon?: ReactNode;
+}
+
+export interface FormattedBalance {
+    symbol: string;
+    integer: string;
+    decimal: string;
+    code?: string;
 }
 
 export interface ChainData {
     id: string;
     name: string;
-    icon?: ReactNode; // Changed from logo string to ReactNode
+    icon?: ReactNode;
     totalValue: string;
+    formattedBalance?: FormattedBalance;
     color: string;
     assets: Asset[];
 }
@@ -111,8 +120,19 @@ export function ChainCard({ chain, onClick, hideBalance }: ChainCardProps) {
 
                 {/* Content */}
                 <Box>
-                    <Typography variant="h6" fontWeight={800} sx={{ fontSize: "1.1rem", lineHeight: 1.2 }}>
-                        {hideBalance ? "****" : chain.totalValue}
+                    <Typography variant="h6" fontWeight={900} sx={{ fontSize: "1.25rem", lineHeight: 1, display: "flex", alignItems: "baseline", letterSpacing: "-0.02em" }}>
+                        {hideBalance ? "****" : (
+                            chain.formattedBalance ? (
+                                <>
+                                    <span style={{ fontSize: "0.8em", marginRight: 2 }}>{chain.formattedBalance.symbol}</span>
+                                    <span>{chain.formattedBalance.integer}</span>
+                                    <span style={{ fontSize: "0.6em", position: "relative", top: -5 }}>.{chain.formattedBalance.decimal}</span>
+                                    {chain.formattedBalance.code && (
+                                        <span style={{ fontSize: "0.4em", marginLeft: 4, alignSelf: "center", fontWeight: 700 }}>{chain.formattedBalance.code}</span>
+                                    )}
+                                </>
+                            ) : chain.totalValue
+                        )}
                     </Typography>
                     <Box display="flex" justifyContent="space-between" alignItems="flex-end">
                         <Typography

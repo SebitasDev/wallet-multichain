@@ -1,13 +1,11 @@
-import {
-    Box,
-    Typography,
-    TextField,
-    InputAdornment,
-    IconButton,
-} from "@mui/material";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+"use client";
+
+import { Box, Typography, IconButton, Button } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import BackspaceOutlinedIcon from "@mui/icons-material/BackspaceOutlined";
+import { useEffect } from "react";
+import { useUserStore } from "@/app/store/useUserStore";
 
 interface PasswordModalFormProps {
     password: string;
@@ -18,6 +16,7 @@ interface PasswordModalFormProps {
     setShowPassword: (val: boolean | ((prev: boolean) => boolean)) => void;
     errorId: string;
     mode: "create" | "unlock";
+    onSubmit: () => void;
 }
 
 export const PasswordModalForm = ({
@@ -27,149 +26,213 @@ export const PasswordModalForm = ({
     setError,
     showPassword,
     setShowPassword,
-    errorId,
-    mode
+    onSubmit
 }: PasswordModalFormProps) => {
-    return (
-        <>
-            {/* CAMPO DE CONTRASEÑA */}
-            <Box>
-                <Typography
-                    component="label"
-                    htmlFor="password-input"
-                    sx={{
-                        fontWeight: 800,
-                        fontSize: 13,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.5,
-                        color: "#666666",
-                        display: "block",
-                        mb: 1
-                    }}
-                >
-                    Contraseña
-                </Typography>
-                <TextField
-                    id="password-input"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (error) setError("");
-                    }}
-                    placeholder="••••••••"
-                    fullWidth
-                    error={Boolean(error)}
-                    inputProps={{
-                        "aria-invalid": Boolean(error),
-                        "aria-describedby": error ? errorId : undefined,
-                    }}
-                    InputProps={{
-                        sx: {
-                            background: "#f5f5f5",
-                            border: error ? "3px solid #ff4444" : "3px solid #000000",
-                            borderRadius: 3,
-                            color: "#000000",
-                            fontWeight: 700,
-                            fontSize: 15,
-                            transition: "all 0.2s",
-                            "&:hover": {
-                                background: "#ffffff",
-                            },
-                            "&.Mui-focused": {
-                                background: "#ffffff",
-                                border: error ? "3px solid #ff4444" : "3px solid #7852FF",
-                            },
-                            "& .MuiInputBase-input::placeholder": {
-                                color: "#999999",
-                                fontWeight: 600,
-                            },
-                            "& fieldset": {
-                                border: "none",
-                            },
-                        },
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <LockOutlinedIcon sx={{ color: "#666666", fontSize: 22 }} />
-                            </InputAdornment>
-                        ),
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                <IconButton
-                                    edge="end"
-                                    onClick={() => setShowPassword((prev) => !prev)}
-                                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                    sx={{
-                                        color: "#000000",
-                                        background: "#ffffff",
-                                        border: "2px solid #000000",
-                                        borderRadius: 2,
-                                        width: 36,
-                                        height: 36,
-                                        transition: "all 0.2s",
-                                        "&:hover": {
-                                            background: "#f5f5f5",
-                                            transform: "scale(1.05)",
-                                        }
-                                    }}
-                                >
-                                    {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
-                                </IconButton>
-                            </InputAdornment>
-                        ),
-                    }}
-                />
+    const { email } = useUserStore();
+    const MAX_LENGTH = 6;
 
-                {/* ERROR MESSAGE */}
-                {error && (
+    const handleNumberClick = (num: string) => {
+        if (password.length < MAX_LENGTH) {
+            setPassword(password + num);
+            if (error) setError("");
+        }
+    };
+
+    const handleBackspace = () => {
+        setPassword(password.slice(0, -1));
+        if (error) setError("");
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key >= "0" && e.key <= "9") {
+                handleNumberClick(e.key);
+            } else if (e.key === "Backspace") {
+                handleBackspace();
+            } else if (e.key === "Enter") {
+                onSubmit();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [password, error, onSubmit]);
+
+    return (
+        <Box display="flex" flexDirection="column" alignItems="center" width="100%">
+            {/* DOTS DISPLAY */}
+            <Box display="flex" gap={1.5} mb={1}>
+                {[...Array(MAX_LENGTH)].map((_, i) => (
                     <Box
-                        id={errorId}
+                        key={i}
                         sx={{
-                            mt: 1.5,
-                            p: 1.5,
-                            background: "rgba(255, 68, 68, 0.1)",
-                            border: "2px solid #ff4444",
-                            borderRadius: 2,
+                            width: 14,
+                            height: 14,
+                            borderRadius: "50%",
+                            bgcolor: i < password.length ? (showPassword ? "transparent" : "#333333") : "#1a1a1a",
+                            border: showPassword && i < password.length ? "none" : "none",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white",
+                            fontSize: 14,
+                            fontWeight: 700
                         }}
                     >
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                color: "#ff4444",
-                                fontWeight: 700,
-                                fontSize: 13
-                            }}
-                            aria-live="polite"
-                        >
-                            ⚠️ {error}
-                        </Typography>
+                        {showPassword && i < password.length ? password[i] : ""}
                     </Box>
-                )}
+                ))}
             </Box>
 
-            {/* INFO ADICIONAL */}
-            {mode === "create" && (
-                <Box
-                    sx={{
-                        p: 2,
-                        background: "#f5f5f5",
-                        border: "2px solid #000000",
-                        borderRadius: 3,
-                    }}
+            {/* Visibility Toggle */}
+            <IconButton
+                onClick={() => setShowPassword((prev) => !prev)}
+                sx={{
+                    color: "#00DC8C",
+                    mb: 1,
+                    p: 0,
+                    "& svg": { fontSize: 18 }
+                }}
+            >
+                {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+            </IconButton>
+
+            {/* Support Links */}
+            <Box mb={2} textAlign="center">
+                <Typography
+                    variant="body2"
+                    sx={{ color: "#00DC8C", fontWeight: 600, cursor: "pointer", mb: 0.5, fontSize: 12 }}
                 >
-                    <Typography
-                        variant="body2"
+                    No soy {email || "usuario"}
+                </Typography>
+                <Typography
+                    variant="body2"
+                    sx={{ color: "#00DC8C", fontWeight: 600, cursor: "pointer", fontSize: 12 }}
+                >
+                    Olvidé mi clave
+                </Typography>
+            </Box>
+
+            {/* Custom Numpad */}
+            <Box sx={{ width: "100%", maxWidth: 240 }}>
+                {/* Row 1 */}
+                <Box display="flex" justifyContent="space-between" mb={1}>
+                    {[1, 2, 3].map((num) => (
+                        <NumpadButton key={num} value={num.toString()} onClick={handleNumberClick} />
+                    ))}
+                </Box>
+                {/* Row 2 */}
+                <Box display="flex" justifyContent="space-between" mb={1}>
+                    {[4, 5, 6].map((num) => (
+                        <NumpadButton key={num} value={num.toString()} onClick={handleNumberClick} />
+                    ))}
+                </Box>
+                {/* Row 3 */}
+                <Box display="flex" justifyContent="space-between" mb={1}>
+                    {[7, 8, 9].map((num) => (
+                        <NumpadButton key={num} value={num.toString()} onClick={handleNumberClick} />
+                    ))}
+                </Box>
+                {/* Row 4 */}
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                    {/* Enter Button (Check) */}
+                    <Button
+                        onClick={() => onSubmit()}
+                        disabled={password.length !== 6}
                         sx={{
-                            color: "#666666",
-                            fontWeight: 600,
-                            fontSize: 12,
-                            lineHeight: 1.6,
+                            color: "black",
+                            bgcolor: "#00DC8C",
+                            border: "2px solid #00DC8C",
+                            fontSize: 20,
+                            fontWeight: 900,
+                            minWidth: 50, // Compact size
+                            height: 50,
+                            borderRadius: "50%",
+                            transition: "all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)",
+                            boxShadow: "0px 4px 10px rgba(0, 220, 140, 0.3)",
+                            "&:hover": {
+                                bgcolor: "#00cc7d",
+                                transform: "scale(1.1)",
+                                boxShadow: "0px 6px 15px rgba(0, 220, 140, 0.5)"
+                            },
+                            "&:active": {
+                                transform: "scale(0.95)"
+                            },
+                            "&:disabled": {
+                                bgcolor: "#333",
+                                color: "#666",
+                                border: "2px solid #333",
+                                boxShadow: "none",
+                                transform: "none"
+                            }
                         }}
                     >
-                        💡 <strong>Tip:</strong> Usa una contraseña fuerte que incluya letras, números y símbolos. Esta contraseña protegerá todas tus wallets.
-                    </Typography>
+                        ✓
+                    </Button>
+
+                    <NumpadButton value="0" onClick={handleNumberClick} />
+
+                    <Button
+                        onClick={handleBackspace}
+                        sx={{
+                            color: "white",
+                            minWidth: 50,
+                            height: 50,
+                            borderRadius: "50%",
+                            transition: "all 0.2s",
+                            "&:hover": {
+                                bgcolor: "rgba(255,68,68,0.1)",
+                                color: "#ff4444"
+                            },
+                            "&:active": {
+                                transform: "scale(0.9)"
+                            }
+                        }}
+                    >
+                        <BackspaceOutlinedIcon sx={{ fontSize: 22 }} />
+                    </Button>
                 </Box>
+            </Box>
+
+            {/* Hidden Submit Button */}
+            <button type="submit" style={{ display: 'none' }} />
+
+            {/* Error Message */}
+            {error && (
+                <Typography color="#ff4444" mt={1} fontWeight={700} fontSize={13}>
+                    {error}
+                </Typography>
             )}
-        </>
+        </Box>
     );
 };
+
+// Helper Component for Numpad Buttons
+const NumpadButton = ({ value, onClick }: { value: string, onClick: (v: string) => void }) => (
+    <Button
+        onClick={() => onClick(value)}
+        sx={{
+            color: "white",
+            fontSize: 22, // Compact font
+            fontWeight: 500,
+            minWidth: 50, // Compact size
+            height: 50,
+            borderRadius: "50%",
+            border: "2px solid transparent",
+            transition: "all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)",
+            "&:hover": {
+                bgcolor: "rgba(255,255,255,0.1)",
+                border: "2px solid #00DC8C", // Brand Teal on hover
+                transform: "scale(1.1)",
+                color: "#00DC8C"
+            },
+            "&:active": {
+                bgcolor: "#00DC8C",
+                color: "black",
+                transform: "scale(0.95)"
+            }
+        }}
+    >
+        {value}
+    </Button>
+);

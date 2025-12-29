@@ -1,15 +1,42 @@
 "use client";
 
-import { Box, Typography, Button, List, ListItem, ListItemText, ListItemAvatar, CircularProgress } from "@mui/material";
-import { NorthEast, SouthWest } from "@mui/icons-material";
+import { Box, Typography, Button, List, ListItem, ListItemText, ListItemAvatar, CircularProgress, IconButton } from "@mui/material";
+import { NorthEast, SouthWest, Refresh } from "@mui/icons-material";
+import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
+import { UsdtIcon } from "@/app/components/atoms/UsdtIcon";
+import { EthIcon } from "@/app/components/atoms/EthIcon";
+import { BnbIcon } from "@/app/components/atoms/BnbIcon";
+import { AvalancheIcon } from "@/app/components/atoms/AvalancheIcon";
+import PolygonIcon from "@/app/components/atoms/PolygonIcon";
+import ArbIcon from "@/app/components/atoms/ArbIcon";
+import { OPIcon } from "@/app/components/atoms/OPIcon";
+import { StellarIcon } from "@/app/components/atoms/StellarIcon";
+import { WorldChainIcon } from "@/app/components/atoms/WorldChainIcon";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useRouter } from "next/navigation";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { transactionsApi } from "@/app/services/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { TransactionDetailModal } from "../history/components/TransactionDetailModal";
+
+const CoinIcon = ({ token, size = 20 }: { token: string, size?: number }) => {
+    switch (token.toUpperCase()) {
+        case "USDC": return <UsdcIcon size={size} />;
+        case "USDT": return <UsdtIcon size={size} />;
+        case "ETH": return <EthIcon size={size} />;
+        case "BNB": return <BnbIcon size={size} />;
+        case "AVAX": return <AvalancheIcon size={size} />;
+        case "MATIC":
+        case "POL": return <PolygonIcon size={size} />;
+        case "ARB": return <ArbIcon size={size} />;
+        case "OP": return <OPIcon size={size} />;
+        case "XLM": return <StellarIcon size={size} />;
+        case "WLD": return <WorldChainIcon size={size} />;
+        default: return null;
+    }
+};
 
 export function TransactionHistory() {
     const { language } = useLanguageStore();
@@ -21,43 +48,47 @@ export function TransactionHistory() {
     const [loading, setLoading] = useState(true);
     const [selectedTx, setSelectedTx] = useState<any | null>(null);
 
-    useEffect(() => {
-        const fetchRecent = async () => {
-            if (!address) {
-                setLoading(false);
-                return;
-            }
-            try {
-                const data = await transactionsApi.getAll({ address, page: 1, limit: 3 });
-                if (data.success && data.transactions) {
-                    const mapped = data.transactions.map((tx: any) => {
-                        const cleanUserAddr = address.toLowerCase();
-                        const cleanTxFrom = tx.fromAddress.toLowerCase();
-                        const isSender = cleanTxFrom === cleanUserAddr;
+    const fetchRecent = useCallback(async () => {
+        if (!address) {
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        try {
+            const data = await transactionsApi.getAll({ address, page: 1, limit: 3 });
+            if (data.success && data.transactions) {
+                const mapped = data.transactions.map((tx: any) => {
+                    const cleanUserAddr = address.toLowerCase();
+                    const cleanTxFrom = tx.fromAddress.toLowerCase();
+                    const isSender = cleanTxFrom === cleanUserAddr;
 
-                        return {
-                            id: tx.id,
-                            type: isSender ? "SEND" : "RECEIVE",
-                            title: isSender ? (language === "es" ? "Enviado" : "Sent") : (language === "es" ? "Recibido" : "Received"),
-                            time: format(new Date(tx.createdAt), "dd MMM", { locale: language === "es" ? es : undefined }),
-                            date: new Date(tx.createdAt), // For modal
-                            amount: tx.totalAmount,
-                            token: tx.tokenSymbol || "USDC",
-                            color: isSender ? "#fee2e2" : "#dcfce7",
-                            status: tx.status,
-                            hash: tx.hash
-                        };
-                    });
-                    setTransactions(mapped);
-                }
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
+                    return {
+                        id: tx.id,
+                        type: isSender ? "SEND" : "RECEIVE",
+                        title: isSender ? (language === "es" ? "Enviado" : "Sent") : (language === "es" ? "Recibido" : "Received"),
+                        time: format(new Date(tx.createdAt), "dd MMM", { locale: language === "es" ? es : undefined }),
+                        date: new Date(tx.createdAt), // For modal
+                        amount: tx.totalAmount,
+                        token: tx.tokenSymbol || "USDC",
+                        color: isSender ? "#fee2e2" : "#dcfce7",
+                        status: tx.status,
+                        hash: tx.hash,
+                        fromAddress: tx.fromAddress,
+                        toAddress: tx.toAddress
+                    };
+                });
+                setTransactions(mapped);
             }
-        };
-        fetchRecent();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
     }, [address, language]);
+
+    useEffect(() => {
+        fetchRecent();
+    }, [fetchRecent]);
 
     return (
         <Box
@@ -72,9 +103,31 @@ export function TransactionHistory() {
             }}
         >
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h6" fontWeight="bold">
-                    {language === "es" ? "Actividad reciente" : "Recent Activity"}
-                </Typography>
+                <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="h6" fontWeight="bold">
+                        {language === "es" ? "Actividad reciente" : "Recent Activity"}
+                    </Typography>
+                    <IconButton
+                        onClick={fetchRecent}
+                        disabled={loading}
+                        size="small"
+                        sx={{
+                            color: "rgba(255,255,255,0.5)",
+                            "&:hover": { color: "white", bgcolor: "rgba(255,255,255,0.1)" },
+                        }}
+                    >
+                        <Refresh
+                            sx={{
+                                fontSize: 20,
+                                animation: loading ? "spin 1s linear infinite" : "none",
+                                "@keyframes spin": {
+                                    "0%": { transform: "rotate(0deg)" },
+                                    "100%": { transform: "rotate(360deg)" }
+                                }
+                            }}
+                        />
+                    </IconButton>
+                </Box>
                 <Button
                     variant="contained"
                     size="small"
@@ -154,15 +207,18 @@ export function TransactionHistory() {
                                     </Typography>
                                 }
                             />
-                            <Typography
-                                sx={{
-                                    color: tx.type === "RECEIVE" ? "#34d399" : "#fca5a5",
-                                    fontWeight: "bold",
-                                    fontSize: 18,
-                                }}
-                            >
-                                {tx.type === "RECEIVE" ? "+" : "-"}{parseFloat(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.token}
-                            </Typography>
+                            <Box display="flex" alignItems="center" gap={1}>
+                                <Typography
+                                    sx={{
+                                        color: tx.type === "RECEIVE" ? "#34d399" : "#fca5a5",
+                                        fontWeight: "bold",
+                                        fontSize: 18,
+                                    }}
+                                >
+                                    {tx.type === "RECEIVE" ? "+" : "-"}{parseFloat(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.token}
+                                </Typography>
+                                <CoinIcon token={tx.token} size={20} />
+                            </Box>
                         </ListItem>
                     ))}
                 </List>
