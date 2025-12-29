@@ -13,13 +13,15 @@ export const BASE: ChainConfig = {
             name: "USDC",
             decimals: 6,
             address: (isDevelopment ? "0x036CbD53842c5426634e7929541eC2318f3dCF7e" : "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") as Address,
-            icon: <UsdcIcon />
+            icon: <UsdcIcon />,
+            coingeckoId: "usd-coin"
         },
         {
             name: "ETH",
             decimals: 18,
             address: "0x0000000000000000000000000000000000000000" as Address,
-            icon: <EthIcon />
+            icon: <EthIcon />,
+            coingeckoId: "ethereum"
         }
     ],
     evm: {

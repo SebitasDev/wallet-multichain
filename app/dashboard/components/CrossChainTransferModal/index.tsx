@@ -73,6 +73,8 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
         openModal,
         closeModal,
         onSubmit,
+        tokenPrice,
+        destTokenPrice,
     } = useCrossChainTransfer();
 
     return (
@@ -298,6 +300,7 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
                             isExceedingMax={isExceedingMax}
                             token={watchSourceToken} // Pass dynamic token
                             balance={balance} // Pass balance
+                            tokenPrice={tokenPrice} // Pass price
                         />
 
                         <TransferSummary
@@ -323,6 +326,18 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
                                 }}
                             >
                                 Recibirás aproximadamente: <strong>{simulation.estimated} {watchDestToken}</strong>
+                                {destTokenPrice && simulation.estimated && (
+                                    <div style={{ fontWeight: 400, marginTop: "4px" }}>
+                                        (≈ ${(() => {
+                                            const val = parseFloat(simulation.estimated) * destTokenPrice;
+                                            const str = val.toFixed(10); // High precision to avoid floating point issues before truncation
+                                            const dot = str.indexOf('.');
+                                            if (dot === -1) return val;
+                                            // Take up to 6 decimals, no rounding
+                                            return str.slice(0, dot + 7);
+                                        })()} USD)
+                                    </div>
+                                )}
                             </Alert>
                         )}
 

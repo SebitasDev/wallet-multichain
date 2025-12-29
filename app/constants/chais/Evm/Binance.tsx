@@ -16,19 +16,22 @@ export const BNB: ChainConfig = {
             name: "USDC",
             decimals: 18,
             address: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", // BSC Mainnet USDC
-            icon: <UsdcIcon />
+            icon: <UsdcIcon />,
+            coingeckoId: "usd-coin"
         },
         {
             name: "USDT",
             decimals: 18,
             address: "0x55d398326f99059fF775485246999027B3197955", // BSC Mainnet USDT
-            icon: <UsdtIcon />
+            icon: <UsdtIcon />,
+            coingeckoId: "tether"
         },
         {
             name: "BNB",
             decimals: 18,
             address: "0x0000000000000000000000000000000000000000", // Native
-            icon: <BnbIcon />
+            icon: <BnbIcon />,
+            coingeckoId: "binancecoin"
         },
     ],
     evm: {

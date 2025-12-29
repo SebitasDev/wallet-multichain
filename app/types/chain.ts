@@ -61,6 +61,7 @@ export interface Asset {
     decimals: number;
     address?: Address | string;
     icon?: JSX.Element;
+    coingeckoId?: string;
 }
 
 export interface ChainConfig {

@@ -118,7 +118,11 @@ export const HistoryTransactionList = ({
                                             </Typography>
                                             {tx.estimatedReceived && tx.type === "SEND" && (
                                                 <Typography variant="caption" fontWeight={800} color="#666" sx={{ fontSize: 10, bgcolor: "#eee", px: 0.5, borderRadius: 0.5, display: "inline-block", mt: 0.5 }}>
-                                                    Est: ${Number(tx.estimatedReceived).toLocaleString('en-US', { maximumFractionDigits: 6 })}
+                                                    Est: ${Number(tx.receivedUsdValue ?? (
+                                                        (tx.usdValue && tx.amount)
+                                                            ? (tx.estimatedReceived * (tx.usdValue / tx.amount))
+                                                            : tx.estimatedReceived
+                                                    )).toLocaleString('en-US', { maximumFractionDigits: 6 })}
                                                 </Typography>
                                             )}
                                         </Box>
@@ -128,7 +132,11 @@ export const HistoryTransactionList = ({
                                     <Box textAlign="right" flexShrink={0} ml={2}>
                                         <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
                                             <Typography fontWeight={900} fontSize={18} color={tx.type === "SEND" ? "#FF2E2E" : "#008a57"}>
-                                                {tx.type === "SEND" ? "-" : "+"}${Number(tx.type === "RECEIVE" ? (tx.estimatedReceived || tx.amount) : tx.amount).toLocaleString('en-US', { maximumFractionDigits: 6 })}
+                                                {tx.type === "SEND" ? "-" : "+"}${Number(
+                                                    tx.type === "RECEIVE"
+                                                        ? (tx.receivedUsdValue ?? (tx.estimatedReceived || tx.amount))
+                                                        : (tx.usdValue ?? tx.amount)
+                                                ).toLocaleString('en-US', { maximumFractionDigits: 6 })}
                                             </Typography>
                                             <TokenLogo token={tx.token} size={20} />
                                         </Box>

@@ -20,7 +20,9 @@ const TransactionSchema = new Schema({
     createdAt: { type: Number, required: true, index: true }, // Timestamp
     tokenSymbol: { type: String },
     decimals: { type: Number },
-    fee: { type: Number } // [NEW] Fee paid for the transaction
+    fee: { type: Number }, // [NEW] Fee paid for the transaction
+    usdValue: { type: Number }, // [NEW] USD value of totalAmount at time of tx
+    receivedUsdValue: { type: Number } // [NEW] Estimated USD value of received amount at time of tx
 }, {
     timestamps: true // Adds createdAt (Date) and updatedAt (Date) automatically by Mongoose too, but we are using our own numeric createdAt for compatibility
 });
