@@ -24,7 +24,7 @@ type Props = {
     onRemoveChain: (walletAddr: string, chainId: string, id?: string) => void;
     onAmountChange: (walletAddr: string, chainId: string, val: string, id?: string) => void;
     onTokenChange: (walletAddr: string, chainId: string, val: string, id?: string) => void;
-    onSimulate: (chainId: string, amount: number, token: string, sourceChainKey: string) => void;
+    onSimulate: (id: string, chainId: string, amount: number, token: string, sourceChainKey: string) => void;
 
     // Simulation State
     simulating: Record<string, boolean>;
@@ -208,9 +208,9 @@ export const SendMoneyRouteWallet = ({
                                     onAmountChange={(addr, id, val) => onAmountChange(addr, id, val, r.id)}
                                     onTokenChange={(addr, id, val) => onTokenChange(addr, id, val, r.id)}
                                     onSimulate={onSimulate}
-                                    isSimulating={simulating[r.chainId]}
-                                    simulationResult={simulationResults[r.chainId]}
-                                    simulationError={simulationErrorMessages[r.chainId]}
+                                    isSimulating={simulating[r.id || r.chainId]}
+                                    simulationResult={simulationResults[r.id || r.chainId]}
+                                    simulationError={simulationErrorMessages[r.id || r.chainId]}
                                     otherUsedTokens={otherUsedTokens}
                                 />
                             );

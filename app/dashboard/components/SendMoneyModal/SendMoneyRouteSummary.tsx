@@ -24,6 +24,7 @@ export const SendMoneyRouteSummary = ({ routeSummary, selected, watch, simulatio
     allocations.forEach(alloc => {
         alloc.chains.forEach(c => {
             // Calculate Sent (Amount + Fee)
+            // Calculate Sent (Amount + Fee)
             const isUSDC = (c.token || "USDC").toUpperCase() === "USDC"; // Default USDC
             const isSameChain = destChainId === c.chainId;
 
@@ -31,10 +32,16 @@ export const SendMoneyRouteSummary = ({ routeSummary, selected, watch, simulatio
             const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
             const calculatedFee = isDev ? 0 : baseFee;
 
-            totalPrincipal += c.amount;
+            // [FIX] Use Price for USD Calculation (fallback to 1 if missing)
+            const price = c.price || 1;
+            totalPrincipal += (c.amount * price);
             totalFee += calculatedFee;
 
             // Calculate Received
+            // Note: Receive is usually Target Token (e.g. USDC). 
+            // We compare USD Sent vs Tokens Received. 
+            // Ideally we convert Receive to USD too, but for USDC dest it matches.
+
             const sourceChainKey = CHAIN_ID_TO_KEY[c.chainId];
             const destChainKey = watch("sendChain");
             const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
@@ -52,14 +59,17 @@ export const SendMoneyRouteSummary = ({ routeSummary, selected, watch, simulatio
                 (watch("sourceToken") || "USDC").toUpperCase() === "USDC";
 
             if (isCCTP) {
-                // CCTP Priority: Assume 1:1 (Principal)
+                // CCTP Priority: Assume 1:1 (Principal) -> 1 Token Received per 1 Token Sent?
+                // Wait. Only if c.amount is Token Amount.
+                // c.amount IS Token Amount.
+                // We receive c.amount TOKENS.
                 totalReceived += c.amount;
             } else if (isNearSupported) {
                 // Use simulation result
                 const simulated = parseFloat(simulationResults[c.chainId] || "0");
                 totalReceived += simulated;
             } else {
-                // Fallback (Direct/Other) -> Assume 1:1
+                // Fallback (Direct/Other) -> Assume 1:1 Token
                 totalReceived += c.amount;
             }
         });

@@ -44,19 +44,18 @@ export const useFindBestRoute = () => {
 
         for (const wallet of filteredWallets) {
             for (const chain of wallet.chains) {
-                // [FIX] Multi-Token Support: Iterate all assets on this chain
-                const assets = sendNetwork.assets || [];
+                const sourceKey = CHAIN_ID_TO_KEY[chain.chainId] as ChainKey;
+                const sourceConfig = NETWORKS[sourceKey];
+                const destConfig = sendNetwork;
+
+                // [FIX] Iterate Source Assets (e.g. POL on Polygon)
+                const assets = sourceConfig?.assets || [];
 
                 for (const asset of assets) {
                     const currentTokenName = asset.name;
                     const chainAmountToken = chain.tokens?.[currentTokenName] || 0;
 
                     if (chainAmountToken <= 0) continue;
-
-                    // Compatibility Check (Should match logic for asset types)
-                    const sourceKey = CHAIN_ID_TO_KEY[chain.chainId] as ChainKey;
-                    const sourceConfig = NETWORKS[sourceKey];
-                    const destConfig = sendNetwork; // sending to same network usually? Or cross-chain? 
                     // Wait, `sendChain` is Destination? "sendChain" in SendForm is *Destination* usually.
                     // Actually `allocateAcrossNetworks` iterates ALL wallets. `chain` is Source. `sendChain` is Destination.
                     // Let's verify `sourceConfig` vs `destConfig`.
@@ -121,7 +120,7 @@ export const useFindBestRoute = () => {
             };
         }
 
-        let allocations: Array<{ from: string; networkId: string; amountToken: number; token: string }> = [];
+        let allocations: Array<{ from: string; networkId: string; amountToken: number; token: string; price: number }> = [];
         let remainingToCoverUSD = desiredAmount;
         let totalFeesUSD = 0;
 
@@ -150,7 +149,8 @@ export const useFindBestRoute = () => {
                 from: b.from,
                 networkId: b.networkId,
                 amountToken: takeToken, // Store Token Amount for execution
-                token: b.token
+                token: b.token,
+                price: b.price
             });
 
             remainingToCoverUSD = round6(remainingToCoverUSD - takeUSD);
@@ -178,7 +178,8 @@ export const useFindBestRoute = () => {
                 chainId: item.networkId,
                 amount: item.amountToken, // Token Amount
                 token: item.token,
-                id: crypto.randomUUID()
+                id: crypto.randomUUID(),
+                price: item.price
             });
         }
 

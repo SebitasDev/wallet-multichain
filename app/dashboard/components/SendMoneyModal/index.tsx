@@ -10,7 +10,7 @@ export const SendMoneyModal = () => {
     const {
         sendLoading, control, handleSubmit, errors, handleOnSend, handleOnConfirm,
         canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary, setValue,
-        maxSendAmount, isExceedingMax, watch, setRouteSummary, wallets
+        maxSendAmount, isExceedingMax, watch, setRouteSummary, wallets, priceMap // [NEW] Values
     } = useSendMoneyModal();
 
     const [isEditing, setIsEditing] = useState(false);
@@ -86,7 +86,8 @@ export const SendMoneyModal = () => {
                         watch={watch}
                         control={control}
                         setValue={setValue}
-                        setSimulationError={(id, hasError) => setSimulationErrors(prev => ({ ...prev, [id]: hasError }))} // [NEW]
+                        setSimulationError={(id, hasError) => setSimulationErrors(prev => ({ ...prev, [id]: hasError }))}
+                        priceMap={priceMap} // [NEW] Pass Prices
                     />
                 )}
             </DialogContent>

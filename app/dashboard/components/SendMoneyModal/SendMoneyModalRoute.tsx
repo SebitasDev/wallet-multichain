@@ -27,10 +27,11 @@ type Props = {
     control: Control<SendForm>,
     setValue: UseFormSetValue<SendForm>,
     setSimulationError: (id: string, hasError: boolean) => void;
+    priceMap?: Record<string, number>; // [NEW] Optional but recommended
 }
 
 export const SendMoneyModalRoute = (
-    { routeDetails, routeReady, routeSummary, setRouteSummary, selected, wallets, isEditing, setIsEditing, watch, control, setValue, setSimulationError }: Props
+    { routeDetails, routeReady, routeSummary, setRouteSummary, selected, wallets, isEditing, setIsEditing, watch, control, setValue, setSimulationError, priceMap }: Props
 ) => {
 
     const {
@@ -59,7 +60,8 @@ export const SendMoneyModalRoute = (
         wallets,
         isEditing,
         watch,
-        setSimulationError
+        setSimulationError,
+        priceMap // [NEW] Pass to Hook
     });
 
     return (

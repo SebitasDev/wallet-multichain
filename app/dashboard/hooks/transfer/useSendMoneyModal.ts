@@ -17,6 +17,7 @@ import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { transactionsApi, CreateTransactionRequest } from "@/app/services/api";
 import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
 import { useTokenPrice } from "@/app/hooks/useTokenPrice";
+import { pricesApi } from "@/app/services/api/prices";
 
 
 
@@ -95,8 +96,10 @@ export const useSendMoneyModal = () => {
         setRouteDetails(details);
     }, [routeSummary]);
 
+    // [NEW] Price Map State for passing to Route
+    const [priceMap, setPriceMap] = useState<Record<string, number>>({});
 
-
+    // Track Socket Steps
     useBridgeUsdcStream((e) => {
         console.log("📩 Evento recibido en useBridgeUsdcStream:", e);
 
@@ -182,13 +185,42 @@ export const useSendMoneyModal = () => {
         try {
             setSendLoading(true);
 
+            // [NEW] Multi-Token Price Fetching
+            // 1. Identify all tokens with balance > 0
+            const allAssetIds = new Set<string>();
+            wallets.forEach(w => {
+                w.chains.forEach(c => {
+                    const cKey = CHAIN_ID_TO_KEY[c.chainId];
+                    const net = NETWORKS[cKey as ChainKey];
+                    if (net && net.evm) {
+                        net.assets.forEach(a => {
+                            if (c.tokens?.[a.name] > 0 && a.coingeckoId) {
+                                allAssetIds.add(a.coingeckoId);
+                            }
+                        });
+                    }
+                });
+            });
+            allAssetIds.add("usd-coin"); // Ensure USDC base
+
+            // 2. Fetch Prices
+            const prices = await pricesApi.getPrices(Array.from(allAssetIds));
+            const priceMap: Record<string, number> = {};
+            Object.entries(prices).forEach(([id, p]: [string, any]) => {
+                if (p && typeof p.usd === 'number') priceMap[id] = p.usd;
+            });
+            // Manual overrides for stablecoins if API fails/missing
+            priceMap["usd-coin"] = priceMap["usd-coin"] || 1;
+
+            setPriceMap(priceMap); // [NEW] Save to State
+
             const summary = await allocateAcrossNetworks(
                 Number(sendAmount),
                 toAddress as Address,
                 sendChain,
                 watch("optimize"),
                 watch("sourceToken"),
-                { [watch("sourceToken")]: effectivePrice } // [NEW] Pass Price Map
+                priceMap // [NEW] Pass Full Price Map
             );
 
             setRouteSummary(summary);
@@ -467,37 +499,18 @@ export const useSendMoneyModal = () => {
     };
 
 
-    // [NEW] Max Amount in USD
+    // [UPDATED] Max Balance = Total Portfolio Value in USD (as per user request)
     const maxSendAmount = wallets.reduce((total, wallet) => {
-        const walletTotal = wallet.chains.reduce((sum, chain) => {
-            const desiredToken = watch("sourceToken") || "USDC";
-            const amount = chain.tokens?.[desiredToken] || 0;
-            // Dynamic Fee Calculation
-            const sourceChainKey = CHAIN_ID_TO_KEY[chain.chainId];
-            const destChainKey = watch("sendChain");
-
-
-
-            const isSameChain = sourceChainKey === destChainKey;
-            const dynamicMaxFee = isDev ? 0 : (isSameChain ? 0.01 : 0.02);
-
-            // available = Balance - Fee
-            const availableToken = amount - dynamicMaxFee; // Logic assumes Fee is in Token Units? NO, Fee is 0.02 USD.
-            // CAUTION: 'amount' here is Token Balance. 'dynamicMaxFee' is 0.02 USD.
-            // We must convert Fee to Token Units to subtract from Token Balance?
-            // OR convert Token Balance to USD and subtract Fee in USD.
-            // Let's do USD.
-            // Balance USD = amount * effectivePrice
-            const balanceUSD = amount * (effectivePrice || 0); // Handle 0 if loading
-            const availableUSD = balanceUSD - dynamicMaxFee;
-
-            return availableUSD > 0 ? sum + availableUSD : sum;
+        const walletTotal = wallet.chains.reduce((sum, c) => {
+            // DEBUG LOG
+            console.log(`[MaxCheck] ${wallet.address} - ${c.chainId}: Amount=${c.amount} tokens=`, c.tokens);
+            return sum + (c.amount || 0);
         }, 0);
         return total + walletTotal;
     }, 0);
 
-    // Format to 2 decimals for USD display
-    const formattedMaxSendAmount = maxSendAmount > 0 ? parseFloat(maxSendAmount.toFixed(2)) : 0;
+    // Format to 6 decimals for USD display
+    const formattedMaxSendAmount = maxSendAmount > 0 ? parseFloat(maxSendAmount.toFixed(6)) : 0;
 
     const currentSendAmount = Number(watch("sendAmount") || 0);
     const isExceedingMax = currentSendAmount > formattedMaxSendAmount;
@@ -525,7 +538,8 @@ export const useSendMoneyModal = () => {
         setValue,
         maxSendAmount: formattedMaxSendAmount,
         isExceedingMax,
-        wallets
+        wallets,
+        priceMap // [NEW] Expose Prices
     }
 
 }
