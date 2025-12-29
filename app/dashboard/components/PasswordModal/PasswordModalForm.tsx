@@ -4,8 +4,9 @@ import { Box, Typography, IconButton, Button } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import BackspaceOutlinedIcon from "@mui/icons-material/BackspaceOutlined";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useUserStore } from "@/app/store/useUserStore";
+import { ResetWalletModal } from "./ResetWalletModal";
 
 interface PasswordModalFormProps {
     password: string;
@@ -29,6 +30,7 @@ export const PasswordModalForm = ({
     onSubmit
 }: PasswordModalFormProps) => {
     const { email } = useUserStore();
+    const [showResetModal, setShowResetModal] = useState(false);
     const MAX_LENGTH = 6;
 
     const handleNumberClick = (num: string) => {
@@ -107,6 +109,7 @@ export const PasswordModalForm = ({
                 </Typography>
                 <Typography
                     variant="body2"
+                    onClick={() => setShowResetModal(true)}
                     sx={{ color: "#00DC8C", fontWeight: 600, cursor: "pointer", fontSize: 12 }}
                 >
                     Olvidé mi clave
@@ -114,7 +117,7 @@ export const PasswordModalForm = ({
             </Box>
 
             {/* Custom Numpad */}
-            <Box sx={{ width: "100%", maxWidth: 240 }}>
+            <Box sx={{ width: "100%", maxWidth: 320 }}>
                 {/* Row 1 */}
                 <Box display="flex" justifyContent="space-between" mb={1}>
                     {[1, 2, 3].map((num) => (
@@ -143,10 +146,10 @@ export const PasswordModalForm = ({
                             color: "black",
                             bgcolor: "#00DC8C",
                             border: "2px solid #00DC8C",
-                            fontSize: 20,
+                            fontSize: 24,
                             fontWeight: 900,
-                            minWidth: 50, // Compact size
-                            height: 50,
+                            minWidth: 64,
+                            height: 64,
                             borderRadius: "50%",
                             transition: "all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)",
                             boxShadow: "0px 4px 10px rgba(0, 220, 140, 0.3)",
@@ -176,8 +179,8 @@ export const PasswordModalForm = ({
                         onClick={handleBackspace}
                         sx={{
                             color: "white",
-                            minWidth: 50,
-                            height: 50,
+                            minWidth: 64,
+                            height: 64,
                             borderRadius: "50%",
                             transition: "all 0.2s",
                             "&:hover": {
@@ -189,7 +192,7 @@ export const PasswordModalForm = ({
                             }
                         }}
                     >
-                        <BackspaceOutlinedIcon sx={{ fontSize: 22 }} />
+                        <BackspaceOutlinedIcon sx={{ fontSize: 28 }} />
                     </Button>
                 </Box>
             </Box>
@@ -203,6 +206,16 @@ export const PasswordModalForm = ({
                     {error}
                 </Typography>
             )}
+
+            <ResetWalletModal
+                open={showResetModal}
+                onClose={() => setShowResetModal(false)}
+                onConfirm={() => {
+                    window.localStorage.clear();
+                    window.sessionStorage.clear();
+                    window.location.reload();
+                }}
+            />
         </Box>
     );
 };
@@ -213,10 +226,10 @@ const NumpadButton = ({ value, onClick }: { value: string, onClick: (v: string) 
         onClick={() => onClick(value)}
         sx={{
             color: "white",
-            fontSize: 22, // Compact font
+            fontSize: 28, // Larger font
             fontWeight: 500,
-            minWidth: 50, // Compact size
-            height: 50,
+            minWidth: 64, // Larger buttons
+            height: 64,
             borderRadius: "50%",
             border: "2px solid transparent",
             transition: "all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)",
