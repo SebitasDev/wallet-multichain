@@ -198,7 +198,8 @@ export const useFacilitator = ({
                     amount: amount,
                     recipient: recipient,
                     destToken: destToken,
-                    sourceToken: sourceToken
+                    sourceToken: sourceToken,
+                    senderAddress: currentAddress // [FIX] Include Sender Address
                 });
 
                 if (!result.success) {
