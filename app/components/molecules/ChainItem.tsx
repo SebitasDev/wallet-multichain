@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
     Box,
     Chip,
@@ -18,73 +19,162 @@ import { Address } from "abitype";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
-import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
-import { useEffect } from "react";
+import { formatCurrency } from "@/app/utils/formatCurrency";
+import { pricesApi } from "@/app/services/api/prices";
 
 interface IChainItemProps {
     address: Address;
     chainKey: ChainKey;
 }
 
+// Helper component for individual tokens to handle price hooks
+const TokenItem = ({ asset, balance, price }: { asset: any, balance: number, price?: number | null }) => {
+    // If price is provided by parent, use it. Otherwise, could fetch, but we want consistency.
+    // We'll rely on parent providing it for now to ensure sum matches total.
+
+    const assetFormattedBal = (Math.floor(balance * 1000000) / 1000000).toFixed(6); // Show up to 6 decimals for quantity
+
+    // Calculate USD Value
+    let usdValue = 0;
+    if (typeof price === "number") {
+        usdValue = balance * price;
+    } else if (asset.name.includes("USD")) {
+        usdValue = balance; // Fallback for stablecoins if price missing
+    }
+
+    return (
+        <ListItem
+            sx={{
+                backgroundColor: "#ffffff",
+                border: "2px solid #000000",
+                borderRadius: 3,
+                py: 1.5,
+                px: 2,
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                mb: 1,
+                transition: "all 0.2s",
+                "&:hover": {
+                    backgroundColor: "#f5f5f5",
+                    transform: "translateX(4px)",
+                },
+            }}
+        >
+            <Box sx={{
+                width: 32,
+                height: 32,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                "& svg": { width: "100%", height: "100%" }
+            }}>
+                {asset.icon || <UsdcIcon size={32} />}
+            </Box>
+
+            <Box display="flex" flexDirection="column" flex={1} minWidth={0}>
+                <Typography
+                    fontWeight={800}
+                    sx={{
+                        fontSize: { xs: 13, sm: 14 },
+                        color: "#000000"
+                    }}
+                >
+                    {asset.name}
+                </Typography>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "#666666",
+                        fontWeight: 600,
+                        fontSize: { xs: 11, sm: 12 }
+                    }}
+                >
+                    Balance: {balance > 0 ? assetFormattedBal : "0.00"}
+                </Typography>
+            </Box>
+
+            <Box sx={{ flexShrink: 0, textAlign: "right" }}>
+                <Typography
+                    fontWeight={800}
+                    sx={{
+                        fontSize: { xs: 13, sm: 14 },
+                        color: "#000000"
+                    }}
+                >
+                    {formatCurrency(usdValue)}
+                </Typography>
+            </Box>
+        </ListItem>
+    );
+};
+
 export default function ChainItem({ address, chainKey }: IChainItemProps) {
     const [open, setOpen] = useState(false);
 
     const config = NETWORKS[chainKey];
-    // This component seems to be built for EVM chains or needs adaptation for Stellar
-    // For now assuming EVM or handling gracefully if evm missing?
-    // But 'chainId' is required for finding wallet chain info.
-    // If Stellar, chainId logic needs update (Stellar doesn't use number ID in same way?)
-    // In useWalletsStore we used 'unknown' for non-evm.
-    // If config.evm is missing, we might blank out or check nonEvm.
-    const chainId = config.evm?.chain.id.toString() || "unknown"; // Handle non-EVM
+    const chainId = config.evm?.chain.id.toString() || "unknown";
 
-
-    // Obtener todas las wallets y calcular el balance
+    // Obtener todas las wallets y datos del store
     const wallets = useWalletStore((state) => state.wallets);
 
-    const [assetsBalances, setAssetsBalances] = useState<Record<string, string>>({});
-
-    useEffect(() => {
-        const fetchBalances = async () => {
-            if (!config.evm) return;
-
-            const newBalances: Record<string, string> = {};
-
-            await Promise.all(config.assets.map(async (asset) => {
-                try {
-                    const result = await getBalanceFromChain(
-                        config.evm!.chain,
-                        address,
-                        asset.address as Address,
-                        asset.decimals
-                    );
-                    newBalances[asset.name] = result.balance;
-                } catch (e) {
-                    console.error(`Error fetching balance for ${asset.name}`, e);
-                    newBalances[asset.name] = "0";
-                }
-            }));
-
-            setAssetsBalances(newBalances);
-        };
-
-        fetchBalances();
-    }, [address, config, open]); // Re-fetch when opened or config changes
-
-
-    // For the main display, we currently stick to the store's "amount" (which is primarily USDC)
-    // or we could sum up USD values if we had prices. For now, keeping store value for the main row
-    // to match the total balance logic of the app.
-    const balance = useMemo(() => {
+    const { tokens } = useMemo(() => {
         const wallet = wallets.find(
             (w) => w.address.toLowerCase() === address.toLowerCase()
         );
-        if (!wallet) return 0;
+        if (!wallet) return { amount: 0, tokens: {} as Record<string, number> };
         const chainInfo = wallet.chains.find((c) => c.chainId === chainId);
-        return chainInfo?.amount ?? 0;
+        return {
+            tokens: (chainInfo?.tokens ?? {}) as Record<string, number>
+        };
     }, [wallets, address, chainId]);
 
-    const formattedBalance = (Math.floor(Number(balance) * 100) / 100).toFixed(2);
+    // --- Dynamic Price Calculation ---
+    const [prices, setPrices] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        const fetchChainPrices = async () => {
+            const ids = config.assets
+                .map(a => a.coingeckoId)
+                .filter((id): id is string => !!id);
+
+            if (ids.length === 0) return;
+
+            try {
+                const pricesData = await pricesApi.getPrices(ids);
+                const newPrices: Record<string, number> = {};
+
+                config.assets.forEach(asset => {
+                    if (asset.coingeckoId && pricesData[asset.coingeckoId]?.usd) {
+                        newPrices[asset.coingeckoId] = pricesData[asset.coingeckoId].usd;
+                    } else if (asset.name.includes("USD")) {
+                        newPrices[asset.coingeckoId || asset.name] = 1; // Fallback
+                    }
+                });
+                setPrices(newPrices);
+            } catch (error) {
+                console.error("Failed to fetch prices for chain item", error);
+            }
+        };
+
+        fetchChainPrices();
+    }, [config.assets]);
+
+    // Calculate Total Dynamically
+    const dynamicTotal = useMemo(() => {
+        let total = 0;
+        config.assets.forEach(asset => {
+            const balance = tokens[asset.name] || 0;
+            const price = (asset.coingeckoId ? prices[asset.coingeckoId] : null) ?? (asset.name.includes("USD") ? 1 : 0);
+            total += balance * price;
+        });
+        return total;
+    }, [tokens, prices, config.assets]);
+
+
+    // Use the dynamic total for display
+    const formattedTotalBalance = formatCurrency(dynamicTotal);
 
     return (
         <>
@@ -155,7 +245,7 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
                             whiteSpace: "nowrap",
                         }}
                     >
-                        ${formattedBalance}
+                        {formattedTotalBalance}
                     </Typography>
 
                     <Chip
@@ -196,86 +286,14 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
             <Collapse in={open} timeout="auto" unmountOnExit>
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: 1.5, backgroundColor: "#f5f5f5" }}>
                     <List disablePadding>
-                        {config.assets.map((asset) => {
-                            const assetBal = assetsBalances[asset.name] || "0";
-                            const assetDetailsBal = Number(assetBal).toFixed(6);
-                            const assetFormattedBal = (Math.floor(Number(assetBal) * 100) / 100).toFixed(2);
-
-                            return (
-                                <ListItem
-                                    key={asset.name}
-                                    sx={{
-                                        backgroundColor: "#ffffff",
-                                        border: "2px solid #000000",
-                                        borderRadius: 3,
-                                        py: 1.5,
-                                        px: 2,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 2,
-                                        mb: 1,
-                                        transition: "all 0.2s",
-                                        "&:hover": {
-                                            backgroundColor: "#f5f5f5",
-                                            transform: "translateX(4px)",
-                                        },
-                                    }}
-                                >
-                                    <Box sx={{
-                                        width: 32,
-                                        height: 32,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        flexShrink: 0,
-                                        "& svg": { width: "100%", height: "100%" }
-                                    }}>
-                                        {asset.icon || <UsdcIcon size={32} />}
-                                    </Box>
-
-                                    <Box display="flex" flexDirection="column" flex={1} minWidth={0}>
-                                        <Typography
-                                            fontWeight={800}
-                                            sx={{
-                                                fontSize: { xs: 13, sm: 14 },
-                                                color: "#000000"
-                                            }}
-                                        >
-                                            {asset.name}
-                                        </Typography>
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                                color: "#666666",
-                                                fontWeight: 600,
-                                                fontSize: { xs: 11, sm: 12 }
-                                            }}
-                                        >
-                                            Balance: {assetDetailsBal}
-                                        </Typography>
-                                    </Box>
-
-                                    <Box sx={{ flexShrink: 0 }}>
-                                        {/* Usually we want USD price here, but assuming 1:1 for simplicity or raw amount if not stable? 
-                                        The main UI shows $. If it's not stablecoin, this $ label is misleading if we don't multiply by price.
-                                        But consistent with current app behavior which seems to treat "amount" mostly as USD or display generic?
-                                        User said "no todos siempre tendran usdc". 
-                                        For now, removing the '$' prefix for generic tokens to avoid confusion, or keeping it if we assume stable?
-                                        Let's just show the raw balance in the main view for now or same formatted balance logic.
-                                    */}
-                                        <Typography
-                                            fontWeight={800}
-                                            sx={{
-                                                fontSize: { xs: 13, sm: 14 },
-                                                color: "#000000"
-                                            }}
-                                        >
-                                            {assetFormattedBal}
-                                        </Typography>
-                                    </Box>
-                                </ListItem>
-                            );
-                        })}
+                        {config.assets.map((asset) => (
+                            <TokenItem
+                                key={asset.name}
+                                asset={asset}
+                                balance={Number(tokens[asset.name] || 0)}
+                                price={asset.coingeckoId ? prices[asset.coingeckoId] : (asset.name.includes("USD") ? 1 : 0)}
+                            />
+                        ))}
                     </List>
                 </Box>
             </Collapse>
