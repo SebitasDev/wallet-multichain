@@ -6,7 +6,7 @@ import { usePasswordModal } from "@/app/dashboard/hooks/common/usePasswordModal"
 import { PasswordModalHeader } from "./PasswordModalHeader";
 import { PasswordModalForm } from "./PasswordModalForm";
 import { PasswordModalActions } from "./PasswordModalActions";
-import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+
 
 type PasswordModalProps = {
     open: boolean;
@@ -31,18 +31,6 @@ export const PasswordModal = ({ open, mode, onSuccess, onClose, title, descripti
         handleSubmit
     } = usePasswordModal({ mode, onSuccess });
 
-    // Migration: Force password to '123456' as requested
-    const setPasswordStore = useWalletPasswordStore(s => s.setPassword);
-    useEffect(() => {
-        const migrated = window.localStorage.getItem("migration_123456_strict");
-        if (!migrated) {
-            setPasswordStore("123456").then(() => {
-                console.log("Password reset to 123456");
-                window.localStorage.setItem("migration_123456_strict", "true");
-            });
-        }
-    }, [setPasswordStore]);
-
     return (
         <Modal open={open} onClose={onClose}>
             <Box
@@ -62,13 +50,12 @@ export const PasswordModal = ({ open, mode, onSuccess, onClose, title, descripti
                     onSubmit={handleSubmit}
                     sx={{
                         width: "100%",
-                        maxWidth: 400,
+                        maxWidth: 480,
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         position: "relative",
-                        // Scale down slightly on smaller desktops if needed to fit
-                        transform: { md: "scale(0.9)" },
+                        // Scale removed for larger display
                         transformOrigin: "center center"
                     }}
                 >

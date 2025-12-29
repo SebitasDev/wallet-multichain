@@ -248,7 +248,12 @@ export const useCrossChainTransfer = () => {
     const [provider, setProvider] = useState<any>(null);
 
     const { address, isUsingXO } = useXOContracts();
-    const mainWallet = useXOWalletStore((s) => s.mainWallet);
+    const encryptedPrivateKey = useXOWalletStore(s => s.mainWallet.encryptedPrivateKey);
+    const encryptedPrivateKeyStellar = useXOWalletStore(s => s.mainWallet.encryptedPrivateKeyStellar);
+    const salt = useXOWalletStore(s => s.mainWallet.salt);
+    const iv = useXOWalletStore(s => s.mainWallet.iv);
+    const addressStellarStored = useXOWalletStore(s => s.mainWallet.addressStellar);
+    const addressStored = useXOWalletStore(s => s.mainWallet.address);
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
 
     // Setup Provider / Keys
@@ -267,33 +272,32 @@ export const useCrossChainTransfer = () => {
                 } catch (e) {
                     console.error("Error setting up XO provider:", e);
                 }
-            } else if (mainWallet.encryptedPrivateKey && currentPassword) {
+            } else if (encryptedPrivateKey && currentPassword) {
                 try {
                     const pk = await decryptPrivateKey(
-                        mainWallet.encryptedPrivateKey,
+                        encryptedPrivateKey,
                         currentPassword,
-                        mainWallet.salt!,
-                        mainWallet.iv!
+                        salt!,
+                        iv!
                     );
                     setPrivateKey(pk as `0x${string}`);
 
-                    if (mainWallet.encryptedPrivateKeyStellar) {
+                    if (encryptedPrivateKeyStellar) {
                         const pkStellar = await decryptPrivateKey(
-                            mainWallet.encryptedPrivateKeyStellar,
+                            encryptedPrivateKeyStellar,
                             currentPassword,
-                            mainWallet.salt!,
-                            mainWallet.iv!
+                            salt!,
+                            iv!
                         );
                         setStellarPrivateKey(pkStellar);
                     }
-                    console.log(">>> Private Key local cargada");
                 } catch (e) {
                     console.error("Error decrypting private key:", e);
                 }
             }
         };
         setup();
-    }, [isUsingXO, mainWallet, currentPassword]);
+    }, [isUsingXO, encryptedPrivateKey, encryptedPrivateKeyStellar, salt, iv, currentPassword]);
 
     const { executeHybridTransfer, isLoading: isHybridLoading } = useHybridBridgeStrategy();
 
@@ -541,7 +545,7 @@ export const useCrossChainTransfer = () => {
                 destToken: data.destToken,
                 sourceToken: data.sourceToken,
                 facilitatorFee: fee,
-                sender: (data.sourceChain === "Stellar" ? mainWallet?.addressStellar : mainWallet?.address) || undefined
+                sender: (data.sourceChain === "Stellar" ? addressStellarStored : addressStored) || undefined
             });
 
             if (result.success) {
