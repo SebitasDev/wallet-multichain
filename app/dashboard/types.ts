@@ -20,7 +20,7 @@ export type AllocationSummary = {
   remainingToCover: number;
   allocations: Array<{
     from: string;
-    chains: Array<{ chainId: string; amount: number; token?: string }>;
+    chains: Array<{ chainId: string; amount: number; token?: string; id?: string }>;
   }>;
   totalFees: number;
   commission: number;

@@ -147,7 +147,7 @@ export const useSendMoneyRoute = ({
         updateSummary(newAllocations);
     };
 
-    const handleRemoveChain = (walletAddress: string, chainId: string) => {
+    const handleRemoveChain = (walletAddress: string, chainId: string, id?: string) => {
         if (!routeSummary) return;
 
         // [FIX] Clear error for this chain
@@ -158,21 +158,28 @@ export const useSendMoneyRoute = ({
             if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
             return {
                 ...alloc,
-                chains: alloc.chains.filter(c => c.chainId !== chainId)
+                chains: alloc.chains.filter(c => {
+                    // Match by ID if available, otherwise ChainID (legacy/fallback)
+                    if (id && c.id) return c.id !== id;
+                    return c.chainId !== chainId;
+                })
             };
         }).filter(alloc => alloc.chains.length > 0);
 
         updateSummary(newAllocations);
     };
 
-    const handleTokenChange = (walletAddress: string, chainId: string, newToken: string) => {
+    const handleTokenChange = (walletAddress: string, chainId: string, newToken: string, id?: string) => {
         if (!routeSummary) return;
 
         const newAllocations = routeSummary.allocations.map(alloc => {
             if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
             return {
                 ...alloc,
-                chains: alloc.chains.map(c => c.chainId === chainId ? { ...c, token: newToken } : c)
+                chains: alloc.chains.map(c => {
+                    const isMatch = (id && c.id) ? c.id === id : c.chainId === chainId;
+                    return isMatch ? { ...c, token: newToken } : c;
+                })
             };
         });
 
@@ -182,7 +189,7 @@ export const useSendMoneyRoute = ({
         updateSummary(newAllocations);
     };
 
-    const handleAmountChange = (walletAddress: string, chainId: string, newAmount: string) => {
+    const handleAmountChange = (walletAddress: string, chainId: string, newAmount: string, id?: string) => {
         if (!routeSummary) return;
 
         const amount = parseFloat(newAmount) || 0;
@@ -191,7 +198,10 @@ export const useSendMoneyRoute = ({
             if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
             return {
                 ...alloc,
-                chains: alloc.chains.map(c => c.chainId === chainId ? { ...c, amount: amount } : c)
+                chains: alloc.chains.map(c => {
+                    const isMatch = (id && c.id) ? c.id === id : c.chainId === chainId;
+                    return isMatch ? { ...c, amount: amount } : c;
+                })
             };
         });
 
@@ -229,7 +239,11 @@ export const useSendMoneyRoute = ({
         const newAllocations = routeSummary.allocations.map(alloc => {
             if (alloc.from.toLowerCase() !== walletAddress.toLowerCase()) return alloc;
 
-            if (alloc.chains.some(c => c.chainId === chainId)) return alloc;
+            // [FIX] Allow adding same chain multiple times (Unique ID)
+            // if (alloc.chains.some(c => c.chainId === chainId)) return alloc; 
+
+            // Logic to pick a default token? defaulting to USDC for now.
+            // User can switch token in UI.
 
             return {
                 ...alloc,
@@ -238,7 +252,8 @@ export const useSendMoneyRoute = ({
                     {
                         chainId: chainId,
                         amount: 0,
-                        token: "USDC"
+                        token: "USDC",
+                        id: crypto.randomUUID()
                     }
                 ]
             };

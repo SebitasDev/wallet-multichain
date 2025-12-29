@@ -188,7 +188,7 @@ export const useSendMoneyModal = () => {
                 sendChain,
                 watch("optimize"),
                 watch("sourceToken"),
-                effectivePrice // [NEW] Pass Price
+                { [watch("sourceToken")]: effectivePrice } // [NEW] Pass Price Map
             );
 
             setRouteSummary(summary);

@@ -29,6 +29,7 @@ type Props = {
     isSimulating: boolean;
     simulationResult: string | null;
     simulationError: string | null;
+    otherUsedTokens?: string[];
 };
 
 export const SendMoneyRouteChain = ({
@@ -48,7 +49,8 @@ export const SendMoneyRouteChain = ({
     onSimulate,
     isSimulating,
     simulationResult,
-    simulationError
+    simulationError,
+    otherUsedTokens = []
 }: Props) => {
     const chainKey = CHAIN_ID_TO_KEY[r.chainId];
     const label = chainConfig?.label || "Chain " + r.chainId;
@@ -180,6 +182,8 @@ export const SendMoneyRouteChain = ({
                             if (hasNear) {
                                 source.crossChainInformation?.nearIntentInformation?.assetsId?.forEach((a: any) => allowed.add(a.name));
                             }
+                            // Filter out tokens used by other instances
+                            otherUsedTokens.forEach(t => allowed.delete(t));
 
                             return allowed.size > 0 ? Array.from(allowed) : undefined;
                         })()}
