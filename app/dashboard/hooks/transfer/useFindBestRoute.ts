@@ -8,7 +8,7 @@ export const useFindBestRoute = () => {
 
     const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
-    async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string, optimize: boolean, sourceToken: string) {
+    async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string, optimize: boolean, sourceToken: string, tokenPrice: number = 1) {
         const sendNetwork = NETWORKS[sendChain as ChainKey];
         if (!sendNetwork || !sendNetwork.evm) {
             console.error(`Chain ${sendChain} not configured for EVM`);
@@ -24,14 +24,11 @@ export const useFindBestRoute = () => {
         }
 
         const chainId = sendNetwork.evm.chain.id;
+        const safePrice = tokenPrice && tokenPrice > 0 ? tokenPrice : 1; // Prevent div by zero
 
-        const getOriginFee = (id: string) => {
-            const key = CHAIN_ID_TO_KEY[id] as keyof typeof NETWORKS;
-            if (!key) return 0.003;
-            // Access nested fee, default to 0.003 if missing
-            // We must align this with the Facilitator Fee (0.01 - 0.02)
-            // To be safe and prevent "Exceeds Balance", we assume 0.02 for everyone.
-            return 0.02;
+        const getOriginFeeUSD = (id: string) => {
+            const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+            return isDev ? 0 : 0.02; // USD
         };
 
         const filteredWallets = wallets
@@ -44,11 +41,14 @@ export const useFindBestRoute = () => {
             })
             .filter(wallet => wallet.chains.length > 0);
 
-        const balances: Array<{ from: string; networkId: string; available: number }> = [];
+        const balances: Array<{ from: string; networkId: string; availableUSD: number; availableToken: number }> = [];
 
         for (const wallet of filteredWallets) {
             for (const chain of wallet.chains) {
-                const chainAmount = Number(chain.amount);
+                // [FIX] Use specific token balance, not total chain USD value
+                // Default to USDC if sourceToken is missing (though it should be passed)
+                const targetToken = sourceToken || "USDC";
+                const chainAmountToken = chain.tokens?.[targetToken] || 0;
 
                 // Compatibility Check
                 const sourceKey = CHAIN_ID_TO_KEY[chain.chainId] as ChainKey;
@@ -63,31 +63,28 @@ export const useFindBestRoute = () => {
                 const hasNear = sourceConfig.crossChainInformation?.nearIntentInformation?.support &&
                     destConfig.crossChainInformation?.nearIntentInformation?.support;
 
-                // If no bridge connection exists, skip
                 if (!hasCctp && !hasNear) continue;
 
                 // Token Compatibility Check
-                // If sourceToken is defined, ensure it's valid for the available bridges
                 if (sourceToken) {
-                    const isUsdc = sourceToken.toUpperCase() === "USDC";
-
-                    // If CCTP is the only option, token MUST be USDC
+                    const isUsdc = sourceToken.toUpperCase().includes("USDC");
                     if (hasCctp && !hasNear && !isUsdc) continue;
-
-                    // If Near is the only option, token MUST be supported by Near (simplified check, assume check exists or generic)
-                    // (For now, we trust the generic compatibility or assume Near supports more)
-
-                    // Specific check for CCTP exclusivity:
-                    // If we are relying on CCTP, we can't send non-USDC.
                 }
 
+                // Balance Calculation
+                // 1. Convert Fee to Token to see if we have enough FOR FEE?
+                // Or Convert Balance to USD and subtract Fee in USD?
+                // Let's do USD calc.
+                const balanceUSD = chainAmountToken * safePrice;
+                const feeUSD = getOriginFeeUSD(chain.chainId);
 
-                if (chainAmount - getOriginFee(chain.chainId) <= 0) continue;
+                if (balanceUSD - feeUSD <= 0) continue;
 
                 balances.push({
                     from: wallet.address,
                     networkId: chain.chainId,
-                    available: chainAmount - getOriginFee(chain.chainId)
+                    availableUSD: balanceUSD - feeUSD,
+                    availableToken: chainAmountToken
                 });
             }
         }
@@ -104,47 +101,51 @@ export const useFindBestRoute = () => {
             };
         }
 
-        let allocations: Array<{ from: string; networkId: string; amount: number }> = [];
-        let remainingToCover = desiredAmount;
-        let totalFees = 0;
+        let allocations: Array<{ from: string; networkId: string; amountToken: number }> = [];
+        let remainingToCoverUSD = desiredAmount;
+        let totalFeesUSD = 0;
 
-        optimize ? balances.sort((a, b) => b.available - a.available) :
-            balances.sort((a, b) => a.available - b.available);
+        optimize ? balances.sort((a, b) => b.availableUSD - a.availableUSD) :
+            balances.sort((a, b) => a.availableUSD - b.availableUSD);
 
         for (const b of balances) {
-            if (remainingToCover <= 0) break;
+            if (remainingToCoverUSD <= 0) break;
 
-            const originFee = getOriginFee(b.networkId);
+            const originFeeUSD = getOriginFeeUSD(b.networkId); // 0.02
 
-            let take = Math.min(b.available, remainingToCover);
-            take = round6(take);
+            // Take matching USD amount
+            let takeUSD = Math.min(b.availableUSD, remainingToCoverUSD);
+            takeUSD = round6(takeUSD);
 
-            if (take > remainingToCover) {
-                take = remainingToCover;
+            if (takeUSD > remainingToCoverUSD) {
+                takeUSD = remainingToCoverUSD;
             }
 
-            totalFees = round6(totalFees + originFee);
+            // Convert Take Back to Token
+            const takeToken = takeUSD / safePrice;
+
+            totalFeesUSD = round6(totalFeesUSD + originFeeUSD);
 
             allocations.push({
                 from: b.from,
                 networkId: b.networkId,
-                amount: take
+                amountToken: takeToken // Store Token Amount for execution
             });
 
-            remainingToCover = round6(remainingToCover - take);
+            remainingToCoverUSD = round6(remainingToCoverUSD - takeUSD);
         }
 
         const uniqueParticipants = Array.from(new Set(allocations.map(a => a.from)));
         const commission = round6(0.01 * uniqueParticipants.length);
 
-        const totalTaken = round6(
-            allocations.reduce((sum, a) => sum + a.amount, 0)
+        const totalTakenToken = round6(
+            allocations.reduce((sum, a) => sum + a.amountToken, 0)
         );
 
         const grouped: Record<string, { from: string; chains: any[] }> = {};
 
         for (const item of allocations) {
-            if (item.amount <= 0) continue;
+            if (item.amountToken <= 0) continue;
 
             if (!grouped[item.from]) {
                 grouped[item.from] = {
@@ -154,7 +155,7 @@ export const useFindBestRoute = () => {
             }
             grouped[item.from].chains.push({
                 chainId: item.networkId,
-                amount: round6(item.amount),
+                amount: item.amountToken, // Token Amount
                 token: sourceToken
             });
         }
@@ -163,9 +164,9 @@ export const useFindBestRoute = () => {
             desiredAmount,
             targetAmount: desiredAmount,
             commission,
-            totalFees,
-            totalAmountTaken: totalTaken,
-            remainingToCover: Math.max(0, remainingToCover),
+            totalFees: totalFeesUSD,
+            totalAmountTaken: totalTakenToken, // This is Token Sum? Might be meaningless if mixed? But we force single token so valid.
+            remainingToCover: Math.max(0, remainingToCoverUSD),
             allocations: Object.values(grouped)
         };
 

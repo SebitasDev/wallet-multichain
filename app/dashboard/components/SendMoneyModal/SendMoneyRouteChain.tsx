@@ -59,7 +59,9 @@ export const SendMoneyRouteChain = ({
     const isSameChain = destChainId === r.chainId;
     const isUSDC = (r.token || "USDC").toUpperCase() === "USDC";
 
-    const fee = (isSameChain && isUSDC) ? 0.01 : 0.02;
+    const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+    const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
+    const fee = isDev ? 0 : baseFee;
     const maxUsable = Math.max(0, chainBalance - fee);
 
     // Auto-correct token if invalid for this chain

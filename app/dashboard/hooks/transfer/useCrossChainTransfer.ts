@@ -11,12 +11,12 @@ import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
-import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
-import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 import { useTokenPrice } from "@/app/hooks/useTokenPrice";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { bridgeApi, transactionsApi, CreateTransactionRequest } from "@/app/services/api";
-
+import { useRouteValidation } from "./useRouteValidation";
+import { useMaxTransferAmount } from "./useMaxTransferAmount";
+import { useTransferFee } from "./useTransferFee";
 // Types
 export const STELLAR_CHAIN_KEY = "Stellar";
 
@@ -46,281 +46,7 @@ const serializeBigInt = (obj: any): any => {
 };
 
 
-// -- Helper Hook: Route Validation --
-const useRouteValidation = (sourceChain: string, destChain: string, sourceToken: string, destToken: string) => {
-    return useMemo(() => {
-        const getChainConfig = (key: string) => {
-            if (key === STELLAR_CHAIN_KEY) return STELLAR;
-            return NETWORKS[key as keyof typeof NETWORKS];
-        };
-
-        const sourceConfig = getChainConfig(sourceChain);
-        const destConfig = getChainConfig(destChain);
-
-        if (!sourceConfig || !destConfig) return null;
-
-        const isSourceNonEvm = !!sourceConfig.nonEvm;
-        const isDestNonEvm = !!destConfig.nonEvm;
-
-        // Case 1: Heterogeneous Chains (EVM <-> Non-EVM)
-        if (isSourceNonEvm !== isDestNonEvm) {
-            const evmConfig = isSourceNonEvm ? destConfig : sourceConfig;
-            const nonEvmConfig = isSourceNonEvm ? sourceConfig : destConfig;
-
-            if (!evmConfig.crossChainInformation.nearIntentInformation?.support) {
-                return `Ruta no disponible: ${evmConfig.label} no tiene soporte para conectar con ${nonEvmConfig.label}`;
-            }
-            if (!nonEvmConfig.crossChainInformation.nearIntentInformation?.support) {
-                return `Ruta no disponible: ${nonEvmConfig.label} no tiene soporte para puentes`;
-            }
-        }
-
-        // Case 2: Homogeneous EVM Chains (EVM <-> EVM)
-        if (!isSourceNonEvm && !isDestNonEvm) {
-            if (sourceToken === 'USDC' && destToken === 'USDC') {
-                const sourceCCTP = sourceConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
-                const destCCTP = destConfig.crossChainInformation.circleInformation?.cCTPInformation?.supportCCTP;
-
-                if (sourceCCTP && destCCTP) return null;
-
-                const sourceNear = sourceConfig.crossChainInformation.nearIntentInformation?.support;
-                const destNear = destConfig.crossChainInformation.nearIntentInformation?.support;
-
-                if (sourceNear && destNear) return null;
-
-                return `Ruta no disponible para USDC: Se requiere soporte CCTP o Near Intents en ambas chains.`;
-            }
-        }
-
-        return null;
-    }, [sourceChain, destChain, sourceToken, destToken]);
-};
-
-// -- Helper Hook: Max Amount Calculation --
-const useMaxTransferAmount = (
-    address: string | undefined | null,
-    sourceChain: string,
-    destChain: string,
-    sourceToken: string,
-    destToken: string,
-    stellarPrivateKey: string | null,
-    chains: any[] = [] // [NEW] Accepted cached chains
-) => {
-    const [maxAmount, setMaxAmount] = useState(0);
-    const [balance, setBalance] = useState(0);
-
-    // Calculate expected fee for Max calc (independent of amount entered)
-    const expectedFee = useMemo(() => {
-        if (process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development") return 0;
-
-        let feeVal = 0.02; // Default Cross-chain
-        if (sourceChain === destChain) {
-            feeVal = sourceToken !== destToken ? 0.02 : 0.01;
-        }
-        return feeVal;
-    }, [sourceChain, destChain, sourceToken, destToken]);
-
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchBalance = async () => {
-            if (!address) {
-                if (isMounted) {
-                    setMaxAmount(0);
-                    setBalance(0);
-                }
-                return;
-            }
-
-            // [NEW] Try to find in cache first
-            // Stellar Cache Check
-            if (sourceChain === STELLAR_CHAIN_KEY) {
-                const stellarChain = chains.find(c => c.chainId === "stellar");
-                if (stellarChain) {
-                    // Check if we have the specific token balance
-                    // If sourceToken is "USDC", check tokens["USDC"]
-                    // If sourceToken is "XLM", accessing raw amount might be needed but usually chains object has normalized structure.
-                    // Based on useXOWalletStore, stellar chain has tokens: { "USDC": val }
-                    const tokenKey = sourceToken === "XLM" ? "XLM" : "USDC"; // Adjust based on your store structure
-                    const cachedVal = stellarChain.tokens?.[sourceToken];
-
-                    if (typeof cachedVal === "number") {
-                        const reserve = sourceToken === "XLM" ? 1.1 : 0;
-                        const max = cachedVal - reserve - expectedFee;
-                        if (isMounted) {
-                            setBalance(cachedVal);
-                            setMaxAmount(max > 0 ? parseFloat(max.toFixed(6)) : 0);
-                        }
-                        return; // Found in cache, return early!
-                    }
-                }
-            }
-
-            // EVM Cache Check (Optional optimization for EVM too)
-            const networkConfig = NETWORKS[sourceChain as keyof typeof NETWORKS];
-            if (networkConfig?.evm) {
-                const chainId = networkConfig.evm.chain.id.toString();
-                const evmChain = chains.find(c => c.chainId === chainId);
-                if (evmChain) {
-                    const cachedVal = evmChain.tokens?.[sourceToken];
-                    if (typeof cachedVal === "number") {
-                        // Check if it's native by looking up asset config
-                        const asset = networkConfig.assets.find(a => a.name === sourceToken);
-                        const isNative = asset?.address === "0x0000000000000000000000000000000000000000";
-                        const GAS_BUFFER = isNative ? 0.005 : 0;
-
-                        const max = cachedVal - expectedFee - GAS_BUFFER;
-                        if (isMounted) {
-                            setBalance(cachedVal);
-                            const safeMax = Math.floor(max * 1_000_000) / 1_000_000;
-                            setMaxAmount(safeMax > 0 ? safeMax : 0);
-                        }
-                        return; // Found in cache, return early!
-                    }
-                }
-            }
-
-
-            // Stellar Logic (Fallback to Fetch)
-            if (sourceChain === STELLAR_CHAIN_KEY) {
-                if (!stellarPrivateKey) {
-                    if (isMounted) {
-                        setMaxAmount(0);
-                        setBalance(0);
-                    }
-                    return;
-                }
-
-                try {
-                    const { Keypair } = await import("stellar-sdk");
-                    const keypair = Keypair.fromSecret(stellarPrivateKey);
-                    const publicKey = keypair.publicKey();
-
-                    if (sourceToken === "XLM") {
-                        // XLM is Native. Fee is paid in XLM.
-                        // Max = Balance - Reserve (1.0) - Fee
-                        const server = new (await import("stellar-sdk")).Horizon.Server("https://horizon.stellar.org");
-                        const account = await server.loadAccount(publicKey);
-                        const native = account.balances.find((b) => b.asset_type === "native");
-                        const bal = native ? parseFloat(native.balance) : 0;
-                        const max = bal - 1.1 - expectedFee;
-                        if (isMounted) {
-                            setBalance(bal);
-                            const safeMax = Math.floor(max * 1_000_000) / 1_000_000;
-                            setMaxAmount(safeMax > 0 ? safeMax : 0);
-                        }
-                    } else {
-                        // USDC or other Asset. Fee is paid in Asset (simplification).
-                        const bal = await getStellarUSDCBalance(publicKey);
-                        if (bal !== null) {
-                            const max = bal - expectedFee;
-                            if (isMounted) {
-                                setBalance(bal);
-                                const safeMax = Math.floor(max * 1_000_000) / 1_000_000;
-                                setMaxAmount(safeMax > 0 ? safeMax : 0);
-                            }
-                        } else {
-                            if (isMounted) {
-                                setMaxAmount(0);
-                                setBalance(0);
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error("Error fetching Stellar balance:", e);
-                    if (isMounted) {
-                        setMaxAmount(0);
-                        setBalance(0);
-                    }
-                }
-                return;
-            }
-
-            // EVM Logic (Fallback)
-            // ... existing EVM logic ... 
-            if (!networkConfig || !networkConfig.evm) {
-                if (isMounted) {
-                    setMaxAmount(0);
-                    setBalance(0);
-                }
-                return;
-            }
-
-            const tokenName = sourceToken || "USDC";
-            const assetInfo = networkConfig.assets.find(a => a.name === tokenName);
-            const tokenAddress = assetInfo?.address;
-
-            try {
-                if (tokenAddress) {
-                    const { balance: rawBal } = await getBalanceFromChain(
-                        networkConfig.evm.chain,
-                        address as Address,
-                        tokenAddress as Address,
-                        assetInfo?.decimals // [NEW] Pass decimals from config
-                    );
-                    const numBalance = Number(rawBal || 0);
-
-                    // Check for Native Token (0x00...00)
-                    const isNative = tokenAddress === "0x0000000000000000000000000000000000000000";
-
-                    let GAS_BUFFER = 0;
-                    if (isNative) {
-                        try {
-                            // Dynamic Gas Estimation as requested: (Est Gas + 10%)
-                            const { createPublicClient, http, formatEther } = await import("viem");
-
-                            const publicClient = createPublicClient({
-                                chain: networkConfig.evm.chain,
-                                transport: http()
-                            });
-
-                            const gasPrice = await publicClient.getGasPrice();
-                            // Estimate transfer to Facilitator (as that's the destination for Native Bridge)
-                            // We use a dummy value (e.g. 0) or the balance itself? 
-                            // Balance might trigger insufficient funds in estimation itself if we aren't careful.
-                            // 0 value is safest for pure gas estimation of the call.
-                            const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97";
-
-                            const gasEstimate = await publicClient.estimateGas({
-                                account: address as Address,
-                                to: FACILITATOR_ADDR as Address,
-                                value: BigInt(0)
-                            });
-
-                            const gasCost = gasEstimate * gasPrice;
-                            const gasCostWithBuffer = (gasCost * BigInt(110)) / BigInt(100); // +10%
-
-                            GAS_BUFFER = parseFloat(formatEther(gasCostWithBuffer));
-                            console.log(`[MaxCalc] Native Buffer: ${GAS_BUFFER} (Est: ${formatEther(gasCost)})`);
-                        } catch (e) {
-                            console.warn("Gas estimation failed, using fallback 0.005", e);
-                            GAS_BUFFER = 0.005;
-                        }
-                    }
-
-                    const max = numBalance - expectedFee - GAS_BUFFER;
-
-                    if (isMounted) {
-                        setBalance(numBalance);
-                        const safeMax = Math.floor(max * 1_000_000) / 1_000_000;
-                        setMaxAmount(safeMax > 0 ? safeMax : 0);
-                    }
-                }
-            } catch (err) {
-                console.error("Error fetching max amount:", err);
-                if (isMounted) {
-                    setMaxAmount(0);
-                    setBalance(0);
-                }
-            }
-        };
-
-        fetchBalance();
-        return () => { isMounted = false; };
-    }, [address, sourceChain, destChain, sourceToken, destToken, stellarPrivateKey, expectedFee, chains]); // Added chains dep
-
-    return { maxAmount, balance };
-};
+// [DELETED LOCAL HOOKS: useRouteValidation, useMaxTransferAmount]
 
 export const useCrossChainTransfer = () => {
     const { crossChainOpen: open, openCrossChain: setOpen, closeCrossChain: closeModal } = useDashboardModalsStore();
@@ -448,8 +174,17 @@ export const useCrossChainTransfer = () => {
 
     const { price: destTokenPrice, loading: destTokenPriceLoading } = useTokenPrice(currentDestCoinGeckoId);
 
-    // Derived State
-    const { maxAmount, balance } = useMaxTransferAmount(address, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, stellarPrivateKey, chains); // [UPDATED] Pass chains
+    // Derived State using Imported Hooks
+    const { maxAmount, balance } = useMaxTransferAmount(
+        address,
+        watchSourceChain,
+        watchDestChain,
+        watchSourceToken,
+        watchDestToken,
+        stellarPrivateKey,
+        chains
+    );
+
     const routeError = useRouteValidation(watchSourceChain, watchDestChain, watchSourceToken, watchDestToken);
 
     const minAmount = useMemo(() => {
@@ -470,41 +205,15 @@ export const useCrossChainTransfer = () => {
         return !isNaN(amount) && amount > maxAmount;
     }, [watchAmount, maxAmount]);
 
-    const fee = useMemo(() => {
-        if (process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development") return "0";
-        if (!watchAmount) return "0.00";
-
-        // [NEW] Same-Chain Native Transfer = Free
-        if (watchSourceChain === watchDestChain && watchSourceToken === watchDestToken) {
-            return "0.00";
-        }
-
-        let usdFee = 0.02; // Default Cross-chain
-
-        // If dealing with USDC, fee is just the USD amount
-        const isUSDC = watchSourceToken.includes("USDC");
-        if (isUSDC) return usdFee.toFixed(2);
-
-        // If Native/Other, convert USD fee to Token Amount
-        if (tokenPrice && tokenPrice > 0) {
-            const nativeFee = usdFee / tokenPrice;
-            // Return with high precision for crypto
-            return nativeFee.toFixed(8); // e.g. 0.000033 BNB
-        }
-
-        // Fallback if no price available (user must ensure enough buffer, or we default to 0 for safety/error)
-        return "0.00";
-    }, [watchAmount, watchDestChain, watchSourceChain, watchSourceToken, watchDestToken, tokenPrice]);
-
-    const total = useMemo(() => {
-        const amount = parseFloat(watchAmount || "0");
-        const feeVal = parseFloat(fee);
-        return (amount + feeVal).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 6,
-            useGrouping: false
-        });
-    }, [watchAmount, fee]);
+    // Use New Fee Hook
+    const { fee, total } = useTransferFee(
+        watchAmount,
+        watchSourceChain,
+        watchDestChain,
+        watchSourceToken,
+        watchDestToken,
+        tokenPrice || undefined
+    );
 
     const openModal = () => setOpen();
     const handleCloseModal = () => {

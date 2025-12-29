@@ -16,6 +16,7 @@ import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { transactionsApi, CreateTransactionRequest } from "@/app/services/api";
 import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
+import { useTokenPrice } from "@/app/hooks/useTokenPrice";
 
 
 
@@ -45,6 +46,9 @@ export type RouteDetail = {
 
 
 export const useSendMoneyModal = () => {
+    // [NEW] Consistent Dev Check
+    const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+
     const [sendLoading, setSendLoading] = useState(false);
     const [routeReady, setRouteReady] = useState(false);
     const [routeSummary, setRouteSummary] = useState<AllocationSummary | null>(null);
@@ -90,6 +94,8 @@ export const useSendMoneyModal = () => {
 
         setRouteDetails(details);
     }, [routeSummary]);
+
+
 
     useBridgeUsdcStream((e) => {
         console.log("📩 Evento recibido en useBridgeUsdcStream:", e);
@@ -137,6 +143,15 @@ export const useSendMoneyModal = () => {
         },
     });
 
+    // [NEW] Price Logic
+    const { price: tokenPrice } = useTokenPrice(
+        watch("sourceToken") !== "USDC"
+            ? (NETWORKS[watch("sendChain") as ChainKey]?.assets.find(a => a.name === watch("sourceToken"))?.coingeckoId || "usd-coin")
+            : undefined
+    );
+    const effectivePrice = watch("sourceToken") !== "USDC" ? (tokenPrice || 0) : 1;
+
+
     useEffect(() => {
         if (!isOpen) {
             reset({
@@ -172,7 +187,8 @@ export const useSendMoneyModal = () => {
                 toAddress as Address,
                 sendChain,
                 watch("optimize"),
-                watch("sourceToken")
+                watch("sourceToken"),
+                effectivePrice // [NEW] Pass Price
             );
 
             setRouteSummary(summary);
@@ -210,7 +226,7 @@ export const useSendMoneyModal = () => {
         for (const allocation of routeSummary!.allocations) {
 
             // 1. Unlock Wallet (Get Private Key)
-            const unlockedKey = await unlockWallet(allocation.from, watch("sendPassword"));
+            const unlockedKey = await unlockWallet(allocation.from, watch("sendPassword") || "");
             if (!unlockedKey) {
                 toast.error(`No se pudo desbloquear la wallet ${allocation.from}`);
                 continue;
@@ -246,14 +262,12 @@ export const useSendMoneyModal = () => {
                     )
                 );
 
-                // Determine Fee (Same logic as useCrossChainTransfer)
-                // 0.01 for Same Chain, 0.02 for Cross Chain
-                const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+                // Determine Fee (Using Standard Logic 0.01 vs 0.02)
+
                 const baseFee = fromValidChain === toValidChain ? 0.01 : 0.02;
                 const currentFee = isDev ? 0 : baseFee;
 
                 // Add fee to the amount to be signed/transferred
-                // Because we removed the auto-add in createAuthorizationPayload
                 const totalAmount = (amountFloat + currentFee).toFixed(6);
 
                 // Sanitize Token verify it exists on chain
@@ -452,36 +466,43 @@ export const useSendMoneyModal = () => {
         return NETWORKS[key]?.crossChainInformation?.circleInformation?.aproxFromFee || 0.003;
     };
 
+
+    // [NEW] Max Amount in USD
     const maxSendAmount = wallets.reduce((total, wallet) => {
         const walletTotal = wallet.chains.reduce((sum, chain) => {
-            const amount = Number(chain.amount);
+            const desiredToken = watch("sourceToken") || "USDC";
+            const amount = chain.tokens?.[desiredToken] || 0;
             // Dynamic Fee Calculation
             const sourceChainKey = CHAIN_ID_TO_KEY[chain.chainId];
             const destChainKey = watch("sendChain");
 
-            // Default to cross-chain fee (0.02) if unknown, effectively 0.01 if same chain
-            // User requested: "cobro o 0.01 o 0.02"
-            // If source == dest -> 0.01
-            // If source != dest -> 0.02
+
+
             const isSameChain = sourceChainKey === destChainKey;
-            const dynamicMaxFee = isSameChain ? 0.01 : 0.02;
+            const dynamicMaxFee = isDev ? 0 : (isSameChain ? 0.01 : 0.02);
 
-            // We subtract the max possible fee for this specific route consideration
             // available = Balance - Fee
-            const available = amount - dynamicMaxFee;
+            const availableToken = amount - dynamicMaxFee; // Logic assumes Fee is in Token Units? NO, Fee is 0.02 USD.
+            // CAUTION: 'amount' here is Token Balance. 'dynamicMaxFee' is 0.02 USD.
+            // We must convert Fee to Token Units to subtract from Token Balance?
+            // OR convert Token Balance to USD and subtract Fee in USD.
+            // Let's do USD.
+            // Balance USD = amount * effectivePrice
+            const balanceUSD = amount * (effectivePrice || 0); // Handle 0 if loading
+            const availableUSD = balanceUSD - dynamicMaxFee;
 
-            return available > 0 ? sum + available : sum;
+            return availableUSD > 0 ? sum + availableUSD : sum;
         }, 0);
         return total + walletTotal;
     }, 0);
 
-    // Format to 6 decimals to match precision
-    const formattedMaxSendAmount = maxSendAmount > 0 ? parseFloat(maxSendAmount.toFixed(6)) : 0;
+    // Format to 2 decimals for USD display
+    const formattedMaxSendAmount = maxSendAmount > 0 ? parseFloat(maxSendAmount.toFixed(2)) : 0;
 
     const currentSendAmount = Number(watch("sendAmount") || 0);
     const isExceedingMax = currentSendAmount > formattedMaxSendAmount;
 
-    const canSend = !!watch("toAddress") && !!watch("sendAmount") && !!watch("sendPassword") && !isExceedingMax;
+    const canSend = !!watch("toAddress") && !!watch("sendAmount") && !isExceedingMax;
 
     const selected = NETWORKS[watch("sendChain") as ChainKey];
 

@@ -360,6 +360,47 @@ export const SendMoneyModalRoute = (
                     watch={watch}
                     simulationResults={simulationResults}
                 />
+
+                {/* PASSWORD FIELD (Step 2) */}
+                <Box mt={2}>
+                    <Typography
+                        fontWeight={700}
+                        fontSize={13}
+                        sx={{
+                            mb: 1,
+                            textTransform: "uppercase",
+                            letterSpacing: 0.5,
+                            color: "#666666"
+                        }}
+                    >
+                        Wallet Password
+                    </Typography>
+                    <Controller
+                        control={control}
+                        name="sendPassword"
+                        defaultValue=""
+                        render={({ field }) => (
+                            <TextField
+                                fullWidth
+                                size="medium"
+                                type="password"
+                                placeholder="••••••••"
+                                {...field}
+                                // Don't show error visually here to keep it clean, or show if needed
+                                InputProps={{
+                                    sx: {
+                                        borderRadius: 2,
+                                        background: "#ffffff",
+                                        border: "2px solid #000000",
+                                        fontWeight: 600,
+                                        "&:hover": { background: "#ffffff" },
+                                        "&.Mui-focused": { background: "#ffffff" },
+                                    },
+                                }}
+                            />
+                        )}
+                    />
+                </Box>
             </Box>
         </Box>
     )
