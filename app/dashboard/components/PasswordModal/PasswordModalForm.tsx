@@ -105,6 +105,7 @@ export const PasswordModalForm = ({
                     variant="body2"
 
                     sx={{ color: "#00DC8C", fontWeight: 600, cursor: "pointer", fontSize: 12 }}
+                    onClick={() => setShowResetModal(true)}
                 >
                     Olvidé mi clave
                 </Typography>
