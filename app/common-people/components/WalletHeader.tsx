@@ -34,6 +34,7 @@ import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModal
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { CrossChainTransferModal } from "@/app/dashboard/components/CrossChainTransferModal";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
+import { useWalletStore } from "@/app/store/useWalletsStore";
 
 export function WalletHeader() {
     const router = useRouter();
@@ -46,6 +47,7 @@ export function WalletHeader() {
     const { openReceive } = useDashboardModalsStore();
     const { setSendModal } = useSendMoneyStore();
     const { mainWallet, refreshMainWalletBalances } = useXOWalletStore();
+    const { updateWalletBalances } = useWalletStore();
 
     // Calculate total balance across all chains
     const totalBalance = (mainWallet.chains || []).reduce((acc, chain) => acc + (chain.amount || 0), 0);
@@ -53,7 +55,10 @@ export function WalletHeader() {
     const handleRefresh = async () => {
         setIsRefreshing(true);
         try {
-            await refreshMainWalletBalances();
+            await Promise.all([
+                refreshMainWalletBalances(),
+                updateWalletBalances()
+            ]);
         } catch (error) {
             console.error("Failed to refresh balances:", error);
         } finally {
