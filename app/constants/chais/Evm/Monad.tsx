@@ -39,7 +39,7 @@ export const Monad: ChainConfig = {
     label: "Monad",
     icon: <MonadIcon />,
     chipLabel: "MON",
-    chipColor: "#E84142",
+    chipColor: "#836EF9",
     crossChainInformation: {
         circleInformation: {
             supportCirclePaymaster: false,

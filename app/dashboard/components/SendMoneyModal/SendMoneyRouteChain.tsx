@@ -6,7 +6,7 @@ import { TokenSelector } from "@/app/dashboard/components/CrossChainTransferModa
 import { STATUS_META } from "@/app/dashboard/components/SendMoneyModal/SendMoneyStatusConfig";
 import { UseFormWatch, Control } from "react-hook-form";
 import { SendForm } from "@/app/lib/zod/sendSchema";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 type Props = {
     r: any; // Allocation Chain Data
@@ -93,6 +93,19 @@ export const SendMoneyRouteChain = ({
     // Validation Threshold (allow slightly more due to rounding diffs)
     const validationMax = maxUsableRaw * 1.0001;
 
+    // [FIX] Local state to handle decimal typing without snapping (e.g. "0.")
+    const [displayValue, setDisplayValue] = useState(r.amount?.toString() || "");
+
+    // Sync Local State with Parent Prop (r.amount) ONLY if they differ numerically
+    // This allows "0." (local) to persist even if parent says 0.
+    useEffect(() => {
+        const numDisplay = parseFloat(displayValue || "0");
+        const numProp = parseFloat(r.amount || "0");
+        if (numDisplay !== numProp) {
+            setDisplayValue(r.amount?.toString() || "");
+        }
+    }, [r.amount]);
+
     return (
         <Box
             sx={{
@@ -137,17 +150,30 @@ export const SendMoneyRouteChain = ({
                     <Stack direction="column" alignItems="flex-end" spacing={0.5}>
                         <TextField
                             size="small"
-                            type="number"
-                            value={r.amount}
+                            // type="number" // [FIX] Removed to prevent browser snapping
+                            value={displayValue}
+                            placeholder="0.0"
                             onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                if (val > validationMax) {
-                                    onAmountChange(walletAddress, r.chainId, maxUsable.toString()); // Snap to display max
+                                let valStr = e.target.value;
+
+                                // Regex: Allow numbers and ONE dot
+                                if (!/^\d*\.?\d*$/.test(valStr)) return;
+
+                                setDisplayValue(valStr);
+
+                                const val = parseFloat(valStr);
+                                if (!isNaN(val) && val > validationMax) {
+                                    // If exceeds max, snap parent AND local to max
+                                    // We must update local immediately to show user correction
+                                    const maxStr = maxUsable.toString();
+                                    setDisplayValue(maxStr);
+                                    onAmountChange(walletAddress, r.chainId, maxStr);
                                 } else {
-                                    onAmountChange(walletAddress, r.chainId, e.target.value);
+                                    // Pass string to parent (it will parseFloat it)
+                                    onAmountChange(walletAddress, r.chainId, valStr);
                                 }
                             }}
-                            inputProps={{ max: validationMax, step: "any" }}
+                            // inputProps={{ max: validationMax, step: "any" }}
                             error={parseFloat(r.amount) > validationMax}
                             sx={{ width: 140 }}
                         />

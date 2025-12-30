@@ -7,10 +7,12 @@ import {
     polygonAmoy, unichain,
     unichainSepolia, worldchain, worldchainSepolia,
     monad, monadTestnet,
-    bsc, bscTestnet
+    bsc, bscTestnet,
+    gnosisChiado,
+    gnosis
 } from "viem/chains";
 import { polygon } from "wagmi/chains";
-import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN, BNB } from "@/app/constants/chais";
+import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN, BNB, GNOSIS } from "@/app/constants/chais";
 import { ChainKey, ChainKeyEnum, ChainConfig } from "@/app/types/chain";
 
 export { ChainKeyEnum };
@@ -28,7 +30,8 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
     WorldChain: WORLD_CHAIN,
     Stellar: STELLAR,
     Monad: Monad,
-    BNB: BNB, // Ensure latest config is loaded
+    BNB: BNB,
+    GNOSIS: GNOSIS
 };
 
 export const CHAIN_ID_TO_KEY: Record<string, string> = {
@@ -41,4 +44,5 @@ export const CHAIN_ID_TO_KEY: Record<string, string> = {
     [isDevelopment ? worldchainSepolia.id.toString() : worldchain.id.toString()]: "WorldChain",
     [isDevelopment ? monadTestnet.id.toString() : monad.id.toString()]: "Monad",
     [isDevelopment ? bscTestnet.id.toString() : bsc.id.toString()]: "BNB",
+    [isDevelopment ? gnosisChiado.id.toString() : gnosis.id.toString()]: "GNOSIS",
 };
