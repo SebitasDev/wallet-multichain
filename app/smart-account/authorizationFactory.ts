@@ -22,6 +22,12 @@ export const createAuthorization = async (owner: any, client: any, account: any)
         implementationAddress = "0x6987E30398b2896B5118ad1076fb9f58825a6f1a"; // Keep until update
     }
 
+    // Fallback for BNB (56) - User reported explicit need for correct implementation
+    if (!implementationAddress && BigInt(client.chain.id) === BigInt(56)) {
+        console.warn("Using Fallback SimpleAccount Implementation for BNB");
+        implementationAddress = "0xe6Cae83B107521033D2Aa1e9d0A4050242808555"; // Safe 7702 Singleton (Standard)
+    }
+
     console.log("Creating Authorization for:", {
         accountType: "7702",
         eoaAddress: owner.address,

@@ -151,12 +151,21 @@ export class SmartAccountStrategy implements BridgeStrategy {
         });
 
         try {
+            // [Fix] Manually manage nonce to avoid race conditions when skipping receipt wait
+            const currentNonce = await publicClient.getTransactionCount({
+                address: relayerAccount.address,
+                // blockTag: 'pending' // pending tag can be unstable on some RPCs, prefer explicitly tracking if possible.
+                // But since we are stateless per request, pending is best effort.
+            });
+            let nonceTracker = currentNonce;
+
             const hash = await walletClient.sendTransaction({
                 chain: null,
                 to: ENTRY_POINT_ADDRESS, // Send to EntryPoint
                 data: handleOpsData,
-                gas: BigInt(2500000), // [FIX] 2.5M to cover 1.1M UserOp + Overhead
+                gas: BigInt(1200000), // [FIX] 1.2M to cover 1M UserOp + Overhead
                 value: BigInt(0),
+                nonce: nonceTracker++, // Use and Increment
                 authorizationList: [authorization] // Attach 7702 Auth!
             });
 
@@ -167,11 +176,73 @@ export class SmartAccountStrategy implements BridgeStrategy {
             // We skip waiting for the receipt and rely entirely on the 'executeNearBridge' balance check (Step 2) to confirm funds.
             console.log("[SmartAccountStrategy] Skipping Receipt Wait. trusting 'executeNearBridge' to verify funds...");
 
-            /* 
+            /*
             try {
                 // ... (Receipt waiting logic removed/commented)
             } catch ...
             */
+
+
+            // 4. Same Chain Settlement (Facilitator -> Recipient)
+            // [FIX] We MUST settle the funds (Facilitator -> Recipient) for Same Chain transfers.
+            // AND we must execute this BEFORE attempting any Cross-Chain logic (NEAR/CCTP) to prevent accidental bridge invocation.
+            // [UPDATE] Only short-circuit if it's a SAME TOKEN transfer. If it is a SWAP (USDT -> USDC), we let it fall through to Bridge/Solver.
+            if (sourceChain === destChain && sourceToken === context.destToken) {
+                console.log("[SmartAccountStrategy] Executing Same-Chain Settlement (Facilitator -> Recipient)...");
+
+                const facilitatorNetworkConfig = NETWORKS[sourceChain]; // Reuse network
+                // Reuse network definition
+                const tokenInfo = facilitatorNetworkConfig.assets.find(a => a.name === sourceToken);
+                if (!tokenInfo) throw new Error("Token info not found for settlement");
+
+                const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+                const feeValue = isDev ? 0 : 0.02; // Fee 0 in Dev
+                const decimals = tokenInfo.decimals;
+                const amountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** decimals));
+                const feeBigInt = BigInt(Math.floor(feeValue * 10 ** decimals));
+                const netAmount = amountBigInt - feeBigInt;
+
+                if (netAmount <= 0) throw new Error("Amount too small to cover fees");
+
+                let settleHash;
+                const isNative = tokenInfo.address === "0x0000000000000000000000000000000000000000";
+
+                if (isNative) {
+                    settleHash = await walletClient.sendTransaction({
+                        to: recipient as Address,
+                        value: netAmount,
+                        chain: network.evm.chain,
+                        nonce: nonceTracker++ // Increment
+                    });
+                } else {
+                    settleHash = await walletClient.writeContract({
+                        address: tokenInfo.address as Address,
+                        abi: [
+                            {
+                                constant: false,
+                                inputs: [{ name: "_to", type: "address" }, { name: "_value", type: "uint256" }],
+                                name: "transfer",
+                                outputs: [{ name: "", type: "bool" }],
+                                type: "function"
+                            }
+                        ], // standard ERC20
+                        functionName: 'transfer',
+                        args: [recipient as Address, netAmount],
+                        chain: network.evm.chain,
+                        nonce: nonceTracker++ // Increment
+                    });
+                }
+
+                console.log(`[SmartAccountStrategy] Same-Chain Settle Hash: ${settleHash}`);
+
+                return {
+                    success: true,
+                    transactionHash: hash, // Return the UserOp hash as the primary interaction
+                    netAmount: (parseFloat(amount) - feeValue).toString(),
+                    fee: feeValue.toString()
+                };
+            }
+
 
             // 3. Trigger Cross-Chain Logic
 
@@ -211,14 +282,11 @@ export class SmartAccountStrategy implements BridgeStrategy {
             const sourceNear = network.crossChainInformation?.nearIntentInformation?.support;
             const destNear = destConfig?.crossChainInformation?.nearIntentInformation?.support;
 
-            // Priority 2: Reference Bridge (NEAR / 1-Click)
             // Strategy: Attempt to Quote. If successful, Execute.
-            // This bypasses potential config flag issues (sourceNear/destNear) and relies on the SDK/API to validate.
             console.log("[SmartAccountStrategy] Attempting Reference Bridge (NEAR/1-Click)...");
 
             try {
                 // 1. Get Quote (to find Deposit Address)
-                // This will throw if the route/assets are unsupported
                 const { quote, depositAddress, amountAtomicTotal, amountAtomicNet } = await getNearQuote(
                     sourceChain,
                     destChain,
@@ -246,8 +314,6 @@ export class SmartAccountStrategy implements BridgeStrategy {
                 );
 
             } catch (e: any) {
-                // Only log error if this was intended to be a bridge transfer (not same chain)
-                // If getNearQuote fails because "Not a supported route", that's fine, we fall through.
                 console.warn("[SmartAccountStrategy] NEAR Bridge Attempt Failed (or Not Supported):", e.message);
                 if (sourceChain !== destChain) {
                     console.error("[SmartAccountStrategy] Critical Bridge Error Trace:", e);
@@ -256,12 +322,11 @@ export class SmartAccountStrategy implements BridgeStrategy {
 
             console.log("[SmartAccountStrategy] No suitable bridge route found for", sourceChain, "->", destChain);
 
-            // Fallback if no specific bridge logic triggered (e.g. Same Chain Transfer)
+            // [FIX] If Cross-Chain and no bridge executed, this is a FAILURE, not success.
+            // Since we handled Same-Chain above, reaching here implies no strategy matched.
             return {
-                success: true,
-                transactionHash: hash,
-                netAmount: amount, // Approximated
-                fee: "0" // Relayer paid gas
+                success: false,
+                errorReason: `No bridge strategy found for ${sourceChain} -> ${destChain} (${sourceToken} -> ${context.destToken})`
             };
 
         } catch (e: any) {

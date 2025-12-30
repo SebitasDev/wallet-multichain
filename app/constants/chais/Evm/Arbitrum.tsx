@@ -74,6 +74,11 @@ export const ARBITRUM: ChainConfig = {
                     assetId: "nep141:arb.omft.near",
                     name: "ETH",
                     decimals: 18
+                },
+                {
+                    assetId: "nep141:arb-0x912ce59144191c1204e64559fe8253a0e49e6548.omft.near",
+                    name: "ARB",
+                    decimals: 18
                 }
             ],
             needMemo: false

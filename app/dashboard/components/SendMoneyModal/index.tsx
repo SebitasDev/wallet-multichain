@@ -34,9 +34,7 @@ export const SendMoneyModal = () => {
         if (isProcessing) disabledReasons.push("Processing Transaction");
     }
 
-    if (isOpen) {
-        console.log("[SendMoneyModal] Disabled Reasons:", disabledReasons);
-    }
+
 
     return (
         <Dialog
