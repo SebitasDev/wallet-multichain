@@ -48,13 +48,13 @@ export const PasswordModalHeader = ({ mode, title, description, onClose }: Passw
             {/* Avatar */}
             <Avatar
                 sx={{
-                    width: 56, // Smaller avatar
-                    height: 56,
-                    bgcolor: "#00DC8C", // Updated to teal
+                    width: 80, // Increased from 56
+                    height: 80,
+                    bgcolor: "#00DC8C",
                     border: "3px solid #00DC8C",
-                    fontSize: 22,
+                    fontSize: 32,
                     fontWeight: 900,
-                    color: "black" // Changed text to black for better contrast on teal
+                    color: "black"
                 }}
             >
                 {name.charAt(0).toUpperCase()}
@@ -65,10 +65,10 @@ export const PasswordModalHeader = ({ mode, title, description, onClose }: Passw
                     component="h2"
                     sx={{
                         fontWeight: 700,
-                        fontSize: 18, // Smaller title
+                        fontSize: 24, // Increased from 18
                         color: "white",
                         letterSpacing: 0.5,
-                        mb: 0
+                        mb: 0.5
                     }}
                 >
                     {title || defaultTitle}
@@ -78,7 +78,7 @@ export const PasswordModalHeader = ({ mode, title, description, onClose }: Passw
                     sx={{
                         color: "#999",
                         fontWeight: 500,
-                        fontSize: 12 // Smaller subtitle
+                        fontSize: 14 // Increased from 12
                     }}
                 >
                     {description || "Necesitamos verificar que eres tú."}

@@ -32,7 +32,7 @@ import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useUserStore } from "@/app/store/useUserStore";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
-import { CrossChainTransferModal } from "@/app/dashboard/components/CrossChainTransferModal";
+import { SimpleSwapModal } from "./SimpleSwapModal";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 
@@ -449,7 +449,7 @@ export function WalletHeader() {
                             {language === "es" ? "Recibir" : "Receive"}
                         </Button>
 
-                        <CrossChainTransferModal
+                        <SimpleSwapModal
                             trigger={
                                 <Button
                                     fullWidth

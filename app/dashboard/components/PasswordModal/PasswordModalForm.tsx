@@ -103,13 +103,7 @@ export const PasswordModalForm = ({
             <Box mb={2} textAlign="center">
                 <Typography
                     variant="body2"
-                    sx={{ color: "#00DC8C", fontWeight: 600, cursor: "pointer", mb: 0.5, fontSize: 12 }}
-                >
-                    No soy {email || "usuario"}
-                </Typography>
-                <Typography
-                    variant="body2"
-                    onClick={() => setShowResetModal(true)}
+
                     sx={{ color: "#00DC8C", fontWeight: 600, cursor: "pointer", fontSize: 12 }}
                 >
                     Olvidé mi clave
@@ -119,19 +113,19 @@ export const PasswordModalForm = ({
             {/* Custom Numpad */}
             <Box sx={{ width: "100%", maxWidth: 320 }}>
                 {/* Row 1 */}
-                <Box display="flex" justifyContent="space-between" mb={1}>
+                <Box display="flex" justifyContent="space-between" mb={1.5}>
                     {[1, 2, 3].map((num) => (
                         <NumpadButton key={num} value={num.toString()} onClick={handleNumberClick} />
                     ))}
                 </Box>
                 {/* Row 2 */}
-                <Box display="flex" justifyContent="space-between" mb={1}>
+                <Box display="flex" justifyContent="space-between" mb={1.5}>
                     {[4, 5, 6].map((num) => (
                         <NumpadButton key={num} value={num.toString()} onClick={handleNumberClick} />
                     ))}
                 </Box>
                 {/* Row 3 */}
-                <Box display="flex" justifyContent="space-between" mb={1}>
+                <Box display="flex" justifyContent="space-between" mb={1.5}>
                     {[7, 8, 9].map((num) => (
                         <NumpadButton key={num} value={num.toString()} onClick={handleNumberClick} />
                     ))}
@@ -146,9 +140,9 @@ export const PasswordModalForm = ({
                             color: "black",
                             bgcolor: "#00DC8C",
                             border: "2px solid #00DC8C",
-                            fontSize: 24,
+                            fontSize: 28,
                             fontWeight: 900,
-                            minWidth: 64,
+                            minWidth: 64, // Bigger size
                             height: 64,
                             borderRadius: "50%",
                             transition: "all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)",
@@ -226,9 +220,9 @@ const NumpadButton = ({ value, onClick }: { value: string, onClick: (v: string) 
         onClick={() => onClick(value)}
         sx={{
             color: "white",
-            fontSize: 28, // Larger font
+            fontSize: 28, // Bigger font
             fontWeight: 500,
-            minWidth: 64, // Larger buttons
+            minWidth: 64, // Bigger size
             height: 64,
             borderRadius: "50%",
             border: "2px solid transparent",
