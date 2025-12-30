@@ -45,6 +45,8 @@ export const AddressChainList = ({
                             <Divider />
                             <ChainItem address={address} chainKey="Arbitrum" />
                             <Divider />
+                            <ChainItem address={address} chainKey="GNOSIS" />
+                            <Divider />
                             <ChainItem address={address} chainKey="Unichain" />
                             <Divider />
                             <ChainItem address={address} chainKey="Polygon" />
