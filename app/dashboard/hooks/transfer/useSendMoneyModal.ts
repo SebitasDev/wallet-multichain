@@ -264,7 +264,7 @@ export const useSendMoneyModal = () => {
         for (const [walletIdx, allocation] of routeSummary!.allocations.entries()) {
 
             // 1. Unlock Wallet (Get Private Key)
-            const unlockedKey = await unlockWallet(allocation.from, watch("sendChain")); // Note: Check if unlockWallet needs just address or chain too. Usually address. if multi-chain wallet, key is same.
+            const unlockedKey = await unlockWallet(allocation.from, watch("sendPassword") || ""); // [FIX] Restored Password instead of ChainKey
 
             if (!unlockedKey) {
                 toast.error(`No se pudo desbloquear la wallet ${allocation.from}`);

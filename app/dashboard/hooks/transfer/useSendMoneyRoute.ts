@@ -114,14 +114,17 @@ export const useSendMoneyRoute = ({
         }
     };
 
-    // Auto-Simulate Effect
+    // Auto-Simulate Effect (Sequential to prevent Rate Limiting / Collisions)
     useEffect(() => {
-        const timer = setTimeout(() => {
+        let isActive = true;
+        const triggerSimulations = async () => {
             if (!routeSummary) return;
             const destChainKey = watch("sendChain");
 
-            routeSummary.allocations.forEach(alloc => {
-                alloc.chains.forEach(chain => {
+            for (const alloc of routeSummary.allocations) {
+                for (const chain of alloc.chains) {
+                    if (!isActive) return;
+
                     const sourceChainKey = CHAIN_ID_TO_KEY[chain.chainId];
                     const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
                     const destConfig = NETWORKS[destChainKey as keyof typeof NETWORKS];
@@ -137,23 +140,29 @@ export const useSendMoneyRoute = ({
                         (watch("sourceToken") || "USDC").toUpperCase() === "USDC";
 
                     if (isCCTP) {
-                        // Manual Simulation for CCTP (1:1)
                         if (chain.amount > 0 && chain.id) {
                             setSimulationResults(prev => ({ ...prev, [chain.id!]: chain.amount.toFixed(6) }));
                             setSimulationError(chain.id!, false);
                             setSimulationErrorMessages(prev => ({ ...prev, [chain.id!]: null }));
                         }
-                        return;
+                        continue;
                     }
 
                     if (isNearSupported && chain.amount > 0 && chain.id && !simulationResults[chain.id] && !simulating[chain.id]) {
-                        handleSimulate(chain.id, chain.chainId, chain.amount, chain.token || "USDC", sourceChainKey);
+                        console.log(`[Simulate] Sequential Trigger for ${chain.id}...`);
+                        await handleSimulate(chain.id, chain.chainId, chain.amount, chain.token || "USDC", sourceChainKey);
+                        // [FIX] Wait 1s between simulations to prevent parallel failures
+                        await new Promise(r => setTimeout(r, 1000));
                     }
-                });
-            });
-        }, 800);
+                }
+            }
+        };
 
-        return () => clearTimeout(timer);
+        const timer = setTimeout(triggerSimulations, 800);
+        return () => {
+            isActive = false;
+            clearTimeout(timer);
+        };
     }, [routeSummary, watch("sendChain"), watch("sourceToken")]);
 
     const updateSummary = (newAllocations: AllocationSummary["allocations"]) => {
