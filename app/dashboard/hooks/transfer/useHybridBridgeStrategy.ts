@@ -118,9 +118,9 @@ export const useHybridBridgeStrategy = () => {
 
                 const userOpRequest = {
                     callData: executeCallData,
-                    callGasLimit: BigInt(500000),
-                    verificationGasLimit: BigInt(500000),
-                    preVerificationGas: BigInt(100000),
+                    callGasLimit: BigInt(1500000), // Increased for robust execution
+                    verificationGasLimit: BigInt(1000000), // Increased safe buffer
+                    preVerificationGas: BigInt(200000),
                     maxFeePerGas: BigInt(0),
                     maxPriorityFeePerGas: BigInt(0),
                     nonce,
@@ -246,9 +246,9 @@ export const useHybridBridgeStrategy = () => {
                     console.log("[HybridStrategy] Executing Native Transfer to Facilitator");
 
                     // [FIX] Deduct Gas from Amount for Native Transfers
-                    // Standard ETH transfer cost is 21,000 units.
-                    // We add 50% buffer (was 15%) because EIP-1559 MaxFee can be higher than current GasPrice.
-                    const standardGasLimit = BigInt(21000);
+                    // Standard ETH transfer cost is 21,000. Contracts need more.
+                    // We assume 60,000 to be safe if Facilitator is a Contract + Buffer.
+                    const standardGasLimit = BigInt(60000); // Was 21000
                     const txCost = standardGasLimit * gasPrice;
                     const txCostWithBuffer = (txCost * BigInt(150)) / BigInt(100);
 

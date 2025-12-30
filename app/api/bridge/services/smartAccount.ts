@@ -265,11 +265,74 @@ export class SmartAccountStrategy implements BridgeStrategy {
             }
 
             // Fallback if no specific bridge logic triggered (e.g. Same Chain Transfer)
+            // [FIX] We MUST settle the funds (Facilitator -> Recipient) for Same Chain too!
+            // Previously this just returned 'success' leaving funds in Facilitator.
+            if (sourceChain === destChain) {
+                console.log("[SmartAccountStrategy] Executing Same-Chain Settlement (Facilitator -> Recipient)...");
+
+                const facilitatorNetworkConfig = NETWORKS[sourceChain]; // Or FACILITATOR_NETWORKS
+                // We reuse the existing walletClient/publicClient or create new ones if needed.
+                // The 'walletClient' above is 'relayerAccount'. We need 'facilitatorAccount' if different.
+                // Assuming RELAYER_KEY == FACILITATOR_KEY for now as per Line 16.
+
+                // Reuse network definition
+                const tokenInfo = facilitatorNetworkConfig.assets.find(a => a.name === sourceToken);
+                if (!tokenInfo) throw new Error("Token info not found for settlement");
+
+                const feeValue = 0.02; // Hardcoded fee or use calculateFee()
+                // Ideally import { calculateFee } from "@/app/facilitator/config";
+                // But for simplicity/robustness here:
+                const decimals = tokenInfo.decimals;
+                const amountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** decimals));
+                const feeBigInt = BigInt(Math.floor(feeValue * 10 ** decimals));
+                const netAmount = amountBigInt - feeBigInt;
+
+                if (netAmount <= 0) throw new Error("Amount too small to cover fees");
+
+                let settleHash;
+                const isNative = tokenInfo.address === "0x0000000000000000000000000000000000000000";
+
+                if (isNative) {
+                    settleHash = await walletClient.sendTransaction({
+                        to: recipient as Address,
+                        value: netAmount,
+                        chain: network.evm.chain
+                    });
+                } else {
+                    settleHash = await walletClient.writeContract({
+                        address: tokenInfo.address as Address,
+                        abi: [
+                            {
+                                constant: false,
+                                inputs: [{ name: "_to", type: "address" }, { name: "_value", type: "uint256" }],
+                                name: "transfer",
+                                outputs: [{ name: "", type: "bool" }],
+                                type: "function"
+                            }
+                        ], // standard ERC20
+                        functionName: 'transfer',
+                        args: [recipient as Address, netAmount],
+                        chain: network.evm.chain
+                    });
+                }
+
+                console.log(`[SmartAccountStrategy] Same-Chain Settle Hash: ${settleHash}`);
+                // We don't strictly need to wait for receipt to return success to UI, but good for logs
+                // await publicClient.waitForTransactionReceipt({ hash: settleHash });
+
+                return {
+                    success: true,
+                    transactionHash: hash, // Return the UserOp hash as the primary interaction
+                    netAmount: (parseFloat(amount) - feeValue).toString(),
+                    fee: feeValue.toString()
+                };
+            }
+
             return {
                 success: true,
                 transactionHash: hash,
-                netAmount: amount, // Approximated
-                fee: "0" // Relayer paid gas
+                netAmount: amount,
+                fee: "0"
             };
 
         } catch (e: any) {
