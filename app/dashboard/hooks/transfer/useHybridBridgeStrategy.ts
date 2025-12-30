@@ -118,8 +118,8 @@ export const useHybridBridgeStrategy = () => {
 
                 const userOpRequest = {
                     callData: executeCallData,
-                    callGasLimit: BigInt(1500000), // Increased for robust execution
-                    verificationGasLimit: BigInt(1000000), // Increased safe buffer
+                    callGasLimit: BigInt(600000), // Reduced to normal range
+                    verificationGasLimit: BigInt(400000), // Reduced to normal range
                     preVerificationGas: BigInt(200000),
                     maxFeePerGas: BigInt(0),
                     maxPriorityFeePerGas: BigInt(0),

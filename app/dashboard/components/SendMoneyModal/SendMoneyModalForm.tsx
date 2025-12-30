@@ -203,8 +203,8 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                             fullWidth
                             size="medium"
                             placeholder="0.00"
-                            type="number"
-                            inputProps={{ min: 0, step: "0.0001" }}
+                            // type="number"  <-- Removed to fix "0." snapping issues
+                            // inputProps={{ min: 0, step: "0.0001" }}
                             disabled={sendLoading}
                             {...field}
                             error={!!errors.sendAmount || isExceedingMax}
