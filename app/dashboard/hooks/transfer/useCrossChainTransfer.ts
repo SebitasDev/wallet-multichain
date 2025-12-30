@@ -139,6 +139,7 @@ export const useCrossChainTransfer = () => {
     const watchDestChain = watch("destChain");
     const watchSourceToken = watch("sourceToken");
     const watchDestToken = watch("destToken");
+    const watchRecipient = watch("recipient"); // [NEW] Watch recipient
 
     // Reset tokens on chain change
     useEffect(() => { setValue("sourceToken", "USDC"); }, [watchSourceChain, setValue]);
@@ -496,7 +497,7 @@ export const useCrossChainTransfer = () => {
     // Reset simulation when inputs change
     useEffect(() => {
         setSimulation({ estimated: "", error: null, done: false, loading: false });
-    }, [watchAmount, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken]);
+    }, [watchAmount, watchSourceChain, watchDestChain, watchSourceToken, watchDestToken, watchRecipient]); // [NEW] Reset on recipient change
 
     const simulateTransfer = async () => {
         if (!watchAmount || isNaN(parseFloat(watchAmount))) {
