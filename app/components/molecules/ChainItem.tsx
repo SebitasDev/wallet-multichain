@@ -286,14 +286,22 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
             <Collapse in={open} timeout="auto" unmountOnExit>
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: 1.5, backgroundColor: "#f5f5f5" }}>
                     <List disablePadding>
-                        {config.assets.map((asset) => (
-                            <TokenItem
-                                key={asset.name}
-                                asset={asset}
-                                balance={Number(tokens[asset.name] || 0)}
-                                price={asset.coingeckoId ? prices[asset.coingeckoId] : (asset.name.includes("USD") ? 1 : 0)}
-                            />
-                        ))}
+                        {config.assets
+                            .map(asset => {
+                                const balance = Number(tokens[asset.name] || 0);
+                                const price = (asset.coingeckoId ? prices[asset.coingeckoId] : null) ?? (asset.name.includes("USD") ? 1 : 0);
+                                const usdValue = balance * price;
+                                return { asset, balance, price, usdValue };
+                            })
+                            .sort((a, b) => b.usdValue - a.usdValue)
+                            .map(({ asset, balance, price }) => (
+                                <TokenItem
+                                    key={asset.name}
+                                    asset={asset}
+                                    balance={balance}
+                                    price={price}
+                                />
+                            ))}
                     </List>
                 </Box>
             </Collapse>

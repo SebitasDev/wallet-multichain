@@ -4,8 +4,6 @@ import SpeedIcon from "@mui/icons-material/Speed";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import AutoGraphIcon from "@mui/icons-material/AutoGraph";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import GroupsIcon from "@mui/icons-material/Groups";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
@@ -21,6 +19,7 @@ import { WorldChainIcon } from "@/app/components/atoms/WorldChainIcon";
 import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { BnbIcon } from "@/app/components/atoms/BnbIcon";
 import { MonadIcon } from "@/app/components/atoms/MonadIcon";
+import GnosisIcon from "@/app/components/atoms/GnosisIcon";
 
 export type Language = "es" | "en";
 
@@ -96,6 +95,7 @@ export const chains = [
     // Actually, let's use the purple color often associated with Monad if I can, but to match config is safer.
     // However, the `chains` array in `landing-translations` seems to control Landing UI colors. 
     // I will use #836EF9 (Monad Purple) for better visual distinction on Landing keyframe.
+    { name: "Gnosis", icon: <GnosisIcon />, color: "#133629" },
 ];
 
 export const mainFeatures = [
