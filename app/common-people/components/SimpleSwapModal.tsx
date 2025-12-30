@@ -147,13 +147,13 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                     </IconButton>
                 </Box>
 
-                <DialogContent sx={{ px: 2, py: 2 }}>
-                    <Stack spacing={1.5}>
+                <DialogContent sx={{ px: 2, py: 1 }}>
+                    <Stack spacing={1}>
 
                         {/* FROM SECTION */}
                         <Box
                             sx={{
-                                p: 2,
+                                p: 1.5,
                                 borderRadius: 3,
                                 bgcolor: "#f3f4f6", // Gray-100
                                 border: "1px solid #e5e7eb",
@@ -165,13 +165,13 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                             }}
                         >
                             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
-                                <Typography fontSize={11} fontWeight={800} color="#666" letterSpacing={0.5}>
+                                <Typography fontSize={10} fontWeight={800} color="#666" letterSpacing={0.5}>
                                     DESDE
                                 </Typography>
                             </Stack>
 
-                            <Stack direction="row" spacing={1} mb={1.5}>
-                                <Box flex={1.4}>
+                            <Stack direction="row" spacing={0.5} mb={1}>
+                                <Box flex={1}>
                                     <ChainSelector
                                         label="Red"
                                         name="sourceChain"
@@ -182,7 +182,7 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                             bgcolor: "white",
                                             borderRadius: 2,
                                             boxShadow: "0px 2px 0px #e5e7eb",
-                                            "& .MuiSelect-select": { py: 1.2 }
+                                            "& .MuiSelect-select": { py: 0.8, px: 1, display: 'flex', alignItems: 'center' }
                                         }}
                                     />
                                 </Box>
@@ -197,7 +197,7 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                             bgcolor: "white",
                                             borderRadius: 2,
                                             boxShadow: "0px 2px 0px #e5e7eb",
-                                            "& .MuiSelect-select": { py: 1.2 }
+                                            "& .MuiSelect-select": { py: 0.8, px: 1, display: 'flex', alignItems: 'center' }
                                         }}
                                     />
                                 </Box>
@@ -219,7 +219,7 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
 
                         {/* ARROW */}
                         {/* SWAP BUTTON */}
-                        <Box display="flex" justifyContent="center" my={-2.5} sx={{ position: "relative", zIndex: 10 }}>
+                        <Box display="flex" justifyContent="center" my={{ xs: -3, sm: -2.5 }} sx={{ position: "relative", zIndex: 10 }}>
                             <IconButton
                                 onClick={() => {
                                     const currentSource = watchSourceChain;
@@ -236,8 +236,8 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                     bgcolor: "white",
                                     border: "2px solid #000000",
                                     color: "black",
-                                    width: 36,
-                                    height: 36,
+                                    width: { xs: 34, sm: 36 },
+                                    height: { xs: 34, sm: 36 },
                                     boxShadow: "0px 3px 0px rgba(0,0,0,0.1)",
                                     "&:hover": {
                                         bgcolor: "#facc15", // yellow pop
@@ -247,14 +247,14 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                     transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)"
                                 }}
                             >
-                                <ArrowDownward fontSize="small" sx={{ stroke: "#000", strokeWidth: 1, fontSize: "1.2rem" }} />
+                                <ArrowDownward fontSize="small" sx={{ stroke: "#000", strokeWidth: 1, fontSize: { xs: "1.1rem", sm: "1.2rem" } }} />
                             </IconButton>
                         </Box>
 
                         {/* TO SECTION */}
                         <Box
                             sx={{
-                                p: 2,
+                                p: 1.5,
                                 borderRadius: 3,
                                 bgcolor: "#f3f4f6", // Gray-100
                                 border: "1px solid #e5e7eb",
@@ -265,11 +265,11 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                 }
                             }}
                         >
-                            <Typography fontSize={11} fontWeight={800} color="#666" letterSpacing={0.5} mb={0.5}>
+                            <Typography fontSize={10} fontWeight={800} color="#666" letterSpacing={0.5} mb={0.5}>
                                 HACIA
                             </Typography>
-                            <Stack direction="row" spacing={1} mb={1.5}>
-                                <Box flex={1.4}>
+                            <Stack direction="row" spacing={0.5} mb={1}>
+                                <Box flex={1}>
                                     <ChainSelector
                                         label="Red"
                                         name="destChain"
@@ -280,7 +280,7 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                             bgcolor: "white",
                                             borderRadius: 2,
                                             boxShadow: "0px 2px 0px #e5e7eb",
-                                            "& .MuiSelect-select": { py: 1.2 }
+                                            "& .MuiSelect-select": { py: 0.8, px: 1, display: 'flex', alignItems: 'center' }
                                         }}
                                     />
                                 </Box>
@@ -295,7 +295,7 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                             bgcolor: "white",
                                             borderRadius: 2,
                                             boxShadow: "0px 2px 0px #e5e7eb",
-                                            "& .MuiSelect-select": { py: 1.2 }
+                                            "& .MuiSelect-select": { py: 0.8, px: 1, display: 'flex', alignItems: 'center' }
                                         }}
                                     />
                                 </Box>
@@ -305,10 +305,10 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                             <Box
                                 sx={{
                                     bgcolor: "white",
-                                    p: 1.5,
+                                    p: 1,
                                     borderRadius: 2,
                                     border: "1px solid #e5e7eb",
-                                    minHeight: 52,
+                                    minHeight: 44,
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "space-between",
@@ -320,14 +320,14 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                 </Typography>
                                 <Box textAlign="right">
                                     {simulation.loading ? (
-                                        <CircularProgress size={18} thickness={5} sx={{ color: "#00DC8C" }} />
+                                        <CircularProgress size={16} thickness={5} sx={{ color: "#00DC8C" }} />
                                     ) : (
                                         <Stack alignItems="flex-end">
-                                            <Typography fontWeight={800} fontSize={18} sx={{ letterSpacing: -0.5 }}>
+                                            <Typography fontWeight={800} fontSize={16} sx={{ letterSpacing: -0.5 }}>
                                                 {simulation.done ? simulation.estimated : "---"}
                                             </Typography>
                                             {simulation.done && destTokenPrice && simulation.estimated && (
-                                                <Typography fontSize={11} color="#888" fontWeight={600}>
+                                                <Typography fontSize={10} color="#888" fontWeight={600}>
                                                     ≈ ${(() => {
                                                         const val = parseFloat(simulation.estimated) * destTokenPrice;
                                                         return val.toLocaleString("en-US", { style: 'decimal', maximumFractionDigits: 2 });
@@ -426,8 +426,8 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                 background: "#00DC8C",
                                 color: "white",
                                 fontWeight: 800,
-                                fontSize: 16,
-                                py: 1.5,
+                                fontSize: { xs: 14, sm: 16 }, // Responsive font size
+                                py: { xs: 1.2, sm: 1.5 },     // Responsive padding
                                 borderRadius: 3,
                                 textTransform: "none",
                                 border: "3px solid #000000",
