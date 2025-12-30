@@ -53,8 +53,15 @@ export const useHybridBridgeStrategy = () => {
 
             const supports7702 = networkConfig.evm.supports7702;
 
-            if (supports7702) {
-                // --- 7702 GASLESS FLOW ---
+            // [FIX] Hoist Token Info to determine if we should SKIP 7702 (User Request: No Smart Account for Native Tokens)
+            const tokenInfo = networkConfig.assets.find(a => a.name === sourceToken);
+            if (!tokenInfo || !tokenInfo.address) throw new Error("Token info or address not found");
+
+            const isNativeToken = tokenInfo.address === "0x0000000000000000000000000000000000000000" || tokenInfo.address.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+
+            // CONDITION: Use 7702 ONLY if supported AND NOT Native Token
+            if (supports7702 && !isNativeToken) {
+                // --- 7702 GASLESS FLOW (ERC20 ONLY) ---
                 onStatusUpdate?.("Firmando Autorización (Gasless)...");
                 console.log("[HybridStrategy] Executing 7702 Flow");
 
@@ -69,13 +76,20 @@ export const useHybridBridgeStrategy = () => {
                 // --- 7702 UserOp Generation ---
                 // We must sign a UserOp so the EntryPoint can validate us.
 
-                const tokenInfo = networkConfig.assets.find(a => a.name === sourceToken);
-                if (!tokenInfo) throw new Error("Token info not found");
-
                 const amountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** tokenInfo.decimals));
                 const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97";
 
-                const transferCallData = encodeFunctionData({
+                // [NOTE] Since we excluded Native Tokens above, this block now handles ERC20 ONLY logic.
+                // However, preserving the conditional structure is fine for robustness if rules change.
+
+                let callDest: Address;
+                let callValue: bigint;
+                let callFunc: `0x${string}`;
+
+                // ERC20 Transfer: Call 'transfer' on Token Contract
+                callDest = tokenInfo.address as Address;
+                callValue = BigInt(0);
+                callFunc = encodeFunctionData({
                     abi: erc20Abi,
                     functionName: "transfer",
                     args: [FACILITATOR_ADDR as Address, amountBigInt]
@@ -97,7 +111,7 @@ export const useHybridBridgeStrategy = () => {
                 const executeCallData = encodeFunctionData({
                     abi: executeAbi,
                     functionName: "execute",
-                    args: [tokenInfo.address as Address, BigInt(0), transferCallData]
+                    args: [callDest, callValue, callFunc]
                 });
 
                 const nonce = await smartAccount.getNonce();
@@ -150,6 +164,10 @@ export const useHybridBridgeStrategy = () => {
 
             } else {
                 // --- REFUEL / STANDARD FLOW ---
+                // Executed if:
+                // 1. Chain doesn't support 7702 (e.g. older chains)
+                // 2. OR Token is Native (e.g. POL/ETH) - As per User Requirement
+
                 onStatusUpdate?.("Verificando Gas...");
                 console.log("[HybridStrategy] Executing Refuel/Standard Flow");
 
@@ -166,10 +184,9 @@ export const useHybridBridgeStrategy = () => {
                 });
 
                 // 1. Check Native Balance & Refuel
-                const nativeBalance = await publicClient.getBalance({ address: account.address });
-                const tokenInfo = networkConfig.assets.find(a => a.name === sourceToken);
-                if (!tokenInfo) throw new Error("Token info not found");
+                let nativeBalance = await publicClient.getBalance({ address: account.address }); // [FIX] let, not const
 
+                // tokenInfo already defined above
                 const amountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** tokenInfo.decimals));
 
                 const gasPrice = await publicClient.getGasPrice();
@@ -201,8 +218,23 @@ export const useHybridBridgeStrategy = () => {
 
                     if (!refuelRes.data.success) throw new Error("Refuel Failed: " + refuelRes.data.error);
 
-                    onStatusUpdate?.("Esperando fondos...");
-                    await new Promise(r => setTimeout(r, 2000));
+                    onStatusUpdate?.("Refuel Exitoso. Esperando fondos...");
+
+                    // [FIX] Wait for Balance to Update (Polling)
+                    // We need to wait until balance actually increases, otherwise next check fails.
+                    const initialBal = nativeBalance;
+                    for (let i = 0; i < 4; i++) {
+                        await new Promise(r => setTimeout(r, 3000)); // Wait 3s
+                        const newBal = await publicClient.getBalance({ address: account.address });
+                        if (newBal > initialBal) {
+                            console.log(`[Refuel] Balance Updated: ${formatEther(initialBal)} -> ${formatEther(newBal)}`);
+                            nativeBalance = newBal;
+                            break;
+                        }
+                        console.log(`[Refuel] Waiting for balance... Attempt ${i + 1}`);
+                        // Update variable anyway in case it changed slightly or we want the latest
+                        nativeBalance = newBal;
+                    }
                 }
 
                 // 2. Transaction Execution (Native vs ERC20)
@@ -210,13 +242,46 @@ export const useHybridBridgeStrategy = () => {
 
                 let txHash;
 
-                const isNativeToken = tokenInfo.address === "0x0000000000000000000000000000000000000000";
-
                 if (isNativeToken) {
                     console.log("[HybridStrategy] Executing Native Transfer to Facilitator");
+
+                    // [FIX] Deduct Gas from Amount for Native Transfers
+                    // Standard ETH transfer cost is 21,000 units.
+                    // We add 50% buffer (was 15%) because EIP-1559 MaxFee can be higher than current GasPrice.
+                    const standardGasLimit = BigInt(21000);
+                    const txCost = standardGasLimit * gasPrice;
+                    const txCostWithBuffer = (txCost * BigInt(150)) / BigInt(100);
+
+                    console.log(`[HybridStrategy] Native Gas Adjustment: Est Cost: ${formatEther(txCostWithBuffer)}`);
+
+                    // Subtract gas from the amount to send
+                    let valueToSend = amountBigInt;
+
+                    // Only subtract if we are sending close to max? 
+                    // Actually, if we are sending Native Token, we MUST ensure we have enough left for gas.
+                    // If amountBigInt is close to Balance, this will fail.
+                    // BUT, 'nativeBalance' check above (Line 209) checked against `estimatedGasCost`.
+                    // The issue is `sendTransaction` sends `value`. Total cost = `value` + `gas`.
+                    // If `value` = `balance`, then `value` + `gas` > `balance`.
+
+                    // We should check if (Amount + Gas > Balance). If so, cap Amount = Balance - Gas.
+                    // However, useSendMoneyModal likely requested a specific amount.
+                    // If we reduce it, the destination might receive less than expected.
+                    // But for Native Bridge, this is usually acceptable or required to succeed.
+
+                    // Let's protect the user:
+                    if (amountBigInt + txCostWithBuffer > nativeBalance) {
+                        console.log("[HybridStrategy] Cap Amount to preserve gas.");
+                        valueToSend = nativeBalance - txCostWithBuffer;
+                    }
+
+                    if (valueToSend <= BigInt(0)) {
+                        throw new Error(`Insufficient funds for gas. Balance: ${formatEther(nativeBalance)}, Gas Needed: ${formatEther(txCostWithBuffer)}`);
+                    }
+
                     txHash = await walletClient.sendTransaction({
                         to: FACILITATOR_ADDRESS as Address,
-                        value: amountBigInt,
+                        value: valueToSend,
                         chain: networkConfig.evm.chain,
                         account
                     });

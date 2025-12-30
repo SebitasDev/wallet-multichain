@@ -277,6 +277,8 @@ export async function executeNearBridge(
         transport: http(facilitatorNetworkConfig.rpcUrl)
     });
 
+    const isNative = tokenAddress === "0x0000000000000000000000000000000000000000" || tokenAddress.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+
     // A2. Push Funds (Transfer to Deposit Address)
     console.log(`[NearService] Step 2: Push to Bridge (${sourceToken || "USDC"})`, depositAddress);
 
@@ -284,13 +286,23 @@ export async function executeNearBridge(
     let facilitatorBalance = BigInt(0);
     const maxRetries = 10;
 
+    // [FIX] Initial Wait for 7702 Transaction Propagation (User Request: 7s)
+    console.log("[NearService] Waiting 7s for funds to arrive...");
+    await new Promise(resolve => setTimeout(resolve, 7000));
+
     for (let i = 0; i < maxRetries; i++) {
-        facilitatorBalance = await publicClient.readContract({
-            address: tokenAddress, // Dynamic Token
-            abi: usdcErc3009Abi, // ERC20 ABI is compatible for balanceOf/transfer
-            functionName: "balanceOf",
-            args: [facilitatorAccount.address]
-        }) as bigint;
+        if (isNative) {
+            facilitatorBalance = await publicClient.getBalance({
+                address: facilitatorAccount.address
+            });
+        } else {
+            facilitatorBalance = await publicClient.readContract({
+                address: tokenAddress, // Dynamic Token
+                abi: usdcErc3009Abi, // ERC20 ABI is compatible for balanceOf/transfer
+                functionName: "balanceOf",
+                args: [facilitatorAccount.address]
+            }) as bigint;
+        }
 
         if (facilitatorBalance >= amountAtomicTotal) {
             console.log(`[NearService] Balance Verified: ${facilitatorBalance} >= ${amountAtomicTotal}`);
@@ -306,13 +318,23 @@ export async function executeNearBridge(
         throw new Error(`Insufficient facilitator balance after retries. Has: ${facilitatorBalance}, Needs: ${amountAtomicTotal}`);
     }
 
-    const bridgeHash = await walletClient.writeContract({
-        chain: facilitatorNetworkConfig.chain,
-        address: tokenAddress, // Dynamic Token
-        abi: usdcErc3009Abi,
-        functionName: "transfer",
-        args: [depositAddress as Address, BigInt(amountAtomicNet)]
-    });
+    let bridgeHash: Hex;
+    if (isNative) {
+        bridgeHash = await walletClient.sendTransaction({
+            account: facilitatorAccount,
+            to: depositAddress as Address,
+            value: BigInt(amountAtomicNet),
+            chain: facilitatorNetworkConfig.chain
+        });
+    } else {
+        bridgeHash = await walletClient.writeContract({
+            chain: facilitatorNetworkConfig.chain,
+            address: tokenAddress, // Dynamic Token
+            abi: usdcErc3009Abi,
+            functionName: "transfer",
+            args: [depositAddress as Address, BigInt(amountAtomicNet)]
+        });
+    }
     await publicClient.waitForTransactionReceipt({ hash: bridgeHash });
     console.log("[NearService] Push Success:", bridgeHash);
 

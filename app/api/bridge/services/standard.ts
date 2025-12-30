@@ -2,7 +2,7 @@ import { BridgeStrategy, BridgeContext } from "./types";
 import { SettleResponse } from "@/app/facilitator/types";
 import { executeNearBridge, getNearQuote } from "./near";
 import { NETWORKS } from "@/app/constants/chainsInformation";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, formatEther } from "viem";
 import { FACILITATOR_ADDRESS } from "@/app/facilitator/config";
 
 export class StandardBridgeStrategy implements BridgeStrategy {
@@ -16,6 +16,7 @@ export class StandardBridgeStrategy implements BridgeStrategy {
 
     async execute(context: BridgeContext): Promise<SettleResponse> {
         const { sourceChain, destChain, amount, recipient, sourceToken, paymentPayload } = context;
+        let finalAmount = amount; // [FIX] Allow updating amount if gas is deducted
         const txHash = (paymentPayload as any).txHash as `0x${string}`;
 
         if (!txHash) {
@@ -83,11 +84,22 @@ export class StandardBridgeStrategy implements BridgeStrategy {
                 const decimals = tokenConfig?.decimals || 18;
                 const expectedAmountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** decimals));
 
+                // [FIX] Native Gas Deduction Handling
+                // The Frontend subtracts gas from the Amount to ensure success.
+                // So tx.value WILL BE LESS than expectedAmountBigInt.
+                // We should accept tx.value as the TRUE amount to bridge.
+
                 if (tx.value < expectedAmountBigInt) {
-                    throw new Error(`Insufficient Native Value. Expected ${expectedAmountBigInt}, got ${tx.value}`);
+                    console.warn(`[StandardBridgeStrategy] Native Value < Expected. Assuming Gas Deduction. Expected: ${expectedAmountBigInt}, Got: ${tx.value}`);
+                    // We DO NOT throw. We proceed with the actual value.
                 }
 
-                console.log("[StandardBridgeStrategy] Native Transaction Verified ✅");
+                // Update 'amount' for the next step (Near Bridge) to match what we actually received
+                const actualAmountFloat = parseFloat(formatEther(tx.value));
+                // Update context amount for next call
+                finalAmount = actualAmountFloat.toString();
+
+                console.log(`[StandardBridgeStrategy] Native Transaction Verified ✅. Bridging Actual: ${finalAmount}`);
                 // If valid native transfer, we proceed.
             } else {
                 // ERC20 Verification Logic (Wrapped in block to match structure)
@@ -109,33 +121,14 @@ export class StandardBridgeStrategy implements BridgeStrategy {
                 console.log("[StandardBridgeStrategy] ERC20 Transaction Verified ✅");
             }
 
-            // Check Token Address
-            const tokenConfig = networkConfig.assets.find(a => a.name === (sourceToken || "USDC"));
-            if (tokenConfig && tokenConfig.address && log.address.toLowerCase() !== tokenConfig.address.toLowerCase()) {
-                throw new Error(`Token Mismatch. Expected ${tokenConfig.address}, got ${log.address}`);
-            }
 
-            // Check Amount (Data part of log)
-            // Determine expected amount BigInt
-            const decimals = tokenConfig?.decimals || 6;
-            const expectedAmountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** decimals));
-
-            const transferredAmount = BigInt(log.data);
-
-            // Allow small delta? Or exact? 
-            // Usually exact.
-            if (transferredAmount < expectedAmountBigInt) {
-                throw new Error(`Insufficient Amount Bridge. Expected ${expectedAmountBigInt}, got ${transferredAmount}`);
-            }
-
-            console.log("[StandardBridgeStrategy] Transaction Verified On-Chain ✅");
 
             // 2. Execute Near Bridge (Step 2)
             // Get Quote to derive Deposit Address (needed for execution context mostly)
             const { quote, depositAddress, amountAtomicTotal, amountAtomicNet } = await getNearQuote(
                 sourceChain,
                 destChain,
-                amount,
+                finalAmount,
                 context.destToken,
                 context.sourceToken || "USDC",
                 recipient
@@ -146,7 +139,7 @@ export class StandardBridgeStrategy implements BridgeStrategy {
             return await executeNearBridge(
                 sourceChain,
                 destChain,
-                amount,
+                finalAmount,
                 recipient as string,
                 txHash, // Use the user's TxHash as the "Pull Hash"
                 quote,

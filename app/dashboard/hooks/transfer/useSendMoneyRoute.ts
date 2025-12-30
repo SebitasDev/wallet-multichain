@@ -3,9 +3,9 @@ import { UseFormWatch } from "react-hook-form";
 import { SendForm } from "@/app/lib/zod/sendSchema";
 import { AllocationSummary } from "@/app/dashboard/types";
 import { ChainConfig, ChainKey } from "@/app/types/chain";
-import { RouteDetail } from "@/app/dashboard/hooks/transfer/useSendMoneyModal";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
 import { bridgeApi } from "@/app/services/api";
+import { createPublicClient, http, formatEther } from "viem";
 
 type UseSendMoneyRouteProps = {
     routeSummary: AllocationSummary | null;
@@ -53,7 +53,40 @@ export const useSendMoneyRoute = ({
             const baseFee = (sourceChainKey === destChainKey) ? 0.01 : 0.02;
             const fee = isDev ? 0 : baseFee;
 
-            const totalAmountToSimulate = (amount + fee).toFixed(6);
+            // [FIX] Gas Deduction Logic for Native Tokens
+            const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
+            const asset = sourceConfig?.assets?.find(a => a.name === token);
+            const isNative = asset?.address === "0x0000000000000000000000000000000000000000" || (!!asset?.address && asset.address.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+
+            let netAmount = amount;
+
+            if (isNative && sourceConfig?.evm) {
+                try {
+                    const publicClient = createPublicClient({
+                        chain: sourceConfig.evm.chain,
+                        transport: http()
+                    });
+                    const gasPrice = await publicClient.getGasPrice();
+                    const gasCostWei = (BigInt(21000) * gasPrice * BigInt(150)) / BigInt(100); // 21k Gas + 50% Buffer
+                    const gasCostEth = parseFloat(formatEther(gasCostWei));
+
+                    console.log(`[Simulate] Gas Deduction (${token}): ${gasCostEth.toFixed(6)}`);
+                    netAmount = Math.max(0, amount - gasCostEth);
+
+                    if (netAmount <= 0) {
+                        throw new Error(`Insufficient funds for gas (Need ${gasCostEth.toFixed(6)} ${token})`);
+                    }
+
+                } catch (e: any) {
+                    console.warn("[Simulate] Gas Estimation Failed:", e);
+                    // Don't block simulation if gas check fails, but maybe user has insufficient funds.
+                    // Fallback to original amount logic or throw? 
+                    // Throwing helps user know why it might fail.
+                    if (e.message.includes("Insufficient")) throw e;
+                }
+            }
+
+            const totalAmountToSimulate = (netAmount + fee).toFixed(6);
 
             const data = await bridgeApi.getQuote({
                 sourceChain: sourceChainKey,

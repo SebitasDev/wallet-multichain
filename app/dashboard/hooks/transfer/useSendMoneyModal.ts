@@ -278,6 +278,39 @@ export const useSendMoneyModal = () => {
                     continue;
                 }
 
+                // Determine Fee (Using Standard Logic 0.01 vs 0.02)
+                const baseFee = fromValidChain === toValidChain ? 0.01 : 0.02;
+                const currentFee = isDev ? 0 : baseFee;
+
+                // Add fee to the amount to be signed/transferred
+                const totalAmount = (amountFloat + currentFee).toFixed(6);
+
+                // Sanitize Token verify it exists on chain
+                let finalToken = chain.token || watch("sourceToken") || "USDC";
+                const assetExists = fromNet.assets.some(a => a.name === finalToken);
+                if (!assetExists && fromNet.assets.length > 0) {
+                    console.log(`[Sanitizer] Invalid token ${finalToken} for ${fromValidChain}. Defaulting to ${fromNet.assets[0].name}`);
+                    finalToken = fromNet.assets[0].name;
+                }
+
+                // [FIX] Check if this chain is already done (Resume Logic)
+                const currentStatus = routeDetails
+                    .find(w => w.wallet.toLowerCase() === allocation.from.toLowerCase())
+                    ?.chains.find(c => c.id.toString() === chain.chainId.toString())?.status;
+
+                if (currentStatus === "done" || currentStatus === "minting" || currentStatus === "waiting") {
+                    console.log(`Skipping ${fromValidChain} (Already Done/In Progress)`);
+                    executedRoutes.push({
+                        chainName: fromValidChain,
+                        amount: amountFloat,
+                        assetOrigin: finalToken,
+                        status: "SUCCESS",
+                        txHash: "skipped-already-done"
+                    });
+                    totalSentAmount += Number(totalAmount);
+                    continue;
+                }
+
                 // Update UI Status
                 setRouteDetails(prev =>
                     prev.map(wallet =>
@@ -293,22 +326,6 @@ export const useSendMoneyModal = () => {
                             : wallet
                     )
                 );
-
-                // Determine Fee (Using Standard Logic 0.01 vs 0.02)
-
-                const baseFee = fromValidChain === toValidChain ? 0.01 : 0.02;
-                const currentFee = isDev ? 0 : baseFee;
-
-                // Add fee to the amount to be signed/transferred
-                const totalAmount = (amountFloat + currentFee).toFixed(6);
-
-                // Sanitize Token verify it exists on chain
-                let finalToken = chain.token || watch("sourceToken") || "USDC";
-                const assetExists = fromNet.assets.some(a => a.name === finalToken);
-                if (!assetExists && fromNet.assets.length > 0) {
-                    console.log(`[Sanitizer] Invalid token ${finalToken} for ${fromValidChain}. Defaulting to ${fromNet.assets[0].name}`);
-                    finalToken = fromNet.assets[0].name;
-                }
 
                 try {
                     // Use watch("sourceToken") as source of truth to avoid chain loop variables confusing source/dest
@@ -426,11 +443,15 @@ export const useSendMoneyModal = () => {
                         totalFeePaid += currentFee;
 
                     } else {
-                        throw new Error(result.errorReason);
+                        // Throw to catch block
+                        throw new Error(result.errorReason || "Transfer Failed (Unknown Reason)");
                     }
 
                 } catch (e: any) {
-                    console.error("Transfer error:", e);
+                    console.error("[UseSendMoneyModal] Critical Error:", e);
+                    const errorMessage = e.message || "Error Desconocido";
+
+                    // Update UI Error
                     setRouteDetails(prev =>
                         prev.map(wallet =>
                             wallet.wallet.toLowerCase() === allocation.from.toLowerCase()
@@ -438,13 +459,19 @@ export const useSendMoneyModal = () => {
                                     ...wallet,
                                     chains: wallet.chains.map(c =>
                                         c.id.toString() === chain.chainId.toString()
-                                            ? { ...c, status: "error", message: e.message || "Error" }
+                                            ? { ...c, status: "error", message: "Falló: " + errorMessage }
                                             : c
                                     )
                                 }
                                 : wallet
                         )
                     );
+
+                    // [FIX] Stop Execution on Critical Error
+                    // User Request: "Si falla alguna me digas ... y si quiere continuar"
+                    // Strategy: Stop (return). User must click "Confirm" again to Resume.
+                    toast.error(`Error en ${fromValidChain}: ${errorMessage}. Corrige el error y vuelve a intentar.`);
+                    return; // EXIT FUNCTION COMPLETELY
                 }
             }
         }
@@ -503,7 +530,7 @@ export const useSendMoneyModal = () => {
     const maxSendAmount = wallets.reduce((total, wallet) => {
         const walletTotal = wallet.chains.reduce((sum, c) => {
             // DEBUG LOG
-            console.log(`[MaxCheck] ${wallet.address} - ${c.chainId}: Amount=${c.amount} tokens=`, c.tokens);
+
             return sum + (c.amount || 0);
         }, 0);
         return total + walletTotal;

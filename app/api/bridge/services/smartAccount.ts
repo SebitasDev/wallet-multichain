@@ -256,6 +256,14 @@ export class SmartAccountStrategy implements BridgeStrategy {
 
             console.log("[SmartAccountStrategy] No suitable bridge route found for", sourceChain, "->", destChain);
 
+            // [FIX] If Cross-Chain and no bridge executed, this is a FAILURE, not success.
+            if (sourceChain !== destChain) {
+                return {
+                    success: false,
+                    errorReason: `No bridge strategy found for ${sourceChain} -> ${destChain} (${sourceToken} -> ${context.destToken})`
+                };
+            }
+
             // Fallback if no specific bridge logic triggered (e.g. Same Chain Transfer)
             return {
                 success: true,
