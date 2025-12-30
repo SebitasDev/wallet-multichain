@@ -12,7 +12,8 @@ export const ChainKeyEnum = z.enum([
     "WorldChain",
     "Stellar",
     "Monad",
-    "BNB"
+    "BNB",
+    "GNOSIS"
 ]);
 
 export type ChainKey = z.infer<typeof ChainKeyEnum>;

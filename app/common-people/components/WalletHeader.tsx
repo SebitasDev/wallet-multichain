@@ -7,7 +7,7 @@ import { ArrowDownward, ArrowUpward, Login, ExpandMore, ExpandLess, Visibility, 
 import { ChainGrid } from "./ChainGrid";
 import { AssetModal } from "./AssetModal";
 import { ChainData } from "./ChainCard";
-import { useRouter } from "next/navigation"; // Fixed import
+import { useRouter } from "next/navigation";
 
 // Import Chain Constants for Icons
 import {
@@ -20,13 +20,14 @@ import {
     WORLD_CHAIN,
     STELLAR,
     Monad,
-    BNB
+    BNB,
+    GNOSIS
 } from "@/app/constants/chais";
 
 import { useLocalCurrency } from "@/app/hooks/useLocalCurrency";
 
 import { useCurrencyStore } from "@/app/store/useCurrencyStore";
-import { Loop, AttachMoney, Language, CompareArrows, Refresh } from "@mui/icons-material"; // Icons
+import { Loop, Language, CompareArrows, Refresh } from "@mui/icons-material"; // Icons
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useUserStore } from "@/app/store/useUserStore";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
@@ -104,6 +105,7 @@ export function WalletHeader() {
         { id: "base", name: "Base", icon: BASE.icon, color: "#0052FF", configAssets: BASE.assets },
         { id: "optimism", name: "Optimism", icon: OPTIMISM.icon, color: "#FF0420", configAssets: OPTIMISM.assets },
         { id: "arbitrum", name: "Arbitrum", icon: ARBITRUM.icon, color: "#12AAFF", configAssets: ARBITRUM.assets },
+        { id: "gnosis", name: "Gnosis", icon: GNOSIS.icon, color: "#04795B", configAssets: GNOSIS.assets }, // [MOVED UP]
         { id: "polygon", name: "Polygon", icon: POLYGON.icon, color: "#8247E5", configAssets: POLYGON.assets },
         { id: "avalanche", name: "Avalanche", icon: AVALANCHE.icon, color: "#E84142", configAssets: AVALANCHE.assets },
         { id: "bnb", name: "BNB Chain", icon: BNB.icon, color: "#F3BA2F", configAssets: BNB.assets },
@@ -152,7 +154,8 @@ export function WalletHeader() {
                                 chainMetadata.configAssets === BNB.assets ? BNB.evm?.chain.id.toString() :
                                     chainMetadata.configAssets === UNICHAIN.assets ? UNICHAIN.evm?.chain.id.toString() :
                                         chainMetadata.configAssets === WORLD_CHAIN.assets ? WORLD_CHAIN.evm?.chain.id.toString() :
-                                            chainMetadata.configAssets === Monad.assets ? Monad.evm?.chain.id.toString() : "unknown";
+                                            chainMetadata.configAssets === Monad.assets ? Monad.evm?.chain.id.toString() :
+                                                chainMetadata.configAssets === GNOSIS.assets ? GNOSIS.evm?.chain.id.toString() : "unknown";
         }
 
         const walletChain = (mainWallet.chains || []).find(c => c.chainId === storeChainId);
