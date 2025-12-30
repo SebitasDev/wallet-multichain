@@ -16,6 +16,9 @@ import { UnichainIcon } from "../../components/atoms/UnichainIcon";
 import { WorldChainIcon } from "../../components/atoms/WorldChainIcon";
 import { UsdcIcon } from "../../components/atoms/UsdcIcon";
 import { UsdtIcon } from "../../components/atoms/UsdtIcon";
+import GnosisIcon from "../../components/atoms/GnosisIcon";
+import { EureIcon } from "../../components/atoms/EureIcon";
+import { XdaiIcon } from "../../components/atoms/XdaiIcon";
 
 export const CHAIN_COMPONENTS: Record<string, React.ElementType> = {
     "Base": BaseIcon,
@@ -32,6 +35,8 @@ export const CHAIN_COMPONENTS: Record<string, React.ElementType> = {
     "Monad": MonadIcon,
     "Unichain": UnichainIcon,
     "World Chain": WorldChainIcon,
+    "Gnosis": GnosisIcon,
+    "GNOSIS": GnosisIcon,
 };
 
 export const TOKEN_COMPONENTS: Record<string, React.ElementType> = {
@@ -47,6 +52,9 @@ export const TOKEN_COMPONENTS: Record<string, React.ElementType> = {
     "OP": OPIcon,
     "ARB": ArbIcon,
     "MON": MonadIcon,
+    "GNO": GnosisIcon,
+    "EURe": EureIcon,
+    "XDAI": XdaiIcon,
 };
 
 export const ChainLogo = ({ chain }: { chain: string }) => {

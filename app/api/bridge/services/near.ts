@@ -232,8 +232,40 @@ export async function processNearSettlement(
             );
         }
         else if (sourceChain === "Stellar") {
-            // ... Stellar Logic (Assuming it remains similar or unimplemented for now as focus is on EVM)
-            return { success: false, errorReason: "Stellar Flow not fully reimplemented in this overwrite (Focus on EVM)" };
+            const signedXDR = paymentPayload?.signedXDR;
+            if (!signedXDR) return { success: false, errorReason: "Missing signedXDR for Stellar transfer" };
+
+            // 1. Submit User -> Facilitator TX
+            console.log("[NearService] Submitting Stellar User -> Facilitator TX...");
+            const serverUrl = STELLAR.nonEvm?.serverURL;
+
+            if (!serverUrl) throw new Error("Stellar server URL not configured");
+            const server = new StellarSdk.Horizon.Server(serverUrl);
+
+            let pullHash: string;
+            try {
+                const passphrase = STELLAR.nonEvm?.networkPassphrase;
+                const tx = StellarSdk.TransactionBuilder.fromXDR(signedXDR, passphrase || StellarSdk.Networks.PUBLIC);
+                const result = await server.submitTransaction(tx);
+                pullHash = result.hash;
+                console.log("[NearService] Pull Success (Stellar):", pullHash);
+            } catch (e: any) {
+                console.error("Stellar Submit Error", e.response?.data?.extras?.result_codes || e.message);
+                return { success: false, errorReason: "Stellar Pull Failed: " + (e.message || "Unknown") };
+            }
+
+            // 2. Execute Bridge (Facilitator -> Bridge)
+            return executeStellarBridge(
+                sourceChain,
+                destChain,
+                amount,
+                recipient,
+                pullHash,
+                quote,
+                depositAddress,
+                amountAtomicNet,
+                sourceToken
+            );
         }
 
         return { success: false, errorReason: "Invalid flow" };
@@ -345,6 +377,91 @@ export async function executeNearBridge(
     return {
         success: true,
         transactionHash: bridgeHash,
+        fee: "0",
+        netAmount: quote.quote?.amountOutFormatted || "0"
+    };
+}
+
+export async function executeStellarBridge(
+    sourceChain: ChainKey,
+    destChain: ChainKey,
+    amount: string,
+    recipient: string,
+    pullHash: string,
+    quote: any,
+    depositAddress: string,
+    amountAtomicNet: string,
+    sourceToken?: string
+): Promise<SettleResponse> {
+    const facilitatorKey = process.env.FACILITATOR_STELLAR_PRIVATE_KEY;
+    if (!facilitatorKey) throw new Error("FACILITATOR_STELLAR_PRIVATE_KEY missing in environment");
+
+    const sourceConfig = NETWORKS[sourceChain];
+    const sourceAssetInfo = sourceConfig.assets.find(a => a.name === (sourceToken || "USDC"));
+    if (!sourceAssetInfo) throw new Error("Source asset info not found");
+
+    // Stellar amounts are decimals
+    const decimals = sourceAssetInfo.decimals || 7;
+    // Calculate decimal amount from atomic net
+    const amountVal = BigInt(amountAtomicNet);
+    const amountDecimal = (Number(amountVal) / Math.pow(10, decimals)).toFixed(decimals);
+
+    console.log(`[NearService] Step 2: Push to Bridge (Stellar) ${amountDecimal} ${sourceToken || "USDC"} -> ${depositAddress}`);
+    console.log(`[NearService] Memo: ${quote.quote.depositMemo || quote.quote.memo}`);
+
+    const serverUrl = STELLAR.nonEvm?.serverURL;
+    if (!serverUrl) throw new Error("Stellar configuration missing");
+
+    const server = new StellarSdk.Horizon.Server(serverUrl);
+    const keypair = StellarSdk.Keypair.fromSecret(facilitatorKey);
+    const sourceAccount = await server.loadAccount(keypair.publicKey());
+
+    // Resolve Asset
+    const assetAddr = sourceAssetInfo.address;
+    let asset: StellarSdk.Asset;
+    if (sourceToken === "XLM" || !assetAddr) {
+        asset = StellarSdk.Asset.native();
+    } else {
+        asset = new StellarSdk.Asset(sourceToken || "USDC", assetAddr);
+    }
+
+    // Resolve Memo
+    let memo: StellarSdk.Memo = StellarSdk.Memo.none();
+    const quoteMemo = quote.quote.depositMemo || quote.quote.memo; // Use depositMemo as primary, fallback to memo
+    if (quoteMemo) {
+        // Try Text first? Or ID? 1-Click usually uses Memo Text or ID.
+        // If purely numeric, could be ID. But standard is often Text for simplicity unless limited.
+        // We'll try Text. If it fails due to bytes, fallback or error.
+        // SDK 'Memo.text' throws if > 28 bytes.
+        memo = StellarSdk.Memo.text(String(quoteMemo));
+    }
+
+    const tx = new StellarSdk.TransactionBuilder(sourceAccount, {
+        fee: "100000",
+        networkPassphrase: STELLAR.nonEvm?.networkPassphrase!
+    })
+        .addOperation(StellarSdk.Operation.payment({
+            destination: depositAddress,
+            asset: asset,
+            amount: amountDecimal
+        }))
+        .addMemo(memo)
+        .setTimeout(30)
+        .build();
+
+    tx.sign(keypair);
+
+    const result = await server.submitTransaction(tx);
+    const pushHash = result.hash;
+    console.log("[NearService] Push Success (Stellar):", pushHash);
+
+    // Step 3: Submit Hash
+    console.log("[NearService] Step 3: Submit Hash");
+    await OneClickService.submitDepositTx({ txHash: pushHash, depositAddress });
+
+    return {
+        success: true,
+        transactionHash: pushHash as `0x${string}`,
         fee: "0",
         netAmount: quote.quote?.amountOutFormatted || "0"
     };

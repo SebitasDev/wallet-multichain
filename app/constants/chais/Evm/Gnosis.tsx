@@ -28,7 +28,7 @@ export const GNOSIS: ChainConfig = {
         },
         {
             name: "EURe",
-            decimals: 6,
+            decimals: 18,
             address: (isDevelopment ? "0x420CA0f9B9b604cE0fd9C18EF134C705e5Fa3430" : "0x420CA0f9B9b604cE0fd9C18EF134C705e5Fa3430") as Address,
             icon: <EureIcon />,
             coingeckoId: "monerium-eur-money"
@@ -87,9 +87,9 @@ export const GNOSIS: ChainConfig = {
                     decimals: 6
                 },
                 {
-                    assetId: "nep141:gnosis-0x420ca0f9b9b604ce0fd9c18ef134c705e5fa3430.omft.near.omft.near",
+                    assetId: "nep141:gnosis-0x420ca0f9b9b604ce0fd9c18ef134c705e5fa3430.omft.near",
                     name: "EURe",
-                    decimals: 6
+                    decimals: 18
                 },
                 {
                     assetId: "nep141:gnosis-0x9c58bacc331c9aa871afd802db6379a98e80cedb.omft.near",
