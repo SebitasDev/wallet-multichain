@@ -13,7 +13,7 @@ export const STELLAR: ChainConfig = {
     assets: [
         {
             name: "USDC",
-            decimals: 6,
+            decimals: 7,
             address: isDevelopment ? "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" : "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
             icon: <UsdcIcon />,
             coingeckoId: "usd-coin"
@@ -41,15 +41,12 @@ export const STELLAR: ChainConfig = {
                 {
                     assetId: "nep245:v2_1.omni.hot.tg:1100_111bzQBB65GxAPAVoxqmMcgYo5oS3txhqs1Uh1cgahKQUeTUq1TJu",
                     name: "USDC",
-                    decimals: 6
+                    decimals: 7
                 },
                 {
                     assetId: "nep245:v2_1.omni.hot.tg:1100_111bzQBB5v7AhLyPMDwS8uJgQV24KaAPXtwyVWu2KXbbfQU6NXRCz",
                     name: "XLM",
-                    decimals: 6 // Note: Near might treat it as 6 or 7? Keeping 6 as per previous config or standardizing? 
-                    // Previous config had 6 for XLM in nearIntent? 
-                    // Wait, previous file content showed decimals: 6 for XLM in nearIntent. I will keep it as 6 to be safe, but XLM native is 7.
-                    // Actually, let's trust the previous nearIntent config.
+                    decimals: 6
                 }
             ],
             needMemo: true
