@@ -10,10 +10,9 @@ export class BridgeManager {
     private strategies: BridgeStrategy[];
 
     constructor() {
-        // Priority Order defined here
         this.strategies = [
-            new StandardBridgeStrategy(), // [NEW] Explicit Standard/Refuel Flow
-            new SmartAccountStrategy(),   // [High Priority] 7702 specific
+            new StandardBridgeStrategy(),
+            new SmartAccountStrategy(),
             new GaslessStrategy(),
             new CCTPStrategy(),
             new NearStrategy()

@@ -9,7 +9,6 @@ import {
     Box
 } from "@mui/material";
 import { NETWORKS } from "@/app/constants/chainsInformation";
-import { ChainKey } from "@/app/types/chain";
 import { TokenSelector } from "../CrossChainTransferModal/TokenSelector";
 import { SendForm } from "@/app/lib/zod/sendSchema";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
