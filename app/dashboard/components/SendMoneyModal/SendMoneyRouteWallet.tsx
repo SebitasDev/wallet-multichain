@@ -178,7 +178,7 @@ export const SendMoneyRouteWallet = ({
                             const chainKey = CHAIN_ID_TO_KEY[r.chainId];
                             const chainConfig = NETWORKS[chainKey as keyof typeof NETWORKS] || {};
 
-                            const existingDetail = walletDetail?.chains.find((c: any) => c.id === r.chainId);
+                            const existingDetail = walletDetail?.chains.find((c: any) => c.id === r.id);
 
                             // Validations
                             const currentChainDetail = currentWallet?.chains.find((c: any) => {

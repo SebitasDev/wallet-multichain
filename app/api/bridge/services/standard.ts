@@ -39,34 +39,48 @@ export class StandardBridgeStrategy implements BridgeStrategy {
 
             console.log(`[StandardBridgeStrategy] Verifying execution on ${sourceChain}...`);
 
-            // Wait for receipt (in case it's very fresh, though usually frontend waits)
-            const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+            // [FIX] Avalanche "cannot query unfinalized data" retry logic
+            const withRetryFinality = async <T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> => {
+                let lastError;
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        return await fn();
+                    } catch (e: any) {
+                        lastError = e;
+                        if (e.message?.includes("unfinalized data") || e.details?.includes("unfinalized data")) {
+                            console.log(`[StandardBridgeStrategy] Waiting for finality on ${sourceChain}... (Attempt ${i + 1}/${maxRetries})`);
+                            await new Promise(r => setTimeout(r, 4000));
+                            continue;
+                        }
+                        throw e;
+                    }
+                }
+                throw lastError;
+            };
+
+            // Wait for receipt
+            const receipt = await withRetryFinality(() => publicClient.waitForTransactionReceipt({ hash: txHash }));
 
             if (receipt.status !== "success") {
                 throw new Error("Transaction failed or reverted on-chain");
             }
 
-            // Verify it was a transfer to Facilitator
-            // We can parse logs to be sure
-            // In future import from config
-
-            // Simple Log finding for ERC20 Transfer
-            // Topic0: 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef (Transfer)
+            // [RESTORED] Simple Log finding for ERC20 Transfer
             const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-
             const log = receipt.logs.find((l: any) =>
                 l.topics[0] === transferTopic &&
-                // topic[2] is 'to' (padded)
                 l.topics[2]?.toLowerCase().includes(FACILITATOR_ADDRESS.toLowerCase().slice(2))
             );
 
+            // Fetch full Transaction to check value if no ERC20 logs (Native)
+            let tx = null;
+            if (!log) {
+                console.log("[StandardBridgeStrategy] No ERC20 Logs found. Checking for Native Transfer...");
+                tx = await withRetryFinality(() => publicClient.getTransaction({ hash: txHash }));
+            }
+
             if (!log) {
                 // Check if it's a Native Transfer (AVAX, ETH)
-                console.log("[StandardBridgeStrategy] No ERC20 Logs found. Checking for Native Transfer...");
-
-                // Fetch full Transaction to check value
-                const tx = await publicClient.getTransaction({ hash: txHash });
-
                 if (!tx) {
                     throw new Error("Transaction not found");
                 }

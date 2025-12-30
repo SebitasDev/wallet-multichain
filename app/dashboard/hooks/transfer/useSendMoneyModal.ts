@@ -36,7 +36,8 @@ export type RouteDetail = {
     wallet: string;
     walletName: string;
     chains: {
-        id: string;
+        id: string; // Unique UI ID
+        chainId: string; // Network Chain ID
         label: string;
         icon: JSX.Element | null;
         amount: number;
@@ -82,8 +83,13 @@ export const useSendMoneyModal = () => {
             walletName: a.from,
             chains: a.chains.map((c) => {
                 const chainDef = resolveChain(c.chainId);
+                // [FIX] Inject ID back into routeSummary to sync logic with UI
+                const uniqueId = Math.random().toString(36).substring(7);
+                (c as any).id = uniqueId;
+
                 return {
-                    id: c.chainId,
+                    id: uniqueId,
+                    chainId: c.chainId,
                     label: chainDef.label,
                     icon: chainDef.icon,
                     amount: c.amount,
@@ -254,24 +260,36 @@ export const useSendMoneyModal = () => {
         let totalSentAmount = 0;
         let totalFeePaid = 0;
 
-        // Loop Allocations
-        for (const allocation of routeSummary!.allocations) {
+        // Loop Allocations using Entries to track INDEX for Unique ID matching
+        for (const [walletIdx, allocation] of routeSummary!.allocations.entries()) {
 
             // 1. Unlock Wallet (Get Private Key)
-            const unlockedKey = await unlockWallet(allocation.from, watch("sendPassword") || "");
+            const unlockedKey = await unlockWallet(allocation.from, watch("sendChain")); // Note: Check if unlockWallet needs just address or chain too. Usually address. if multi-chain wallet, key is same.
+
             if (!unlockedKey) {
                 toast.error(`No se pudo desbloquear la wallet ${allocation.from}`);
-                continue;
+                return;
             }
 
-            for (const chain of allocation.chains) {
-                const fromValidChain = CHAIN_ID_TO_KEY[chain.chainId] ?? "Base";
-                const amountFloat = Number(chain.amount);
+            // Loop through chains in this allocation
+            for (const [i, chain] of allocation.chains.entries()) {
+                const amountFloat = Number(chain.amount); // The amount to send from THIS chain
+                const fromValidChain = CHAIN_ID_TO_KEY[chain.chainId] as ChainKey;
+                const fromNet = NETWORKS[fromValidChain];
+                const toNet = NETWORKS[toValidChain];
+
+                // Get Unique ID for this specific transfer
+                const uniqueId = routeDetails[walletIdx]?.chains[i]?.id;
+
+                if (!uniqueId) {
+                    console.error("Critical: RouteDetail mismatch for index", walletIdx, i);
+                    continue;
+                }
                 const amountString = amountFloat.toString(); // executeTransfer expects string
 
                 // Safe checks
-                const fromNet = NETWORKS[fromValidChain as ChainKey];
-                const toNet = NETWORKS[toValidChain as ChainKey];
+                // const fromNet = NETWORKS[fromValidChain as ChainKey]; // Already defined above
+                // const toNet = NETWORKS[toValidChain as ChainKey]; // Already defined above
 
                 if (!fromNet || !fromNet.evm || !toNet || !toNet.evm) {
                     toast.error("Invalid chain for EVM transfer");
@@ -296,7 +314,7 @@ export const useSendMoneyModal = () => {
                 // [FIX] Check if this chain is already done (Resume Logic)
                 const currentStatus = routeDetails
                     .find(w => w.wallet.toLowerCase() === allocation.from.toLowerCase())
-                    ?.chains.find(c => c.id.toString() === chain.chainId.toString())?.status;
+                    ?.chains.find(c => c.id === uniqueId)?.status;
 
                 if (currentStatus === "done" || currentStatus === "minting" || currentStatus === "waiting") {
                     console.log(`Skipping ${fromValidChain} (Already Done/In Progress)`);
@@ -318,7 +336,7 @@ export const useSendMoneyModal = () => {
                             ? {
                                 ...wallet,
                                 chains: wallet.chains.map(c =>
-                                    c.id.toString() === chain.chainId.toString()
+                                    c.id === uniqueId // Use Unique ID
                                         ? { ...c, status: "starting", message: "Iniciando..." }
                                         : c
                                 )
@@ -354,7 +372,7 @@ export const useSendMoneyModal = () => {
                                 privateKey: unlockedKey,
                                 onStatusUpdate: (msg) => {
                                     setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
-                                        ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, message: msg } : c)
+                                        ...w, chains: w.chains.map(c => c.id === uniqueId ? { ...c, message: msg } : c)
                                     } : w));
                                 }
                             });
@@ -374,7 +392,7 @@ export const useSendMoneyModal = () => {
                             totalFeePaid += currentFee;
 
                             setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
-                                ...w, chains: w.chains.map(c => c.id.toString() === chain.chainId.toString() ? { ...c, status: "done", message: "Completado" } : c)
+                                ...w, chains: w.chains.map(c => c.id === uniqueId ? { ...c, status: "done", message: "Completado" } : c)
                             } : w));
 
                             transferBalance(
@@ -413,7 +431,7 @@ export const useSendMoneyModal = () => {
                                     ? {
                                         ...wallet,
                                         chains: wallet.chains.map(c =>
-                                            c.id.toString() === chain.chainId.toString()
+                                            c.id === uniqueId
                                                 ? { ...c, status: "done", message: "Completado" }
                                                 : c
                                         )
@@ -458,8 +476,8 @@ export const useSendMoneyModal = () => {
                                 ? {
                                     ...wallet,
                                     chains: wallet.chains.map(c =>
-                                        c.id.toString() === chain.chainId.toString()
-                                            ? { ...c, status: "error", message: "Falló: " + errorMessage }
+                                        c.id === uniqueId
+                                            ? { ...c, status: "error", message: errorMessage }
                                             : c
                                     )
                                 }
