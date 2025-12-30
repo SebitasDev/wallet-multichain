@@ -21,10 +21,10 @@ type Props = {
     // Handlers
     onRemoveWallet: (addr: string) => void;
     onAddChain: (event: React.MouseEvent<HTMLElement>, walletAddr: string) => void;
-    onRemoveChain: (walletAddr: string, chainId: string) => void;
-    onAmountChange: (walletAddr: string, chainId: string, val: string) => void;
-    onTokenChange: (walletAddr: string, chainId: string, val: string) => void;
-    onSimulate: (chainId: string, amount: number, token: string, sourceChainKey: string) => void;
+    onRemoveChain: (walletAddr: string, chainId: string, id?: string) => void;
+    onAmountChange: (walletAddr: string, chainId: string, val: string, id?: string) => void;
+    onTokenChange: (walletAddr: string, chainId: string, val: string, id?: string) => void;
+    onSimulate: (id: string, chainId: string, amount: number, token: string, sourceChainKey: string) => void;
 
     // Simulation State
     simulating: Record<string, boolean>;
@@ -163,9 +163,10 @@ export const SendMoneyRouteWallet = ({
                                         const isUSDC = (c.token || "USDC").toUpperCase() === "USDC";
                                         const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02;
                                         const fee = isDev ? 0 : baseFee;
-                                        return acc + c.amount + fee;
+                                        const price = c.price || 1;
+                                        return acc + (c.amount * price) + fee;
                                     }, 0),
-                                    6
+                                    2
                                 )}
                             </Typography>
                         </Box>
@@ -177,18 +178,23 @@ export const SendMoneyRouteWallet = ({
                             const chainKey = CHAIN_ID_TO_KEY[r.chainId];
                             const chainConfig = NETWORKS[chainKey as keyof typeof NETWORKS] || {};
 
-                            const existingDetail = walletDetail?.chains.find((c: any) => c.id === r.chainId);
+                            const existingDetail = walletDetail?.chains.find((c: any) => c.id === r.id);
 
                             // Validations
                             const currentChainDetail = currentWallet?.chains.find((c: any) => {
                                 const cId = (c.value || c.chainId || c.id || "").toString();
                                 return cId === r.chainId;
                             });
-                            const chainBalance = currentChainDetail?.amount || 0;
+                            const chainBalance = currentChainDetail?.tokens?.[r.token || "USDC"] || 0;
+
+                            // Calculate tokens used by other instances of this same chain
+                            const otherUsedTokens = walletAlloc.chains
+                                .filter((other: any) => other.chainId === r.chainId && other.id !== r.id)
+                                .map((other: any) => other.token || "USDC");
 
                             return (
                                 <SendMoneyRouteChain
-                                    key={r.chainId}
+                                    key={r.id || r.chainId}
                                     r={r}
                                     walletAddress={walletAlloc.from}
                                     isEditing={isEditing}
@@ -199,13 +205,14 @@ export const SendMoneyRouteWallet = ({
                                     selectedDestChainKey={watch("sendChain")}
                                     watch={watch}
                                     control={control}
-                                    onRemoveChain={onRemoveChain}
-                                    onAmountChange={onAmountChange}
-                                    onTokenChange={onTokenChange}
+                                    onRemoveChain={(addr, id) => onRemoveChain(addr, id, r.id)}
+                                    onAmountChange={(addr, id, val) => onAmountChange(addr, id, val, r.id)}
+                                    onTokenChange={(addr, id, val) => onTokenChange(addr, id, val, r.id)}
                                     onSimulate={onSimulate}
-                                    isSimulating={simulating[r.chainId]}
-                                    simulationResult={simulationResults[r.chainId]}
-                                    simulationError={simulationErrorMessages[r.chainId]}
+                                    isSimulating={simulating[r.id || r.chainId]}
+                                    simulationResult={simulationResults[r.id || r.chainId]}
+                                    simulationError={simulationErrorMessages[r.id || r.chainId]}
+                                    otherUsedTokens={otherUsedTokens}
                                 />
                             );
                         })}

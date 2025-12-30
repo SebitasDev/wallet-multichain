@@ -1,4 +1,5 @@
 import { Box, Stack, Typography, Button, TextField, Menu, MenuItem } from "@mui/material";
+import { useEffect } from "react"; // [FIX] Import useEffect
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
@@ -26,14 +27,18 @@ type Props = {
     watch: UseFormWatch<SendForm>,
     control: Control<SendForm>,
     setValue: UseFormSetValue<SendForm>,
-    setSimulationError: (id: string, hasError: boolean) => void;
-}
+    setHasBlockingErrors: (hasError: boolean) => void;
+    setPassword: (val: string) => void;
+    password: string;
+    priceMap?: Record<string, number>;
+};
 
 export const SendMoneyModalRoute = (
-    { routeDetails, routeReady, routeSummary, setRouteSummary, selected, wallets, isEditing, setIsEditing, watch, control, setValue, setSimulationError }: Props
+    { routeDetails, routeReady, routeSummary, setRouteSummary, selected, wallets, isEditing, setIsEditing, watch, control, setValue, setHasBlockingErrors, priceMap, password, setPassword }: Props
 ) => {
 
     const {
+        // ... hook values ...
         simulating,
         simulationResults,
         simulationErrorMessages,
@@ -59,8 +64,16 @@ export const SendMoneyModalRoute = (
         wallets,
         isEditing,
         watch,
-        setSimulationError
+        setSimulationError: () => { }, // [Legacy] No longer used by parent, but hook requires it. We can refactor hook later.
+        priceMap
     });
+
+    // [FIX] Sync Blocking Errors to Parent
+    // If ANY chain is simulating (loading) OR has validation errors -> Block Parent
+    const isSimulating = Object.values(simulating).some(Boolean);
+    useEffect(() => {
+        setHasBlockingErrors(hasErrors || isSimulating);
+    }, [hasErrors, isSimulating, setHasBlockingErrors]);
 
     return (
         <Box
@@ -76,16 +89,10 @@ export const SendMoneyModalRoute = (
                 flex: 1
             }}
         >
+            {/* ... Header and List ... */}
+
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography
-                    fontWeight={800}
-                    fontSize={{ xs: 13, sm: 15 }}
-                    sx={{
-                        textTransform: "uppercase",
-                        letterSpacing: 0.5,
-                        color: "#000000"
-                    }}
-                >
+                <Typography fontWeight={800} fontSize={{ xs: 13, sm: 15 }} sx={{ textTransform: "uppercase", letterSpacing: 0.5, color: "#000000" }}>
                     Ruta encontrada
                 </Typography>
                 <Button
@@ -96,11 +103,7 @@ export const SendMoneyModalRoute = (
                     }}
                     disabled={isEditing && hasErrors}
                     size="small"
-                    sx={{
-                        textTransform: "none",
-                        fontWeight: 700,
-                        color: (isEditing && hasErrors) ? "#999999" : (isEditing ? "#00DC8C" : "#000000")
-                    }}
+                    sx={{ textTransform: "none", fontWeight: 700, color: (isEditing && hasErrors) ? "#999999" : (isEditing ? "#00DC8C" : "#000000") }}
                 >
                     {isEditing ? "Guardar" : "Editar"}
                 </Button>
@@ -129,21 +132,12 @@ export const SendMoneyModalRoute = (
                     />
                 ))}
 
-                {/* Add Wallet Button */}
                 {isEditing && (
                     <Button
                         startIcon={<AddCircleIcon />}
                         onClick={handleOpenWalletMenu}
                         fullWidth
-                        sx={{
-                            p: 2,
-                            textTransform: "none",
-                            fontWeight: 800,
-                            color: "#000000",
-                            backgroundColor: "#ffffff",
-                            border: "2px dashed #000000",
-                            borderRadius: 3,
-                        }}
+                        sx={{ p: 2, textTransform: "none", fontWeight: 800, color: "#000000", backgroundColor: "#ffffff", border: "2px dashed #000000", borderRadius: 3 }}
                     >
                         Agregar Wallet
                     </Button>
@@ -151,11 +145,7 @@ export const SendMoneyModalRoute = (
             </Stack>
 
             {/* WALLET MENU */}
-            <Menu
-                anchorEl={anchorElWallet}
-                open={Boolean(anchorElWallet)}
-                onClose={handleCloseWalletMenu}
-            >
+            <Menu anchorEl={anchorElWallet} open={Boolean(anchorElWallet)} onClose={handleCloseWalletMenu}>
                 {wallets.filter(w => !routeSummary?.allocations.some(a => a.from.toLowerCase() === w.address.toLowerCase())).map((wallet) => (
                     <MenuItem key={wallet.address} onClick={() => handleAddWallet(wallet)}>
                         <Typography fontWeight={700}>{wallet.name} ({wallet.address.slice(0, 6)}...)</Typography>
@@ -164,113 +154,47 @@ export const SendMoneyModalRoute = (
             </Menu>
 
             {/* CHAIN MENU */}
-            <Menu
-                anchorEl={anchorElChain}
-                open={Boolean(anchorElChain)}
-                onClose={handleCloseChainMenu}
-            >
+            <Menu anchorEl={anchorElChain} open={Boolean(anchorElChain)} onClose={handleCloseChainMenu}>
                 {activeWalletForChainAdd && Object.values(NETWORKS).filter(n => {
                     if (!n.evm) return false;
-
                     const dest = selected;
                     const source = n;
-
-                    const hasCctp = source.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
-                        dest.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
-
-                    const hasNear = source.crossChainInformation?.nearIntentInformation?.support &&
-                        dest.crossChainInformation?.nearIntentInformation?.support;
-
+                    const hasCctp = source.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP && dest.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
+                    const hasNear = source.crossChainInformation?.nearIntentInformation?.support && dest.crossChainInformation?.nearIntentInformation?.support;
                     return hasCctp || hasNear;
                 }).map((chain) => {
                     const chainId = chain.evm?.chain.id.toString();
-                    const label = chain.label;
-
                     return (
                         <MenuItem key={chainId} onClick={() => handleAddChain(activeWalletForChainAdd!, chain)}>
                             <Stack direction="row" alignItems="center" spacing={1}>
                                 {chain.icon}
-                                <Typography fontWeight={700}>{label}</Typography>
+                                <Typography fontWeight={700}>{chain.label}</Typography>
                             </Stack>
                         </MenuItem>
                     );
                 })}
             </Menu>
 
-            {/* RESUMEN FINAL */}
-            <Box
-                sx={{
-                    mt: 1,
-                    p: { xs: 2, sm: 2.5 },
-                    borderRadius: 3,
-                    backgroundColor: "#ffffff",
-                    border: "2px solid #000000",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                }}
-            >
+            <Box sx={{ mt: 1, p: { xs: 2, sm: 2.5 }, borderRadius: 3, backgroundColor: "#ffffff", border: "2px solid #000000", display: "flex", flexDirection: "column", gap: 2 }}>
                 <Box>
-                    <Typography
-                        fontWeight={800}
-                        fontSize={{ xs: 11, sm: 13 }}
-                        sx={{
-                            textTransform: "uppercase",
-                            letterSpacing: 0.5,
-                            color: "#666666",
-                            mb: 0.5
-                        }}
-                    >
+                    <Typography fontWeight={800} fontSize={{ xs: 11, sm: 13 }} sx={{ textTransform: "uppercase", letterSpacing: 0.5, color: "#666666", mb: 0.5 }}>
                         Destinatario
                     </Typography>
 
                     {!isEditing ? (
                         <>
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: "#000000",
-                                    fontWeight: 600,
-                                    fontSize: { xs: 11, sm: 12 },
-                                    fontFamily: "monospace",
-                                    mb: 1.5,
-                                    wordBreak: "break-all",
-                                    overflowWrap: "break-word"
-                                }}
-                            >
+                            <Typography variant="body2" sx={{ color: "#000000", fontWeight: 600, fontSize: { xs: 11, sm: 12 }, fontFamily: "monospace", mb: 1.5, wordBreak: "break-all", overflowWrap: "break-word" }}>
                                 {watch("toAddress") || "N/D"}
                             </Typography>
-
                             <Stack direction="row" alignItems="center" spacing={1}>
-                                <Box sx={{
-                                    width: { xs: 20, sm: 24 },
-                                    height: { xs: 20, sm: 24 },
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    flexShrink: 0,
-                                    "& svg": { width: "100%", height: "100%" }
-                                }}>
+                                <Box sx={{ width: { xs: 20, sm: 24 }, height: { xs: 20, sm: 24 }, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, "& svg": { width: "100%", height: "100%" } }}>
                                     {NETWORKS[watch("sendChain") as ChainKey]?.icon || selected?.icon}
                                 </Box>
-                                <Typography
-                                    variant="body2"
-                                    fontWeight={700}
-                                    fontSize={{ xs: 12, sm: 13 }}
-                                    color="#000000"
-                                >
+                                <Typography variant="body2" fontWeight={700} fontSize={{ xs: 12, sm: 13 }} color="#000000">
                                     Llega en {NETWORKS[watch("sendChain") as ChainKey]?.label || selected?.label || "Chain destino"}
                                 </Typography>
-
                                 <Stack direction="row" alignItems="center" spacing={0.8} ml={1}>
-                                    <Box sx={{
-                                        width: 16,
-                                        height: 16,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        "& svg": { width: "100%", height: "100%" }
-                                    }}>
+                                    <Box sx={{ width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", "& svg": { width: "100%", height: "100%" } }}>
                                         {(() => {
                                             const cKey = watch("sendChain") as ChainKey;
                                             const tName = watch("sourceToken");
@@ -279,12 +203,7 @@ export const SendMoneyModalRoute = (
                                             return asset?.icon;
                                         })()}
                                     </Box>
-                                    <Typography
-                                        variant="body2"
-                                        fontWeight={700}
-                                        fontSize={{ xs: 12, sm: 13 }}
-                                        color="#666666"
-                                    >
+                                    <Typography variant="body2" fontWeight={700} fontSize={{ xs: 12, sm: 13 }} color="#666666">
                                         {watch("sourceToken")}
                                     </Typography>
                                 </Stack>
@@ -296,37 +215,18 @@ export const SendMoneyModalRoute = (
                                 control={control}
                                 name="toAddress"
                                 render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        fullWidth
-                                        size="small"
-                                        label="Address Destino"
-                                        placeholder="0x..."
-                                        InputProps={{
-                                            sx: { fontFamily: "monospace", fontSize: 13, background: "#ffffff" }
-                                        }}
-                                    />
+                                    <TextField {...field} fullWidth size="small" label="Address Destino" placeholder="0x..." InputProps={{ sx: { fontFamily: "monospace", fontSize: 13, background: "#ffffff" } }} />
                                 )}
                             />
-
                             <Controller
                                 control={control}
                                 name="sendChain"
                                 render={({ field }) => (
-                                    <TextField
-                                        select
-                                        fullWidth
-                                        size="small"
-                                        label="Chain"
-                                        {...field}
-                                        InputProps={{ sx: { background: "#ffffff" } }}
-                                    >
+                                    <TextField select fullWidth size="small" label="Chain" {...field} InputProps={{ sx: { background: "#ffffff" } }}>
                                         {Object.entries(NETWORKS).filter(([k, cfg]) => !!cfg.evm).map(([key, cfg]) => (
                                             <MenuItem key={key} value={key}>
                                                 <Stack direction="row" alignItems="center" spacing={1}>
-                                                    <Box sx={{ width: 20, height: 20, display: "flex", "& svg": { width: "100%" } }}>
-                                                        {cfg.icon}
-                                                    </Box>
+                                                    <Box sx={{ width: 20, height: 20, display: "flex", "& svg": { width: "100%" } }}>{cfg.icon}</Box>
                                                     <Typography fontSize={13} fontWeight={600}>{cfg.label}</Typography>
                                                 </Stack>
                                             </MenuItem>
@@ -334,33 +234,39 @@ export const SendMoneyModalRoute = (
                                         {/* STELLAR OPTION */}
                                         <MenuItem key="Stellar" value="Stellar">
                                             <Stack direction="row" alignItems="center" spacing={1}>
-                                                <Box sx={{ width: 20, height: 20, display: "flex", "& svg": { width: "100%" } }}>
-                                                    {STELLAR.icon}
-                                                </Box>
+                                                <Box sx={{ width: 20, height: 20, display: "flex", "& svg": { width: "100%" } }}>{STELLAR.icon}</Box>
                                                 <Typography fontSize={13} fontWeight={600}>{STELLAR.label}</Typography>
                                             </Stack>
                                         </MenuItem>
                                     </TextField>
                                 )}
                             />
-
-                            <TokenSelector
-                                label="Token"
-                                name="sourceToken"
-                                control={control as any}
-                                chain={watch("sendChain")}
-                            />
+                            <TokenSelector label="Token" name="sourceToken" control={control as any} chain={watch("sendChain")} />
                         </Stack>
                     )}
                 </Box>
 
-                <SendMoneyRouteSummary
-                    routeSummary={routeSummary}
-                    selected={selected}
-                    watch={watch}
-                    simulationResults={simulationResults}
-                />
+                <SendMoneyRouteSummary routeSummary={routeSummary} selected={selected} watch={watch} simulationResults={simulationResults} />
+
+                {/* PASSWORD FIELD (Step 2) */}
+                <Box mt={2}>
+                    <Typography fontWeight={700} fontSize={13} sx={{ mb: 1, textTransform: "uppercase", letterSpacing: 0.5, color: "#666666" }}>
+                        Wallet Password
+                    </Typography>
+                    {/* [FIX] Explicit Controlled Input to avoid RHF state sync issues */}
+                    <TextField
+                        fullWidth
+                        size="medium"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password || ""}
+                        onChange={(e) => setPassword(e.target.value)}
+                        InputProps={{
+                            sx: { borderRadius: 2, background: "#ffffff", border: "2px solid #000000", fontWeight: 600, "&:hover": { background: "#ffffff" }, "&.Mui-focused": { background: "#ffffff" } },
+                        }}
+                    />
+                </Box>
             </Box>
         </Box>
-    )
-}
+    );
+};

@@ -203,8 +203,8 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                             fullWidth
                             size="medium"
                             placeholder="0.00"
-                            type="number"
-                            inputProps={{ min: 0, step: "0.0001" }}
+                            // type="number"  <-- Removed to fix "0." snapping issues
+                            // inputProps={{ min: 0, step: "0.0001" }}
                             disabled={sendLoading}
                             {...field}
                             error={!!errors.sendAmount || isExceedingMax}
@@ -232,54 +232,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                 />
             </Box>
 
-            {/* PASSWORD */}
-            <Box>
-                <Typography
-                    fontWeight={700}
-                    fontSize={13}
-                    sx={{
-                        mb: 1,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.5,
-                        color: "#666666"
-                    }}
-                >
-                    {language === "es" ? "Contraseña de la billetera" : "Wallet Password"}
-                </Typography>
-                <Controller
-                    control={control}
-                    name="sendPassword"
-                    render={({ field }) => (
-                        <TextField
-                            fullWidth
-                            size="medium"
-                            type="password"
-                            placeholder="••••••••"
-                            disabled={sendLoading}
-                            {...field}
-                            error={!!errors.sendPassword}
-                            helperText={errors.sendPassword?.message}
-                            InputProps={{
-                                sx: {
-                                    borderRadius: 2,
-                                    background: "#f5f5f5",
-                                    border: "2px solid #000000",
-                                    fontWeight: 600,
-                                    "&:hover": {
-                                        background: "#ffffff",
-                                    },
-                                    "&.Mui-focused": {
-                                        background: "#ffffff",
-                                    },
-                                    "&.Mui-disabled": {
-                                        background: "#e5e5e5",
-                                    }
-                                },
-                            }}
-                        />
-                    )}
-                />
-            </Box>
+
 
             {/* OPTIMIZE TOGGLE */}
             <Box

@@ -65,6 +65,13 @@ export async function processGaslessSettlement(
 
     const { authorization, signature } = paymentPayload;
 
+    if (!signature) {
+        return {
+            success: false,
+            errorReason: "Missing Signature in Payment Payload"
+        };
+    }
+
     // Setup clients
     const facilitatorAccount = privateKeyToAccount(FACILITATOR_PRIVATE_KEY);
     const publicClient = createPublicClient({

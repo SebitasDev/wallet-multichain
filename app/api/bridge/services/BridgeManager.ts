@@ -13,9 +13,9 @@ export class BridgeManager {
         // Priority Order defined here
         this.strategies = [
             new StandardBridgeStrategy(), // [NEW] Explicit Standard/Refuel Flow
+            new SmartAccountStrategy(),   // [High Priority] 7702 specific
             new GaslessStrategy(),
             new CCTPStrategy(),
-            new SmartAccountStrategy(),
             new NearStrategy()
         ];
     }

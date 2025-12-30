@@ -6,6 +6,7 @@ import { TokenSelector } from "@/app/dashboard/components/CrossChainTransferModa
 import { STATUS_META } from "@/app/dashboard/components/SendMoneyModal/SendMoneyStatusConfig";
 import { UseFormWatch, Control } from "react-hook-form";
 import { SendForm } from "@/app/lib/zod/sendSchema";
+import { useEffect } from "react";
 
 type Props = {
     r: any; // Allocation Chain Data
@@ -23,12 +24,13 @@ type Props = {
     onRemoveChain: (walletAddr: string, chainId: string) => void;
     onAmountChange: (walletAddr: string, chainId: string, val: string) => void;
     onTokenChange: (walletAddr: string, chainId: string, val: string) => void;
-    onSimulate: (chainId: string, amount: number, token: string, sourceChainKey: string) => void;
+    onSimulate: (id: string, chainId: string, amount: number, token: string, sourceChainKey: string) => void; // [FIX] ID arg
 
     // Simulation State
     isSimulating: boolean;
     simulationResult: string | null;
     simulationError: string | null;
+    otherUsedTokens?: string[];
 };
 
 export const SendMoneyRouteChain = ({
@@ -48,7 +50,8 @@ export const SendMoneyRouteChain = ({
     onSimulate,
     isSimulating,
     simulationResult,
-    simulationError
+    simulationError,
+    otherUsedTokens = []
 }: Props) => {
     const chainKey = CHAIN_ID_TO_KEY[r.chainId];
     const label = chainConfig?.label || "Chain " + r.chainId;
@@ -59,13 +62,9 @@ export const SendMoneyRouteChain = ({
     const isSameChain = destChainId === r.chainId;
     const isUSDC = (r.token || "USDC").toUpperCase() === "USDC";
 
-    const fee = (isSameChain && isUSDC) ? 0.01 : 0.02;
-    const maxUsable = Math.max(0, chainBalance - fee);
-
     // Auto-correct token if invalid for this chain
-    const { useEffect } = require("react");
     useEffect(() => {
-        if (!process.browser) return; // Client-side only
+        // Client-side only check handled by effects mostly
         const currentToken = r.token || "USDC";
         const isValid = chainConfig?.assets?.some((a: any) => a.name === currentToken);
 
@@ -78,6 +77,21 @@ export const SendMoneyRouteChain = ({
             }
         }
     }, [chainConfig, r.token, walletAddress, r.chainId, onTokenChange]);
+
+    // [FIX] Use Price from Route (passed from parent)
+    const price = r.price || 1;
+
+    const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+    const baseFee = (isSameChain && isUSDC) ? 0.01 : 0.02; // USD Value
+    // Convert Fee to Token Amount
+    const safePrice = price || 1;
+    const feeInTokens = (isDev ? 0 : baseFee) / safePrice;
+
+    // Add small epsilon for floating point tolerance (1.0001 factor or absolute 0.000001)
+    const maxUsableRaw = Math.max(0, chainBalance - feeInTokens);
+    const maxUsable = maxUsableRaw; // Display this
+    // Validation Threshold (allow slightly more due to rounding diffs)
+    const validationMax = maxUsableRaw * 1.0001;
 
     return (
         <Box
@@ -127,23 +141,23 @@ export const SendMoneyRouteChain = ({
                             value={r.amount}
                             onChange={(e) => {
                                 const val = parseFloat(e.target.value);
-                                if (val > maxUsable) {
-                                    onAmountChange(walletAddress, r.chainId, maxUsable.toString());
+                                if (val > validationMax) {
+                                    onAmountChange(walletAddress, r.chainId, maxUsable.toString()); // Snap to display max
                                 } else {
                                     onAmountChange(walletAddress, r.chainId, e.target.value);
                                 }
                             }}
-                            inputProps={{ max: maxUsable, step: "any" }}
-                            error={r.amount > maxUsable}
+                            inputProps={{ max: validationMax, step: "any" }}
+                            error={parseFloat(r.amount) > validationMax}
                             sx={{ width: 140 }}
                         />
                         <Typography fontSize={10} color="#999999" fontWeight={600}>
-                            Max: {formatCurrency(maxUsable, 6)}
+                            Max: {parseFloat(maxUsable.toString()).toFixed(6)}
                         </Typography>
                     </Stack>
                 ) : (
                     <Typography fontWeight={800} fontSize={15}>
-                        {formatCurrency(r.amount, 6)}
+                        {parseFloat(r.amount).toFixed(6)} {r.token || "USDC"}
                     </Typography>
                 )}
             </Stack>
@@ -156,7 +170,9 @@ export const SendMoneyRouteChain = ({
                     </Typography>
                     <TokenSelector
                         label=""
-                        name={`token_${walletAddress}_${r.chainId}` as any}
+                        name={`token_${walletAddress}_${r.id || r.chainId}` as any} // [FIX] ID collision
+                        value={r.token || "USDC"} // [FIX] Controlled Value
+                        defaultValue={r.token || "USDC"}
                         control={control as any}
                         chain={chainKey as any}
                         onChange={(val: string) => onTokenChange(walletAddress, r.chainId, val)}
@@ -178,6 +194,8 @@ export const SendMoneyRouteChain = ({
                             if (hasNear) {
                                 source.crossChainInformation?.nearIntentInformation?.assetsId?.forEach((a: any) => allowed.add(a.name));
                             }
+                            // Filter out tokens used by other instances
+                            otherUsedTokens.forEach(t => allowed.delete(t));
 
                             return allowed.size > 0 ? Array.from(allowed) : undefined;
                         })()}
@@ -242,7 +260,7 @@ export const SendMoneyRouteChain = ({
                             size="small"
                             variant="outlined"
                             disabled={isSimulating || !r.amount || r.amount <= 0}
-                            onClick={() => onSimulate(r.chainId, r.amount, r.token, sourceChainKey)}
+                            onClick={() => onSimulate(r.id || r.chainId, r.chainId, r.amount, r.token, sourceChainKey)}
                             sx={{
                                 fontSize: 10,
                                 py: 0.2,

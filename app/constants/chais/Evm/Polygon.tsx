@@ -22,7 +22,7 @@ export const POLYGON: ChainConfig = {
             decimals: 18,
             address: "0x0000000000000000000000000000000000000000" as Address,
             icon: <PolygonIcon />,
-            coingeckoId: "matic-network"
+            coingeckoId: "polygon-ecosystem-token"
         },
         {
             name: "USDT",

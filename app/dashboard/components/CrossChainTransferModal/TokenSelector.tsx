@@ -26,9 +26,11 @@ type TokenSelectorProps = {
     inputSx?: SxProps;
     allowedTokens?: string[];
     balances?: Record<string, number>;
+    defaultValue?: string;
+    value?: string; // [NEW]
 };
 
-export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx, onChange, allowedTokens, balances }: TokenSelectorProps) => {
+export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx, onChange, allowedTokens, balances, defaultValue, value }: TokenSelectorProps) => {
     let assets = getAssetsForChain(chain);
 
     if (allowedTokens && allowedTokens.length > 0) {
@@ -65,67 +67,70 @@ export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx,
             <Controller
                 control={control}
                 name={name}
-                render={({ field }) => (
-                    <TextField
-                        select
-                        fullWidth
-                        {...field}
-                        onChange={(e) => {
-                            field.onChange(e);
-                            if (onChange) onChange(e.target.value);
-                        }}
-                        // Ensure the value matches an available asset, or default to first if mismatch
-                        // (Handling logic usually belongs in parent/hook, but visual safety here)
-                        value={assets.some(a => a.name === field.value) ? field.value : assets[0]?.name || ""}
-                        InputProps={{
-                            sx: {
-                                borderRadius: 2,
-                                background: "#f5f5f5",
-                                border: "2px solid #000000",
-                                fontWeight: 600,
-                                "&:hover": {
-                                    background: "#ffffff",
-                                },
-                                "&.Mui-focused": {
-                                    background: "#ffffff",
-                                },
-                                ...inputSx
-                            }
-                        }}
-                    >
-                        {assets.map((asset) => (
-                            <MenuItem key={asset.name} value={asset.name}>
-                                <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%">
-                                    <Stack direction="row" alignItems="center" spacing={1.5}>
-                                        {asset.icon && (
-                                            <Box sx={{
-                                                width: 24,
-                                                height: 24,
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                "& svg": {
-                                                    width: "100%",
-                                                    height: "100%",
-                                                }
-                                            }}>
-                                                {asset.icon}
-                                            </Box>
+                defaultValue={defaultValue}
+                render={({ field }) => {
+                    const currentValue = value !== undefined ? value : field.value;
+                    return (
+                        <TextField
+                            select
+                            fullWidth
+                            {...field}
+                            onChange={(e) => {
+                                field.onChange(e);
+                                if (onChange) onChange(e.target.value);
+                            }}
+                            // Ensure the value matches an available asset, or default to first if mismatch
+                            value={assets.some(a => a.name === currentValue) ? currentValue : assets[0]?.name || ""}
+                            InputProps={{
+                                sx: {
+                                    borderRadius: 2,
+                                    background: "#f5f5f5",
+                                    border: "2px solid #000000",
+                                    fontWeight: 600,
+                                    "&:hover": {
+                                        background: "#ffffff",
+                                    },
+                                    "&.Mui-focused": {
+                                        background: "#ffffff",
+                                    },
+                                    ...inputSx
+                                }
+                            }}
+                        >
+                            {assets.map((asset) => (
+                                <MenuItem key={asset.name} value={asset.name}>
+                                    <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%">
+                                        <Stack direction="row" alignItems="center" spacing={1.5}>
+                                            {asset.icon && (
+                                                <Box sx={{
+                                                    width: 24,
+                                                    height: 24,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    "& svg": {
+                                                        width: "100%",
+                                                        height: "100%",
+                                                    }
+                                                }}>
+                                                    {asset.icon}
+                                                </Box>
+                                            )}
+                                            <Typography fontWeight={600}>
+                                                {asset.name}
+                                            </Typography>
+                                        </Stack>
+                                        {balances && balances[asset.name] !== undefined && (
+                                            <Typography fontSize={12} color="#666666" fontWeight={600}>
+                                                {formatBalance(balances[asset.name])}
+                                            </Typography>
                                         )}
-                                        <Typography fontWeight={600}>
-                                            {asset.name}
-                                        </Typography>
                                     </Stack>
-                                    {balances && balances[asset.name] !== undefined && (
-                                        <Typography fontSize={12} color="#666666" fontWeight={600}>
-                                            {formatBalance(balances[asset.name])}
-                                        </Typography>
-                                    )}
-                                </Stack>
-                            </MenuItem>
-                        ))}
-                    </TextField>
-                )}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    );
+                }}
             />
         </Box>
     );

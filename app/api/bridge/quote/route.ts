@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOneClickQuote } from "@/app/stellar-transfer-core/sdk-service";
 import { PlatformFess } from "@/app/constants/platformFess";
+import { FACILITATOR_ADDRESS } from "@/app/facilitator/config";
 
 export async function POST(request: NextRequest) {
     try {
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
             // It parses JSON regardless of status. So returning { success: false, error: ... } is perfect.
         }
 
-        const dummyEvm = "0x0000000000000000000000000000000000000000";
+        const dummyEvm = FACILITATOR_ADDRESS;
         // Stellar dummy (Random valid public key)
         const dummyStellar = "GB7BDSZU2Y27LYNLJLVEGW5TIVYQ6362DS5QZ5F6S27S227227227AAA";
 

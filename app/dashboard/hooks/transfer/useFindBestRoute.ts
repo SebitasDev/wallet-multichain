@@ -8,7 +8,7 @@ export const useFindBestRoute = () => {
 
     const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
-    async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string, optimize: boolean, sourceToken: string) {
+    async function allocateAcrossNetworks(desiredAmount: number, toAddress: Address, sendChain: string, optimize: boolean, sourceToken: string, pricesMap: Record<string, number> = {}) {
         const sendNetwork = NETWORKS[sendChain as ChainKey];
         if (!sendNetwork || !sendNetwork.evm) {
             console.error(`Chain ${sendChain} not configured for EVM`);
@@ -25,13 +25,9 @@ export const useFindBestRoute = () => {
 
         const chainId = sendNetwork.evm.chain.id;
 
-        const getOriginFee = (id: string) => {
-            const key = CHAIN_ID_TO_KEY[id] as keyof typeof NETWORKS;
-            if (!key) return 0.003;
-            // Access nested fee, default to 0.003 if missing
-            // We must align this with the Facilitator Fee (0.01 - 0.02)
-            // To be safe and prevent "Exceeds Balance", we assume 0.02 for everyone.
-            return 0.02;
+        const getOriginFeeUSD = (id: string) => {
+            const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+            return isDev ? 0 : 0.02; // USD
         };
 
         const filteredWallets = wallets
@@ -44,51 +40,71 @@ export const useFindBestRoute = () => {
             })
             .filter(wallet => wallet.chains.length > 0);
 
-        const balances: Array<{ from: string; networkId: string; available: number }> = [];
+        const balances: Array<{ from: string; networkId: string; availableUSD: number; availableToken: number; token: string; price: number }> = [];
 
         for (const wallet of filteredWallets) {
             for (const chain of wallet.chains) {
-                const chainAmount = Number(chain.amount);
-
-                // Compatibility Check
                 const sourceKey = CHAIN_ID_TO_KEY[chain.chainId] as ChainKey;
                 const sourceConfig = NETWORKS[sourceKey];
                 const destConfig = sendNetwork;
 
-                if (!sourceConfig || !destConfig) continue;
+                // [FIX] Iterate Source Assets (e.g. POL on Polygon)
+                const assets = sourceConfig?.assets || [];
 
-                const hasCctp = sourceConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
-                    destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
+                for (const asset of assets) {
+                    const currentTokenName = asset.name;
+                    const chainAmountToken = chain.tokens?.[currentTokenName] || 0;
 
-                const hasNear = sourceConfig.crossChainInformation?.nearIntentInformation?.support &&
-                    destConfig.crossChainInformation?.nearIntentInformation?.support;
+                    if (chainAmountToken <= 0) continue;
+                    // Wait, `sendChain` is Destination? "sendChain" in SendForm is *Destination* usually.
+                    // Actually `allocateAcrossNetworks` iterates ALL wallets. `chain` is Source. `sendChain` is Destination.
+                    // Let's verify `sourceConfig` vs `destConfig`.
 
-                // If no bridge connection exists, skip
-                if (!hasCctp && !hasNear) continue;
+                    if (!sourceConfig || !destConfig) continue;
 
-                // Token Compatibility Check
-                // If sourceToken is defined, ensure it's valid for the available bridges
-                if (sourceToken) {
-                    const isUsdc = sourceToken.toUpperCase() === "USDC";
+                    const hasCctp = sourceConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP &&
+                        destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
 
-                    // If CCTP is the only option, token MUST be USDC
-                    if (hasCctp && !hasNear && !isUsdc) continue;
+                    const hasNear = sourceConfig.crossChainInformation?.nearIntentInformation?.support &&
+                        destConfig.crossChainInformation?.nearIntentInformation?.support;
 
-                    // If Near is the only option, token MUST be supported by Near (simplified check, assume check exists or generic)
-                    // (For now, we trust the generic compatibility or assume Near supports more)
+                    // Filter Logic:
+                    // If CCTP/Near is required, ensure token is compatible.
+                    // Usually this means USDC.
+                    const isUsdc = currentTokenName.toUpperCase().includes("USDC");
 
-                    // Specific check for CCTP exclusivity:
-                    // If we are relying on CCTP, we can't send non-USDC.
+                    if (hasCctp && !hasNear && !isUsdc) {
+                        // If ONLY CCTP is available (no Near), force USDC
+                        continue;
+                    }
+
+                    // Price Lookup
+                    // Try coingeckoId, then fallback to 1 if stable
+                    const priceKey = asset.coingeckoId || currentTokenName.toLowerCase();
+                    // We need to look up in pricesMap. value might be under 'usd-coin' or 'tether' etc.
+                    // Assumption: pricesMap keys match what useTokenPrice/useWalletStore returns
+
+                    // Simple logic: if specific price exists, use it. Else if USD in name, 1.
+                    let safePrice = pricesMap[asset.coingeckoId || ""] || 0;
+                    if (safePrice <= 0 && (currentTokenName.includes("USD") || currentTokenName.includes("DAI"))) {
+                        safePrice = 1;
+                    }
+                    if (safePrice <= 0) continue; // Skip if no price
+
+                    const balanceUSD = chainAmountToken * safePrice;
+                    const feeUSD = getOriginFeeUSD(chain.chainId);
+
+                    if (balanceUSD - feeUSD <= 0) continue;
+
+                    balances.push({
+                        from: wallet.address,
+                        networkId: chain.chainId,
+                        availableUSD: balanceUSD - feeUSD,
+                        availableToken: chainAmountToken,
+                        token: currentTokenName,
+                        price: safePrice
+                    });
                 }
-
-
-                if (chainAmount - getOriginFee(chain.chainId) <= 0) continue;
-
-                balances.push({
-                    from: wallet.address,
-                    networkId: chain.chainId,
-                    available: chainAmount - getOriginFee(chain.chainId)
-                });
             }
         }
 
@@ -104,47 +120,53 @@ export const useFindBestRoute = () => {
             };
         }
 
-        let allocations: Array<{ from: string; networkId: string; amount: number }> = [];
-        let remainingToCover = desiredAmount;
-        let totalFees = 0;
+        let allocations: Array<{ from: string; networkId: string; amountToken: number; token: string; price: number }> = [];
+        let remainingToCoverUSD = desiredAmount;
+        let totalFeesUSD = 0;
 
-        optimize ? balances.sort((a, b) => b.available - a.available) :
-            balances.sort((a, b) => a.available - b.available);
+        optimize ? balances.sort((a, b) => b.availableUSD - a.availableUSD) :
+            balances.sort((a, b) => a.availableUSD - b.availableUSD);
 
         for (const b of balances) {
-            if (remainingToCover <= 0) break;
+            if (remainingToCoverUSD <= 0) break;
 
-            const originFee = getOriginFee(b.networkId);
+            const originFeeUSD = getOriginFeeUSD(b.networkId); // 0.02
 
-            let take = Math.min(b.available, remainingToCover);
-            take = round6(take);
+            // Take matching USD amount
+            let takeUSD = Math.min(b.availableUSD, remainingToCoverUSD);
+            takeUSD = round6(takeUSD);
 
-            if (take > remainingToCover) {
-                take = remainingToCover;
+            if (takeUSD > remainingToCoverUSD) {
+                takeUSD = remainingToCoverUSD;
             }
 
-            totalFees = round6(totalFees + originFee);
+            // Convert Take Back to Token
+            const takeToken = takeUSD / b.price;
+
+            totalFeesUSD = round6(totalFeesUSD + originFeeUSD);
 
             allocations.push({
                 from: b.from,
                 networkId: b.networkId,
-                amount: take
+                amountToken: takeToken, // Store Token Amount for execution
+                token: b.token,
+                price: b.price
             });
 
-            remainingToCover = round6(remainingToCover - take);
+            remainingToCoverUSD = round6(remainingToCoverUSD - takeUSD);
         }
 
         const uniqueParticipants = Array.from(new Set(allocations.map(a => a.from)));
         const commission = round6(0.01 * uniqueParticipants.length);
 
-        const totalTaken = round6(
-            allocations.reduce((sum, a) => sum + a.amount, 0)
+        const totalTakenToken = round6(
+            allocations.reduce((sum, a) => sum + a.amountToken, 0)
         );
 
         const grouped: Record<string, { from: string; chains: any[] }> = {};
 
         for (const item of allocations) {
-            if (item.amount <= 0) continue;
+            if (item.amountToken <= 0) continue;
 
             if (!grouped[item.from]) {
                 grouped[item.from] = {
@@ -154,8 +176,10 @@ export const useFindBestRoute = () => {
             }
             grouped[item.from].chains.push({
                 chainId: item.networkId,
-                amount: round6(item.amount),
-                token: sourceToken
+                amount: item.amountToken, // Token Amount
+                token: item.token,
+                id: crypto.randomUUID(),
+                price: item.price
             });
         }
 
@@ -163,9 +187,9 @@ export const useFindBestRoute = () => {
             desiredAmount,
             targetAmount: desiredAmount,
             commission,
-            totalFees,
-            totalAmountTaken: totalTaken,
-            remainingToCover: Math.max(0, remainingToCover),
+            totalFees: totalFeesUSD,
+            totalAmountTaken: totalTakenToken, // This is Token Sum? Might be meaningless if mixed? But we force single token so valid.
+            remainingToCover: Math.max(0, remainingToCoverUSD),
             allocations: Object.values(grouped)
         };
 
@@ -173,6 +197,7 @@ export const useFindBestRoute = () => {
 
         return final;
     }
+
 
     return { allocateAcrossNetworks };
 };

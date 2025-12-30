@@ -2,13 +2,14 @@ import { Box, Chip, Stack, Typography } from "@mui/material";
 import ArrowForwardIos from "@mui/icons-material/ArrowForwardIos";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 
-interface ChainInfo {
-    name: string;
-    tokens: number;
-    value: number;
-    color: string; // Hex color
-    tag: string;   // e.g., "EVM", "L2"
-}
+import { ChainInfo } from "@/app/dashboard/types";
+
+// Helper to count tokens
+const getTokenCount = (tokens: ChainInfo["tokens"]) => {
+    if (typeof tokens === "number") return tokens;
+    if (!tokens) return 0;
+    return Object.keys(tokens).length;
+};
 
 interface ChainBadgeListProps {
     chains: ChainInfo[];
@@ -79,7 +80,7 @@ export const ChainBadgeList = ({ chains }: ChainBadgeListProps) => {
                                 variant="body2"
                                 sx={{ fontSize: 12, mt: 0.4, color: "rgba(249,250,251,0.6)" }}
                             >
-                                {chain.tokens} tokens
+                                {getTokenCount(chain.tokens)} tokens
                             </Typography>
                         </Box>
                         <TagChip label={chain.tag} />
