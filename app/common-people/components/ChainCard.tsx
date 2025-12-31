@@ -19,6 +19,7 @@ export interface FormattedBalance {
 
 export interface ChainData {
     id: string;
+    networkKey?: string;
     name: string;
     icon?: ReactNode;
     totalValue: string;

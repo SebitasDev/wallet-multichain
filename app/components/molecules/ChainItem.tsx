@@ -18,7 +18,7 @@ import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
 import { Address } from "abitype";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { NETWORKS } from "@/app/constants/chainsInformation";
-import { ChainKey } from "@/app/types/chain";
+import { ChainKey, Asset } from "@/app/types/chain";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { pricesApi } from "@/app/services/api/prices";
 
@@ -28,7 +28,7 @@ interface IChainItemProps {
 }
 
 // Helper component for individual tokens to handle price hooks
-const TokenItem = ({ asset, balance, price }: { asset: any, balance: number, price?: number | null }) => {
+const TokenItem = ({ asset, balance, price }: { asset: Asset, balance: number, price?: number | null }) => {
     // If price is provided by parent, use it. Otherwise, could fetch, but we want consistency.
     // We'll rely on parent providing it for now to ensure sum matches total.
 
@@ -176,6 +176,18 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
     // Use the dynamic total for display
     const formattedTotalBalance = formatCurrency(dynamicTotal);
 
+    // Sort assets by USD value
+    const sortedItems = useMemo(() => {
+        return config.assets.map(asset => {
+            const balance = Number(tokens[asset.name] || 0);
+            const price = (asset.coingeckoId ? prices[asset.coingeckoId] : null) ?? (asset.name.includes("USD") ? 1 : 0);
+            const usdValue = balance * price;
+            return { asset, balance, price, usdValue };
+        })
+            .sort((a, b) => b.usdValue - a.usdValue);
+    }, [config.assets, tokens, prices]);
+
+
     return (
         <>
             <ListItemButton
@@ -286,22 +298,14 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
             <Collapse in={open} timeout="auto" unmountOnExit>
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: 1.5, backgroundColor: "#f5f5f5" }}>
                     <List disablePadding>
-                        {config.assets
-                            .map(asset => {
-                                const balance = Number(tokens[asset.name] || 0);
-                                const price = (asset.coingeckoId ? prices[asset.coingeckoId] : null) ?? (asset.name.includes("USD") ? 1 : 0);
-                                const usdValue = balance * price;
-                                return { asset, balance, price, usdValue };
-                            })
-                            .sort((a, b) => b.usdValue - a.usdValue)
-                            .map(({ asset, balance, price }) => (
-                                <TokenItem
-                                    key={asset.name}
-                                    asset={asset}
-                                    balance={balance}
-                                    price={price}
-                                />
-                            ))}
+                        {sortedItems.map(({ asset, balance, price }) => (
+                            <TokenItem
+                                key={asset.name}
+                                asset={asset}
+                                balance={balance}
+                                price={price}
+                            />
+                        ))}
                     </List>
                 </Box>
             </Collapse>

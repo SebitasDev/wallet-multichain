@@ -31,7 +31,7 @@ export default function CommonPeopleDashboard() {
                 </Stack>
             </Container>
             <BottomNavigation />
-            <SendMoneyModal />
+            <SendMoneyModal variant="simplified" />
 
             <SimpleReceiveModal
                 open={receiveOpen}

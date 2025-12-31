@@ -6,7 +6,7 @@ import { SendMoneyModalForm } from "./SendMoneyModalForm";
 import { SendMoneyModalRoute } from "./SendMoneyModalRoute";
 import { SendMoneyModalActions } from "./SendMoneyModalActions";
 
-export const SendMoneyModal = () => {
+export const SendMoneyModal = ({ variant = "default" }: { variant?: "default" | "simplified" }) => {
     const {
         sendLoading, control, handleSubmit, errors, handleOnSend, handleOnConfirm,
         canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary, setValue,
@@ -40,7 +40,7 @@ export const SendMoneyModal = () => {
         <Dialog
             open={isOpen}
             onClose={handleClose}
-            maxWidth="sm"
+            maxWidth={variant === "simplified" ? "xs" : "sm"}
             fullWidth
             PaperProps={{
                 sx: {
@@ -55,6 +55,7 @@ export const SendMoneyModal = () => {
             <SendMoneyModalHeader
                 onClose={handleClose}
                 disabled={sendLoading}
+                variant={variant}
             />
 
             <DialogContent sx={{ px: 3, py: 3, background: "#ffffff" }}>
@@ -67,6 +68,7 @@ export const SendMoneyModal = () => {
                         watch={watch}
                         maxSendAmount={maxSendAmount}
                         isExceedingMax={isExceedingMax}
+                        variant={variant}
                     />
                 ) : (
                     <SendMoneyModalRoute

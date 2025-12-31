@@ -44,18 +44,21 @@ export const TopBarProfile = () => {
                     <Avatar
                         id="tour-profile"
                         onClick={handleClick}
-                        src="https://i.postimg.cc/0jx6tjVZ/photo-5033044889268063043-y.jpg"
                         sx={{
                             width: 54,
                             height: 54,
+                            bgcolor: "#008080",
                             border: "2px solid #000000",
                             cursor: "pointer",
+                            fontWeight: 700,
                             transition: "transform 0.2s",
                             "&:hover": {
                                 transform: "scale(1.05)"
                             }
                         }}
-                    />
+                    >
+                        U
+                    </Avatar>
                     <Menu
                         anchorEl={anchorEl}
                         id="account-menu"

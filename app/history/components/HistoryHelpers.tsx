@@ -54,6 +54,8 @@ export const TOKEN_COMPONENTS: Record<string, React.ElementType> = {
     "MON": MonadIcon,
     "GNO": GnosisIcon,
     "EURe": EureIcon,
+    "EURE": EureIcon,
+    "EUR": EureIcon,
     "XDAI": XdaiIcon,
 };
 
@@ -69,6 +71,10 @@ export const ChainLogo = ({ chain }: { chain: string }) => {
 
 export const TokenLogo = ({ token, size = 16 }: { token: string, size?: number }) => {
     const IconComponent = TOKEN_COMPONENTS[token] || TOKEN_COMPONENTS[token.toUpperCase()];
+
+    if (!IconComponent) {
+        console.log("Missing icon for token:", token);
+    }
 
     if (IconComponent) {
         return (
