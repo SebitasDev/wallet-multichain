@@ -1,7 +1,9 @@
 
 import { Box, Typography, Modal, IconButton, Button, Stack } from "@mui/material";
+import { useMemo } from "react";
 import { Close } from "@mui/icons-material";
 import { ChainData } from "./ChainCard";
+import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 
 interface AssetModalProps {
     isOpen: boolean;
@@ -10,7 +12,34 @@ interface AssetModalProps {
 }
 
 export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
+    const { openCrossChain } = useDashboardModalsStore();
+
+    const sortedAssets = useMemo(() => {
+        if (!chain) return [];
+        return [...chain.assets].sort((a, b) => {
+            // Parse balances (remove potential commas, though usually formatting happens later)
+            // Assuming balance is a number string here based on typical usage
+            const balanceA = parseFloat(a.balance.replace(/,/g, ''));
+            const balanceB = parseFloat(b.balance.replace(/,/g, ''));
+            const hasBalanceA = balanceA > 0;
+            const hasBalanceB = balanceB > 0;
+
+            if (hasBalanceA && !hasBalanceB) return -1;
+            if (!hasBalanceA && hasBalanceB) return 1;
+            return 0; // Keep original order if both have balance or both don't
+        });
+    }, [chain]);
+
     if (!chain) return null;
+
+    const handleSwap = () => {
+        openCrossChain({
+            initialSourceChain: chain.networkKey,
+            lockSourceChain: true,
+            initialDestChain: chain.networkKey,
+            lockDestChain: true
+        });
+    };
 
     return (
         <Modal
@@ -122,7 +151,7 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
                     </Typography>
 
                     <Stack spacing={2}>
-                        {chain.assets.map((asset, idx) => (
+                        {sortedAssets.map((asset, idx) => (
                             <Box
                                 key={idx}
                                 sx={{
@@ -213,6 +242,7 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
                             Send
                         </Button>
                         <Button
+                            onClick={handleSwap}
                             fullWidth
                             sx={{
                                 backgroundColor: "#00DC8C",

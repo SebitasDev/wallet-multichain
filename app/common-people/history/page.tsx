@@ -10,6 +10,36 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { TransactionDetailModal } from "./components/TransactionDetailModal";
+import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
+import { UsdtIcon } from "@/app/components/atoms/UsdtIcon";
+import { EthIcon } from "@/app/components/atoms/EthIcon";
+import { BnbIcon } from "@/app/components/atoms/BnbIcon";
+import { AvalancheIcon } from "@/app/components/atoms/AvalancheIcon";
+import PolygonIcon from "@/app/components/atoms/PolygonIcon";
+import ArbIcon from "@/app/components/atoms/ArbIcon";
+import { OPIcon } from "@/app/components/atoms/OPIcon";
+import { StellarIcon } from "@/app/components/atoms/StellarIcon";
+import { WorldChainIcon } from "@/app/components/atoms/WorldChainIcon";
+import { EureIcon } from "@/app/components/atoms/EureIcon";
+
+const CoinIcon = ({ token, size = 20 }: { token: string, size?: number }) => {
+    switch (token.toUpperCase()) {
+        case "USDC": return <UsdcIcon size={size} />;
+        case "USDT": return <UsdtIcon size={size} />;
+        case "ETH": return <EthIcon size={size} />;
+        case "BNB": return <BnbIcon size={size} />;
+        case "AVAX": return <AvalancheIcon size={size} />;
+        case "MATIC":
+        case "POL": return <PolygonIcon size={size} />;
+        case "ARB": return <ArbIcon size={size} />;
+        case "OP": return <OPIcon size={size} />;
+        case "XLM": return <StellarIcon size={size} />;
+        case "WLD": return <WorldChainIcon size={size} />;
+        case "EURE":
+        case "EUR": return <EureIcon size={size} />;
+        default: return null;
+    }
+};
 
 export default function CommonHistoryPage() {
     const router = useRouter();
@@ -220,13 +250,16 @@ export default function CommonHistoryPage() {
                                     </Box>
 
                                     <Box textAlign="right">
-                                        <Typography
-                                            fontWeight={900}
-                                            fontSize={18}
-                                            sx={{ color: tx.type === "RECEIVE" ? "#34d399" : "#fca5a5" }}
-                                        >
-                                            {tx.type === "RECEIVE" ? "+" : "-"}{parseFloat(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.token}
-                                        </Typography>
+                                        <Box display="flex" alignItems="center" justifyContent="flex-end" gap={1}>
+                                            <Typography
+                                                fontWeight={900}
+                                                fontSize={18}
+                                                sx={{ color: tx.type === "RECEIVE" ? "#34d399" : "#fca5a5" }}
+                                            >
+                                                {tx.type === "RECEIVE" ? "+" : "-"}{parseFloat(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.token}
+                                            </Typography>
+                                            <CoinIcon token={tx.token} size={20} />
+                                        </Box>
                                         <Typography fontSize={12} fontWeight="bold" sx={{ opacity: 0.6 }}>
                                             {tx.status}
                                         </Typography>

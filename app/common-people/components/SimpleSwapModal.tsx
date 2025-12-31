@@ -22,19 +22,25 @@ import { SubmitButton } from "@/app/dashboard/components/CrossChainTransferModal
 import { RecipientInput } from "@/app/dashboard/components/CrossChainTransferModal/RecipientInput"; // [NEW]
 import { FacilitatorChainKey } from "@/app/facilitator";
 import { NETWORKS } from "@/app/constants/chainsInformation";
+import { useLocalCurrency } from "@/app/hooks/useLocalCurrency"; // [NEW]
+import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore"; // [NEW]
 
 const SOURCE_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[] = Object.keys(NETWORKS) as (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[];
 const DESTINATION_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[] = [...SOURCE_CHAIN_OPTIONS];
 
 interface SimpleSwapModalProps {
     trigger?: React.ReactElement;
+    initialSourceChain?: FacilitatorChainKey | typeof STELLAR_CHAIN_KEY;
+    lockSourceChain?: boolean;
+    initialDestChain?: FacilitatorChainKey | typeof STELLAR_CHAIN_KEY;
+    lockDestChain?: boolean;
 }
 
-export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
+export const SimpleSwapModal = ({ trigger, initialSourceChain, lockSourceChain, initialDestChain, lockDestChain }: SimpleSwapModalProps) => {
     const {
         open,
         address,
-        isLoading, // combined loading
+        isLoading,
         form: { control, setValue },
         watchAmount,
         watchSourceChain,
@@ -58,24 +64,34 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
         tokenPrice,
         destTokenPrice,
         routeError,
-        error // Generic error
+        error
     } = useCrossChainTransfer();
 
-    // Custom recipient state
+    // [NEW] Read Context Props from Store
+    const { crossChainProps } = useDashboardModalsStore();
+
+    // Determine final props (Store takes precedence over Component props for global consistency)
+    const effectiveInitialSource = crossChainProps.initialSourceChain || initialSourceChain;
+    const effectiveInitialDest = crossChainProps.initialDestChain || initialDestChain;
+    const effectiveLockSource = crossChainProps.lockSourceChain ?? lockSourceChain;
+    const effectiveLockDest = crossChainProps.lockDestChain ?? lockDestChain;
+
+    const { code: localCode, rate: localRate } = useLocalCurrency();
     const [isCustomRecipient, setIsCustomRecipient] = React.useState(false);
 
-    // Auto-fill recipient with self address logic
     useEffect(() => {
         if (!isCustomRecipient && open && address) {
             setValue("recipient", address);
-        } else if (isCustomRecipient && open) {
-            // When switching to custom, maybe clear it or keep it?
-            // Better to clear if it was equal to address, or keep if user typed.
-            // For simplicity, let's just leave it, user can edit.
-            // If checking specifically:
-            // setValue("recipient", ""); // Optional: clear on toggle on
         }
     }, [open, address, setValue, isCustomRecipient]);
+
+    // Handle initial state when opening
+    useEffect(() => {
+        if (open) {
+            if (effectiveInitialSource) setValue("sourceChain", effectiveInitialSource as any);
+            if (effectiveInitialDest) setValue("destChain", effectiveInitialDest as any);
+        }
+    }, [open, effectiveInitialSource, effectiveInitialDest, setValue]);
 
     // Enhanced Submit: Logic to handle Simular -> Submit seamlessly
     // For non-crypto users, "Swap" should just work.
@@ -178,6 +194,7 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                         control={control}
                                         options={SOURCE_CHAIN_OPTIONS}
                                         hideLabel
+                                        disabled={effectiveLockSource}
                                         inputSx={{
                                             bgcolor: "white",
                                             borderRadius: 2,
@@ -214,6 +231,8 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                 token={watchSourceToken}
                                 balance={balance}
                                 tokenPrice={tokenPrice}
+                                localCurrencyCode={localCode}
+                                localCurrencyRate={localRate}
                             />
                         </Box>
 
@@ -276,6 +295,7 @@ export const SimpleSwapModal = ({ trigger }: SimpleSwapModalProps) => {
                                         control={control}
                                         options={DESTINATION_CHAIN_OPTIONS}
                                         hideLabel
+                                        disabled={effectiveLockDest}
                                         inputSx={{
                                             bgcolor: "white",
                                             borderRadius: 2,

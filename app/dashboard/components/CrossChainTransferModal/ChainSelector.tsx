@@ -12,9 +12,10 @@ type ChainSelectorProps = {
     options: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[];
     hideLabel?: boolean;
     inputSx?: SxProps;
+    disabled?: boolean;
 };
 
-export const ChainSelector = ({ label, name, control, options, hideLabel, inputSx }: ChainSelectorProps) => {
+export const ChainSelector = ({ label, name, control, options, hideLabel, inputSx, disabled }: ChainSelectorProps) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -41,6 +42,7 @@ export const ChainSelector = ({ label, name, control, options, hideLabel, inputS
                     <TextField
                         select
                         fullWidth
+                        disabled={disabled}
                         {...field}
                         SelectProps={{
                             renderValue: (selected: unknown) => {
