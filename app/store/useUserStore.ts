@@ -13,8 +13,8 @@ interface UserState {
 export const useUserStore = create<UserState>()(
     persist(
         (set) => ({
-            name: "Tobias",
-            email: "tinsaurralde17@gmail.com",
+            name: "User",
+            email: "user@example.com",
             showBalance: true,
             setName: (name) => set({ name }),
             setEmail: (email) => set({ email }),

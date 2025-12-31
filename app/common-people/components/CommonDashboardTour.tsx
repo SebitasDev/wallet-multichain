@@ -209,7 +209,14 @@ export function CommonDashboardTour() {
 
         if (!seenTour) {
             const timer = setTimeout(() => startTour(), 1000); // Wait a bit for UI to load
-            return () => clearTimeout(timer);
+
+            // Cleanup on unmount
+            return () => {
+                clearTimeout(timer);
+                if (tourRef.current) {
+                    tourRef.current.cancel();
+                }
+            };
         }
     }, []);
 

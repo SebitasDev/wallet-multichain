@@ -1,6 +1,8 @@
 
 "use client";
 
+import { useLanguageStore } from "@/app/store/useLanguageStore"; // [RESTORED]
+
 import { Box, Typography, Avatar, Stack, Switch, IconButton } from "@mui/material";
 import { BottomNavigation } from "../components/BottomNavigation";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -21,6 +23,7 @@ import { FlagIcon } from "./FlagIcon";
 import { FAQModal } from "../components/FAQModal";
 import { LogoutModal } from "../components/LogoutModal";
 import { SupportModal } from "../components/SupportModal";
+import { PasswordModal } from "@/app/dashboard/components/PasswordModal";
 
 // Functional Imports
 
@@ -28,7 +31,9 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { ExportWalletModal } from "@/app/dashboard/components/ExportWalletModal";
 import { decryptSeed } from "@/app/utils/cripto";
-import { useLanguageStore } from "@/app/store/useLanguageStore";
+import { useUserStore } from "@/app/store/useUserStore";
+
+// ... (other imports)
 
 const ProfileOption = ({ icon, label, value, toggle, onClick }: { icon: React.ReactNode, label: string, value?: string, toggle?: boolean, onClick?: () => void }) => {
     return (
@@ -89,13 +94,11 @@ const ProfileOption = ({ icon, label, value, toggle, onClick }: { icon: React.Re
 function ProfileView() {
     const router = useRouter();
     const { language } = useLanguageStore();
-
-    // UI State
-
-
+    const { name } = useUserStore(); // [NEW]
 
     // Backup State
     const [exportModalOpen, setExportModalOpen] = useState(false);
+    const [passwordModalOpen, setPasswordModalOpen] = useState(false); // [NEW]
     const [faqOpen, setFaqOpen] = useState(false);
     const [logoutModalOpen, setLogoutModalOpen] = useState(false);
     const [supportModalOpen, setSupportModalOpen] = useState(false);
@@ -109,7 +112,12 @@ function ProfileView() {
     // Handlers
     const handleBackup = () => {
         if (!wallets.length) return toast.error(language === "es" ? "No hay wallet para respaldar" : "No wallet to backup");
-        if (!currentPassword) return toast.error(language === "es" ? "Sesión no válida, vuelve a ingresar" : "Invalid session, please login again");
+
+        // If no active session, ask for password
+        if (!currentPassword) {
+            setPasswordModalOpen(true);
+            return;
+        }
 
         const wallet = wallets[0]; // Backup primary wallet
         const decrypted = decryptSeed(wallet.encryptedSeed, currentPassword);
@@ -119,6 +127,24 @@ function ProfileView() {
             setExportModalOpen(true);
         } else {
             toast.error(language === "es" ? "Error al desencriptar la frase semilla" : "Error decrypting seed phrase");
+        }
+    };
+
+    const handlePasswordSuccess = () => {
+        setPasswordModalOpen(false);
+
+        // Retrieve fresh password from store
+        const password = useWalletPasswordStore.getState().currentPassword;
+        if (!password) return; // Should not happen if success
+
+        const wallet = wallets[0];
+        const decrypted = decryptSeed(wallet.encryptedSeed, password);
+
+        if (decrypted) {
+            setSeedPhrase(decrypted);
+            setExportModalOpen(true);
+        } else {
+            toast.error(language === "es" ? "Error al desencriptar" : "Error decrypting");
         }
     };
 
@@ -161,10 +187,10 @@ function ProfileView() {
                             fontWeight: 700
                         }}
                     >
-                        T
+                        {name.charAt(0)}
                     </Avatar>
                 </Box>
-                <Typography variant="h5" sx={{ fontWeight: 800 }}>Tobias Insaurralde</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 800 }}>{name}</Typography>
 
 
                 <Box
@@ -232,6 +258,15 @@ function ProfileView() {
                     onClick={handleLogout}
                 />
             </Box>
+
+            <PasswordModal
+                open={passwordModalOpen}
+                mode="unlock"
+                title={language === "es" ? "Ver Frase Semilla" : "View Seed Phrase"}
+                description={language === "es" ? "Ingresa tu contraseña para desencriptar tu frase semilla." : "Enter your password to decrypt your seed phrase."}
+                onSuccess={handlePasswordSuccess}
+                onClose={() => setPasswordModalOpen(false)}
+            />
 
             <ExportWalletModal
                 open={exportModalOpen}
