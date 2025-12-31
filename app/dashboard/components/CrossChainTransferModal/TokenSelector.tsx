@@ -27,10 +27,11 @@ type TokenSelectorProps = {
     allowedTokens?: string[];
     balances?: Record<string, number>;
     defaultValue?: string;
-    value?: string; // [NEW]
+    value?: string;
+    size?: "small" | "medium"; // [NEW]
 };
 
-export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx, onChange, allowedTokens, balances, defaultValue, value }: TokenSelectorProps) => {
+export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx, onChange, allowedTokens, balances, defaultValue, value, size }: TokenSelectorProps) => {
     let assets = getAssetsForChain(chain);
 
     if (allowedTokens && allowedTokens.length > 0) {
@@ -74,6 +75,7 @@ export const TokenSelector = ({ label, name, control, chain, hideLabel, inputSx,
                         <TextField
                             select
                             fullWidth
+                            size={size || "medium"} // [NEW] Use prop or default
                             {...field}
                             onChange={(e) => {
                                 field.onChange(e);

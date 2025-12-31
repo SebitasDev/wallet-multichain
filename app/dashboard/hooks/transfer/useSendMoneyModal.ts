@@ -59,7 +59,7 @@ export const useSendMoneyModal = () => {
     const generalWallet = useSessionWalletStore(state => state.address);
     const wallets = useWalletStore((state) => state.wallets);
     const { xoWallet, mainWallet } = useXOWalletStore();
-    const { setSendModal, isOpen } = useSendMoneyStore();
+    const { setSendModal, isOpen, initialChain, initialToken } = useSendMoneyStore();
     const [routeDetails, setRouteDetails] = useState<RouteDetail[]>([]);
 
     const resolveChain = (chainId: string | number) => {
@@ -163,6 +163,12 @@ export const useSendMoneyModal = () => {
 
     useEffect(() => {
         if (!isOpen) {
+            setSendLoading(false);
+            setRouteReady(false);
+            setRouteSummary(null);
+            setRouteDetails([]);
+
+            // Default reset on close
             reset({
                 toAddress: "",
                 sendAmount: "",
@@ -170,13 +176,24 @@ export const useSendMoneyModal = () => {
                 sendChain: "Base",
                 sourceToken: "USDC"
             });
+        } else {
+            // [NEW] Apply Prefill Data from Store if available
+            if (initialChain || initialToken) {
+                // Determine Source Token logic
+                // If initialToken is provided, use it. Otherwise default to USDC.
+                const prefilledToken = initialToken || "USDC";
+                const prefilledChain = initialChain || "Base";
 
-            setSendLoading(false);
-            setRouteReady(false);
-            setRouteSummary(null);
-            setRouteDetails([]);
+                reset({
+                    toAddress: "",
+                    sendAmount: "",
+                    sendPassword: "",
+                    sendChain: prefilledChain as any,
+                    sourceToken: prefilledToken
+                });
+            }
         }
-    }, [isOpen, reset]);
+    }, [isOpen, reset, initialChain, initialToken]);
 
     const handleOnSend = async (data: SendForm) => {
         const { sendChain, sendAmount, toAddress } = data;

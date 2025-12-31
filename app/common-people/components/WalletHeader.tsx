@@ -437,6 +437,7 @@ export function WalletHeader() {
 
                     <Stack direction="row" spacing={2} mb={3} id="common-actions">
                         <Button
+                            id="common-action-receive"
                             onClick={openReceive}
                             fullWidth
                             className="neobrutalist-button"
@@ -488,6 +489,7 @@ export function WalletHeader() {
                         <SimpleSwapModal
                             trigger={
                                 <Button
+                                    id="common-action-swap"
                                     fullWidth
                                     sx={{
                                         flex: 1,
@@ -537,6 +539,7 @@ export function WalletHeader() {
                         />
 
                         <Button
+                            id="common-action-send"
                             onClick={() => setSendModal(true)}
                             fullWidth
                             sx={{

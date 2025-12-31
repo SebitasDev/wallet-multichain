@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Close } from "@mui/icons-material";
 import { ChainData } from "./ChainCard";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
+import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore"; // [NEW]
 
 interface AssetModalProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface AssetModalProps {
 
 export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
     const { openCrossChain } = useDashboardModalsStore();
+    const { setSendModal } = useSendMoneyStore(); // [NEW]
 
     const sortedAssets = useMemo(() => {
         if (!chain) return [];
@@ -37,8 +39,16 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
             initialSourceChain: chain.networkKey,
             lockSourceChain: true,
             initialDestChain: chain.networkKey,
-            lockDestChain: true
+            lockDestChain: true // Locked per user request
         });
+    };
+
+    // [NEW] Handle Send
+    const handleSend = () => {
+        // Open Send Modal with Current Chain pre-selected
+        // We don't force a token (undefined) so it defaults to USDC or user choice
+        setSendModal(true, chain.networkKey, undefined);
+        onClose(); // Optional: Close this modal to avoid stacking
     };
 
     return (
@@ -221,6 +231,7 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
 
                     <Box mt={4} display="flex" gap={2}>
                         <Button
+                            onClick={handleSend} // [NEW] Attached
                             fullWidth
                             variant="contained"
                             sx={{
@@ -269,7 +280,7 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
                         </Button>
                     </Box>
                 </Box>
-            </Box >
-        </Modal >
+            </Box>
+        </Modal>
     );
 }

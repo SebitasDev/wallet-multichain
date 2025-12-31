@@ -24,6 +24,7 @@ import { FacilitatorChainKey } from "@/app/facilitator";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { useLocalCurrency } from "@/app/hooks/useLocalCurrency"; // [NEW]
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore"; // [NEW]
+import { CommonSwapTour } from "./CommonSwapTour";
 
 const SOURCE_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[] = Object.keys(NETWORKS) as (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[];
 const DESTINATION_CHAIN_OPTIONS: (FacilitatorChainKey | typeof STELLAR_CHAIN_KEY)[] = [...SOURCE_CHAIN_OPTIONS];
@@ -116,6 +117,8 @@ export const SimpleSwapModal = ({ trigger, initialSourceChain, lockSourceChain, 
         }
     };
 
+    const isSingleChain = effectiveLockSource && effectiveLockDest && effectiveInitialSource === effectiveInitialDest;
+
     return (
         <>
             {trigger ? (
@@ -168,6 +171,7 @@ export const SimpleSwapModal = ({ trigger, initialSourceChain, lockSourceChain, 
 
                         {/* FROM SECTION */}
                         <Box
+                            id="swap-source-section"
                             sx={{
                                 p: 1.5,
                                 borderRadius: 3,
@@ -272,6 +276,7 @@ export const SimpleSwapModal = ({ trigger, initialSourceChain, lockSourceChain, 
 
                         {/* TO SECTION */}
                         <Box
+                            id="swap-dest-section"
                             sx={{
                                 p: 1.5,
                                 borderRadius: 3,
@@ -363,6 +368,7 @@ export const SimpleSwapModal = ({ trigger, initialSourceChain, lockSourceChain, 
                         {/* Optional Recipient Toggle */}
                         <Box sx={{ px: 1 }}>
                             <Box
+                                id="swap-recipient-toggle"
                                 display="flex"
                                 alignItems="center"
                                 justifyContent="space-between"
@@ -432,6 +438,7 @@ export const SimpleSwapModal = ({ trigger, initialSourceChain, lockSourceChain, 
 
                         {/* Action Buttons */}
                         <Button
+                            id="swap-submit-btn"
                             onClick={handleAction}
                             disabled={
                                 !watchAmount ||
@@ -479,6 +486,7 @@ export const SimpleSwapModal = ({ trigger, initialSourceChain, lockSourceChain, 
                     </Stack>
                 </DialogContent>
             </Dialog>
+            {open && <CommonSwapTour isSingleChain={isSingleChain} />}
         </>
     );
 };

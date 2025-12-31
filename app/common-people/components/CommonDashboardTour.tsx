@@ -19,12 +19,79 @@ export function CommonDashboardTour() {
     const tourRef = useRef<Tour | null>(null);
 
     // Key to prevent showing the tour multiple times
-    const KEY_COMMON_TOUR = "hasSeenCommonOnboarding_v4";
+    const KEY_COMMON_TOUR = "hasSeenCommonOnboarding_v8";
+
+    // --- CUSTOM STYLES ---
+    const globalStyles = `
+        .shepherd-element {
+            border-radius: 20px !important;
+            background: #ffffff !important;
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05) !important;
+            border: none !important;
+            font-family: 'Inter', system-ui, sans-serif !important;
+            max-width: 380px !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
+        .shepherd-header {
+            background: transparent !important;
+            padding: 24px 24px 0 24px !important;
+            border: none !important;
+        }
+        .shepherd-title {
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+            color: #111 !important;
+            line-height: 1.3 !important;
+            margin: 0 !important;
+        }
+        .shepherd-text {
+            font-size: 0.95rem !important;
+            color: #666 !important;
+            line-height: 1.5 !important;
+            padding: 12px 24px 24px 24px !important;
+        }
+        .shepherd-footer {
+            padding: 0 24px 24px 24px !important;
+            border: none !important;
+            display: flex !important;
+            justify-content: flex-end !important;
+            gap: 12px !important;
+        }
+        .shepherd-button {
+            border-radius: 12px !important;
+            font-weight: 600 !important;
+            font-size: 0.9rem !important;
+            padding: 10px 20px !important;
+            transition: all 0.2s ease !important;
+            margin: 0 !important;
+        }
+        .shepherd-button-primary {
+            background: #111 !important;
+            color: #fff !important;
+        }
+        .shepherd-button-primary:hover {
+            background: #333 !important;
+            transform: translateY(-1px);
+        }
+        .shepherd-button-secondary {
+            background: transparent !important;
+            color: #666 !important;
+        }
+        .shepherd-button-secondary:hover {
+            color: #111 !important;
+            background: #f5f5f5 !important;
+        }
+        .shepherd-arrow:before {
+            background: #ffffff !important;
+        }
+    `;
 
     // --- STEP DEFINITIONS ---
     const getSteps = (tour: Tour) => {
         const next = () => tour.next();
         const back = () => tour.back();
+        const finish = () => tour.complete();
 
         return [
             {
@@ -39,11 +106,11 @@ export function CommonDashboardTour() {
                     });
                 },
                 buttons: [
-                    { classes: "shepherd-button-primary", text: "¡Hola!", action: next },
+                    { classes: "shepherd-button-primary", text: "Empezar", action: next },
                 ],
                 cancelIcon: { enabled: true },
-                title: "👋 ¡Hola! Tu Billetera Fácil",
-                text: "Olvídate de lo complicado. Esta billetera está diseñada para que manejes tu dinero digital tan fácil como enviar un mensaje. Vamos a darte un tour súper rápido.",
+                title: "Tu Billetera, Simplificada",
+                text: "Bienvenido a una nueva forma de manejar tu dinero. Simple, rápido y seguro.",
             },
             {
                 id: "balance",
@@ -52,28 +119,38 @@ export function CommonDashboardTour() {
                     { classes: "shepherd-button-secondary", text: "Atrás", action: back },
                     { classes: "shepherd-button-primary", text: "Siguiente", action: next },
                 ],
-                title: "💰 Tu Dinero Total",
-                text: "Acá ves cuánto dinero tenes disponible.",
+                title: "Tu Balance Total",
+                text: "Todo tu dinero en un solo lugar. Toca para ver el detalle de tus monedas.",
             },
             {
-                id: "expand-balance",
-                attachTo: { element: "#common-expand-btn", on: "top" },
+                id: "receive-action",
+                attachTo: { element: "#common-action-receive", on: "bottom" },
                 buttons: [
                     { classes: "shepherd-button-secondary", text: "Atrás", action: back },
                     { classes: "shepherd-button-primary", text: "Siguiente", action: next },
                 ],
-                title: "🔍 Ver Detalle",
-                text: "Si tocas acá, verás el detalle de tus monedas.",
+                title: "Recibir Dinero",
+                text: "Muestra tu código QR o copia tu dirección para recibir pagos al instante.",
             },
             {
-                id: "actions",
-                attachTo: { element: "#common-actions", on: "top" },
+                id: "swap-action",
+                attachTo: { element: "#common-action-swap", on: "bottom" },
                 buttons: [
                     { classes: "shepherd-button-secondary", text: "Atrás", action: back },
                     { classes: "shepherd-button-primary", text: "Siguiente", action: next },
                 ],
-                title: "✨ Tus 3 Botones Mágicos",
-                text: "Aquí sucede la magia:\n• <b>Recibir:</b> Muestra tu código para que te depositen dinero.\n• <b>Swap:</b> Cambia una moneda por otra al instante.\n• <b>Enviar:</b> Págale a un amigo o manda plata a otra cuenta.",
+                title: "Cambio Rápido",
+                text: "Cambia entre monedas en segundos. De Pesos a Dólares, sin complicaciones.",
+            },
+            {
+                id: "send-action",
+                attachTo: { element: "#common-action-send", on: "bottom" },
+                buttons: [
+                    { classes: "shepherd-button-secondary", text: "Atrás", action: back },
+                    { classes: "shepherd-button-primary", text: "Siguiente", action: next },
+                ],
+                title: "Enviar Dinero",
+                text: "Envía dinero a amigos o comercios. Rápido y con bajas comisiones.",
             },
             {
                 id: "transactions",
@@ -82,18 +159,18 @@ export function CommonDashboardTour() {
                     { classes: "shepherd-button-secondary", text: "Atrás", action: back },
                     { classes: "shepherd-button-primary", text: "Siguiente", action: next },
                 ],
-                title: "📅 Tus Movimientos",
-                text: "Aquí verás todo lo que entra y sale. Si alguien te paga, aparecerá aquí enseguida. Si compras algo, también. ¡Control total!",
+                title: "Tus Movimientos",
+                text: "Mantén el control. Revisa en tiempo real todo lo que entra y sale.",
             },
             {
                 id: "navigation",
                 attachTo: { element: "#common-navigation", on: "right" },
                 buttons: [
                     { classes: "shepherd-button-secondary", text: "Atrás", action: back },
-                    { classes: "shepherd-button-primary", text: "¡Listo!", action: next },
+                    { classes: "shepherd-button-primary", text: "Listo", action: finish },
                 ],
-                title: "🧭 Menú Principal",
-                text: "Usa este menú para ver tus Tarjetas, pagar servicios o salir de la cuenta. ¡Eso es todo! Ya estás listo para usar tu dinero libremente.",
+                title: "Más Opciones",
+                text: "Accede a tus tarjetas, configuración y más desde este menú.",
             }
         ];
     };
@@ -136,5 +213,7 @@ export function CommonDashboardTour() {
         }
     }, []);
 
-    return null;
+    return (
+        <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
+    );
 }
