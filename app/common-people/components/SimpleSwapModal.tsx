@@ -156,13 +156,18 @@ export const SimpleSwapModal = ({ trigger, initialSourceChain, lockSourceChain, 
                     </Typography>
                     <IconButton
                         onClick={closeModal}
-                        size="small"
                         sx={{
-                            color: "black",
-                            "&:hover": { bgcolor: "#f5f5f5" }
+                            backgroundColor: "#f3f4f6",
+                            borderRadius: "12px",
+                            p: 1,
+                            transition: "all 0.2s",
+                            "&:hover": {
+                                backgroundColor: "#e5e7eb",
+                                transform: "rotate(90deg)"
+                            },
                         }}
                     >
-                        <Close />
+                        <Close sx={{ fontSize: 20, color: "black" }} />
                     </IconButton>
                 </Box>
 

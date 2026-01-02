@@ -54,7 +54,20 @@ export function SupportModal({ open, onClose }: SupportModalProps) {
             <Box sx={style}>
                 {/* Header */}
                 <Box sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <IconButton onClick={onClose} sx={{ color: "white" }}>
+                    <IconButton
+                        onClick={onClose}
+                        sx={{
+                            color: "white",
+                            background: "rgba(255,255,255,0.1)",
+                            borderRadius: "12px",
+                            p: 1,
+                            transition: "all 0.2s",
+                            "&:hover": {
+                                background: "rgba(255,255,255,0.2)",
+                                transform: "rotate(90deg)"
+                            }
+                        }}
+                    >
                         <CloseIcon />
                     </IconButton>
                     <Typography variant="h6" fontWeight={700}>

@@ -64,9 +64,12 @@ export const SendMoneyModalHeader = ({ onClose, disabled, variant }: SendMoneyMo
                 sx={{
                     color: "white",
                     background: "rgba(255,255,255,0.1)",
-                    borderRadius: 2,
+                    borderRadius: "12px",
+                    p: 1,
+                    transition: "all 0.2s",
                     "&:hover": {
                         background: "rgba(255,255,255,0.2)",
+                        transform: "rotate(90deg)"
                     },
                     "&:disabled": {
                         color: "rgba(255,255,255,0.3)",
@@ -75,6 +78,6 @@ export const SendMoneyModalHeader = ({ onClose, disabled, variant }: SendMoneyMo
             >
                 <CloseIcon />
             </IconButton>
-        </Box>
+        </Box >
     );
 };

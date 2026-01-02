@@ -16,6 +16,9 @@ export const useRouteValidation = (sourceChain: string, destChain: string, sourc
 
         if (!sourceConfig || !destConfig) return null;
 
+        // Same Chain = valid route (Native/ERC20 transfer)
+        if (sourceChain === destChain) return null;
+
         const isSourceNonEvm = !!sourceConfig.nonEvm;
         const isDestNonEvm = !!destConfig.nonEvm;
 

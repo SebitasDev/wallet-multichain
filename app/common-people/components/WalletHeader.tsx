@@ -375,8 +375,12 @@ export function WalletHeader() {
                             </Box>
 
                             {/* Currency Toggle Button */}
+                            {/* Currency Toggle Button */}
                             <Box
-                                onClick={toggleCurrency}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleCurrency();
+                                }}
                                 sx={{
                                     display: "flex",
                                     alignItems: "center",
@@ -393,7 +397,7 @@ export function WalletHeader() {
                             >
                                 <Loop sx={{ fontSize: 16 }} />
                                 <Typography fontSize={12} fontWeight="bold">
-                                    {useLocal ? "USD" : localCode}
+                                    {useLocal ? "USD" : (localCode || "ARS")}
                                 </Typography>
                             </Box>
                         </Box>

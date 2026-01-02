@@ -38,7 +38,14 @@ export const PasswordModalHeader = ({ mode, title, description, onClose }: Passw
                         top: -10,
                         right: 0,
                         color: "white",
-                        "&:hover": { color: "#ccc" }
+                        background: "rgba(255,255,255,0.1)",
+                        borderRadius: "12px",
+                        p: 1,
+                        transition: "all 0.2s",
+                        "&:hover": {
+                            background: "rgba(255,255,255,0.2)",
+                            transform: "rotate(90deg)"
+                        }
                     }}
                 >
                     <CloseIcon />

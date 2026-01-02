@@ -103,11 +103,15 @@ export const TransactionDetailModal = ({ open, onClose, transaction }: Transacti
                         position: "absolute",
                         top: 16,
                         right: 16,
-                        color: "rgba(255,255,255,0.5)",
+                        color: "white",
+                        background: "rgba(255,255,255,0.1)",
+                        borderRadius: "12px",
+                        p: 1,
+                        transition: "all 0.2s",
                         display: { xs: "none", md: "inline-flex" },
                         "&:hover": {
-                            color: "white",
-                            backgroundColor: "rgba(255,255,255,0.1)"
+                            background: "rgba(255,255,255,0.2)",
+                            transform: "rotate(90deg)"
                         }
                     }}
                 >

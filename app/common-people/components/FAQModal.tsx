@@ -68,8 +68,20 @@ export function FAQModal({ open, onClose }: FAQModalProps) {
                     <Typography id="faq-modal-title" variant="h5" component="h2" fontWeight={900}>
                         {language === "es" ? "Preguntas Frecuentes" : "FAQ"}
                     </Typography>
-                    <IconButton onClick={onClose}>
-                        <CloseIcon />
+                    <IconButton
+                        onClick={onClose}
+                        sx={{
+                            backgroundColor: "#f3f4f6",
+                            borderRadius: "12px",
+                            p: 1,
+                            transition: "all 0.2s",
+                            "&:hover": {
+                                backgroundColor: "#e5e7eb",
+                                transform: "rotate(90deg)"
+                            },
+                        }}
+                    >
+                        <CloseIcon sx={{ fontSize: 20, color: "black" }} />
                     </IconButton>
                 </Box>
 

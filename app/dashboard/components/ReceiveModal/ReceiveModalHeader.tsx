@@ -50,9 +50,12 @@ export const ReceiveModalHeader = ({ onClose }: ReceiveModalHeaderProps) => {
                 sx={{
                     color: "white",
                     background: "rgba(255,255,255,0.1)",
-                    borderRadius: 2,
+                    borderRadius: "12px",
+                    p: 1,
+                    transition: "all 0.2s",
                     "&:hover": {
                         background: "rgba(255,255,255,0.2)",
+                        transform: "rotate(90deg)"
                     }
                 }}
             >

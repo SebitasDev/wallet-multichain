@@ -110,17 +110,17 @@ export function SimpleReceiveModal({ open, onClose, wallet }: SimpleReceiveModal
                 <IconButton
                     onClick={onClose}
                     sx={{
-                        backgroundColor: "white",
-                        border: "3px solid #000000",
-                        borderRadius: 2,
-                        p: 0.5,
+                        backgroundColor: "#f3f4f6",
+                        borderRadius: "12px",
+                        p: 1,
+                        transition: "all 0.2s",
                         "&:hover": {
-                            backgroundColor: "#fef2f2",
-                            borderColor: "#ef4444",
+                            backgroundColor: "#e5e7eb",
+                            transform: "rotate(90deg)"
                         },
                     }}
                 >
-                    <Close sx={{ fontSize: 24, color: "black", strokeWidth: 3 }} />
+                    <Close sx={{ fontSize: 24, color: "black" }} />
                 </IconButton>
             </Box>
 

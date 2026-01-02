@@ -47,7 +47,7 @@ export function AssetModal({ isOpen, onClose, chain }: AssetModalProps) {
     const handleSend = () => {
         // Open Send Modal with Current Chain pre-selected
         // We don't force a token (undefined) so it defaults to USDC or user choice
-        setSendModal(true, chain.networkKey, undefined);
+        setSendModal(true, chain.networkKey, undefined, true);
         onClose(); // Optional: Close this modal to avoid stacking
     };
 
