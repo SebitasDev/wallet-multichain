@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Box, Typography, Button, Switch, Stack, Collapse } from "@mui/material";
 import { ArrowDownward, ArrowUpward, Login, ExpandMore, ExpandLess, Visibility, VisibilityOff } from "@mui/icons-material";
 import { ChainGrid } from "./ChainGrid";
@@ -107,40 +107,66 @@ export function WalletHeader() {
 
     // Template for static data (icons, colors, ids)
     const staticChainsData = [
-        { id: "base", name: "Base", icon: BASE.icon, color: "#0052FF", configAssets: BASE.assets },
-        { id: "optimism", name: "Optimism", icon: OPTIMISM.icon, color: "#FF0420", configAssets: OPTIMISM.assets },
-        { id: "arbitrum", name: "Arbitrum", icon: ARBITRUM.icon, color: "#12AAFF", configAssets: ARBITRUM.assets },
-        { id: "gnosis", name: "Gnosis", icon: GNOSIS.icon, color: "#04795B", configAssets: GNOSIS.assets }, // [MOVED UP]
-        { id: "polygon", name: "Polygon", icon: POLYGON.icon, color: "#8247E5", configAssets: POLYGON.assets },
-        { id: "avalanche", name: "Avalanche", icon: AVALANCHE.icon, color: "#E84142", configAssets: AVALANCHE.assets },
-        { id: "bnb", name: "BNB Chain", icon: BNB.icon, color: "#F3BA2F", configAssets: BNB.assets },
-        { id: "unichain", name: "Unichain", icon: UNICHAIN.icon, color: "#FF007A", configAssets: UNICHAIN.assets },
-        { id: "worldchain", name: "World Chain", icon: WORLD_CHAIN.icon, color: "#000000", configAssets: WORLD_CHAIN.assets },
-        { id: "monad", name: "Monad", icon: Monad.icon, color: "#836EF9", configAssets: Monad.assets },
-        { id: "stellar", name: "Stellar", icon: STELLAR.icon, color: "#3E1B3C", configAssets: STELLAR.assets },
+        { id: "base", networkKey: "Base", name: "Base", icon: BASE.icon, color: "#0052FF", configAssets: BASE.assets },
+        { id: "optimism", networkKey: "Optimism", name: "Optimism", icon: OPTIMISM.icon, color: "#FF0420", configAssets: OPTIMISM.assets },
+        { id: "arbitrum", networkKey: "Arbitrum", name: "Arbitrum", icon: ARBITRUM.icon, color: "#12AAFF", configAssets: ARBITRUM.assets },
+        { id: "gnosis", networkKey: "GNOSIS", name: "Gnosis", icon: GNOSIS.icon, color: "#04795B", configAssets: GNOSIS.assets }, // [MOVED UP]
+        { id: "polygon", networkKey: "Polygon", name: "Polygon", icon: POLYGON.icon, color: "#8247E5", configAssets: POLYGON.assets },
+        { id: "avalanche", networkKey: "Avalanche", name: "Avalanche", icon: AVALANCHE.icon, color: "#E84142", configAssets: AVALANCHE.assets },
+        { id: "bnb", networkKey: "BNB", name: "BNB Chain", icon: BNB.icon, color: "#F3BA2F", configAssets: BNB.assets },
+        { id: "unichain", networkKey: "Unichain", name: "Unichain", icon: UNICHAIN.icon, color: "#FF007A", configAssets: UNICHAIN.assets },
+        { id: "worldchain", networkKey: "WorldChain", name: "World Chain", icon: WORLD_CHAIN.icon, color: "#000000", configAssets: WORLD_CHAIN.assets },
+        { id: "monad", networkKey: "Monad", name: "Monad", icon: Monad.icon, color: "#836EF9", configAssets: Monad.assets },
+        { id: "stellar", networkKey: "Stellar", name: "Stellar", icon: STELLAR.icon, color: "#3E1B3C", configAssets: STELLAR.assets },
     ];
 
-    // Helper to format balance: max 6 decimals, no rounding (truncation)
+    // [NEW] Token Prices Logic
+    const [tokenPrices, setTokenPrices] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        const fetchPrices = async () => {
+            const allIds = Array.from(new Set(staticChainsData.flatMap(c => c.configAssets.map(a => a.coingeckoId)).filter(Boolean)));
+            if (allIds.length === 0) return;
+
+            try {
+                // Determine API based on usage - import dynamically or assuming 'pricesApi' available via import
+                const { pricesApi } = await import("@/app/services/api");
+                const data = await pricesApi.getPrices(allIds as string[]);
+
+                const prices: Record<string, number> = {};
+                allIds.forEach(id => {
+                    if (data[id as string]?.usd) {
+                        prices[id as string] = data[id as string].usd;
+                    }
+                });
+                setTokenPrices(prices);
+            } catch (error) {
+                console.error("Failed to fetch token prices for wallet header:", error);
+            }
+        };
+        fetchPrices();
+    }, []); // Run once on mount
+
+    // Helper to format balance: max 8 decimals for small numbers, 6 for others
     const formatBalance = (num: number) => {
         if (!num) return "0.00";
-        // Convert to fixed string with high precision to avoid scientific notation
-        const fixed = num.toFixed(10);
-        // extract integer and up to 6 decimals
+        // Convert to fixed string with high precision
+        const fixed = num.toFixed(12);
         const [int, dec] = fixed.split('.');
-        const truncatedDec = dec.slice(0, 6);
-        // reconstruct
+
+        // If number is small (integer is 0), show up to 8 decimals to capture value
+        // If number is large, 6 decimals is usually enough
+        const maxDecimals = parseInt(int) === 0 ? 8 : 6;
+
+        let truncatedDec = dec.slice(0, maxDecimals);
         let val = `${int}.${truncatedDec}`;
-        // Remove trailing zeros, but keep at least two decimals if it was a float? 
-        // User wants "max 6". "0.14" is 2. "0.141234" is 6.
-        // If result is 0.140000 -> 0.14
+
+        // Remove trailing zeros
         val = val.replace(/0+$/, '').replace(/\.$/, '');
-        // Ensure "0.00" style for zero? Or just allow "0"? 
-        // Screenshot shows "0.00".
+
+        // Ensure "0.00" style if it became empty or zero, but if we have small decimals we keep them
         if (val === "0" || val === "") return "0.00";
-        // If it looks like "0.1", maybe "0.10" is better?
-        // Let's stick to strict truncation + cleanup. 
-        // If the user wants 2 decimals minimum, we might need check.
-        // Assuming "0.14" suffices.
+
         return val;
     };
 
@@ -167,6 +193,7 @@ export function WalletHeader() {
         const totalAmount = walletChain ? walletChain.amount : 0;
 
         // Convert to local currency for totalValue string fallback/calculation if needed elsewhere
+        // Note: walletChain.amount is ALREADY in USD (calculated by store), so we don't multiply by price again, just rate.
         const finalValue = (isLocal && !loading) ? totalAmount * currencyRate : totalAmount;
 
         // Helper to format any amount
@@ -196,6 +223,7 @@ export function WalletHeader() {
 
         return {
             id: chainMetadata.id,
+            networkKey: chainMetadata.networkKey,
             name: chainMetadata.name,
             icon: chainMetadata.icon,
             totalValue: formatBalance(finalValue),
@@ -203,11 +231,19 @@ export function WalletHeader() {
             color: chainMetadata.color,
             assets: chainMetadata.configAssets.map(asset => {
                 const tokenBal = walletChain && walletChain.tokens ? (walletChain.tokens[asset.name] || 0) : 0;
+
+                // [FIX] Calculate USD Value of the specific token
+                const price = tokenPrices[asset.coingeckoId || ""] || (["USDC", "USDT", "DAI"].includes(asset.name) ? 1 : 0);
+                // If price is 0 and it's not stable, we might show 0 USD value.
+                // Assuming stable defaults to 1 if fetch fails or pending.
+
+                const usdValue = tokenBal * price;
+
                 return {
                     symbol: asset.name,
-                    balance: formatBalance(tokenBal),
-                    value: `$${formatBalance(tokenBal)}`,
-                    formattedValue: getFormattedParts(tokenBal),
+                    balance: formatBalance(tokenBal), // Show RAW token balance here (e.g. 0.46 POL)
+                    value: `$${formatBalance(usdValue)}`, // Fallback value string (USD)
+                    formattedValue: getFormattedParts(usdValue), // formattedValue used for main display (USD or Local)
                     icon: asset.icon
                 };
             })
@@ -401,6 +437,7 @@ export function WalletHeader() {
 
                     <Stack direction="row" spacing={2} mb={3} id="common-actions">
                         <Button
+                            id="common-action-receive"
                             onClick={openReceive}
                             fullWidth
                             className="neobrutalist-button"
@@ -452,6 +489,7 @@ export function WalletHeader() {
                         <SimpleSwapModal
                             trigger={
                                 <Button
+                                    id="common-action-swap"
                                     fullWidth
                                     sx={{
                                         flex: 1,
@@ -501,6 +539,7 @@ export function WalletHeader() {
                         />
 
                         <Button
+                            id="common-action-send"
                             onClick={() => setSendModal(true)}
                             fullWidth
                             sx={{

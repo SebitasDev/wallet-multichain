@@ -6,9 +6,10 @@ import { useLanguageStore } from "@/app/store/useLanguageStore";
 interface SendMoneyModalHeaderProps {
     onClose: () => void;
     disabled: boolean;
+    variant: "default" | "simplified";
 }
 
-export const SendMoneyModalHeader = ({ onClose, disabled }: SendMoneyModalHeaderProps) => {
+export const SendMoneyModalHeader = ({ onClose, disabled, variant }: SendMoneyModalHeaderProps) => {
     const { language } = useLanguageStore();
 
     return (
@@ -44,9 +45,15 @@ export const SendMoneyModalHeader = ({ onClose, disabled }: SendMoneyModalHeader
                     {language === "es" ? "Enviar fondos" : "Send Funds"}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.8, fontSize: 13 }}>
-                    {language === "es"
-                        ? "Elige la red de destino e ingresa dirección, monto y contraseña."
-                        : "Choose the destination network and enter address, amount, and password."}
+                    {variant === "simplified" ? (
+                        language === "es"
+                            ? "Elige red de destino, moneda, dirección y monto."
+                            : "Choose destination network, token, address and amount."
+                    ) : (
+                        language === "es"
+                            ? "Elige la red de destino e ingresa dirección, monto y contraseña."
+                            : "Choose the destination network and enter address, amount, and password."
+                    )}
                 </Typography>
             </Box>
 

@@ -12,6 +12,7 @@ import ArbIcon from "@/app/components/atoms/ArbIcon";
 import { OPIcon } from "@/app/components/atoms/OPIcon";
 import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { WorldChainIcon } from "@/app/components/atoms/WorldChainIcon";
+import { EureIcon } from "@/app/components/atoms/EureIcon"; // [NEW]
 import { useLanguageStore } from "@/app/store/useLanguageStore";
 import { useRouter } from "next/navigation";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
@@ -22,7 +23,7 @@ import { es } from "date-fns/locale";
 import { TransactionDetailModal } from "../history/components/TransactionDetailModal";
 
 const CoinIcon = ({ token, size = 20 }: { token: string, size?: number }) => {
-    switch (token.toUpperCase()) {
+    switch (token.trim().toUpperCase()) {
         case "USDC": return <UsdcIcon size={size} />;
         case "USDT": return <UsdtIcon size={size} />;
         case "ETH": return <EthIcon size={size} />;
@@ -34,6 +35,8 @@ const CoinIcon = ({ token, size = 20 }: { token: string, size?: number }) => {
         case "OP": return <OPIcon size={size} />;
         case "XLM": return <StellarIcon size={size} />;
         case "WLD": return <WorldChainIcon size={size} />;
+        case "EURE":
+        case "EUR": return <EureIcon size={size} />; // [NEW]
         default: return null;
     }
 };

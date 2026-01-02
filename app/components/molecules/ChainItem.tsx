@@ -176,6 +176,21 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
     // Use the dynamic total for display
     const formattedTotalBalance = formatCurrency(dynamicTotal);
 
+    // Sort assets: tokens with balance first, then others. Preserving original order within groups.
+    const sortedAssets = useMemo(() => {
+        return [...config.assets].sort((a, b) => {
+            const balanceA = tokens[a.name] || 0;
+            const balanceB = tokens[b.name] || 0;
+            const hasBalanceA = balanceA > 0;
+            const hasBalanceB = balanceB > 0;
+
+            if (hasBalanceA && !hasBalanceB) return -1;
+            if (!hasBalanceA && hasBalanceB) return 1;
+            return 0;
+        });
+    }, [config.assets, tokens]);
+
+
     return (
         <>
             <ListItemButton
@@ -286,22 +301,14 @@ export default function ChainItem({ address, chainKey }: IChainItemProps) {
             <Collapse in={open} timeout="auto" unmountOnExit>
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: 1.5, backgroundColor: "#f5f5f5" }}>
                     <List disablePadding>
-                        {config.assets
-                            .map(asset => {
-                                const balance = Number(tokens[asset.name] || 0);
-                                const price = (asset.coingeckoId ? prices[asset.coingeckoId] : null) ?? (asset.name.includes("USD") ? 1 : 0);
-                                const usdValue = balance * price;
-                                return { asset, balance, price, usdValue };
-                            })
-                            .sort((a, b) => b.usdValue - a.usdValue)
-                            .map(({ asset, balance, price }) => (
-                                <TokenItem
-                                    key={asset.name}
-                                    asset={asset}
-                                    balance={balance}
-                                    price={price}
-                                />
-                            ))}
+                        {sortedAssets.map((asset) => (
+                            <TokenItem
+                                key={asset.name}
+                                asset={asset}
+                                balance={Number(tokens[asset.name] || 0)}
+                                price={asset.coingeckoId ? prices[asset.coingeckoId] : (asset.name.includes("USD") ? 1 : 0)}
+                            />
+                        ))}
                     </List>
                 </Box>
             </Collapse>
