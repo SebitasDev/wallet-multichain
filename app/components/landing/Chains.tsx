@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Container, Typography, keyframes } from "@mui/material";
-import { Language, translate, chains, sectionTitles } from "@/app/landing-translations";
+import { Language, chains, sectionTitles } from "@/app/landing-translations";
 import { SectionTitle } from "./SectionTitle";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
@@ -15,9 +15,10 @@ export function Chains({ lang }: { lang: Language }) {
     const getAssetsForChain = (chainName: string) => {
         // Map display name to NETWORKS key if needed, or assume they match
         // keys in NETWORKS: Optimism, Arbitrum, Base, Unichain, Polygon, Avalanche, WorldChain, Stellar, Monad, BNB
-        const key = chainName.split(" ").join("") as ChainKey; // "World Chain" -> "WorldChain"
+        let key = chainName.split(" ").join(""); // "World Chain" -> "WorldChain"
+        if (key === "Gnosis") key = "GNOSIS";
         // Handle explicit mismatches if any
-        const config = NETWORKS[key] || NETWORKS[chainName as ChainKey];
+        const config = NETWORKS[key as ChainKey] || NETWORKS[chainName as ChainKey];
         return config?.assets || [];
     };
 

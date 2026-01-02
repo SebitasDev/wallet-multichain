@@ -46,7 +46,8 @@ const processBatch = async () => {
     if (idsToFetch.length > 0) {
         try {
             // console.log("Batching API call for:", idsToFetch);
-            const response = await axios.get(`${COINGECKO_API_URL}/simple/price`, {
+            // Use local proxy to avoid CORS
+            const response = await axios.get("/api/prices", {
                 params: {
                     ids: idsToFetch.join(","),
                     vs_currencies: "usd"
