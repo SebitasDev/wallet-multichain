@@ -18,6 +18,13 @@ export const OPTIMISM: ChainConfig = {
             coingeckoId: "usd-coin"
         },
         {
+            name: "WETH",
+            decimals: 18,
+            address: "0x4200000000000000000000000000000000000006" as Address,
+            icon: <EthIcon />,
+            coingeckoId: "ethereum"
+        },
+        {
             name: "USDT",
             decimals: 6,
             address: (isDevelopment ? "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58" : "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58") as Address,

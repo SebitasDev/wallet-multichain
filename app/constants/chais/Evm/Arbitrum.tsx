@@ -18,6 +18,13 @@ export const ARBITRUM: ChainConfig = {
             coingeckoId: "usd-coin"
         },
         {
+            name: "WETH",
+            decimals: 18,
+            address: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1" as Address,
+            icon: <EthIcon />,
+            coingeckoId: "ethereum"
+        },
+        {
             name: "USDT",
             decimals: 6,
             address: (isDevelopment ? "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9" : "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9") as Address,

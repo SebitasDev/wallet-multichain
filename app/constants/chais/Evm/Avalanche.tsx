@@ -4,6 +4,7 @@ import { Address } from "abitype";
 import { ChainConfig } from "@/app/types/chain";
 import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
 import { UsdtIcon } from "@/app/components/atoms/UsdtIcon";
+import { EthIcon } from "@/app/components/atoms/EthIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
@@ -15,6 +16,13 @@ export const AVALANCHE: ChainConfig = {
             address: (isDevelopment ? "0x5425890298aed601595a70AB815c96711a31Bc65" : "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E") as Address,
             icon: <UsdcIcon />,
             coingeckoId: "usd-coin"
+        },
+        {
+            name: "WETH",
+            decimals: 18,
+            address: "0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB" as Address,
+            icon: <EthIcon />,
+            coingeckoId: "ethereum"
         },
         {
             name: "AVAX",

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { Address } from "abitype";
 import { NETWORKS } from "@/app/constants/chainsInformation";
@@ -7,7 +8,9 @@ import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 
 export const STELLAR_CHAIN_KEY = "Stellar";
 
-export const useMaxTransferAmount = (
+// CLONE of useMaxTransferAmount aimed at Common People
+// DIFFERENCE: Removes artificial 0.01 fee for Intra-Chain transfers to allow full balance withdrawal.
+export const useCommonMaxTransferAmount = (
     address: string | undefined | null,
     sourceChain: string,
     destChain: string,
@@ -20,17 +23,21 @@ export const useMaxTransferAmount = (
     const [balance, setBalance] = useState(0);
 
     // Calculate expected fee for Max calc (independent of amount entered)
-    // Calculate expected fee for Max calc (independent of amount entered)
-    // Calculate expected fee for Max calc (independent of amount entered)
     const expectedFee = useMemo(() => {
-        if (process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development") return 0;
+        // ALWAYS return 0 for Common People Intra-Chain to allow full usage.
+        // We assume Gas is paid in Native Token (MATIC/ETH) so USDC max = USDC balance.
+        // For Cross-Chain, we keep the default 0.02 safety or similar, 
+        // OR we can make it 0 if we rely on backend accurate quotes.
+        // Let's keep strict behavior specifically for "Same Chain".
 
-        let feeVal = 0.02; // Default Cross-chain
         if (sourceChain === destChain) {
-            feeVal = sourceToken !== destToken ? 0.02 : 0.01;
+            return 0; // ZERO FEE for Intra-Chain
         }
-        return feeVal;
-    }, [sourceChain, destChain, sourceToken, destToken]);
+
+        // Cross-Chain logic (Keep original behavior or relax it?)
+        // Original was 0.02. Let's keep 0.02 for Cross-Chain safety buffer.
+        return 0.02;
+    }, [sourceChain, destChain]);
 
     useEffect(() => {
         let isMounted = true;
@@ -166,6 +173,15 @@ export const useMaxTransferAmount = (
                     const isNative = tokenAddress === "0x0000000000000000000000000000000000000000";
 
                     let GAS_BUFFER = 0;
+
+                    // Logic: 
+                    // 1. Intra-Chain ERC20 (USDC) -> Fee = 0.
+                    // 2. Intra-Chain Native (POL/ETH) -> Fee = Gas Cost (21000 * GasPrice).
+                    // 3. Cross-Chain -> Fee = 0.02 (Standard).
+
+                    // Override expectedFee for Native Intra-Chain
+                    const effectiveFee = (sourceChain === destChain && isNative) ? 0 : expectedFee;
+
                     if (isNative) {
                         try {
                             const { createPublicClient, http, formatEther } = await import("viem");
@@ -176,18 +192,13 @@ export const useMaxTransferAmount = (
                             });
 
                             const gasPrice = await publicClient.getGasPrice();
-                            // Estimate transfer to Facilitator
-                            // 0 value is safest for pure gas estimation of the call.
-                            const FACILITATOR_ADDR = "0xa08979ba1aac1c19dc659817c295c77018533a97";
+                            // Standard transfer gas limit
+                            const GAS_LIMIT = BigInt(21000);
 
-                            const gasEstimate = await publicClient.estimateGas({
-                                account: address as Address,
-                                to: FACILITATOR_ADDR as Address,
-                                value: BigInt(0)
-                            });
+                            const gasCost = GAS_LIMIT * gasPrice;
 
-                            const gasCost = gasEstimate * gasPrice;
-                            const gasCostWithBuffer = (gasCost * BigInt(110)) / BigInt(100); // +10%
+                            // Buffer: +10% to be safe
+                            const gasCostWithBuffer = (gasCost * BigInt(110)) / BigInt(100);
 
                             GAS_BUFFER = parseFloat(formatEther(gasCostWithBuffer));
                         } catch (e) {
@@ -196,7 +207,15 @@ export const useMaxTransferAmount = (
                         }
                     }
 
-                    const max = numBalance - expectedFee - GAS_BUFFER;
+                    // For Native: Max = Balance - GasBuffer (Effective Fee is 0 if we count gas buffer as the fee)
+                    // For ERC20: Max = Balance - EffectiveFee (0 for intra-chain)
+
+                    // If isNative, we subtract GAS_BUFFER.
+                    // If !isNative, we subtract effectiveFee.
+
+                    const max = isNative
+                        ? numBalance - GAS_BUFFER
+                        : numBalance - effectiveFee;
 
                     if (isMounted) {
                         setBalance(numBalance);

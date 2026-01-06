@@ -5,7 +5,7 @@ import { WalletHeader } from "../components/WalletHeader";
 import { TransactionHistory } from "../components/TransactionHistory";
 
 import { BottomNavigation } from "../components/BottomNavigation";
-import { SendMoneyModal } from "@/app/dashboard/components/SendMoneyModal";
+import { CommonSendModalsContainer } from "../components/CommonSendModalsContainer";
 import { SimpleReceiveModal } from "../components/SimpleReceiveModal";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
@@ -31,11 +31,10 @@ export default function CommonPeopleDashboard() {
                 </Stack>
             </Container>
             <BottomNavigation />
-            <SendMoneyModal variant="simplified" />
+            <CommonSendModalsContainer />
 
             <SimpleReceiveModal
                 open={receiveOpen}
-                wallet={wallets[0]}
                 onClose={closeReceive}
             />
             <CommonDashboardTour />

@@ -5,6 +5,7 @@ import { Address } from "abitype";
 import { ChainConfig } from "@/app/types/chain";
 import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
 import { UsdtIcon } from "@/app/components/atoms/UsdtIcon";
+import { EthIcon } from "@/app/components/atoms/EthIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
@@ -16,6 +17,13 @@ export const POLYGON: ChainConfig = {
             address: (isDevelopment ? "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582" : "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359") as Address,
             icon: <UsdcIcon />,
             coingeckoId: "usd-coin"
+        },
+        {
+            name: "WETH",
+            decimals: 18,
+            address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619" as Address,
+            icon: <EthIcon />,
+            coingeckoId: "ethereum"
         },
         {
             name: "POL",

@@ -17,6 +17,13 @@ export const BASE: ChainConfig = {
             coingeckoId: "usd-coin"
         },
         {
+            name: "WETH",
+            decimals: 18,
+            address: "0x4200000000000000000000000000000000000006" as Address,
+            icon: <EthIcon />,
+            coingeckoId: "ethereum"
+        },
+        {
             name: "ETH",
             decimals: 18,
             address: "0x0000000000000000000000000000000000000000" as Address,
