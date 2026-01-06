@@ -12,7 +12,7 @@ import {
     gnosis
 } from "viem/chains";
 import { polygon } from "wagmi/chains";
-import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN, BNB, GNOSIS } from "@/app/constants/chais";
+import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN, BNB, GNOSIS } from "@/app/constants/chains";
 import { ChainKey, ChainKeyEnum, ChainConfig } from "@/app/types/chain";
 
 export { ChainKeyEnum };

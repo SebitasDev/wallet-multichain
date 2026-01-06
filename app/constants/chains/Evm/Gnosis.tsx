@@ -22,7 +22,7 @@ export const GNOSIS: ChainConfig = {
         {
             name: "USDT",
             decimals: 6,
-            address: (isDevelopment ? "0x4ECaBa5870353805a9F068101A40E0f32ed605C6" : "0x4ECaBa5870353805a9F068101A40E0f32ed605C6") as Address,
+            address: "0x4ECaBa5870353805a9F068101A40E0f32ed605C6" as Address,
             icon: <UsdtIcon />,
             coingeckoId: "tether"
         },
@@ -56,9 +56,10 @@ export const GNOSIS: ChainConfig = {
         }
     ],
     evm: {
-        chain: isDevelopment ? gnosisChiado : gnosis,
-        rpcUrl: isDevelopment ? gnosisChiado.rpcUrls.default.http[0] : gnosis.rpcUrls.default.http[0],
+        chain: gnosis,
+        rpcUrl: gnosis.rpcUrls.default.http[0],
         supports7702: true,
+        erc4337: true,
     },
     label: "Gnosis",
     icon: <GnosisIcon />,

@@ -35,6 +35,7 @@ export const AVALANCHE: ChainConfig = {
         chain: isDevelopment ? avalancheFuji : avalanche,
         rpcUrl: isDevelopment ? avalancheFuji.rpcUrls.default.http[0] : avalanche.rpcUrls.default.http[0],
         supports7702: false,
+        erc4337: false,
     },
     label: "Avalanche",
     icon: <AvalancheIcon />,

@@ -43,6 +43,7 @@ export const OPTIMISM: ChainConfig = {
         chain: isDevelopment ? optimismSepolia : optimism,
         rpcUrl: isDevelopment ? "https://opt-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://opt-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
         supports7702: false,
+        erc4337: false,
     },
     label: "Optimism",
     icon: <OPIcon />,
