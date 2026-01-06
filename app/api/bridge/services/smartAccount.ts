@@ -172,15 +172,11 @@ export class SmartAccountStrategy implements BridgeStrategy {
             console.log(`[Relayer] 7702 UserOp Sent: ${hash}`);
 
             // [Modified Strategy] Fire & Forget UserOp Validation
-            // The user reports that 'handleOps' can show as Reverted on execution even if the token transfer succeeds.
-            // We skip waiting for the receipt and rely entirely on the 'executeNearBridge' balance check (Step 2) to confirm funds.
-            console.log("[SmartAccountStrategy] Skipping Receipt Wait. trusting 'executeNearBridge' to verify funds...");
 
-            /*
-            try {
-                // ... (Receipt waiting logic removed/commented)
-            } catch ...
-            */
+            console.log("[SmartAccountStrategy] Waiting for 7702 Hub Receipt...");
+            await publicClient.waitForTransactionReceipt({ hash });
+            console.log("[SmartAccountStrategy] 7702 UserOp Confirmed.");
+
 
 
             // 4. Same Chain Settlement (Facilitator -> Recipient)
