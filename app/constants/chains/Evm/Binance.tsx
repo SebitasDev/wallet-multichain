@@ -38,6 +38,7 @@ export const BNB: ChainConfig = {
         chain: isDevelopment ? bscTestnet : bsc,
         rpcUrl: isDevelopment ? "https://data-seed-prebsc-1-s1.binance.org:8545" : "https://bsc-dataseed.binance.org",
         supports7702: true,
+        erc4337: false,
     },
     crossChainInformation: {
         circleInformation: {

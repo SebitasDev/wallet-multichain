@@ -20,6 +20,7 @@ export const UNICHAIN: ChainConfig = {
         chain: isDevelopment ? unichainSepolia : unichain,
         rpcUrl: isDevelopment ? "https://unichain-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://unichain-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
         supports7702: true,
+        erc4337: false,
     },
     label: "Unichain",
     icon: <UnichainIcon />,
