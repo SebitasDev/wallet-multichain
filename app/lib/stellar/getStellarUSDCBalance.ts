@@ -1,4 +1,4 @@
-import { STELLAR } from "@/app/constants/chais";
+import { STELLAR } from "@/app/constants/chains";
 import { Horizon } from "stellar-sdk";
 import { toast } from "react-toastify";
 

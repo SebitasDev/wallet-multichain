@@ -6,8 +6,8 @@ import {
     TransactionBuilder,
     BASE_FEE,
 } from "stellar-sdk";
-import { STELLAR } from "@/app/constants/chais";
-import {toast} from "react-toastify";
+import { STELLAR } from "@/app/constants/chains";
+import { toast } from "react-toastify";
 
 export const createUSDCTrustline = async ({
     stellarAddress,

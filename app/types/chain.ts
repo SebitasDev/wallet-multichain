@@ -50,6 +50,7 @@ export interface EvmInformation {
     chain: any;
     rpcUrl: string | null;
     supports7702: boolean;
+    erc4337?: boolean;
 }
 
 export interface NonEvmInformation {

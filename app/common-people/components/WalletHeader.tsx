@@ -22,7 +22,7 @@ import {
     Monad,
     BNB,
     GNOSIS
-} from "@/app/constants/chais";
+} from "@/app/constants/chains";
 
 import { useLocalCurrency } from "@/app/hooks/useLocalCurrency";
 

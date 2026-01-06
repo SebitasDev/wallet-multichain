@@ -1,6 +1,6 @@
 import { FacilitatorChainKey } from "@/app/facilitator/config";
 import { SettleResponse, FacilitatorPaymentPayload } from "@/app/facilitator/types";
-import { STELLAR } from "@/app/constants/chais";
+import { STELLAR } from "@/app/constants/chains";
 import * as StellarSdk from "stellar-sdk";
 import { toast } from "react-toastify";
 import { bridgeApi } from "@/app/services/api";

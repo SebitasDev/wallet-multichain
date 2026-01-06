@@ -4,7 +4,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { NETWORKS } from "@/app/constants/chainsInformation";
-import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
+import { STELLAR } from "@/app/constants/chains/NoEvm/Stellar";
 import { ChainConfig, ChainKey } from "@/app/types/chain";
 import { AllocationSummary } from "@/app/dashboard/types";
 import { RouteDetail } from "@/app/dashboard/hooks/transfer/useSendMoneyModal";
