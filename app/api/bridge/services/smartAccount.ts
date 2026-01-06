@@ -248,8 +248,9 @@ export class SmartAccountStrategy implements BridgeStrategy {
             const sourceCCTP = network.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
             const destCCTP = destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
             const isUSDC = (sourceToken === "USDC" || !sourceToken); // Default to USDC if undefined
+            const isDestUSDC = (context.destToken === "USDC" || !context.destToken);
 
-            if (sourceCCTP && destCCTP && isUSDC) {
+            if (sourceCCTP && destCCTP && isUSDC && isDestUSDC) {
                 console.log("[SmartAccountStrategy] Route Selected: CCTP (Circle)");
 
                 const destinationDomain = destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.domain;
