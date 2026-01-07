@@ -45,7 +45,7 @@ const buildFacilitatorNetworks = (): Record<FacilitatorChainKey, FacilitatorNetw
         const chainKey = key as FacilitatorChainKey;
 
         // Skip non-EVM chains or chains without CCTP domain
-        if (!config.evm || !config.crossChainInformation.circleInformation?.cCTPInformation) continue;
+        if (!config.evm || !config.crossChainInformation.circleInformation?.cCTPInformation || config.crossChainInformation.circleInformation.cCTPInformation.domain === undefined) continue;
 
         const cctpInfo = config.crossChainInformation.circleInformation.cCTPInformation;
 
@@ -64,7 +64,7 @@ const buildFacilitatorNetworks = (): Record<FacilitatorChainKey, FacilitatorNetw
             usdc: usdcAddress as Address,
             usdcName,
             usdcVersion: "2",
-            domain: cctpInfo.domain,
+            domain: cctpInfo.domain!,
             tokenMessenger,
             messageTransmitter,
             rpcUrl: config.evm.rpcUrl || ""

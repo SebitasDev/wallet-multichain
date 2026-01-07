@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Address } from "abitype";
 import { NETWORKS } from "@/app/constants/chainsInformation";
-import { STELLAR } from "@/app/constants/chains/NoEvm/Stellar";
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 

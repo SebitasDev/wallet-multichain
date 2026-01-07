@@ -1,11 +1,11 @@
-import { STELLAR } from "@/app/constants/chains";
+import { NETWORKS } from "@/app/constants/chainsInformation";
 import { Horizon } from "stellar-sdk";
 import { toast } from "react-toastify";
 
 export const getStellarUSDCBalance = async (
     stellarAddress: string
 ): Promise<number | null> => {
-    const serverUrl = STELLAR.nonEvm?.serverURL;
+    const serverUrl = NETWORKS["Stellar"]?.nonEvm?.rpcUrl;
     if (!serverUrl) {
         toast.error("Server URL is missing");
         throw new Error("Stellar server URL not configured");
@@ -15,7 +15,7 @@ export const getStellarUSDCBalance = async (
 
     try {
         const account = await server.loadAccount(stellarAddress);
-        const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address;
+        const usdcAddress = NETWORKS["Stellar"]?.assets?.find(a => a.name === "USDC")?.address;
 
         if (!usdcAddress) return null;
 

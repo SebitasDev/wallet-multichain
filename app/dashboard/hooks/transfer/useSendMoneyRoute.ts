@@ -4,7 +4,7 @@ import { SendForm } from "@/app/lib/zod/sendSchema";
 import { AllocationSummary } from "@/app/dashboard/types";
 import { ChainConfig, ChainKey } from "@/app/types/chain";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
-import { bridgeApi } from "@/app/services/api";
+import { getNearSimulation } from "@1llet.xyz/erc4337-gasless-sdk";
 import { createPublicClient, http, formatEther } from "viem";
 
 type UseSendMoneyRouteProps = {
@@ -88,13 +88,14 @@ export const useSendMoneyRoute = ({
 
             const totalAmountToSimulate = (netAmount + fee).toFixed(6);
 
-            const data = await bridgeApi.getQuote({
-                sourceChain: sourceChainKey,
-                targetChain: destChainKey,
-                amount: totalAmountToSimulate,
-                token: watch("sourceToken") || "USDC",
-                sourceToken: token
-            });
+            // Use SDK's getNearSimulation
+            const data = await getNearSimulation(
+                sourceChainKey as ChainKey,
+                destChainKey as ChainKey,
+                totalAmountToSimulate,
+                watch("sourceToken") || "USDC",
+                token
+            );
 
             if (data.success && data.estimatedReceived) {
                 setSimulationResults(prev => ({ ...prev, [id]: data.estimatedReceived }));

@@ -16,6 +16,10 @@ import dynamic from "next/dynamic";
 import { TopBar } from "@/app/dashboard/components/TopBar";
 import { SidebarMainActions } from "@/app/dashboard/components/SidebarMainActions";
 
+import { SmartAccountManager } from "@/app/dashboard/components/SmartAccountManager";
+
+// ... (existing helper imports)
+
 const DashboardTour = dynamic(
     () => import("@/app/dashboard/components/DashboardTour").then((mod) => mod.DashboardTour),
     { ssr: false }
@@ -44,6 +48,7 @@ export default function Dashboard() {
                     mx: "auto",
                 }}
             >
+                {/* ... existing hero and actions ... */}
                 <Box id="dashboard-hero" sx={{ width: "100%", maxWidth: 600 }}>
                     <HeroBanner />
                 </Box>
@@ -61,7 +66,7 @@ export default function Dashboard() {
                         mx: { xs: "auto", md: 0 },
                     }}
                 >
-                    {/* Título con línea decorativa */}
+                    {/* ... existing sidebar ... */}
                     <Box
                         sx={{
                             display: "flex",
@@ -94,11 +99,14 @@ export default function Dashboard() {
                         />
                     </Box>
 
-
-
                     <CrossChainTransferModal trigger={<Box sx={{ display: "none" }} />} />
                     <SidebarMainActions />
                 </Box>
+            </Box>
+
+            {/* SMART ACCOUNT MANAGER */}
+            <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 3 } }}>
+                <SmartAccountManager />
             </Box>
 
             <Box

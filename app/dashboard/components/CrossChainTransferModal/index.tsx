@@ -44,11 +44,10 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
     const {
         open,
         address,
-        privateKey,
-        provider,
         isLoading,
         error,
         routeError,
+        isDeployed,
 
         form: { control, setValue },
         watchAmount,
@@ -80,13 +79,12 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
     return (
         <>
             {trigger ? (
-                React.cloneElement(trigger as React.ReactElement<{ onClick: () => void }>, { onClick: openModal })
+                React.cloneElement(trigger as React.ReactElement<{ onClick: () => void }>, { onClick: () => openModal() })
             ) : (
                 <Button
                     variant="contained"
                     id="tour-bridge"
-                    onClick={openModal}
-                    disabled={!address || (!privateKey && !provider)}
+                    onClick={() => openModal()}
                     sx={{
                         background: "#00DC8C",
                         fontWeight: 800,

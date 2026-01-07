@@ -8,19 +8,36 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useSessionWalletStore } from "@/app/store/useSessionWalletStore";
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { toast } from "react-toastify";
-import { Address } from "viem";
+import { Address, parseUnits } from "viem";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { useBridgeUsdcStream } from "@/app/dashboard/hooks/transfer/useBridgeUsdcStream";
-import { useFacilitator, FacilitatorChainKey } from "@/app/facilitator";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { transactionsApi, CreateTransactionRequest } from "@/app/services/api";
-import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
 import { useTokenPrice } from "@/app/hooks/useTokenPrice";
 import { pricesApi } from "@/app/services/api/prices";
+import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
+import { decryptPrivateKey } from "@/app/utils/cripto";
+import {
+    TransferManager,
+    AccountAbstraction
+} from "@1llet.xyz/erc4337-gasless-sdk";
+import { getSmartAccountForChain, ensureTokenApproval } from "../useSmartAccount";
 
-
-
+// Define BridgeContext based on SDK usage
+interface BridgeContext {
+    paymentPayload?: any;
+    sourceChain: ChainKey;
+    destChain: ChainKey;
+    sourceToken?: string;
+    destToken?: string;
+    amount: string;
+    recipient: string;
+    senderAddress?: string;
+    facilitatorPrivateKey?: string;
+    feeRecipient?: string;
+    depositTxHash?: string;
+}
 
 export type RouteStatus =
     | "idle"
@@ -58,9 +75,15 @@ export const useSendMoneyModal = () => {
     const { unlockWallet, transferBalance } = useWalletStore();
     const generalWallet = useSessionWalletStore(state => state.address);
     const wallets = useWalletStore((state) => state.wallets);
-    const { xoWallet, mainWallet } = useXOWalletStore();
+    const { xoWallet, mainWallet, setSmartAccount } = useXOWalletStore();
     const { setSendModal, isOpen, initialChain, initialToken } = useSendMoneyStore();
     const [routeDetails, setRouteDetails] = useState<RouteDetail[]>([]);
+
+    // Password store for main wallet decryption
+    const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
+
+    // SDK Transfer Manager
+    const [transferManager] = useState(() => new TransferManager());
 
     const resolveChain = (chainId: string | number) => {
         const id = String(chainId);
@@ -257,16 +280,9 @@ export const useSendMoneyModal = () => {
         }
     };
 
-    // Note: useFacilitator expects a base config. We can init with defaults or connection state.
-    // For the LOOP, we will use the `overrideCredentials` param we added to `executeTransfer`.
-    const { executeHybridTransfer } = useHybridBridgeStrategy();
-    const { executeTransfer } = useFacilitator({
-        userAddress: "0x0000000000000000000000000000000000000000", // Dummy init, will override
-    });
-
 
     const handleOnConfirm = async () => {
-        console.log("🔹 Starting handleOnConfirm (Refactored)");
+        console.log("🔹 Starting handleOnConfirm (SDK with AA Deploy/Approve)");
 
         const toValidChain = (watch("sendChain") in NETWORKS ? watch("sendChain") : "Base") as ChainKey;
         const recipient = watch("toAddress");
@@ -277,11 +293,11 @@ export const useSendMoneyModal = () => {
         let totalSentAmount = 0;
         let totalFeePaid = 0;
 
-        // Loop Allocations using Entries to track INDEX for Unique ID matching
+        // Loop Allocations
         for (const [walletIdx, allocation] of routeSummary!.allocations.entries()) {
 
             // 1. Unlock Wallet (Get Private Key)
-            const unlockedKey = await unlockWallet(allocation.from, watch("sendPassword") || ""); // [FIX] Restored Password instead of ChainKey
+            const unlockedKey = await unlockWallet(allocation.from, watch("sendPassword") || "");
 
             if (!unlockedKey) {
                 toast.error(`No se pudo desbloquear la wallet ${allocation.from}`);
@@ -290,174 +306,144 @@ export const useSendMoneyModal = () => {
 
             // Loop through chains in this allocation
             for (const [i, chain] of allocation.chains.entries()) {
-                const amountFloat = Number(chain.amount); // The amount to send from THIS chain
+                const amountFloat = Number(chain.amount);
                 const fromValidChain = CHAIN_ID_TO_KEY[chain.chainId] as ChainKey;
                 const fromNet = NETWORKS[fromValidChain];
                 const toNet = NETWORKS[toValidChain];
 
-                // Get Unique ID for this specific transfer
                 const uniqueId = routeDetails[walletIdx]?.chains[i]?.id;
 
                 if (!uniqueId) {
                     console.error("Critical: RouteDetail mismatch for index", walletIdx, i);
                     continue;
                 }
-                const amountString = amountFloat.toString(); // executeTransfer expects string
-
-                // Safe checks
-                // const fromNet = NETWORKS[fromValidChain as ChainKey]; // Already defined above
-                // const toNet = NETWORKS[toValidChain as ChainKey]; // Already defined above
 
                 if (!fromNet || !fromNet.evm || !toNet || !toNet.evm) {
                     toast.error("Invalid chain for EVM transfer");
                     continue;
                 }
 
-                // Determine Fee (Using Standard Logic 0.01 vs 0.02)
                 const baseFee = fromValidChain === toValidChain ? 0.01 : 0.02;
                 const currentFee = isDev ? 0 : baseFee;
-
-                // Add fee to the amount to be signed/transferred
                 const totalAmount = (amountFloat + currentFee).toFixed(6);
 
-                // Sanitize Token verify it exists on chain
                 let finalToken = chain.token || watch("sourceToken") || "USDC";
                 const assetExists = fromNet.assets.some(a => a.name === finalToken);
                 if (!assetExists && fromNet.assets.length > 0) {
-                    console.log(`[Sanitizer] Invalid token ${finalToken} for ${fromValidChain}. Defaulting to ${fromNet.assets[0].name}`);
                     finalToken = fromNet.assets[0].name;
                 }
 
-                // [FIX] Check if this chain is already done (Resume Logic)
                 const currentStatus = routeDetails
                     .find(w => w.wallet.toLowerCase() === allocation.from.toLowerCase())
                     ?.chains.find(c => c.id === uniqueId)?.status;
 
                 if (currentStatus === "done" || currentStatus === "minting" || currentStatus === "waiting") {
-                    console.log(`Skipping ${fromValidChain} (Already Done/In Progress)`);
-                    executedRoutes.push({
-                        chainName: fromValidChain,
-                        amount: amountFloat,
-                        assetOrigin: finalToken,
-                        status: "SUCCESS",
-                        txHash: "skipped-already-done"
-                    });
-                    totalSentAmount += Number(totalAmount);
                     continue;
                 }
 
-                // Update UI Status
-                setRouteDetails(prev =>
-                    prev.map(wallet =>
-                        wallet.wallet.toLowerCase() === allocation.from.toLowerCase()
-                            ? {
-                                ...wallet,
-                                chains: wallet.chains.map(c =>
-                                    c.id === uniqueId // Use Unique ID
-                                        ? { ...c, status: "starting", message: "Iniciando..." }
-                                        : c
-                                )
-                            }
-                            : wallet
-                    )
-                );
+                // Helper to update route status
+                const updateRouteStatus = (status: RouteStatus, message: string) => {
+                    setRouteDetails(prev =>
+                        prev.map(wallet =>
+                            wallet.wallet.toLowerCase() === allocation.from.toLowerCase()
+                                ? {
+                                    ...wallet,
+                                    chains: wallet.chains.map(c =>
+                                        c.id === uniqueId
+                                            ? { ...c, status, message }
+                                            : c
+                                    )
+                                }
+                                : wallet
+                        )
+                    );
+                };
+
+                updateRouteStatus("starting", "Conectando Smart Account...");
 
                 try {
-                    // Use watch("sourceToken") as source of truth to avoid chain loop variables confusing source/dest
-                    const sourceToken = watch("sourceToken") || "USDC";
-                    const isUSDC = sourceToken.toUpperCase().includes("USDC");
-                    const supportCCTP = fromNet.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP ?? false;
+                    // Initialize SDK Account for THIS chain using helper
+                    const saResult = await getSmartAccountForChain(fromValidChain, unlockedKey as `0x${string}`);
 
+                    if (!saResult) {
+                        throw new Error("Failed to initialize Smart Account");
+                    }
 
-                    // We generate 7702 Authorization IF:
-                    // 1. It is NOT USDC (e.g. USDT)
-                    // OR
-                    // 2. It IS USDC but the chain DOES NOT support CCTP (so we treat it like a generic token)
-                    const useCCTP = isUSDC && supportCCTP;
+                    const { account, smartAccountAddress, isDeployed } = saResult;
 
-                    if (!useCCTP) {
-                        // Check if we can proceed with Hybrid Strategy (7702 or Refuel)
-                        if (fromNet.evm) {
-                            const result = await executeHybridTransfer({
-                                sourceChain: fromValidChain,
-                                destChain: toValidChain,
-                                sourceToken: finalToken,
-                                destToken: watch("sourceToken"),
-                                amount: totalAmount,
-                                recipient: recipient,
-                                sender: allocation.from,
-                                privateKey: unlockedKey,
-                                onStatusUpdate: (msg) => {
-                                    setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
-                                        ...w, chains: w.chains.map(c => c.id === uniqueId ? { ...c, message: msg } : c)
-                                    } : w));
-                                }
-                            });
+                    // Store SA address in state
+                    setSmartAccount(fromNet.evm.chain.id.toString(), smartAccountAddress, isDeployed);
 
-                            if (!result.success) {
-                                throw new Error(result.error || "Hybrid Transfer Failed");
+                    // Deploy if needed
+                    if (!isDeployed) {
+                        updateRouteStatus("starting", "Desplegando Smart Account...");
+                        console.log("[handleOnConfirm] Deploying Smart Account for", fromValidChain);
+
+                        try {
+                            const deployReceipt = await account.deployAccount();
+                            if (!deployReceipt.success) {
+                                throw new Error("Deploy failed");
                             }
-
-                            executedRoutes.push({
-                                chainName: fromValidChain,
-                                amount: amountFloat,
-                                assetOrigin: finalToken,
-                                status: "SUCCESS",
-                                txHash: result.txHash
-                            });
-                            totalSentAmount += Number(totalAmount);
-                            totalFeePaid += currentFee;
-
-                            setRouteDetails(prev => prev.map(w => w.wallet === allocation.from ? {
-                                ...w, chains: w.chains.map(c => c.id === uniqueId ? { ...c, status: "done", message: "Completado" } : c)
-                            } : w));
-
-                            transferBalance(
-                                allocation.from as Address,
-                                recipient as Address,
-                                fromNet.evm.chain.id.toString(),
-                                toNet.evm.chain.id.toString(),
-                                amountFloat
-                            );
-                            continue;
+                            console.log("[handleOnConfirm] Deploy successful:", deployReceipt.receipt.transactionHash);
+                            setSmartAccount(fromNet.evm.chain.id.toString(), smartAccountAddress, true);
+                        } catch (deployError: any) {
+                            throw new Error(`Deploy failed: ${deployError.message}`);
                         }
                     }
 
+                    // Get token address for approval
+                    const tokenAsset = fromNet.assets.find(a => a.name === finalToken);
+                    const tokenAddress = tokenAsset?.address as Address;
 
-                    // EXECUTE UNIFIED TRANSFER
-                    // This handles Same-Chain (Gasless) AND Cross-Chain (CCTP) automatically via Smart Router
+                    if (tokenAddress && tokenAddress !== "0x0000000000000000000000000000000000000000") {
+                        updateRouteStatus("approving", "Verificando aprobación de token...");
 
-                    const result = await executeTransfer({
-                        amount: totalAmount, // Send total (Amount + Fee)
-                        sourceChain: fromValidChain as FacilitatorChainKey,
-                        destinationChain: toValidChain as FacilitatorChainKey,
+                        // Calculate amount in token units
+                        const tokenDecimals = tokenAsset?.decimals || 6;
+                        const amountBigInt = parseUnits(totalAmount, tokenDecimals);
+
+                        // Get spender address (TokenMessenger for CCTP or recipient for direct)
+                        // For now, we'll check the allowance for potential spenders
+                        const currentAllowance = await account.getAllowance(tokenAddress);
+
+                        if (currentAllowance < amountBigInt) {
+                            updateRouteStatus("approving", "Aprobando token...");
+                            console.log("[handleOnConfirm] Approving token", finalToken, "amount:", amountBigInt.toString());
+
+                            try {
+                                const approveResult = await account.approveToken(
+                                    tokenAddress,
+                                    fromNet.evm.paymasterAddress as Address || tokenAddress, // Approve for paymaster or token contract
+                                    amountBigInt * BigInt(2) // Approve 2x to avoid future approvals
+                                );
+                                console.log("[handleOnConfirm] Approval result:", approveResult);
+                            } catch (approveError: any) {
+                                console.warn("[handleOnConfirm] Approval warning:", approveError.message);
+                                // Continue anyway - some tokens might not need approval
+                            }
+                        } else {
+                            console.log("[handleOnConfirm] Sufficient allowance exists:", currentAllowance.toString());
+                        }
+                    }
+
+                    updateRouteStatus("burning", "Ejecutando transferencia...");
+
+                    // EXECUTE TRANSFER via SDK
+                    const context: BridgeContext = {
+                        amount: totalAmount,
+                        sourceChain: fromValidChain,
+                        destChain: toValidChain,
                         recipient: recipient,
                         sourceToken: finalToken,
-                        destToken: watch("sourceToken"), // Pass explicit intent
-                        overrideCredentials: {
-                            privateKey: unlockedKey as `0x${string}`,
-                            userAddress: allocation.from as Address
-                        }
-                    });
+                        destToken: watch("sourceToken"),
+                        senderAddress: smartAccountAddress,
+                    };
+
+                    const result = await transferManager.execute(context);
 
                     if (result.success) {
-                        // Update UI Success
-                        setRouteDetails(prev =>
-                            prev.map(wallet =>
-                                wallet.wallet.toLowerCase() === allocation.from.toLowerCase()
-                                    ? {
-                                        ...wallet,
-                                        chains: wallet.chains.map(c =>
-                                            c.id === uniqueId
-                                                ? { ...c, status: "done", message: "Completado" }
-                                                : c
-                                        )
-                                    }
-                                    : wallet
-                            )
-                        );
+                        updateRouteStatus("done", "Completado");
 
-                        // Update Balance Store (Simulated)
                         transferBalance(
                             allocation.from as Address,
                             recipient as Address,
@@ -474,39 +460,20 @@ export const useSendMoneyModal = () => {
                             status: "SUCCESS",
                             txHash: result.transactionHash
                         });
-                        totalSentAmount += Number(totalAmount); // Track total SIGNED amount (Principal + Fee)
+                        totalSentAmount += Number(totalAmount);
                         totalFeePaid += currentFee;
 
                     } else {
-                        // Throw to catch block
-                        throw new Error(result.errorReason || "Transfer Failed (Unknown Reason)");
+                        throw new Error(result.errorReason || "Transfer Failed (SDK)");
                     }
 
                 } catch (e: any) {
                     console.error("[UseSendMoneyModal] Critical Error:", e);
                     const errorMessage = e.message || "Error Desconocido";
 
-                    // Update UI Error
-                    setRouteDetails(prev =>
-                        prev.map(wallet =>
-                            wallet.wallet.toLowerCase() === allocation.from.toLowerCase()
-                                ? {
-                                    ...wallet,
-                                    chains: wallet.chains.map(c =>
-                                        c.id === uniqueId
-                                            ? { ...c, status: "error", message: errorMessage }
-                                            : c
-                                    )
-                                }
-                                : wallet
-                        )
-                    );
-
-                    // [FIX] Stop Execution on Critical Error
-                    // User Request: "Si falla alguna me digas ... y si quiere continuar"
-                    // Strategy: Stop (return). User must click "Confirm" again to Resume.
+                    updateRouteStatus("error", errorMessage);
                     toast.error(`Error en ${fromValidChain}: ${errorMessage}. Corrige el error y vuelve a intentar.`);
-                    return; // EXIT FUNCTION COMPLETELY
+                    return;
                 }
             }
         }
@@ -515,7 +482,6 @@ export const useSendMoneyModal = () => {
 
         if (executedRoutes.length > 0) {
             toast.success("Transacciones completadas");
-
             // Save Transaction to DB
             try {
                 const txData = {
@@ -533,7 +499,6 @@ export const useSendMoneyModal = () => {
                 };
 
                 await transactionsApi.create(txData as unknown as CreateTransactionRequest);
-                console.log("Transaction saved to DB");
                 console.log("Transaction saved to DB");
             } catch (dbError) {
                 console.error("Failed to save transaction to DB:", dbError);
@@ -564,8 +529,6 @@ export const useSendMoneyModal = () => {
     // [UPDATED] Max Balance = Total Portfolio Value in USD (as per user request)
     const maxSendAmount = wallets.reduce((total, wallet) => {
         const walletTotal = wallet.chains.reduce((sum, c) => {
-            // DEBUG LOG
-
             return sum + (c.amount || 0);
         }, 0);
         return total + walletTotal;
@@ -601,7 +564,7 @@ export const useSendMoneyModal = () => {
         maxSendAmount: formattedMaxSendAmount,
         isExceedingMax,
         wallets,
-        priceMap // [NEW] Expose Prices
+        priceMap
     }
 
 }
