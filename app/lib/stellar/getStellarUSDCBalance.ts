@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 export const getStellarUSDCBalance = async (
     stellarAddress: string
 ): Promise<number | null> => {
-    const serverUrl = NETWORKS["Stellar"]?.nonEvm?.rpcUrl;
+    const serverUrl = NETWORKS["Stellar"]?.nonEvm?.serverURL;
     if (!serverUrl) {
         toast.error("Server URL is missing");
         throw new Error("Stellar server URL not configured");

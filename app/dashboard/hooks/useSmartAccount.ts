@@ -11,6 +11,8 @@ import { Address, parseUnits } from "viem";
 interface UseSmartAccountResult {
     account: AccountAbstraction | null;
     smartAccountAddress: string | null;
+    ownerAddress: string | null;
+    chainId: string | null;
     isDeployed: boolean;
     isConnecting: boolean;
     isDeploying: boolean;
@@ -26,6 +28,7 @@ interface UseSmartAccountResult {
 export const useSmartAccount = (): UseSmartAccountResult => {
     const [account, setAccount] = useState<AccountAbstraction | null>(null);
     const [smartAccountAddress, setSmartAccountAddress] = useState<string | null>(null);
+    const [ownerAddress, setOwnerAddress] = useState<string | null>(null);
     const [isDeployed, setIsDeployed] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [isDeploying, setIsDeploying] = useState(false);
@@ -33,8 +36,24 @@ export const useSmartAccount = (): UseSmartAccountResult => {
     const [error, setError] = useState<string | null>(null);
     const [currentChainId, setCurrentChainId] = useState<string | null>(null);
 
+    // ... (rest of hook body) ...
+    // Note: ensure ensureDeployed, ensureApproval, getBalance are preserved as in previous steps
+
+    // ... 
+
+    // We only need to update the return statement in this replacement if we target the whole file or the return block.
+    // I will use a targeted replacement for the interface and the return.
+
+    // Using a broader range to ensure context.
+
     // Store access
-    const { mainWallet, setSmartAccount: storeSetSmartAccount, updateSmartAccountDeployStatus } = useXOWalletStore();
+    const {
+        mainWallet,
+        setSmartAccount: storeSetSmartAccount,
+        updateSmartAccountDeployStatus,
+        setMetaMaskConnection,
+        disconnectMetaMask
+    } = useXOWalletStore();
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
 
     const connect = useCallback(async (chainKey: ChainKey, useMetaMask: boolean = false): Promise<AccountAbstraction | null> => {
@@ -60,6 +79,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
             if (useMetaMask) {
                 // Connect with MetaMask (no private key)
                 result = await accountInstance.connect();
+                setMetaMaskConnection(result.owner, chainId);
             } else {
                 // Decrypt private key
                 if (!mainWallet.encryptedPrivateKey || !currentPassword || !mainWallet.salt || !mainWallet.iv) {
@@ -79,6 +99,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
 
             setAccount(accountInstance);
             setSmartAccountAddress(result.smartAccount);
+            setOwnerAddress(result.owner);
             setCurrentChainId(chainId);
 
             // Check deployment status
@@ -88,7 +109,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
             // Update store
             storeSetSmartAccount(chainId, result.smartAccount, deployed);
 
-            console.log(`[useSmartAccount] Connected to ${chainKey}. SA: ${result.smartAccount}, Deployed: ${deployed}, MetaMask: ${useMetaMask}`);
+            console.log(`[useSmartAccount] Connected to ${chainKey}. SA: ${result.smartAccount}, Owner: ${result.owner}, Deployed: ${deployed}, MetaMask: ${useMetaMask}`);
 
             return accountInstance;
         } catch (e: any) {
@@ -207,14 +228,18 @@ export const useSmartAccount = (): UseSmartAccountResult => {
     const disconnect = useCallback(() => {
         setAccount(null);
         setSmartAccountAddress(null);
+        setOwnerAddress(null);
         setIsDeployed(false);
         setCurrentChainId(null);
         setError(null);
-    }, []);
+        disconnectMetaMask();
+    }, [disconnectMetaMask]);
 
     return {
         account,
         smartAccountAddress,
+        ownerAddress,
+        chainId: currentChainId,
         isDeployed,
         isConnecting,
         isDeploying,

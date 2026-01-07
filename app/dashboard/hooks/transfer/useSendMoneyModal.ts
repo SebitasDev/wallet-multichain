@@ -1,6 +1,6 @@
 import { SendForm, sendSchema } from "@/app/lib/zod/sendSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { JSX, useEffect, useState } from "react";
+import { JSX, useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { AllocationSummary, Wallet } from "../../types";
 import { useFindBestRoute } from "./useFindBestRoute";
@@ -22,7 +22,8 @@ import {
     TransferManager,
     AccountAbstraction
 } from "@1llet.xyz/erc4337-gasless-sdk";
-import { getSmartAccountForChain, ensureTokenApproval } from "../useSmartAccount";
+import { getSmartAccountForChain, ensureTokenApproval, useSmartAccount } from "../useSmartAccount";
+import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 
 // Define BridgeContext based on SDK usage
 interface BridgeContext {
@@ -74,10 +75,75 @@ export const useSendMoneyModal = () => {
     const { allocateAcrossNetworks } = useFindBestRoute();
     const { unlockWallet, transferBalance } = useWalletStore();
     const generalWallet = useSessionWalletStore(state => state.address);
-    const wallets = useWalletStore((state) => state.wallets);
+    const localWallets = useWalletStore((state) => state.wallets);
     const { xoWallet, mainWallet, setSmartAccount } = useXOWalletStore();
     const { setSendModal, isOpen, initialChain, initialToken } = useSendMoneyStore();
     const [routeDetails, setRouteDetails] = useState<RouteDetail[]>([]);
+
+    // EOA Integration
+    const { ownerAddress } = useSmartAccount();
+    const [eoaWallet, setEoaWallet] = useState<Wallet | null>(null);
+
+    // Merge Wallets
+    const wallets = useMemo(() => {
+        return eoaWallet ? [...localWallets, eoaWallet] : localWallets;
+    }, [localWallets, eoaWallet]);
+
+    // Fetch EOA Balances
+    useEffect(() => {
+        const fetchEoaBalances = async () => {
+            if (isOpen && ownerAddress) {
+                const evmChains = Object.values(NETWORKS).filter(net => net.evm);
+                const chainData = await Promise.all(evmChains.map(async (config) => {
+                    const tokens: Record<string, number> = {};
+                    let mainUsdcAmount = 0;
+
+                    if (config.evm) {
+                        await Promise.all(config.assets.map(async (asset) => {
+                            try {
+                                const res = await getBalanceFromChain(
+                                    config.evm!.chain,
+                                    ownerAddress as `0x${string}`,
+                                    asset.address as `0x${string}`,
+                                    asset.decimals
+                                );
+                                if (!res.error) {
+                                    const bal = parseFloat(res.balance);
+                                    tokens[asset.name] = bal;
+                                    if (asset.name === "USDC") mainUsdcAmount = bal;
+                                }
+                            } catch (e) {
+                                // ignore
+                            }
+                        }));
+                    }
+
+                    return {
+                        name: config.label,
+                        tag: config.chipLabel,
+                        color: config.chipColor,
+                        value: mainUsdcAmount,
+                        tokens: tokens,
+                        // Runtime properties required by logic but missing in type
+                        chainId: config.evm!.chain.id.toString(),
+                        amount: mainUsdcAmount
+                    };
+                }));
+
+                const totalVal = chainData.reduce((acc, c) => acc + c.value, 0);
+
+                setEoaWallet({
+                    name: "EOA (MetaMask)",
+                    address: ownerAddress,
+                    chains: chainData as any[],
+                    total: totalVal
+                });
+            } else if (!ownerAddress) {
+                setEoaWallet(null);
+            }
+        };
+        fetchEoaBalances();
+    }, [isOpen, ownerAddress]);
 
     // Password store for main wallet decryption
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
@@ -236,11 +302,12 @@ export const useSendMoneyModal = () => {
             const allAssetIds = new Set<string>();
             wallets.forEach(w => {
                 w.chains.forEach(c => {
+                    if (!c.chainId) return;
                     const cKey = CHAIN_ID_TO_KEY[c.chainId];
                     const net = NETWORKS[cKey as ChainKey];
                     if (net && net.evm) {
                         net.assets.forEach(a => {
-                            if (c.tokens?.[a.name] > 0 && a.coingeckoId) {
+                            if ((c.tokens as any)?.[a.name] > 0 && a.coingeckoId) {
                                 allAssetIds.add(a.coingeckoId);
                             }
                         });
@@ -300,7 +367,7 @@ export const useSendMoneyModal = () => {
             const unlockedKey = await unlockWallet(allocation.from, watch("sendPassword") || "");
 
             if (!unlockedKey) {
-                toast.error(`No se pudo desbloquear la wallet ${allocation.from}`);
+                toast.error(`No se pudo desbloquear la wallet ${allocation.from} `);
                 return;
             }
 
@@ -363,7 +430,7 @@ export const useSendMoneyModal = () => {
 
                 try {
                     // Initialize SDK Account for THIS chain using helper
-                    const saResult = await getSmartAccountForChain(fromValidChain, unlockedKey as `0x${string}`);
+                    const saResult = await getSmartAccountForChain(fromValidChain, unlockedKey as `0x${string} `);
 
                     if (!saResult) {
                         throw new Error("Failed to initialize Smart Account");
@@ -387,7 +454,7 @@ export const useSendMoneyModal = () => {
                             console.log("[handleOnConfirm] Deploy successful:", deployReceipt.receipt.transactionHash);
                             setSmartAccount(fromNet.evm.chain.id.toString(), smartAccountAddress, true);
                         } catch (deployError: any) {
-                            throw new Error(`Deploy failed: ${deployError.message}`);
+                            throw new Error(`Deploy failed: ${deployError.message} `);
                         }
                     }
 
@@ -526,15 +593,19 @@ export const useSendMoneyModal = () => {
     };
 
 
-    // [UPDATED] Max Balance = Total Portfolio Value in USD (as per user request)
+    const sourceToken = watch("sourceToken") || "USDC";
+
+    // [UPDATED] Max Balance = Total Balance of SELECTED TOKEN across all wallets
     const maxSendAmount = wallets.reduce((total, wallet) => {
         const walletTotal = wallet.chains.reduce((sum, c) => {
-            return sum + (c.amount || 0);
+            // Check tokens map first, fallback to amount if USDC (legacy compatibility)
+            const tokenBalance = (c.tokens as any)?.[sourceToken] ?? (sourceToken === "USDC" ? (c.amount || 0) : 0);
+            return sum + (tokenBalance || 0);
         }, 0);
         return total + walletTotal;
     }, 0);
 
-    // Format to 6 decimals for USD display
+    // Format to 6 decimals for display
     const formattedMaxSendAmount = maxSendAmount > 0 ? parseFloat(maxSendAmount.toFixed(6)) : 0;
 
     const currentSendAmount = Number(watch("sendAmount") || 0);

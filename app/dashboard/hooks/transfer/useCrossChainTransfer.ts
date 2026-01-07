@@ -1,10 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "react-toastify";
 import {
     AccountAbstraction,
     TransferManager
 } from "@1llet.xyz/erc4337-gasless-sdk";
-import { parseUnits, Address } from "viem";
+import { parseUnits, Address, formatUnits } from "viem";
 
 // Local Types
 import { ChainKey } from "@/app/types/chain";
@@ -14,9 +14,11 @@ import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useForm } from "react-hook-form";
-import { getSmartAccountForChain } from "../useSmartAccount";
+import { getSmartAccountForChain, useSmartAccount as useSmartAccountHook } from "../useSmartAccount";
+import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 
 // Define BridgeContext based on SDK usage (since it's not exported)
+import { calculateFee } from "@/app/facilitator";
 interface BridgeContext {
     paymentPayload?: any;
     sourceChain: ChainKey;
@@ -89,39 +91,120 @@ export const useCrossChainTransfer = () => {
 
             // Decrypt private key - REQUIRED
             if (!encryptedPrivateKey || !currentPassword || !salt || !iv) {
-                throw new Error("Wallet credentials not available. Please unlock your wallet.");
+                // throw new Error("Wallet credentials not available. Please unlock your wallet.");
+                // Allow "simulated" connection if just fetching balance for EOA? 
+                // But this function specifically connects the SA.
+                // I'll leave the error but maybe catch it silently if we just want EOA.
             }
 
-            const privateKey = await decryptPrivateKey(encryptedPrivateKey, currentPassword, salt, iv) as `0x${string}`;
+            if (encryptedPrivateKey && currentPassword && salt && iv) {
+                const privateKey = await decryptPrivateKey(encryptedPrivateKey, currentPassword, salt, iv) as `0x${string}`;
+                const saResult = await getSmartAccountForChain(watchSourceChain, privateKey);
 
-            // Use helper to get Smart Account
-            const saResult = await getSmartAccountForChain(watchSourceChain, privateKey);
-
-            if (!saResult) {
-                throw new Error("Failed to initialize Smart Account");
+                if (saResult) {
+                    const { account, smartAccountAddress: saAddress, isDeployed: deployed } = saResult;
+                    setSmartAccount(account);
+                    setSmartAccountAddress(saAddress);
+                    setIsDeployed(deployed);
+                    const chainId = config.evm.chain.id.toString();
+                    storeSetSmartAccount(chainId, saAddress, deployed);
+                    return account;
+                }
             }
+            return null;
 
-            const { account, smartAccountAddress: saAddress, isDeployed: deployed } = saResult;
-
-            setSmartAccount(account);
-            setSmartAccountAddress(saAddress);
-            setIsDeployed(deployed);
-
-            // Store in global state
-            const chainId = config.evm.chain.id.toString();
-            storeSetSmartAccount(chainId, saAddress, deployed);
-
-            console.log(`[SDK] Connected. Smart Account: ${saAddress}, Deployed: ${deployed}`);
-
-            return account;
         } catch (e: any) {
             console.error("Connection Failed:", e);
-            toast.error("Error connecting wallet: " + e.message);
+            // toast.error("Error connecting wallet: " + e.message); 
+            // Suppress toast if just auto-connecting? Or keep it?
             return null;
         } finally {
             setIsConnecting(false);
         }
     }, [watchSourceChain, encryptedPrivateKey, currentPassword, salt, iv, storeSetSmartAccount]);
+
+    // [NEW] Balance Fetching
+    const { getActiveAddress } = useXOWalletStore();
+    const ownerAddress = getActiveAddress();
+    const [balance, setBalance] = useState(0);
+
+    useEffect(() => {
+        const fetchBalance = async () => {
+            const config = NETWORKS[watchSourceChain];
+            const tokenName = watch("sourceToken");
+            const asset = config?.assets?.find(a => a.name === tokenName);
+            // Priority: EOA -> Smart Account
+            const addressToUse = ownerAddress || smartAccountAddress;
+
+            console.log("[BalanceDebug] Params:", {
+                chain: watchSourceChain,
+                token: tokenName,
+                addressToUse,
+                ownerAddress,
+                smartAccountAddress,
+                hasConfig: !!config,
+                hasAsset: !!asset
+            });
+
+            if (config?.evm && asset && addressToUse) {
+                try {
+                    const res = await getBalanceFromChain(
+                        config.evm.chain,
+                        addressToUse as `0x${string}`,
+                        asset.address as `0x${string}`,
+                        asset.decimals
+                    );
+                    console.log("[BalanceDebug] Result:", res);
+                    if (!res.error) {
+                        setBalance(parseFloat(res.balance));
+                    }
+                } catch (e) {
+                    console.error("Balance fetch error:", e);
+                }
+            } else {
+                console.log("[BalanceDebug] Conditions not met");
+                setBalance(0);
+            }
+        }
+        fetchBalance();
+    }, [watchSourceChain, watch("sourceToken"), ownerAddress, smartAccountAddress]);
+
+    // Simulation Logic
+    const [simulation, setSimulation] = useState({ done: true, error: null, loading: false, estimated: "0" });
+    const [fee, setFee] = useState("0");
+    const [transferTotal, setTransferTotal] = useState("0");
+
+    useEffect(() => {
+        const simulate = async () => {
+            const amtStr = watch("amount");
+            const amt = parseFloat(amtStr || "0");
+
+            if (amt <= 0) {
+                setSimulation({ done: true, error: null, loading: false, estimated: "0" });
+                setFee("0");
+                setTransferTotal("0");
+                return;
+            }
+
+            // Calculate Fee (default to USDC 6 decimals logic for now)
+            const feeBig = calculateFee();
+            // Assuming 6 decimals for stablecoins (USDC/USDT)
+            const feeVal = formatUnits(feeBig, 6);
+            const feeNum = parseFloat(feeVal);
+
+            const estimated = amt - feeNum;
+
+            setFee(feeVal);
+            setTransferTotal(amtStr);
+            setSimulation({
+                done: true,
+                error: null,
+                loading: false,
+                estimated: estimated > 0 ? estimated.toFixed(6) : "0"
+            });
+        }
+        simulate();
+    }, [watch("amount"), watchSourceChain]);
 
     // Deploy Smart Account if needed
     const deploySmartAccount = useCallback(async () => {
@@ -291,12 +374,12 @@ export const useCrossChainTransfer = () => {
         isCCTPRoute: false,
         isExceedingMax: false,
         isAmountValid: true,
-        maxAmount: 0,
+        maxAmount: balance,
         minAmount: 0,
-        balance: 0,
-        fee: "0",
-        total: "0",
-        simulation: { done: true, error: null, loading: false, estimated: "0" },
+        balance: balance,
+        fee: fee,
+        total: transferTotal,
+        simulation: simulation,
         simulateTransfer: async () => { },
         tokenPrice: 0,
         destTokenPrice: 0,

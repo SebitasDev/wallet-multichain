@@ -2,18 +2,24 @@ import {
     Box,
     Typography,
     IconButton,
+    Button,
+    Menu,
+    MenuItem,
+    CircularProgress
 } from "@mui/material";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { SplitBalance } from "./SplitBalance";
 import { EthIcon } from "@/app/components/atoms/EthIcon";
 import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { ActiveWallet } from "@/app/dashboard/hooks/dashboard/useHeroBanner";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useState, MouseEvent, useEffect } from "react";
 import { LoadWalletModal } from "../LoadWalletModal";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import { useXOContracts } from "../../hooks/wallet/useXOConnect";
 import { PasswordModal } from "../../components/PasswordModal";
 import { ExportWalletModal } from "../../components/ExportWalletModal";
@@ -21,8 +27,13 @@ import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { toast } from "react-toastify";
-import CloseIcon from '@mui/icons-material/Close'; // Used if adding a close button to PasswordModal, but for now we rely on external state or maybe I need to update PasswordModal later.
-
+import CloseIcon from '@mui/icons-material/Close';
+import { useSmartAccount } from "../../hooks/useSmartAccount";
+import { ChainKey } from "@/app/types/chain";
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { FloatingChainInfo } from "../FloatingChainInfo";
 
 interface HeroBannerMainWalletProps {
     activeWallet: ActiveWallet;
@@ -52,9 +63,96 @@ export const HeroBannerMainWallet = ({
     const [exportType, setExportType] = useState<"mnemonic" | "privateKey">("mnemonic");
     const [authAction, setAuthAction] = useState<"export" | "reset" | null>(null);
 
+    // SMART ACCOUNT HOOK
+    const { connect, disconnect, smartAccountAddress, ownerAddress, chainId, isConnecting, isDeployed, account, ensureDeployed, ensureApproval } = useSmartAccount();
+    const [chainAnchorEl, setChainAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedChain, setSelectedChain] = useState<ChainKey>("Base");
+    const [eoaBalance, setEoaBalance] = useState<number>(0);
+
     const { resetWallet, isUsingXO } = useXOContracts();
 
     const canRefresh = isUsingXO || !!burnedAddresses[activeWallet];
+
+    // Store selectors for auto-connect
+    const currentPassword = useWalletPasswordStore((state) => state.currentPassword);
+    const { metaMaskConnection, mainWallet } = useXOWalletStore();
+
+    // Get cached SA for display fallback
+    const config = NETWORKS[selectedChain];
+    const chainIdStr = config?.evm?.chain?.id?.toString();
+    const cachedSmartAccount = chainIdStr ? mainWallet.smartAccounts?.[chainIdStr]?.address : null;
+
+    // Auto-connect Local Wallet (SDK) if unlocked and not using MetaMask
+    useEffect(() => {
+        const autoConnectLocal = async () => {
+            if (
+                activeWallet === "EVM" && !smartAccountAddress && currentPassword &&
+                !isConnecting && !metaMaskConnection.isConnected
+            ) {
+                console.log("[HeroBanner] Auto-connecting Local Wallet SDK...");
+                await connect(selectedChain, false);
+            }
+        };
+        autoConnectLocal();
+    }, [activeWallet, smartAccountAddress, currentPassword, isConnecting, selectedChain, metaMaskConnection.isConnected, connect]);
+    useEffect(() => {
+        const fetchEoaBalance = async () => {
+            if (activeWallet === "EVM" && ownerAddress) {
+                const evmChains = Object.values(NETWORKS).filter(net => net.evm);
+
+                const balancePromises = evmChains.map(async (config) => {
+                    const usdcAsset = config.assets.find(a => a.name === "USDC");
+                    if (usdcAsset && config.evm) {
+                        try {
+                            const result = await getBalanceFromChain(
+                                config.evm.chain,
+                                ownerAddress as `0x${string}`,
+                                usdcAsset.address as `0x${string}`,
+                                usdcAsset.decimals
+                            );
+                            if (!result.error) {
+                                return parseFloat(result.balance);
+                            }
+                        } catch (e) {
+                            console.error(`[HeroBanner] Error fetching balance for ${config.label}:`, e);
+                        }
+                    }
+                    return 0;
+                });
+
+                const balances = await Promise.all(balancePromises);
+                const totalBalance = balances.reduce((acc, curr) => acc + curr, 0);
+
+                setEoaBalance(totalBalance);
+            }
+        };
+
+        fetchEoaBalance();
+    }, [activeWallet, ownerAddress, chainId, selectedChain]); // Refetch if chain changes (might indicate update) or wallet changes
+
+
+    const displayAddress = (activeWallet === "EVM" && smartAccountAddress)
+        ? smartAccountAddress
+        : burnedAddresses[activeWallet];
+
+    // Determine which balance to show prominently
+    // If connected via MetaMask/EVM, we prioritizing showing the EOA balance if that's what user requested ("Eoa address and balance")
+    // or we can show both.
+    // For SplitBalance, we will use EOA balance if connected, otherwise burnedBalances (Local).
+    const mainBalance = (activeWallet === "EVM" && smartAccountAddress) ? eoaBalance : burnedBalances[activeWallet];
+
+    const handleConnectClick = (event: MouseEvent<HTMLElement>) => {
+        setChainAnchorEl(event.currentTarget);
+    };
+
+    const handleChainSelect = async (chain: ChainKey) => {
+        setChainAnchorEl(null);
+        setSelectedChain(chain);
+        if (activeWallet === "STELLAR") {
+            setActiveWallet("EVM");
+        }
+        await connect(chain, true); // Use MetaMask
+    };
 
     const handleAuthSuccess = async () => {
         // 1. Get password
@@ -131,7 +229,7 @@ export const HeroBannerMainWallet = ({
 
     return (
         <>
-            <Box /* ... existing icon box ... */
+            <Box
                 sx={{
                     position: "absolute",
                     top: 10,
@@ -231,9 +329,14 @@ export const HeroBannerMainWallet = ({
 
                 <IconButton
                     onClick={() =>
-                        setActiveWallet((prev) =>
-                            prev === "EVM" ? "STELLAR" : "EVM"
-                        )
+                        setActiveWallet((prev) => {
+                            const newWallet = prev === "EVM" ? "STELLAR" : "EVM";
+                            // Enforce Base default when switching to EVM
+                            if (newWallet === "EVM") {
+                                setSelectedChain("Base");
+                            }
+                            return newWallet;
+                        })
                     }
                     /* ... sx props ... */
                     sx={{
@@ -250,9 +353,42 @@ export const HeroBannerMainWallet = ({
                 >
                     {activeWallet === "EVM" ? "→ STELLAR" : "→ EVM"}
                 </IconButton>
+
+                {activeWallet === "EVM" && (
+                    <Button
+                        onClick={smartAccountAddress ? disconnect : handleConnectClick}
+                        disabled={isConnecting}
+                        sx={{
+                            background: smartAccountAddress ? "#00DC8C" : "#ffffff",
+                            border: "2px solid #000000",
+                            borderRadius: 2,
+                            px: 1.5,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#000000",
+                            textTransform: "none",
+                            "&:hover": {
+                                background: smartAccountAddress ? "#00CC7C" : "#f0f0f0",
+                            },
+                        }}
+                        startIcon={isConnecting ? <CircularProgress size={16} /> : <AccountBalanceWalletIcon />}
+                    >
+                        {isConnecting ? "Conectando..." : smartAccountAddress ? "Desconectar" : "Connect MetaMask"}
+                    </Button>
+                )}
             </Box>
 
-
+            <Menu
+                anchorEl={chainAnchorEl}
+                open={Boolean(chainAnchorEl)}
+                onClose={() => setChainAnchorEl(null)}
+            >
+                {["Base", "Optimism", "Arbitrum", "Polygon", "GNOSIS", "Avalanche", "BNB"].map((chain) => (
+                    <MenuItem key={chain} onClick={() => handleChainSelect(chain as ChainKey)}>
+                        {chain}
+                    </MenuItem>
+                ))}
+            </Menu>
 
             <LoadWalletModal open={loadWalletOpen} onClose={() => setLoadWalletOpen(false)} />
 
@@ -325,42 +461,83 @@ export const HeroBannerMainWallet = ({
                     {activeWallet === "EVM" && xoClientAlias
                         ? ` de ${xoClientAlias}`
                         : ""}
+                    {smartAccountAddress && activeWallet === "EVM" && " (MetaMask Connected)"}
                 </Typography>
 
                 <Box sx={{ mb: 1.5 }}>
                     <SplitBalance
-                        amount={burnedBalances[activeWallet]}
+                        amount={mainBalance}
                         mainFontSize={{ xs: 32, sm: 38, md: 44 }}
                         smallFontSize={{ xs: 20, sm: 24, md: 28 }}
                     />
-
                 </Box>
 
-                <Box
-                    sx={{
-                        background: "#ffffff",
-                        border: "2px solid #000000",
-                        borderRadius: 2,
-                        py: 0.75,
-                        px: 1.5,
-                        display: "inline-block",
-                        maxWidth: "100%",
-                    }}
-                >
-                    <Typography
-                        variant="body2"
+                {/* ADDRESS DISPLAY SECTION */}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+
+                    {/* 1. Smart Account (Secondary) */}
+                    {
+                        activeWallet === "EVM" && (smartAccountAddress || cachedSmartAccount) && (
+                            <Box
+                                sx={{
+                                    background: "transparent",
+                                    px: 0.5,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "flex-start",
+                                }}
+                            >
+                                <Typography variant="caption" sx={{ fontWeight: 700, mr: 1, color: "#666" }}>SA:</Typography>
+                                <Typography variant="caption" sx={{ fontFamily: "monospace", color: "#666" }}>
+                                    {smartAccountAddress || cachedSmartAccount}
+                                </Typography>
+                            </Box>
+                        )
+                    }
+
+                    {/* 2. Main Address (EOA or Local) */}
+                    <Box
                         sx={{
-                            fontSize: { xs: 10, md: 11 },
-                            fontWeight: 600,
-                            color: "#000000",
-                            fontFamily: "monospace",
-                            wordBreak: "break-all",
+                            background: "#ffffff",
+                            border: "2px solid #000000",
+                            borderRadius: 2,
+                            py: 0.75,
+                            px: 1.5,
+                            display: "flex",
+                            alignItems: "center",
+                            maxWidth: "100%",
                         }}
                     >
-                        {burnedAddresses[activeWallet]}
-                    </Typography>
+                        {/* Label only if connected to avoid confusion, or always? User said "EOA address". */}
+                        {activeWallet === "EVM" && (smartAccountAddress || cachedSmartAccount) && <Typography variant="caption" sx={{ fontWeight: 700, mr: 1 }}>EOA:</Typography>}
+
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontSize: { xs: 10, md: 11 },
+                                fontWeight: 600,
+                                color: "#000000",
+                                fontFamily: "monospace",
+                                wordBreak: "break-all",
+                            }}
+                        >
+                            {/* If connected, show Owner Address (EOA). If not, show Local Address (burnedAddress) */}
+                            {(activeWallet === "EVM" && ownerAddress) ? ownerAddress : burnedAddresses[activeWallet]}
+                        </Typography>
+                    </Box>
                 </Box>
             </Box>
+
+            {/* FLOATING ACTION BUTTON FOR CHAIN INFO (EVM ONLY) */}
+            {activeWallet === "EVM" && (
+                <FloatingChainInfo
+                    selectedChain={selectedChain}
+                    isDeployed={isDeployed}
+                    ensureDeployed={ensureDeployed}
+                    ensureApproval={ensureApproval}
+                    account={account}
+                />
+            )}
         </>
     );
 };
