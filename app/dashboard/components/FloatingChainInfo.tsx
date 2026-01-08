@@ -13,7 +13,9 @@ import {
     Divider,
     IconButton,
     CircularProgress,
-    Tooltip
+    Tooltip,
+    Select,
+    MenuItem
 } from "@mui/material";
 import LanguageIcon from "@mui/icons-material/Language";
 import CloseIcon from "@mui/icons-material/Close";
@@ -34,6 +36,7 @@ interface FloatingChainInfoProps {
     ensureDeployed: () => Promise<boolean>;
     ensureApproval: (tokenAddress: Address, spender: Address, amount: bigint) => Promise<boolean>;
     account: AccountAbstraction | null;
+    setSelectedChain: (chain: ChainKey) => void;
 }
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -43,7 +46,8 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
     isDeployed,
     ensureDeployed,
     ensureApproval,
-    account
+    account,
+    setSelectedChain
 }) => {
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [loadingDeploy, setLoadingDeploy] = useState(false);
@@ -175,7 +179,26 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         {config.icon}
-                        <Typography variant="h6" fontWeight="bold">{selectedChain}</Typography>
+
+                        {/* Network Switcher */}
+                        <Select
+                            value={selectedChain}
+                            onChange={(e) => setSelectedChain(e.target.value as ChainKey)}
+                            variant="standard"
+                            disableUnderline
+                            sx={{
+                                fontWeight: "bold",
+                                fontSize: "1.25rem",
+                                "& .MuiSelect-select": { py: 0, pr: "24px !important" },
+                                "& .MuiSvgIcon-root": { fontSize: "1.5rem" }
+                            }}
+                        >
+                            {Object.values(NETWORKS).filter(n => n.evm).map((n) => (
+                                <MenuItem key={n.label} value={n.label}>
+                                    {n.label}
+                                </MenuItem>
+                            ))}
+                        </Select>
                     </Box>
                     <IconButton size="small" onClick={handleClose}>
                         <CloseIcon fontSize="small" />

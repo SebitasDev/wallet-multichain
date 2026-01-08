@@ -12,7 +12,7 @@ import { SplitBalance } from "./SplitBalance";
 import { EthIcon } from "@/app/components/atoms/EthIcon";
 import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { ActiveWallet } from "@/app/dashboard/hooks/dashboard/useHeroBanner";
-import { Dispatch, SetStateAction, useState, MouseEvent, useEffect } from "react";
+import { Dispatch, SetStateAction, useState, MouseEvent, useEffect, useRef } from "react";
 import { LoadWalletModal } from "../LoadWalletModal";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
@@ -77,6 +77,9 @@ export const HeroBannerMainWallet = ({
     const currentPassword = useWalletPasswordStore((state) => state.currentPassword);
     const { metaMaskConnection, mainWallet } = useXOWalletStore();
 
+    // Prevent auto-connect loop after manual disconnect
+    const hasManuallyDisconnected = useRef(false);
+
     // Get cached SA for display fallback
     const config = NETWORKS[selectedChain];
     const chainIdStr = config?.evm?.chain?.id?.toString();
@@ -85,9 +88,18 @@ export const HeroBannerMainWallet = ({
     // Auto-connect Local Wallet (SDK) if unlocked and not using MetaMask
     useEffect(() => {
         const autoConnectLocal = async () => {
+            console.log("[HeroBanner] Auto-connect Check:", {
+                activeWallet,
+                hasSmartAccountAddress: !!smartAccountAddress,
+                hasPassword: !!currentPassword,
+                isConnecting,
+                isMetaMask: metaMaskConnection.isConnected,
+                manualDisconnect: hasManuallyDisconnected.current
+            });
+
             if (
                 activeWallet === "EVM" && !smartAccountAddress && currentPassword &&
-                !isConnecting && !metaMaskConnection.isConnected
+                !isConnecting && !hasManuallyDisconnected.current
             ) {
                 console.log("[HeroBanner] Auto-connecting Local Wallet SDK...");
                 await connect(selectedChain, false);
@@ -141,10 +153,6 @@ export const HeroBannerMainWallet = ({
     // For SplitBalance, we will use EOA balance if connected, otherwise burnedBalances (Local).
     const mainBalance = (activeWallet === "EVM" && smartAccountAddress) ? eoaBalance : burnedBalances[activeWallet];
 
-    const handleConnectClick = (event: MouseEvent<HTMLElement>) => {
-        setChainAnchorEl(event.currentTarget);
-    };
-
     const handleChainSelect = async (chain: ChainKey) => {
         setChainAnchorEl(null);
         setSelectedChain(chain);
@@ -152,6 +160,36 @@ export const HeroBannerMainWallet = ({
             setActiveWallet("EVM");
         }
         await connect(chain, true); // Use MetaMask
+    };
+
+    const handleChainAnchorClick = (event: MouseEvent<HTMLElement>) => {
+        setChainAnchorEl(event.currentTarget);
+    };
+
+    const handleDisconnect = () => {
+        hasManuallyDisconnected.current = true;
+        disconnect();
+    };
+
+    const handleConnectClick = async () => {
+        // Reset manual disconnect flag on manual connect attempt
+        hasManuallyDisconnected.current = false;
+
+        if (activeWallet === "EVM") {
+            try {
+                if (currentPassword) {
+                    // Prioritize restoring Local Wallet if unlocked
+                    console.log("Restoring Local Wallet connection...");
+                    await connect(selectedChain, false);
+                } else {
+                    // Otherwise connect with MetaMask
+                    await connect(selectedChain, true);
+                }
+            } catch (e) {
+                console.error("Connection failed:", e);
+                toast.error("Failed to connect wallet");
+            }
+        }
     };
 
     const handleAuthSuccess = async () => {
@@ -334,6 +372,7 @@ export const HeroBannerMainWallet = ({
                             // Enforce Base default when switching to EVM
                             if (newWallet === "EVM") {
                                 setSelectedChain("Base");
+                                hasManuallyDisconnected.current = false; // Allow auto-connect again
                             }
                             return newWallet;
                         })
@@ -356,7 +395,7 @@ export const HeroBannerMainWallet = ({
 
                 {activeWallet === "EVM" && (
                     <Button
-                        onClick={smartAccountAddress ? disconnect : handleConnectClick}
+                        onClick={smartAccountAddress ? handleDisconnect : handleConnectClick}
                         disabled={isConnecting}
                         sx={{
                             background: smartAccountAddress ? "#00DC8C" : "#ffffff",
@@ -373,7 +412,7 @@ export const HeroBannerMainWallet = ({
                         }}
                         startIcon={isConnecting ? <CircularProgress size={16} /> : <AccountBalanceWalletIcon />}
                     >
-                        {isConnecting ? "Conectando..." : smartAccountAddress ? "Desconectar" : "Connect MetaMask"}
+                        {isConnecting ? "Conectando..." : smartAccountAddress ? "Desconectar" : (currentPassword ? "Reconectar Wallet" : "Connect MetaMask")}
                     </Button>
                 )}
             </Box>
@@ -536,6 +575,7 @@ export const HeroBannerMainWallet = ({
                     ensureDeployed={ensureDeployed}
                     ensureApproval={ensureApproval}
                     account={account}
+                    setSelectedChain={setSelectedChain}
                 />
             )}
         </>

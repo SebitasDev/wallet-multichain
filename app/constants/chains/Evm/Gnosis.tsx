@@ -61,7 +61,7 @@ export const GNOSIS: ChainConfig = {
         supports7702: true,
         erc4337: true,
     },
-    label: "Gnosis",
+    label: "GNOSIS",
     icon: <GnosisIcon />,
     chipLabel: "GNO",
     chipColor: "#133629",

@@ -109,7 +109,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
             // Update store
             storeSetSmartAccount(chainId, result.smartAccount, deployed);
 
-            console.log(`[useSmartAccount] Connected to ${chainKey}. SA: ${result.smartAccount}, Owner: ${result.owner}, Deployed: ${deployed}, MetaMask: ${useMetaMask}`);
+            console.log(`[useSmartAccount] Connected to ${chainKey}. SA: ${result.smartAccount}, Owner: ${result.owner}, Deployed: ${deployed}, MetaMask: ${useMetaMask}, Instance set:`, !!accountInstance);
 
             return accountInstance;
         } catch (e: any) {
@@ -123,17 +123,22 @@ export const useSmartAccount = (): UseSmartAccountResult => {
     }, [mainWallet, currentPassword, storeSetSmartAccount]);
 
     const ensureDeployed = useCallback(async (): Promise<boolean> => {
+        console.log("[useSmartAccount] ensureDeployed called. Account exists:", !!account, "Is Deployed:", isDeployed);
+
         if (!account) {
             setError("Account not connected");
+            toast.error("Account not connected. Please ensure wallet is active.");
             return false;
         }
 
         if (isDeployed) {
+            toast.info("Account is already deployed!");
             return true;
         }
 
         setIsDeploying(true);
         setError(null);
+        toast.info("Initiating deployment...", { autoClose: 2000 });
 
         try {
             console.log("[useSmartAccount] Deploying Smart Account...");
@@ -175,22 +180,13 @@ export const useSmartAccount = (): UseSmartAccountResult => {
         setError(null);
 
         try {
-            // Check current allowance
-            const currentAllowance = await account.getAllowance(tokenAddress);
-
-            if (currentAllowance >= amount) {
-                console.log("[useSmartAccount] Sufficient allowance exists:", currentAllowance.toString());
-                return true;
-            }
-
             console.log("[useSmartAccount] Approving token...", {
                 token: tokenAddress,
                 spender,
-                amount: amount.toString(),
-                currentAllowance: currentAllowance.toString()
+                amount: amount.toString()
             });
 
-            // Approve token
+            // Approve token - SDK checks allowance internally and returns NOT_NEEDED if sufficient
             const result = await account.approveToken(tokenAddress, spender, amount);
 
             if (result === "NOT_NEEDED") {
