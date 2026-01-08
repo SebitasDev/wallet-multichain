@@ -172,15 +172,11 @@ export class SmartAccountStrategy implements BridgeStrategy {
             console.log(`[Relayer] 7702 UserOp Sent: ${hash}`);
 
             // [Modified Strategy] Fire & Forget UserOp Validation
-            // The user reports that 'handleOps' can show as Reverted on execution even if the token transfer succeeds.
-            // We skip waiting for the receipt and rely entirely on the 'executeNearBridge' balance check (Step 2) to confirm funds.
-            console.log("[SmartAccountStrategy] Skipping Receipt Wait. trusting 'executeNearBridge' to verify funds...");
 
-            /*
-            try {
-                // ... (Receipt waiting logic removed/commented)
-            } catch ...
-            */
+            console.log("[SmartAccountStrategy] Waiting for 7702 Hub Receipt...");
+            await publicClient.waitForTransactionReceipt({ hash });
+            console.log("[SmartAccountStrategy] 7702 UserOp Confirmed.");
+
 
 
             // 4. Same Chain Settlement (Facilitator -> Recipient)
@@ -252,8 +248,9 @@ export class SmartAccountStrategy implements BridgeStrategy {
             const sourceCCTP = network.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
             const destCCTP = destConfig?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP;
             const isUSDC = (sourceToken === "USDC" || !sourceToken); // Default to USDC if undefined
+            const isDestUSDC = (context.destToken === "USDC" || !context.destToken);
 
-            if (sourceCCTP && destCCTP && isUSDC) {
+            if (sourceCCTP && destCCTP && isUSDC && isDestUSDC) {
                 console.log("[SmartAccountStrategy] Route Selected: CCTP (Circle)");
 
                 const destinationDomain = destConfig.crossChainInformation?.circleInformation?.cCTPInformation?.domain;

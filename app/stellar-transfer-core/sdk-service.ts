@@ -1,5 +1,5 @@
 import { OpenAPI, OneClickService, QuoteRequest } from '@defuse-protocol/one-click-sdk-typescript';
-import { STELLAR } from '../constants/chais';
+import { STELLAR } from '../constants/chains';
 
 // Initialize API
 OpenAPI.BASE = 'https://1click.chaindefuser.com';
