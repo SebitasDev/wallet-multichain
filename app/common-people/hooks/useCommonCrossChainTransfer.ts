@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { useCrossChainTransfer } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
@@ -141,11 +141,55 @@ export const useCommonCrossChainTransfer = () => {
         chainsList
     );
 
+    // [DEBUG] Log State
+    const currentValues = form.getValues();
+    const { simulation, simulateTransfer: originalSimulate, routeError } = transferLogic;
+
+    useEffect(() => {
+        const { sourceChain, destChain, sourceToken, destToken, amount, recipient } = currentValues;
+        console.log("[CommonCrossChain] State Update:", {
+            sourceChain,
+            destChain,
+            sourceToken,
+            destToken,
+            amount: amount || "empty",
+            recipient: recipient || "empty",
+            simulation: simulation,
+            routeError: routeError
+        });
+    }, [
+        simulation,
+        currentValues.sourceChain,
+        currentValues.destChain,
+        currentValues.sourceToken,
+        currentValues.destToken,
+        currentValues.amount,
+        currentValues.recipient,
+        routeError
+    ]);
+
+    const simulateTransferWithLogs = async () => {
+        console.log("[CommonCrossChain] simulateTransfer triggered!");
+        console.log("[CommonCrossChain] Current Form State:", form.getValues());
+        return originalSimulate();
+    };
+
+    // [FIX] Override isExceedingMax to use CommonMaxAmount
+    const { watchAmount } = transferLogic;
+    const isExceedingMax = useMemo(() => {
+        const strAmount = watchAmount ? String(watchAmount) : "";
+        if (!strAmount || strAmount.trim() === "") return false;
+        const amount = parseFloat(strAmount);
+        return !isNaN(amount) && amount > commonMaxAmount;
+    }, [watchAmount, commonMaxAmount]);
+
     return {
         ...transferLogic,
         isOpen,
         // OVERRIDE MaxAmount and Balance with our custom ones
         maxAmount: commonMaxAmount,
-        balance: commonBalance
+        balance: commonBalance,
+        simulateTransfer: simulateTransferWithLogs,
+        isExceedingMax // [FIX] Override
     };
 };

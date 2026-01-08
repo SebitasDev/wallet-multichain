@@ -216,7 +216,10 @@ export const heroContent = {
         es: "Gestiona todas tus wallets, envía USDC entre chains sin bridges, optimiza rutas automáticamente y mantén todo seguro con cifrado local.",
         en: "Manage all your wallets, send USDC across chains without bridges, auto-optimize routes, and keep everything secure with local encryption.",
     },
-    primaryCta: { es: "Empezar gratis →", en: "Start for free →" },
+    primaryCtaCrypto: { es: "Modo Web3 Pro", en: "Web3 Pro Mode" },
+    primaryCtaCryptoDesc: { es: "Para expertos. Yields, bridges y control total.", en: "For experts. Yields, bridges, and full control." },
+    primaryCtaCommon: { es: "Modo Simplificado", en: "Simplified Mode" },
+    primaryCtaCommonDesc: { es: "Para el día a día. Envía y ahorra sin complicaciones.", en: "For daily use. Send and save without hassle." },
     secondaryCta: { es: "Ver características", en: "See features" },
     cardTitle: { es: "Lo que puedes hacer", en: "What you can do" },
     cardItems: [

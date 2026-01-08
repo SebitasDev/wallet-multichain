@@ -84,18 +84,19 @@ export function Hero({ lang, onToggleLanguage }: { lang: Language; onToggleLangu
                             <Typography sx={{ color: "#666666", fontWeight: 600, fontSize: 18, maxWidth: 620, lineHeight: 1.7 }}>
                                 {translate(heroContent.subtitle, lang)}
                             </Typography>
-                            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-start">
-                                <Button
+                            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="stretch">
+                                <Box
                                     component={Link}
                                     href="/dashboard"
-                                    variant="contained"
                                     sx={{
-                                        textTransform: "none",
-                                        px: 4,
-                                        py: 1.8,
+                                        textDecoration: "none",
+                                        flex: 1,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "flex-start",
+                                        px: 3,
+                                        py: 2,
                                         borderRadius: 3,
-                                        fontWeight: 900,
-                                        fontSize: 16,
                                         background: "#7852FF",
                                         color: "#ffffff",
                                         border: "3px solid #000000",
@@ -108,33 +109,45 @@ export function Hero({ lang, onToggleLanguage }: { lang: Language; onToggleLangu
                                         },
                                     }}
                                 >
-                                    {translate(heroContent.primaryCta, lang)}
-                                </Button>
-                                <Button
+                                    <Typography fontWeight={900} fontSize={18} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        {translate(heroContent.primaryCtaCrypto, lang)} →
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.9, fontWeight: 500, lineHeight: 1.3 }}>
+                                        {translate(heroContent.primaryCtaCryptoDesc, lang)}
+                                    </Typography>
+                                </Box>
+
+                                <Box
                                     component={Link}
-                                    href="#features"
-                                    variant="outlined"
+                                    href="/common-people"
                                     sx={{
-                                        textTransform: "none",
-                                        px: 4,
-                                        py: 1.8,
+                                        textDecoration: "none",
+                                        flex: 1,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "flex-start",
+                                        px: 3,
+                                        py: 2,
                                         borderRadius: 3,
-                                        fontWeight: 900,
-                                        fontSize: 16,
+                                        background: "#00DC8C",
                                         color: "#000000",
-                                        background: "#ffffff",
                                         border: "3px solid #000000",
                                         boxShadow: "6px 6px 0px #000000",
                                         transition: "all 0.2s",
                                         "&:hover": {
-                                            background: "#f5f5f5",
+                                            background: "#00C37A",
                                             transform: "translate(2px, 2px)",
                                             boxShadow: "4px 4px 0px #000000",
                                         },
                                     }}
                                 >
-                                    {translate(heroContent.secondaryCta, lang)}
-                                </Button>
+                                    <Typography fontWeight={900} fontSize={18} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        {translate(heroContent.primaryCtaCommon, lang)} →
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.9, fontWeight: 600, lineHeight: 1.3 }}>
+                                        {translate(heroContent.primaryCtaCommonDesc, lang)}
+                                    </Typography>
+                                </Box>
                             </Stack>
                             <Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ pt: 2 }}>
                                 <Box>

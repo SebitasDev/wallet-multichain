@@ -14,7 +14,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { FACILITATOR_NETWORKS } from "@/app/facilitator/evm/config";
 import { FacilitatorChainKey } from "@/app/facilitator/config";
 import { usdcErc3009Abi } from "@/app/facilitator/evm/usdcErc3009Abi";
-import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
+import { STELLAR } from "@/app/constants/chains/NoEvm/Stellar";
 import * as StellarSdk from "stellar-sdk";
 import { BridgeStrategy, BridgeContext } from "./types";
 

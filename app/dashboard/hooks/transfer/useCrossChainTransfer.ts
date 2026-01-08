@@ -10,7 +10,7 @@ import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { useHybridBridgeStrategy } from "./useHybridBridgeStrategy";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
-import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
+import { STELLAR } from "@/app/constants/chains/NoEvm/Stellar";
 import { useTokenPrice } from "@/app/hooks/useTokenPrice";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { bridgeApi, transactionsApi, CreateTransactionRequest } from "@/app/services/api";

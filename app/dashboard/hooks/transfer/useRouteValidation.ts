@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { NETWORKS } from "@/app/constants/chainsInformation";
-import { STELLAR } from "@/app/constants/chais/NoEvm/Stellar";
+import { STELLAR } from "@/app/constants/chains/NoEvm/Stellar";
 
 export const STELLAR_CHAIN_KEY = "Stellar";
 

@@ -160,6 +160,7 @@ export const CommonCrossChainModalForm = ({ control, errors, sendLoading, setVal
                     size="small"
                     currentChain={sourceChain}
                     currentToken={selectedToken}
+                    tokenPrice={tokenPrice} // [NEW]
                 />
             </Box>
 

@@ -24,8 +24,8 @@ export const HistoryTransactionDetail = ({ transaction, onClose }: { transaction
             >
                 {/* Main Info */}
                 <Box sx={{ p: 2.5, borderBottom: "3px solid #000", bgcolor: "#fff" }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                        <Box>
+                    <Box display="flex" flexDirection={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems="flex-start" mb={2} gap={{ xs: 2, sm: 0 }}>
+                        <Box width={{ xs: "100%", sm: "auto" }}>
                             <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                                 <Chip
                                     label={transaction.status}
@@ -57,24 +57,27 @@ export const HistoryTransactionDetail = ({ transaction, onClose }: { transaction
                                 )}
                             </Box>
                         </Box>
-                        <Box textAlign="right">
-                            <IconButton
-                                onClick={onClose}
-                                size="small"
-                                sx={{
-                                    border: "2px solid #000",
-                                    bgcolor: "#fff",
-                                    borderRadius: 2,
-                                    width: 24, height: 24,
-                                    boxShadow: "2px 2px 0px #000",
-                                    mb: 1,
-                                    "&:hover": { bgcolor: "#f5f5f5", transform: "translate(1px, 1px)", boxShadow: "1px 1px 0px #000" }
-                                }}
-                            >
-                                <CloseIcon sx={{ color: "#000", fontWeight: "bold", fontSize: 14 }} />
-                            </IconButton>
-                            <Box display="flex" alignItems="center" justifyContent="flex-end" gap={1}>
-                                <Typography variant="h4" fontWeight={900} color="#000">
+                        <Box textAlign={{ xs: "left", sm: "right" }} width={{ xs: "100%", sm: "auto" }}>
+                            <Box display="flex" justifyContent={{ xs: "space-between", sm: "flex-end" }} alignItems="flex-start" mb={1}>
+                                <Box display={{ xs: "block", sm: "none" }} /> {/* Spacer for flex-between */}
+                                <IconButton
+                                    onClick={onClose}
+                                    size="small"
+                                    sx={{
+                                        border: "2px solid #000",
+                                        bgcolor: "#fff",
+                                        borderRadius: 2,
+                                        width: 24, height: 24,
+                                        boxShadow: "2px 2px 0px #000",
+                                        "&:hover": { bgcolor: "#f5f5f5", transform: "translate(1px, 1px)", boxShadow: "1px 1px 0px #000" }
+                                    }}
+                                >
+                                    <CloseIcon sx={{ color: "#000", fontWeight: "bold", fontSize: 14 }} />
+                                </IconButton>
+                            </Box>
+
+                            <Box display="flex" alignItems="center" justifyContent={{ xs: "flex-start", sm: "flex-end" }} gap={1}>
+                                <Typography variant="h4" fontWeight={900} color="#000" sx={{ fontSize: { xs: "24px", sm: "34px" } }}>
                                     ${(transaction.type === "RECEIVE"
                                         ? (transaction.estimatedReceived || transaction.amount)
                                         : transaction.amount
