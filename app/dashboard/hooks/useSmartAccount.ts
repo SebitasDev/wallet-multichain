@@ -6,7 +6,7 @@ import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { toast } from "react-toastify";
-import { Address, parseUnits } from "viem";
+import { Address, parseUnits, WalletClient, Hex } from "viem";
 
 interface UseSmartAccountResult {
     account: AccountAbstraction | null;
@@ -272,9 +272,11 @@ export const useSmartAccount = (): UseSmartAccountResult => {
  * Helper function to get or create AccountAbstraction for a specific chain
  * This is a stateless version for use in callbacks
  */
+// ... existing imports
+
 export const getSmartAccountForChain = async (
     chainKey: ChainKey,
-    privateKey: `0x${string}`
+    signer?: Hex | WalletClient
 ): Promise<{
     account: AccountAbstraction;
     smartAccountAddress: string;
@@ -286,8 +288,11 @@ export const getSmartAccountForChain = async (
             throw new Error(`Chain ${chainKey} is not configured for EVM operations`);
         }
 
+        // ... (imports should be at top, I will handle this separately or assume user accepts messy imports for now, but better to fix implementation first)
+
         const accountInstance = new AccountAbstraction(config.evm as any);
-        const result = await accountInstance.connect(privateKey);
+        // Connect with Signer (WalletClient or Private Key)
+        const result = await accountInstance.connect(signer);
         const deployed = await accountInstance.isAccountDeployed();
 
         return {

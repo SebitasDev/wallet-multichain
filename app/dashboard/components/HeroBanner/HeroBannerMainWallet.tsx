@@ -35,6 +35,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { FloatingChainInfo } from "../FloatingChainInfo";
+import { useConnect, useAccount } from "wagmi";
 
 interface HeroBannerMainWalletProps {
     activeWallet: ActiveWallet;
@@ -71,6 +72,10 @@ export const HeroBannerMainWallet = ({
 
     // State for local refresh spinner
     const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
+
+    // Wagmi Hooks
+    const { connectors, connect: connectWagmi } = useConnect();
+    const { isConnected: isWagmiConnected } = useAccount();
 
 
     // Get Smart Account Hook
@@ -224,7 +229,16 @@ export const HeroBannerMainWallet = ({
                     console.log("Restoring Local Wallet connection...");
                     await connect(selectedChain, false);
                 } else {
-                    // Otherwise connect with MetaMask
+                    // Otherwise connect with External Wallet (Wagmi)
+                    // If not connected to Wagmi yet, trigger connection
+                    if (!isWagmiConnected) {
+                        const connector = connectors.find(c => c.id === 'injected') || connectors[0];
+                        if (connector) {
+                            connectWagmi({ connector });
+                            // The actual SDK connection connects via useSmartAccount effect or re-render
+                            // But we call connect(true) to signal intention
+                        }
+                    }
                     await connect(selectedChain, true);
                 }
             } catch (e) {
@@ -456,17 +470,14 @@ export const HeroBannerMainWallet = ({
                             }}
                             startIcon={isConnecting ? <CircularProgress size={16} /> : <AccountBalanceWalletIcon />}
                         >
-                            {isConnecting ? "Conectando..." : smartAccountAddress ? "Desconectar" : (currentPassword ? "Reconectar Local" : "Connect MetaMask")}
+                            {isConnecting ? "Conectando..." : smartAccountAddress ? "Desconectar" : (currentPassword ? "Reconectar Local" : "External Wallet")}
                         </Button>
 
-                        {/* Explicit MetaMask Connect Button (Only if disconnected & using Local) */}
+                        {/* Explicit External Wallet Connect Button (Only if disconnected & using Local) */}
                         {!smartAccountAddress && currentPassword && !isConnecting && (
-                            <Tooltip title="Conectar con MetaMask">
+                            <Tooltip title="Conectar con External Wallet">
                                 <IconButton
-                                    onClick={async () => {
-                                        hasManuallyDisconnected.current = false;
-                                        await connect(selectedChain, true);
-                                    }}
+                                    onClick={handleConnectClick}
                                     sx={{
                                         ml: 1,
                                         background: "#ffffff",
@@ -476,11 +487,7 @@ export const HeroBannerMainWallet = ({
                                         "&:hover": { background: "#f0f0f0" }
                                     }}
                                 >
-                                    <Box
-                                        component="img"
-                                        src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
-                                        sx={{ width: 20, height: 20 }}
-                                    />
+                                    <AccountBalanceWalletIcon sx={{ fontSize: 20 }} />
                                 </IconButton>
                             </Tooltip>
                         )}
@@ -571,7 +578,7 @@ export const HeroBannerMainWallet = ({
                     {activeWallet === "EVM" && xoClientAlias
                         ? ` de ${xoClientAlias}`
                         : ""}
-                    {smartAccountAddress && activeWallet === "EVM" && (isUsingMetaMask ? " (MetaMask Connected)" : " (Local Connected)")}
+                    {smartAccountAddress && activeWallet === "EVM" && (isUsingMetaMask ? " (External Wallet Connected)" : " (Local Connected)")}
                 </Typography>
 
                 <Box sx={{ mb: 1.5 }}>

@@ -4,7 +4,8 @@ import {
     AccountAbstraction,
     TransferManager
 } from "@1llet.xyz/erc4337-gasless-sdk";
-import { parseUnits, Address, formatUnits } from "viem";
+import { parseUnits, Address, formatUnits, createWalletClient, custom, http } from "viem";
+import { erc20Abi } from "@1llet.xyz/erc4337-gasless-sdk";
 
 // Local Types
 import { ChainKey } from "@/app/types/chain";
@@ -16,6 +17,7 @@ import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModal
 import { useForm } from "react-hook-form";
 import { getSmartAccountForChain, useSmartAccount as useSmartAccountHook } from "../useSmartAccount";
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
+import { useWalletClient } from "wagmi";
 
 // Define BridgeContext based on SDK usage (since it's not exported)
 import { calculateFee } from "@/app/facilitator";
@@ -82,6 +84,9 @@ export const useCrossChainTransfer = () => {
     const watchSourceChain = watch("sourceChain");
     const watchDestChain = watch("destChain");
 
+    // Wagmi Wallet Client
+    const { data: walletClient } = useWalletClient();
+
     // Initialize SDK Account with PK only (no MetaMask)
     const connectWallet = useCallback(async () => {
         setIsConnecting(true);
@@ -89,6 +94,23 @@ export const useCrossChainTransfer = () => {
             const config = NETWORKS[watchSourceChain];
             if (!config || !config.evm) throw new Error("Invalid Chain Config or not EVM");
 
+            // 1. Priority: Try Wagmi WalletClient first
+            if (walletClient) {
+                console.log("[connectWallet] Using Wagmi WalletClient...");
+
+                const saResult = await getSmartAccountForChain(watchSourceChain, walletClient);
+                if (saResult) {
+                    const { account, smartAccountAddress: saAddress, isDeployed: deployed } = saResult;
+                    setSmartAccount(account);
+                    setSmartAccountAddress(saAddress);
+                    setIsDeployed(deployed);
+                    const chainId = config.evm.chain.id.toString();
+                    storeSetSmartAccount(chainId, saAddress, deployed);
+                    return { account, address: saAddress };
+                }
+            }
+
+            // 2. Fallback: Local Private Key
             // Decrypt private key - REQUIRED
             if (!encryptedPrivateKey || !currentPassword || !salt || !iv) {
                 // throw new Error("Wallet credentials not available. Please unlock your wallet.");
@@ -108,7 +130,7 @@ export const useCrossChainTransfer = () => {
                     setIsDeployed(deployed);
                     const chainId = config.evm.chain.id.toString();
                     storeSetSmartAccount(chainId, saAddress, deployed);
-                    return account;
+                    return { account, address: saAddress };
                 }
             }
             return null;
@@ -278,12 +300,20 @@ export const useCrossChainTransfer = () => {
     // Execute Transfer via SDK with auto deploy and approve
     const onSubmit = async (data: FormValues) => {
         let account = smartAccount;
+        let senderAddr = smartAccountAddress;
 
         // Connect if not connected
         if (!account) {
             toast.info("Connecting wallet...");
-            account = await connectWallet();
-            if (!account) return;
+            const result = await connectWallet();
+            if (!result) return;
+            account = result.account;
+            senderAddr = result.address;
+        }
+
+        if (!account || !senderAddr) {
+            toast.error("Failed to resolve wallet address");
+            return;
         }
 
         setIsExecuting(true);
@@ -326,10 +356,61 @@ export const useCrossChainTransfer = () => {
                 destToken: data.destToken,
                 amount: data.amount,
                 recipient: data.recipient,
-                senderAddress: smartAccountAddress || undefined
+                senderAddress: senderAddr,
+                facilitatorPrivateKey: process.env.NEXT_PUBLIC_FACILITATOR_PRIVATE_KEY,
             };
 
-            const response = await transferManager.execute(context);
+            console.log("[Transfer] Context:", context);
+
+            let response = await transferManager.execute(context);
+
+            // [NEW] Handle Pending Deposit (CCTP & others)
+            if (response.transactionHash && response.transactionHash.includes("PENDING_USER_DEPOSIT")) {
+                console.log("[Transfer] Deposit required", response.data);
+                toast.info("Signing deposit transaction...");
+
+                const { depositAddress, amountToDeposit } = response.data;
+
+                if (!depositAddress || !amountToDeposit) {
+                    throw new Error("Invalid deposit data from SDK");
+                }
+
+                // Use SDK Smart Transfer (Auto-detects EOA vs SA balance)
+                console.log("[Transfer] Initiating Smart Transfer for Deposit");
+
+                // @ts-ignore - smartTransfer signature handling
+                const transferResult = await account.smartTransfer(
+                    tokenAddress || "0x0000000000000000000000000000000000000000",
+                    depositAddress as Address,
+                    BigInt(amountToDeposit)
+                );
+
+                // Handle result types (UserOpReceipt or EOA Receipt wrapper)
+                let txHash: string = "";
+                if (transferResult && typeof transferResult === 'object') {
+                    if ('receipt' in transferResult && transferResult.receipt) {
+                        txHash = transferResult.receipt.transactionHash;
+                    } else if ('transactionHash' in transferResult) {
+                        // @ts-ignore
+                        txHash = transferResult.transactionHash;
+                    } else if ('userOpHash' in transferResult) {
+                        // If it returned a UserOpReceipt directly
+                        // @ts-ignore
+                        txHash = transferResult.receipt?.transactionHash;
+                    }
+                }
+
+                if (!txHash) {
+                    throw new Error("Unknown transfer result format from SDK");
+                }
+
+                console.log("[Transfer] Deposit successful:", txHash);
+                toast.info("Deposit sent! Finalizing bridge...");
+
+                // Retry execution with hash
+                context.depositTxHash = txHash;
+                response = await transferManager.execute(context);
+            }
 
             if (response.success) {
                 toast.success(`Transfer Successful! TX: ${response.transactionHash}`);
