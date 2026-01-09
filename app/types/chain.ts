@@ -35,6 +35,7 @@ export interface SDKEvmInformation {
     paymasterAddress?: string; // Address
     supports7702?: boolean;
     erc4337?: boolean;
+    facilitator?: string; // Address
 }
 
 export interface SDKNonEvmInformation {

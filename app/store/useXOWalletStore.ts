@@ -40,6 +40,10 @@ interface WalletState {
     // MetaMask connection state
     metaMaskConnection: MetaMaskConnection;
 
+    // Explicit Connection Mode (Persisted)
+    connectionMode: 'local' | 'metamask' | null;
+    setConnectionMode: (mode: 'local' | 'metamask' | null) => void;
+
     // Hydration flag
     hydrated: boolean;
     setHydrated: (hydrated: boolean) => void;
@@ -88,6 +92,10 @@ export const useXOWalletStore = create<WalletState>()(
                 address: null,
                 chainId: null
             },
+
+            // Explicit Connection Mode
+            connectionMode: null,
+            setConnectionMode: (mode) => set({ connectionMode: mode }),
 
             hydrated: false,
             setHydrated: (hydrated: boolean) => set({ hydrated }),

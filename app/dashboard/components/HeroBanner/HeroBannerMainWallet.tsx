@@ -5,7 +5,8 @@ import {
     Button,
     Menu,
     MenuItem,
-    CircularProgress
+    CircularProgress,
+    Tooltip
 } from "@mui/material";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { SplitBalance } from "./SplitBalance";
@@ -64,18 +65,51 @@ export const HeroBannerMainWallet = ({
     const [authAction, setAuthAction] = useState<"export" | "reset" | null>(null);
 
     // SMART ACCOUNT HOOK
-    const { connect, disconnect, smartAccountAddress, ownerAddress, chainId, isConnecting, isDeployed, account, ensureDeployed, ensureApproval } = useSmartAccount();
     const [chainAnchorEl, setChainAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedChain, setSelectedChain] = useState<ChainKey>("Base");
     const [eoaBalance, setEoaBalance] = useState<number>(0);
+
+    // State for local refresh spinner
+    const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
+
+
+    // Get Smart Account Hook
+    const {
+        account,
+        connectionType, // Explicit connection mode
+        ensureDeployed,
+        ensureApproval,
+        isDeployed,
+        smartAccountAddress,
+        ownerAddress,
+        connect,
+        getBalance,
+        disconnect,
+        chainId,
+        isConnecting
+    } = useSmartAccount();
+
+    const currentChainId = chainId;
 
     const { resetWallet, isUsingXO } = useXOContracts();
 
     const canRefresh = isUsingXO || !!burnedAddresses[activeWallet];
 
     // Store selectors for auto-connect
-    const currentPassword = useWalletPasswordStore((state) => state.currentPassword);
-    const { metaMaskConnection, mainWallet } = useXOWalletStore();
+    const {
+        mainWallet,
+        // activeWallet, // Already destructured from props
+        // setActiveWallet, // Already destructured from props
+        metaMaskConnection,
+        getActiveAddress
+    } = useXOWalletStore();
+
+    // Access smartAccounts from mainWallet
+    const smartAccounts = mainWallet.smartAccounts;
+
+    const {
+        currentPassword
+    } = useWalletPasswordStore();
 
     // Prevent auto-connect loop after manual disconnect
     const hasManuallyDisconnected = useRef(false);
@@ -83,30 +117,38 @@ export const HeroBannerMainWallet = ({
     // Get cached SA for display fallback
     const config = NETWORKS[selectedChain];
     const chainIdStr = config?.evm?.chain?.id?.toString();
-    const cachedSmartAccount = chainIdStr ? mainWallet.smartAccounts?.[chainIdStr]?.address : null;
+    const cachedSmartAccount = chainIdStr ? smartAccounts?.[chainIdStr]?.address : null;
 
-    // Auto-connect Local Wallet (SDK) if unlocked and not using MetaMask
+    // Determine connection mode using the explicit state from hook
+    const isUsingMetaMask = connectionType === 'metamask';
+
+    // Auto-connect Wallet (Local or MetaMask) based on persisted state
     useEffect(() => {
-        const autoConnectLocal = async () => {
+        const autoConnect = async () => {
             console.log("[HeroBanner] Auto-connect Check:", {
                 activeWallet,
                 hasSmartAccountAddress: !!smartAccountAddress,
                 hasPassword: !!currentPassword,
                 isConnecting,
-                isMetaMask: metaMaskConnection.isConnected,
+                connectionType,
                 manualDisconnect: hasManuallyDisconnected.current
             });
 
             if (
-                activeWallet === "EVM" && !smartAccountAddress && currentPassword &&
-                !isConnecting && !hasManuallyDisconnected.current
+                activeWallet === "EVM" && !smartAccountAddress && !isConnecting && !hasManuallyDisconnected.current
             ) {
-                console.log("[HeroBanner] Auto-connecting Local Wallet SDK...");
-                await connect(selectedChain, false);
+                if (connectionType === 'metamask') {
+                    console.log("[HeroBanner] Auto-reconnecting MetaMask...");
+                    await connect(selectedChain, true);
+                } else if (currentPassword) {
+                    // Default to local if password exists and not explicitly metamask
+                    console.log("[HeroBanner] Auto-connecting Local Wallet SDK...");
+                    await connect(selectedChain, false);
+                }
             }
         };
-        autoConnectLocal();
-    }, [activeWallet, smartAccountAddress, currentPassword, isConnecting, selectedChain, metaMaskConnection.isConnected, connect]);
+        autoConnect();
+    }, [activeWallet, smartAccountAddress, currentPassword, isConnecting, selectedChain, connectionType, hasManuallyDisconnected, connect]);
     useEffect(() => {
         const fetchEoaBalance = async () => {
             if (activeWallet === "EVM" && ownerAddress) {
@@ -394,26 +436,55 @@ export const HeroBannerMainWallet = ({
                 </IconButton>
 
                 {activeWallet === "EVM" && (
-                    <Button
-                        onClick={smartAccountAddress ? handleDisconnect : handleConnectClick}
-                        disabled={isConnecting}
-                        sx={{
-                            background: smartAccountAddress ? "#00DC8C" : "#ffffff",
-                            border: "2px solid #000000",
-                            borderRadius: 2,
-                            px: 1.5,
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color: "#000000",
-                            textTransform: "none",
-                            "&:hover": {
-                                background: smartAccountAddress ? "#00CC7C" : "#f0f0f0",
-                            },
-                        }}
-                        startIcon={isConnecting ? <CircularProgress size={16} /> : <AccountBalanceWalletIcon />}
-                    >
-                        {isConnecting ? "Conectando..." : smartAccountAddress ? "Desconectar" : (currentPassword ? "Reconectar Wallet" : "Connect MetaMask")}
-                    </Button>
+                    <>
+                        {/* Standard Button (Disconnect / Connect Local / Connect MM if no password) */}
+                        <Button
+                            onClick={smartAccountAddress ? handleDisconnect : handleConnectClick}
+                            disabled={isConnecting}
+                            sx={{
+                                background: smartAccountAddress ? "#00DC8C" : "#ffffff",
+                                border: "2px solid #000000",
+                                borderRadius: 2,
+                                px: 1.5,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: "#000000",
+                                textTransform: "none",
+                                "&:hover": {
+                                    background: smartAccountAddress ? "#00CC7C" : "#f0f0f0",
+                                },
+                            }}
+                            startIcon={isConnecting ? <CircularProgress size={16} /> : <AccountBalanceWalletIcon />}
+                        >
+                            {isConnecting ? "Conectando..." : smartAccountAddress ? "Desconectar" : (currentPassword ? "Reconectar Local" : "Connect MetaMask")}
+                        </Button>
+
+                        {/* Explicit MetaMask Connect Button (Only if disconnected & using Local) */}
+                        {!smartAccountAddress && currentPassword && !isConnecting && (
+                            <Tooltip title="Conectar con MetaMask">
+                                <IconButton
+                                    onClick={async () => {
+                                        hasManuallyDisconnected.current = false;
+                                        await connect(selectedChain, true);
+                                    }}
+                                    sx={{
+                                        ml: 1,
+                                        background: "#ffffff",
+                                        border: "2px solid #000000",
+                                        borderRadius: 2,
+                                        p: "5px",
+                                        "&:hover": { background: "#f0f0f0" }
+                                    }}
+                                >
+                                    <Box
+                                        component="img"
+                                        src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
+                                        sx={{ width: 20, height: 20 }}
+                                    />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                    </>
                 )}
             </Box>
 
@@ -500,7 +571,7 @@ export const HeroBannerMainWallet = ({
                     {activeWallet === "EVM" && xoClientAlias
                         ? ` de ${xoClientAlias}`
                         : ""}
-                    {smartAccountAddress && activeWallet === "EVM" && " (MetaMask Connected)"}
+                    {smartAccountAddress && activeWallet === "EVM" && (isUsingMetaMask ? " (MetaMask Connected)" : " (Local Connected)")}
                 </Typography>
 
                 <Box sx={{ mb: 1.5 }}>
@@ -575,7 +646,15 @@ export const HeroBannerMainWallet = ({
                     ensureDeployed={ensureDeployed}
                     ensureApproval={ensureApproval}
                     account={account}
-                    setSelectedChain={setSelectedChain}
+                    smartAccountAddress={smartAccountAddress}
+                    setSelectedChain={async (chain) => {
+                        setSelectedChain(chain);
+                        // Trigger re-connection logic immediately using SAME method as current
+                        console.log(`[FloatingChainInfo] Switching to ${chain}... Method: ${isUsingMetaMask ? 'MetaMask' : 'Local'}`);
+                        await connect(chain, isUsingMetaMask);
+                    }}
+                    connectedChainId={chainId}
+                    isConnecting={isConnecting}
                 />
             )}
         </>

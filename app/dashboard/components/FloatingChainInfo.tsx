@@ -37,6 +37,9 @@ interface FloatingChainInfoProps {
     ensureApproval: (tokenAddress: Address, spender: Address, amount: bigint) => Promise<boolean>;
     account: AccountAbstraction | null;
     setSelectedChain: (chain: ChainKey) => void;
+    connectedChainId: string | null;
+    isConnecting?: boolean;
+    smartAccountAddress: string | null; // Added prop
 }
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -47,7 +50,10 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
     ensureDeployed,
     ensureApproval,
     account,
-    setSelectedChain
+    setSelectedChain,
+    connectedChainId,
+    isConnecting = false,
+    smartAccountAddress
 }) => {
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [loadingDeploy, setLoadingDeploy] = useState(false);
@@ -66,10 +72,12 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
     const id = open ? "floating-chain-info-popover" : undefined;
 
     const config = NETWORKS[selectedChain];
+    const targetChainId = config?.evm?.chain?.id?.toString();
+    const isChainMatching = connectedChainId === targetChainId;
 
     useEffect(() => {
         const checkApprovals = async () => {
-            if (!account || !config || !open) return;
+            if (!account || !config || !open || !isChainMatching) return;
 
             const newApprovals: Record<string, boolean> = {};
 
@@ -80,20 +88,20 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
                 try {
                     const allowance = await account.getAllowance(asset.address as Address);
                     if (allowance > BigInt(0)) {
-                        newApprovals[asset.name] = true;
+                        newApprovals[asset.address] = true;
                     } else {
-                        newApprovals[asset.name] = false;
+                        newApprovals[asset.address] = false;
                     }
                 } catch (e) {
                     // Fail silently for UI check
-                    newApprovals[asset.name] = false;
+                    newApprovals[asset.address] = false;
                 }
             }
             setApprovals(newApprovals);
         };
 
         checkApprovals();
-    }, [account, config, open]);
+    }, [account, config, open, isChainMatching]);
 
     const handleDeploy = async () => {
         setLoadingDeploy(true);
@@ -106,17 +114,35 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
         }
     };
 
-    const handleApprove = async (tokenName: string, tokenAddress: Address, decimals: number) => {
-        setApprovingToken(tokenName);
+    const handleApprove = async (token: { address: string; name: string }) => {
+        // User requested that approvals go to the Smart Account itself
+        if (!smartAccountAddress) {
+            toast.error("Smart Account address missing. Please connect/deploy.");
+            return;
+        }
+
+        setApprovingToken(token.address);
+
+        // Prevent interaction if connecting
+        if (isConnecting) {
+            toast.warning("Reconnecting wallet... please wait.");
+            setApprovingToken(null);
+            return;
+        }
+
+        // Max amount
+        const maxAmount = BigInt("115792089237316195423570985008687907853269984665640564039457584007913129639935");
+
         try {
-            // Approve max uint256
-            const maxAmount = BigInt("115792089237316195423570985008687907853269984665640564039457584007913129639935");
-            await ensureApproval(tokenAddress, FACILITATOR_ADDRESS, maxAmount);
-            toast.success(`Approved ${tokenName} for Facilitator`);
-            setApprovals(prev => ({ ...prev, [tokenName]: true }));
+            // @ts-ignore
+            // Using Smart Account Address as spender per user requirement
+            const success = await ensureApproval(token.address as Address, smartAccountAddress as Address, maxAmount);
+            if (success) {
+                setApprovals((prev) => ({ ...prev, [token.address]: true }));
+            }
         } catch (e) {
-            console.error("Approval failed", e);
-            toast.error(`Failed to approve ${tokenName}`);
+            console.error("Approve failed", e);
+            toast.error(`Failed to approve ${token.name}`);
         } finally {
             setApprovingToken(null);
         }
@@ -207,6 +233,14 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
 
                 <Divider sx={{ mb: 2 }} />
 
+                {!isChainMatching && (
+                    <Box sx={{ mb: 2, p: 1, bgcolor: "#fff3cd", borderRadius: 1 }}>
+                        <Typography variant="caption" color="warning.main">
+                            Switching to {selectedChain}... Please wait.
+                        </Typography>
+                    </Box>
+                )}
+
                 {/* DEPLOY STATUS */}
                 <Box sx={{ mb: 3 }}>
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -229,7 +263,7 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
                                 size="small"
                                 startIcon={loadingDeploy ? <CircularProgress size={16} color="inherit" /> : <CloudUploadIcon />}
                                 onClick={handleDeploy}
-                                disabled={loadingDeploy}
+                                disabled={loadingDeploy || !isChainMatching || isConnecting}
                                 sx={{ borderRadius: 2, textTransform: "none" }}
                             >
                                 Deploy
@@ -245,65 +279,49 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                         Tokens & Approvals
                     </Typography>
-                    {approvalAssets.length === 0 ? (
+                    {/* ASSET LIST */}
+                    {config.assets.filter(a => a.address && a.address !== ZERO_ADDRESS).length === 0 ? (
                         <Typography variant="caption" color="text.secondary">No approval needed for native assets.</Typography>
                     ) : (
                         <List dense sx={{ p: 0 }}>
-                            {approvalAssets.map((asset) => {
-                                const isApproved = approvals[asset.name];
-                                return (
-                                    <ListItem
-                                        key={asset.name}
-                                        secondaryAction={
-                                            isApproved ? (
-                                                <Tooltip title="Approved for Facilitator">
-                                                    <CheckCircleIcon color="success" fontSize="small" />
-                                                </Tooltip>
-                                            ) : (
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    color="primary"
-                                                    startIcon={approvingToken === asset.name ? <CircularProgress size={12} /> : <VerifiedUserIcon />}
-                                                    onClick={() => handleApprove(asset.name, asset.address as Address, asset.decimals)}
-                                                    disabled={approvingToken === asset.name || !account} // Disable if no account
-                                                    sx={{
-                                                        fontSize: 10,
-                                                        minWidth: "auto",
-                                                        px: 1,
-                                                        py: 0.5,
-                                                        borderRadius: 2,
-                                                        textTransform: "none"
-                                                    }}
-                                                >
-                                                    Approve
-                                                </Button>
-                                            )
-                                        }
-                                        sx={{
-                                            border: "1px solid #eee",
-                                            borderRadius: 2,
-                                            mb: 1
-                                        }}
-                                    >
-                                        <ListItemAvatar sx={{ minWidth: 36 }}>
-                                            <Avatar sx={{ width: 24, height: 24, background: "transparent" }} src="">
-                                                {asset.icon}
-                                            </Avatar>
-                                        </ListItemAvatar>
-                                        <ListItemText
-                                            primary={asset.name}
-                                            secondary={asset.address ? (asset.address.slice(0, 6) + "..." + asset.address.slice(-4)) : ""}
-                                            primaryTypographyProps={{ fontWeight: 600, fontSize: 13 }}
-                                            secondaryTypographyProps={{ fontSize: 10, fontFamily: "monospace" }}
-                                        />
-                                    </ListItem>
-                                )
-                            })}
+                            {config.assets.filter(a => a.address && a.address !== ZERO_ADDRESS).map((token) => (
+                                <ListItem key={token.name} sx={{ px: 0, py: 1, borderBottom: "1px solid #eee" }}>
+                                    <ListItemAvatar>
+                                        <Avatar
+                                            src={typeof token.icon === 'string' ? token.icon : undefined}
+                                            sx={{ width: 24, height: 24 }}
+                                        >
+                                            {typeof token.icon !== 'string' ? token.icon : null}
+                                        </Avatar>
+                                    </ListItemAvatar>
+                                    <ListItemText
+                                        primary={token.name}
+                                        secondary={token.address?.slice(0, 6) + "..." + token.address?.slice(-4)}
+                                        primaryTypographyProps={{ fontWeight: 700, fontSize: 13 }}
+                                        secondaryTypographyProps={{ fontSize: 10, fontFamily: "monospace" }}
+                                    />
+                                    {approvals[token.address!] ? (
+                                        <CheckCircleIcon color="success" fontSize="small" />
+                                    ) : (
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            onClick={() => handleApprove({
+                                                address: token.address!,
+                                                name: token.name
+                                            })}
+                                            disabled={loadingDeploy || approvingToken === token.address || !isChainMatching || isConnecting}
+                                            sx={{ ml: "auto", textTransform: "none", fontSize: 10, px: 1, minWidth: "auto" }}
+                                        >
+                                            {approvingToken === token.address ? <CircularProgress size={12} /> : "Approve"}
+                                        </Button>
+                                    )}
+                                </ListItem>
+                            ))}
                         </List>
                     )}
-                </Box>
-            </Popover>
+                </Box >
+            </Popover >
         </>
     );
 };
