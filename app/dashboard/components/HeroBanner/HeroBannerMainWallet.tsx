@@ -6,7 +6,10 @@ import {
     Menu,
     MenuItem,
     CircularProgress,
-    Tooltip
+    Tooltip,
+    Divider,
+    ListItemIcon,
+    ListItemText
 } from "@mui/material";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { SplitBalance } from "./SplitBalance";
@@ -35,7 +38,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { FloatingChainInfo } from "../FloatingChainInfo";
-import { useConnect, useAccount } from "wagmi";
+import { useConnect, useAccount, useDisconnect } from "wagmi";
 
 interface HeroBannerMainWalletProps {
     activeWallet: ActiveWallet;
@@ -57,6 +60,7 @@ export const HeroBannerMainWallet = ({
     onRefresh
 }: HeroBannerMainWalletProps) => {
     const [loadWalletOpen, setLoadWalletOpen] = useState(false);
+    const [walletAnchorEl, setWalletAnchorEl] = useState<null | HTMLElement>(null);
 
     // EXPORT WALLET STATES
     const [passwordModalOpen, setPasswordModalOpen] = useState(false);
@@ -75,6 +79,7 @@ export const HeroBannerMainWallet = ({
 
     // Wagmi Hooks
     const { connectors, connect: connectWagmi } = useConnect();
+    const { disconnect: disconnectWagmi } = useDisconnect();
     const { isConnected: isWagmiConnected } = useAccount();
 
 
@@ -218,29 +223,24 @@ export const HeroBannerMainWallet = ({
         disconnect();
     };
 
-    const handleConnectClick = async () => {
-        // Reset manual disconnect flag on manual connect attempt
+    const handleConnectClick = (event: MouseEvent<HTMLElement>) => {
+        setWalletAnchorEl(event.currentTarget);
+    };
+
+    const handleWalletSelect = async (type: 'local' | 'external', connector?: any) => {
+        setWalletAnchorEl(null);
         hasManuallyDisconnected.current = false;
 
-        if (activeWallet === "EVM") {
+        if (type === 'local') {
+            console.log("Restoring Local Wallet connection...");
+            await connect(selectedChain, false);
+        } else {
             try {
-                if (currentPassword) {
-                    // Prioritize restoring Local Wallet if unlocked
-                    console.log("Restoring Local Wallet connection...");
-                    await connect(selectedChain, false);
-                } else {
-                    // Otherwise connect with External Wallet (Wagmi)
-                    // If not connected to Wagmi yet, trigger connection
-                    if (!isWagmiConnected) {
-                        const connector = connectors.find(c => c.id === 'injected') || connectors[0];
-                        if (connector) {
-                            connectWagmi({ connector });
-                            // The actual SDK connection connects via useSmartAccount effect or re-render
-                            // But we call connect(true) to signal intention
-                        }
-                    }
-                    await connect(selectedChain, true);
+                if (connector) {
+                    disconnectWagmi();
+                    connectWagmi({ connector });
                 }
+                await connect(selectedChain, true);
             } catch (e) {
                 console.error("Connection failed:", e);
                 toast.error("Failed to connect wallet");
@@ -505,6 +505,52 @@ export const HeroBannerMainWallet = ({
                         {chain}
                     </MenuItem>
                 ))}
+            </Menu>
+
+            <Menu
+                anchorEl={walletAnchorEl}
+                open={Boolean(walletAnchorEl)}
+                onClose={() => setWalletAnchorEl(null)}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                }}
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                }}
+            >
+                {currentPassword && (
+                    <div>
+                        <MenuItem onClick={() => handleWalletSelect('local')}>
+                            <ListItemIcon>
+                                <AccountBalanceWalletIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText>Local Wallet</ListItemText>
+                        </MenuItem>
+                        <Divider />
+                    </div>
+                )}
+
+                {connectors.map((connector) => (
+                    <MenuItem key={connector.uid || connector.id} onClick={() => handleWalletSelect('external', connector)}>
+                        <ListItemIcon>
+                            {/* Try to show specific icon if available or generic */}
+                            <Box
+                                component="img"
+                                src={connector.icon || "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"}
+                                sx={{ width: 20, height: 20, objectFit: 'contain' }}
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                            {(!connector.icon) && <AccountBalanceWalletIcon fontSize="small" />}
+                        </ListItemIcon>
+                        <ListItemText>{connector.name}</ListItemText>
+                    </MenuItem>
+                ))}
+
+                {connectors.length === 0 && (
+                    <MenuItem disabled>No external wallets found</MenuItem>
+                )}
             </Menu>
 
             <LoadWalletModal open={loadWalletOpen} onClose={() => setLoadWalletOpen(false)} />
