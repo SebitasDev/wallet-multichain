@@ -5,9 +5,11 @@ import { ChainKey } from "@/app/types/chain";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
-import { toast } from "react-toastify";
-import { Address, parseUnits, WalletClient, Hex } from "viem";
+import { Address, WalletClient, Hex } from "viem";
 
+/**
+ * Interface for the hook return value
+ */
 interface UseSmartAccountResult {
     account: AccountAbstraction | null;
     connectionType: 'local' | 'metamask' | null;
@@ -26,10 +28,12 @@ interface UseSmartAccountResult {
     disconnect: () => void;
 }
 
+/**
+ * Primary Guard: useSmartAccount Hook
+ */
 export const useSmartAccount = (): UseSmartAccountResult => {
+    // Local State
     const [account, setAccount] = useState<AccountAbstraction | null>(null);
-    // Removed local connectionType state in favor of store
-    // const [connectionType, setConnectionType] = useState<'local' | 'metamask' | null>(null);
     const [smartAccountAddress, setSmartAccountAddress] = useState<string | null>(null);
     const [ownerAddress, setOwnerAddress] = useState<string | null>(null);
     const [isDeployed, setIsDeployed] = useState(false);
@@ -39,9 +43,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
     const [error, setError] = useState<string | null>(null);
     const [currentChainId, setCurrentChainId] = useState<string | null>(null);
 
-    // ...
-
-    // Store access
+    // Store Access
     const {
         mainWallet,
         setSmartAccount: storeSetSmartAccount,
@@ -51,8 +53,12 @@ export const useSmartAccount = (): UseSmartAccountResult => {
         connectionMode,
         setConnectionMode
     } = useXOWalletStore();
+
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
 
+    /**
+     * Connect to Smart Account via Local Key or MetaMask
+     */
     const connect = useCallback(async (chainKey: ChainKey, useMetaMask: boolean = false): Promise<AccountAbstraction | null> => {
         setIsConnecting(true);
         setError(null);
@@ -64,15 +70,11 @@ export const useSmartAccount = (): UseSmartAccountResult => {
             }
 
             const targetChainId = config.evm.chain.id.toString();
-            // Hex chainId for MetaMask (e.g. 0x64 for Gnosis)
+            // Hex chainId for MetaMask (e.g. 0x64)
             const targetChainIdHex = `0x${config.evm.chain.id.toString(16)}`;
-
-            // Check if we already have this SA cached (with fallback for old persisted data)
-            const cachedSA = mainWallet.smartAccounts?.[targetChainId];
 
             // Create AccountAbstraction instance
             const accountInstance = new AccountAbstraction(config.evm as any);
-
             let result: { owner: `0x${string}`; smartAccount: `0x${string}` };
 
             if (useMetaMask) {
@@ -84,7 +86,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
                             params: [{ chainId: targetChainIdHex }],
                         });
                     } catch (switchError: any) {
-                        // This error code indicates that the chain has not been added to MetaMask.
+                        // Error 4902: Chain not added
                         if (switchError.code === 4902) {
                             throw new Error("This network is not available in your MetaMask, please add it manually.");
                         }
@@ -92,12 +94,12 @@ export const useSmartAccount = (): UseSmartAccountResult => {
                     }
                 }
 
-                // Connect with MetaMask (no private key)
+                // Connect with MetaMask (Signer)
                 result = await accountInstance.connect();
                 setMetaMaskConnection(result.owner, targetChainId);
                 setConnectionMode('metamask');
             } else {
-                // Decrypt private key
+                // Connect with Local Private Key
                 if (!mainWallet.encryptedPrivateKey || !currentPassword || !mainWallet.salt || !mainWallet.iv) {
                     throw new Error("Wallet credentials not available. Please unlock your wallet.");
                 }
@@ -109,47 +111,38 @@ export const useSmartAccount = (): UseSmartAccountResult => {
                     mainWallet.iv
                 ) as `0x${string}`;
 
-                // Connect with private key
                 result = await accountInstance.connect(privateKey);
                 setConnectionMode('local');
             }
 
+            // Sync State
             setAccount(accountInstance);
             setSmartAccountAddress(result.smartAccount);
             setOwnerAddress(result.owner);
             setCurrentChainId(targetChainId);
 
-            // Initial deployment check
-            // Note: casting method call if needed or assuming it returns boolean based on previous context
-            // Previous context used accountInstance.isAccountDeployed(). Let's try that.
-            let isDeployedStatus = false;
-            try {
-                // @ts-ignore
-                isDeployedStatus = await accountInstance.isAccountDeployed();
-            } catch (e) {
-                // fallback or try isDeployed()
-                try {
-                    // @ts-ignore
-                    isDeployedStatus = await accountInstance.isDeployed();
-                } catch (e2) { }
-            }
-
+            // Check Deployment Status
+            const isDeployedStatus = await safeCheckDeployment(accountInstance);
             setIsDeployed(isDeployedStatus);
 
-            // Update store
+            // Sync Store
             storeSetSmartAccount(targetChainId, result.smartAccount, isDeployedStatus);
 
             return accountInstance;
+
         } catch (e: any) {
             console.error("Error connecting Smart Account:", e);
             setError(e.message || "Failed to connect");
-            setIsConnecting(false);
+            setAccount(null);
             return null;
         } finally {
             setIsConnecting(false);
         }
-    }, [mainWallet, currentPassword, storeSetSmartAccount, updateSmartAccountDeployStatus, setMetaMaskConnection]);
+    }, [mainWallet, currentPassword, storeSetSmartAccount, updateSmartAccountDeployStatus, setMetaMaskConnection, setConnectionMode]);
 
+    /**
+     * Ensure Smart Account is deployed
+     */
     const ensureDeployed = useCallback(async () => {
         if (!account || !currentChainId) {
             console.warn("ensureDeployed called but no account is connected.");
@@ -157,87 +150,53 @@ export const useSmartAccount = (): UseSmartAccountResult => {
         }
 
         if (isDeployed) return true;
+
         setIsDeploying(true);
         try {
-            // Reverting to original logic pattern
             const receipt = await account.deployAccount();
-            // Check if receipt has 'success' property
-            // @ts-ignore
-            if (receipt && receipt.success) {
-                setIsDeployed(true);
-                if (currentChainId) updateSmartAccountDeployStatus(currentChainId, true);
-                return true;
-            }
-            // If wait exists
-            // @ts-ignore
-            if (receipt && typeof receipt.wait === 'function') {
-                // @ts-ignore
-                await (receipt as any).wait();
-                setIsDeployed(true);
-                if (currentChainId) updateSmartAccountDeployStatus(currentChainId, true);
-                return true;
-            }
+            const success = receipt && (receipt.success || ((receipt as any).transactionHash && !(receipt as any).error));
 
-            // Fallback
-            return true;
+            if (success) {
+                setIsDeployed(true);
+                updateSmartAccountDeployStatus(currentChainId, true);
+                return true;
+            }
+            return false;
         } catch (e) {
-            console.error(e);
+            console.error("Deploy error:", e);
             return false;
         } finally {
             setIsDeploying(false);
         }
     }, [account, currentChainId, isDeployed, updateSmartAccountDeployStatus]);
 
+    /**
+     * Ensure Token Approval (Wrapper around static helper)
+     */
     const ensureApproval = useCallback(async (tokenAddress: Address, spender: Address, amount: bigint) => {
         if (!account) return false;
         setIsApproving(true);
         try {
-            // Check allowance first (manual check for debug)
-            // @ts-ignore
-            const currentAllowance = typeof account.getAllowance === 'function' ? await account.getAllowance(tokenAddress, spender) : 'unknown';
-
-            console.log("[useSmartAccount] ensureApproval Trace:", {
-                token: tokenAddress,
-                spender,
-                amount: amount.toString(),
-                currentAllowance: currentAllowance.toString(),
-                // @ts-ignore
-                account: account.address || 'unknown',
-                // @ts-ignore
-                owner: typeof account.getOwner === 'function' ? await account.getOwner() : 'unknown',
-                connectionType: connectionMode,
-                chainId: currentChainId
-            });
-
-            // For some tokens/chains, approval is not needed or handled internally.
-            // We rely on the SDK's approveToken which should handle checks.
-            const tx = await account.approveToken(tokenAddress, spender, amount);
-
-            console.log("[useSmartAccount] approveToken result:", tx);
-
-            if (tx === "NOT_NEEDED") return true;
-
-            // Check if tx has wait
-            // @ts-ignore
-            if (tx && typeof tx.wait === 'function') {
-                // @ts-ignore
-                await (tx as any).wait();
-            }
-
-            return true;
+            return await ensureTokenApproval(account, tokenAddress, spender, amount);
         } catch (e) {
             console.error("Error approving token:", e);
             return false;
         } finally {
             setIsApproving(false);
         }
-    }, [account, connectionMode, currentChainId]);
+    }, [account]);
 
+    /**
+     * Get Token Balance
+     */
     const getBalance = useCallback(async (token: string | Address) => {
         if (!account) return BigInt(0);
         return await account.getBalance(token as Address);
     }, [account]);
 
+    /**
+     * Disconnect and Reset State
+     */
     const disconnect = useCallback(() => {
         setAccount(null);
         setSmartAccountAddress(null);
@@ -247,7 +206,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
         setError(null);
         setConnectionMode(null);
         disconnectMetaMask();
-    }, [disconnectMetaMask]);
+    }, [disconnectMetaMask, setConnectionMode]);
 
     return {
         account,
@@ -269,11 +228,30 @@ export const useSmartAccount = (): UseSmartAccountResult => {
 };
 
 /**
- * Helper function to get or create AccountAbstraction for a specific chain
- * This is a stateless version for use in callbacks
+ * --- STATIC HELPERS ---
  */
-// ... existing imports
 
+/**
+ * Safely check if account is deployed, handling potential SDK inconsistencies
+ */
+async function safeCheckDeployment(account: AccountAbstraction): Promise<boolean> {
+    try {
+        // @ts-ignore - Handle SDK method variations if necessary
+        return await account.isAccountDeployed();
+    } catch {
+        try {
+            // @ts-ignore
+            return await account.isDeployed();
+        } catch {
+            return false;
+        }
+    }
+}
+
+/**
+ * Helper to get or create AccountAbstraction for a specific chain
+ * (Stateless version for usage in other hooks like useCrossChainTransfer)
+ */
 export const getSmartAccountForChain = async (
     chainKey: ChainKey,
     signer?: Hex | WalletClient
@@ -288,12 +266,9 @@ export const getSmartAccountForChain = async (
             throw new Error(`Chain ${chainKey} is not configured for EVM operations`);
         }
 
-        // ... (imports should be at top, I will handle this separately or assume user accepts messy imports for now, but better to fix implementation first)
-
         const accountInstance = new AccountAbstraction(config.evm as any);
-        // Connect with Signer (WalletClient or Private Key)
         const result = await accountInstance.connect(signer);
-        const deployed = await accountInstance.isAccountDeployed();
+        const deployed = await safeCheckDeployment(accountInstance);
 
         return {
             account: accountInstance,
@@ -317,13 +292,13 @@ export const ensureTokenApproval = async (
 ): Promise<boolean> => {
     try {
         const currentAllowance = await account.getAllowance(tokenAddress);
-
         if (currentAllowance >= amount) {
             return true;
         }
 
         const result = await account.approveToken(tokenAddress, spender, amount);
-        return result === "NOT_NEEDED" || typeof result === "string";
+        // SDK returns "NOT_NEEDED" or a TX hash/receipt
+        return result === "NOT_NEEDED" || !!result;
     } catch (e) {
         console.error("[ensureTokenApproval] Error:", e);
         return false;
