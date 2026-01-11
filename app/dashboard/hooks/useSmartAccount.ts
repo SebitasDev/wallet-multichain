@@ -5,7 +5,7 @@ import { ChainKey } from "@/app/types/chain";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
-import { Address, WalletClient, Hex } from "viem";
+import { Address, WalletClient, Hex, maxUint256, PublicClient } from "viem";
 
 /**
  * Interface for the hook return value
@@ -288,7 +288,8 @@ export const ensureTokenApproval = async (
     account: AccountAbstraction,
     tokenAddress: Address,
     spender: Address,
-    amount: bigint
+    amount: bigint,
+    publicClient?: PublicClient
 ): Promise<boolean> => {
     try {
         const currentAllowance = await account.getAllowance(tokenAddress);
@@ -296,7 +297,42 @@ export const ensureTokenApproval = async (
             return true;
         }
 
-        const result = await account.approveToken(tokenAddress, spender, amount);
+        const ownerAddr = await account.getOwner();
+
+        // Resolve ChainKey for API
+        // @ts-ignore
+        const chainId = (await account.getChainId()).toString();
+        const chainEntry = Object.entries(NETWORKS).find(([_, n]) => n.evm?.chain?.id?.toString() === chainId);
+        const chainKey = chainEntry ? chainEntry[0] : null;
+
+        if (chainKey) {
+            // 1. Request Gas Fund for EOA
+            try {
+                // toast.info("Checking gas for approval..."); // Toast might be too invasive here if used in background
+                await fetch("/api/relayer/fund-approval", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chain: chainKey,
+                        walletAddress: ownerAddr,
+                        tokenAddress: tokenAddress,
+                        spender: spender
+                    })
+                });
+            } catch (fundErr) {
+                console.warn("Gas fund check failed:", fundErr);
+            }
+        }
+
+        const result = await account.approveToken(tokenAddress, spender, maxUint256);
+
+        // Wait for mining if publicClient provided
+        if (result && result !== "NOT_NEEDED" && typeof result === 'string' && publicClient) {
+            console.log("[ensureTokenApproval] Waiting for approval mining...", result);
+            await publicClient.waitForTransactionReceipt({ hash: result as Hex });
+            console.log("[ensureTokenApproval] Approval mined");
+        }
+
         // SDK returns "NOT_NEEDED" or a TX hash/receipt
         return result === "NOT_NEEDED" || !!result;
     } catch (e) {

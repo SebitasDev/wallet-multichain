@@ -5,7 +5,7 @@ import {
     TransferManager,
     getNearSimulation
 } from "@1llet.xyz/erc4337-gasless-sdk";
-import { parseUnits, Address, createWalletClient, custom } from "viem";
+import { parseUnits, Address, createWalletClient, custom, encodeFunctionData, parseAbi, maxUint256 } from "viem";
 import { ChainKey } from "@/app/types/chain";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
@@ -13,9 +13,9 @@ import { decryptPrivateKey } from "@/app/utils/cripto";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useForm } from "react-hook-form";
-import { getSmartAccountForChain } from "../useSmartAccount";
+import { getSmartAccountForChain, ensureTokenApproval } from "../useSmartAccount";
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
-import { useWalletClient, useConnect, useSwitchChain, useConnectors, useConnections } from "wagmi";
+import { useWalletClient, useConnect, useSwitchChain, useConnectors, useConnections, usePublicClient } from "wagmi";
 
 interface BridgeContext {
     paymentPayload?: any;
@@ -53,6 +53,7 @@ export const useCrossChainTransfer = () => {
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
 
     // Wagmi Hooks
+    const publicClient = usePublicClient();
     const connectors = useConnectors();
     const connections = useConnections();
     const { mutateAsync: connectAsync } = useConnect();
@@ -263,22 +264,13 @@ export const useCrossChainTransfer = () => {
 
         setIsApproving(true);
         try {
-            const currentAllowance = await smartAccount.getAllowance(tokenAddress);
-
-            if (currentAllowance >= amount) {
-                return true;
-            }
-
-            console.log("[SDK] Approving token...");
             const config = NETWORKS[watchSourceChain];
-            const spender = config?.evm?.paymasterAddress as Address || tokenAddress;
+            // Correct spender for Smart Transfer (Pull) is the Smart Account itself
+            const spender = smartAccountAddress as Address;
 
-            const result = await smartAccount.approveToken(tokenAddress, spender, amount * BigInt(2));
-            console.log("[SDK] Approval result:", result);
-            toast.success("Token approved!");
-            return true;
+            return await ensureTokenApproval(smartAccount, tokenAddress, spender, amount, publicClient);
         } catch (e: any) {
-            console.error("Approval Failed:", e);
+            console.error("Approval helper failed:", e);
             toast.error("Approval failed: " + e.message);
             return false;
         } finally {
@@ -401,6 +393,73 @@ export const useCrossChainTransfer = () => {
                 // Retry execution with hash
                 context.depositTxHash = txHash;
                 response = await transferManager.execute(context);
+            }
+
+            // [NEW] Handle Direct Transfer (SDK Signal)
+            if (response.success && response.transactionHash === "DIRECT_TRANSFER_REQUIRED") {
+                console.log("[TransferManager] Intercepting Direct Transfer Signal...");
+                toast.info("Signing direct transfer...");
+
+                try {
+                    const config = NETWORKS[data.sourceChain];
+                    const tokenAsset = config?.assets.find(a => a.name === data.sourceToken);
+
+                    if (!tokenAsset) throw new Error(`Source token ${data.sourceToken} not found for direct transfer`);
+                    if (!data.recipient) throw new Error("Recipient address missing");
+
+                    const amountBigInt = parseUnits(data.amount, tokenAsset.decimals);
+
+                    console.log("[Transfer] Initiating Smart Transfer (Direct) for:", {
+                        token: tokenAsset.address,
+                        recipient: data.recipient,
+                        amount: amountBigInt.toString()
+                    });
+
+                    // Use SDK's built-in helper for ERC-20 transfers
+                    // @ts-ignore
+                    const sendResult = await account.smartTransfer(
+                        tokenAsset.address as Address,
+                        data.recipient as Address,
+                        amountBigInt
+                    );
+
+                    console.log("[Transfer] Direct transfer result:", sendResult);
+
+                    // Handle return type (Hash or Receipt)
+                    let realTxHash = "";
+                    if (sendResult && typeof sendResult === 'object') {
+                        if ('receipt' in sendResult && sendResult.receipt) {
+                            realTxHash = sendResult.receipt.transactionHash;
+                        } else if ('transactionHash' in sendResult) {
+                            // @ts-ignore
+                            realTxHash = sendResult.transactionHash;
+                        } else if ('userOpHash' in sendResult) {
+                            // @ts-ignore
+                            realTxHash = sendResult.receipt?.transactionHash;
+                        }
+                    } else if (typeof sendResult === 'string') {
+                        realTxHash = sendResult;
+                    }
+
+                    if (!realTxHash) {
+                        console.error("Invalid Result from SDK:", sendResult);
+                        throw new Error("Failed to retrieve transaction hash from direct transfer");
+                    }
+
+                    // Update response to reflect real success
+                    response.transactionHash = realTxHash;
+
+                    // Show final success toast with real hash
+                    toast.success(`Transfer Successful! TX: ${realTxHash}`);
+                    closeModal();
+                    reset();
+                    return;
+
+                } catch (directErr: any) {
+                    console.error("[Transfer] Direct Transfer Failed:", directErr);
+                    toast.error(`Direct Transfer Failed: ${directErr.message || "Unknown error"}`);
+                    return;
+                }
             }
 
             if (response.success) {
