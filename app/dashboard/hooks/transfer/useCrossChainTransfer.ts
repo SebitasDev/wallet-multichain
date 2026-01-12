@@ -325,14 +325,13 @@ export const useCrossChainTransfer = () => {
                 }
             }
 
-            // Normalization for SDK
-            const normalizeChain = (chain: string) => chain === "GNOSIS" ? "Gnosis" : chain;
+
 
             // 3. Execute transfer
             toast.info("Executing transfer...");
             const context: BridgeContext = {
-                sourceChain: normalizeChain(data.sourceChain) as any,
-                destChain: normalizeChain(data.destChain) as any,
+                sourceChain: data.sourceChain as any,
+                destChain: data.destChain as any,
                 sourceToken: data.sourceToken,
                 destToken: data.destToken,
                 amount: data.amount,
@@ -343,7 +342,7 @@ export const useCrossChainTransfer = () => {
 
             console.log("[Transfer] Context:", context);
 
-            let response = await transferManager.execute(context);
+            let response = await transferManager.execute(context as any);
 
             // [NEW] Handle Pending Deposit (CCTP & others)
             if (response.transactionHash && response.transactionHash.includes("PENDING_USER_DEPOSIT")) {
@@ -390,7 +389,7 @@ export const useCrossChainTransfer = () => {
 
                 // Retry execution with hash
                 context.depositTxHash = txHash;
-                response = await transferManager.execute(context);
+                response = await transferManager.execute(context as any);
             }
 
             // [NEW] Handle Direct Transfer (SDK Signal)
@@ -540,8 +539,7 @@ export const useCrossChainTransfer = () => {
             setSimulation(prev => ({ ...prev, loading: true, done: false }));
 
             try {
-                // Normalization for SDK
-                const normalizeChain = (chain: string) => chain === "GNOSIS" ? "Gnosis" : chain;
+
 
                 // Check for CCTP Bypass (USDC)
                 const srcConfig = NETWORKS[srcChain as ChainKey];
@@ -564,8 +562,8 @@ export const useCrossChainTransfer = () => {
                 } else {
                     // Call SDK Simulation
                     result = await getNearSimulation(
-                        normalizeChain(srcChain) as any,
-                        normalizeChain(dstChain) as any,
+                        srcChain as any,
+                        dstChain as any,
                         amtStr,
                         dstToken,
                         srcToken

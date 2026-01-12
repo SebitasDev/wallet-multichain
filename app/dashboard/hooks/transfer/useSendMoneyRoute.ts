@@ -90,8 +90,8 @@ export const useSendMoneyRoute = ({
 
             // Use SDK's getNearSimulation
             const data = await getNearSimulation(
-                sourceChainKey as ChainKey,
-                destChainKey as ChainKey,
+                sourceChainKey as any,
+                destChainKey as any,
                 totalAmountToSimulate,
                 watch("sourceToken") || "USDC",
                 token

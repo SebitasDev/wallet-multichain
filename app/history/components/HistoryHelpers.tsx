@@ -35,8 +35,8 @@ export const CHAIN_COMPONENTS: Record<string, React.ElementType> = {
     "Monad": MonadIcon,
     "Unichain": UnichainIcon,
     "World Chain": WorldChainIcon,
-    "Gnosis": GnosisIcon,
-    "GNOSIS": GnosisIcon,
+
+
 };
 
 export const TOKEN_COMPONENTS: Record<string, React.ElementType> = {

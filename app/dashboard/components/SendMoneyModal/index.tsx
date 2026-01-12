@@ -69,6 +69,7 @@ export const SendMoneyModal = ({ variant = "default" }: { variant?: "default" | 
                         maxSendAmount={maxSendAmount}
                         isExceedingMax={isExceedingMax}
                         variant={variant}
+                        sourceToken={watch("sourceToken") || "USDC"}
                     />
                 ) : (
                     <SendMoneyModalRoute

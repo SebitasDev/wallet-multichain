@@ -12,7 +12,7 @@ import {
     gnosis
 } from "viem/chains";
 import { polygon } from "wagmi/chains";
-import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN, BNB, GNOSIS } from "@/app/constants/chains";
+import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN, BNB, Gnosis } from "@/app/constants/chains";
 import { CHAIN_CONFIGS } from "@1llet.xyz/erc4337-gasless-sdk";
 import { ChainKey, ChainKeyEnum, ChainConfig } from "@/app/types/chain";
 
@@ -90,10 +90,10 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
             ...(getSDKConfig(isDevelopment ? bscTestnet.id : bsc.id) || {})
         }
     },
-    GNOSIS: {
-        ...GNOSIS,
+    Gnosis: {
+        ...Gnosis,
         evm: {
-            ...GNOSIS.evm,
+            ...Gnosis.evm,
             ...(getSDKConfig(isDevelopment ? gnosisChiado.id : gnosis.id) || {})
         }
     }
@@ -109,5 +109,5 @@ export const CHAIN_ID_TO_KEY: Record<string, string> = {
     [isDevelopment ? worldchainSepolia.id.toString() : worldchain.id.toString()]: "WorldChain",
     [isDevelopment ? monadTestnet.id.toString() : monad.id.toString()]: "Monad",
     [isDevelopment ? bscTestnet.id.toString() : bsc.id.toString()]: "BNB",
-    [isDevelopment ? gnosisChiado.id.toString() : gnosis.id.toString()]: "GNOSIS",
+    [isDevelopment ? gnosisChiado.id.toString() : gnosis.id.toString()]: "Gnosis",
 };

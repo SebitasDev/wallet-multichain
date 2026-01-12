@@ -99,7 +99,7 @@ export function WalletHeader() {
         { id: "base", networkKey: "Base", name: "Base", icon: NETWORKS["Base"]?.icon, color: "#0052FF", configAssets: NETWORKS["Base"]?.assets || [] },
         { id: "optimism", networkKey: "Optimism", name: "Optimism", icon: NETWORKS["Optimism"]?.icon, color: "#FF0420", configAssets: NETWORKS["Optimism"]?.assets || [] },
         { id: "arbitrum", networkKey: "Arbitrum", name: "Arbitrum", icon: NETWORKS["Arbitrum"]?.icon, color: "#12AAFF", configAssets: NETWORKS["Arbitrum"]?.assets || [] },
-        { id: "gnosis", networkKey: "GNOSIS", name: "Gnosis", icon: NETWORKS["GNOSIS"]?.icon, color: "#04795B", configAssets: NETWORKS["GNOSIS"]?.assets || [] },
+        { id: "gnosis", networkKey: "Gnosis", name: "Gnosis", icon: NETWORKS["Gnosis"]?.icon, color: "#04795B", configAssets: NETWORKS["Gnosis"]?.assets || [] },
         { id: "polygon", networkKey: "Polygon", name: "Polygon", icon: NETWORKS["Polygon"]?.icon, color: "#8247E5", configAssets: NETWORKS["Polygon"]?.assets || [] },
         { id: "avalanche", networkKey: "Avalanche", name: "Avalanche", icon: NETWORKS["Avalanche"]?.icon, color: "#E84142", configAssets: NETWORKS["Avalanche"]?.assets || [] },
         { id: "bnb", networkKey: "BNB Chain", name: "BNB Chain", icon: NETWORKS["BNB"]?.icon, color: "#F3BA2F", configAssets: NETWORKS["BNB"]?.assets || [] },
@@ -173,7 +173,7 @@ export function WalletHeader() {
                 case "base": key = "Base"; break;
                 case "optimism": key = "Optimism"; break;
                 case "arbitrum": key = "Arbitrum"; break;
-                case "gnosis": key = "GNOSIS"; break;
+                case "gnosis": key = "Gnosis"; break;
                 case "polygon": key = "Polygon"; break;
                 case "avalanche": key = "Avalanche"; break;
                 case "bnb": key = "BNB"; break;

@@ -8,7 +8,8 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useSessionWalletStore } from "@/app/store/useSessionWalletStore";
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { toast } from "react-toastify";
-import { Address, parseUnits } from "viem";
+import { Address, parseUnits, maxUint256 } from "viem";
+import { usePublicClient } from "wagmi";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { useBridgeUsdcStream } from "@/app/dashboard/hooks/transfer/useBridgeUsdcStream";
@@ -68,6 +69,7 @@ export type RouteDetail = {
 export const useSendMoneyModal = () => {
     // [NEW] Consistent Dev Check
     const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
+    const publicClient = usePublicClient();
 
     const [sendLoading, setSendLoading] = useState(false);
     const [routeReady, setRouteReady] = useState(false);
@@ -112,8 +114,8 @@ export const useSendMoneyModal = () => {
                                     tokens[asset.name] = bal;
                                     if (asset.name === "USDC") mainUsdcAmount = bal;
                                 }
-                            } catch (e) {
-                                // ignore
+                            } catch (e: any) {
+                                console.warn(`[BalanceFetch] Failed for ${config.label} - ${asset.name}:`, e.message);
                             }
                         }));
                     }
@@ -463,50 +465,131 @@ export const useSendMoneyModal = () => {
                     const tokenAddress = tokenAsset?.address as Address;
 
                     if (tokenAddress && tokenAddress !== "0x0000000000000000000000000000000000000000") {
-                        updateRouteStatus("approving", "Verificando aprobación de token...");
+                        const spender = (fromNet.evm.paymasterAddress as Address) || tokenAddress;
+                        updateRouteStatus("approving", "Verificando aprobación (Infinito)...");
 
-                        // Calculate amount in token units
-                        const tokenDecimals = tokenAsset?.decimals || 6;
-                        const amountBigInt = parseUnits(totalAmount, tokenDecimals);
+                        const approved = await ensureTokenApproval(
+                            account,
+                            tokenAddress,
+                            spender,
+                            maxUint256,
+                            undefined,
+                            smartAccountAddress as Address
+                        );
 
-                        // Get spender address (TokenMessenger for CCTP or recipient for direct)
-                        // For now, we'll check the allowance for potential spenders
-                        const currentAllowance = await account.getAllowance(tokenAddress);
-
-                        if (currentAllowance < amountBigInt) {
-                            updateRouteStatus("approving", "Aprobando token...");
-                            console.log("[handleOnConfirm] Approving token", finalToken, "amount:", amountBigInt.toString());
-
-                            try {
-                                const approveResult = await account.approveToken(
-                                    tokenAddress,
-                                    fromNet.evm.paymasterAddress as Address || tokenAddress, // Approve for paymaster or token contract
-                                    amountBigInt * BigInt(2) // Approve 2x to avoid future approvals
-                                );
-                                console.log("[handleOnConfirm] Approval result:", approveResult);
-                            } catch (approveError: any) {
-                                console.warn("[handleOnConfirm] Approval warning:", approveError.message);
-                                // Continue anyway - some tokens might not need approval
-                            }
-                        } else {
-                            console.log("[handleOnConfirm] Sufficient allowance exists:", currentAllowance.toString());
+                        if (!approved) {
+                            console.warn("Approval verification had issues, attempting transfer anyway...");
                         }
                     }
 
                     updateRouteStatus("burning", "Ejecutando transferencia...");
 
+
+                    // Normalization for SDK
+
+
                     // EXECUTE TRANSFER via SDK
                     const context: BridgeContext = {
                         amount: totalAmount,
-                        sourceChain: fromValidChain,
-                        destChain: toValidChain,
+                        sourceChain: fromValidChain as any,
+                        destChain: toValidChain as any,
                         recipient: recipient,
                         sourceToken: finalToken,
                         destToken: watch("sourceToken"),
                         senderAddress: smartAccountAddress,
                     };
 
-                    const result = await transferManager.execute(context);
+                    const result = await transferManager.execute(context as any);
+                    console.log("[TransferManager] Execute Response:", JSON.stringify(result, null, 2));
+
+
+                    // [NEW] Handle Pending Deposit (CCTP & others) - Ported from useCrossChainTransfer
+                    if (result.transactionHash && result.transactionHash.includes("PENDING_USER_DEPOSIT")) {
+                        console.log("[Transfer] Deposit required", result.data);
+                        updateRouteStatus("burning", "Firmando depósito...");
+
+                        const { depositAddress, amountToDeposit } = result.data;
+
+                        if (!depositAddress || !amountToDeposit) {
+                            throw new Error("Invalid deposit data from SDK");
+                        }
+
+                        console.log("[Transfer] Initiating Smart Transfer for Deposit");
+                        // @ts-ignore
+                        const transferResult = await account.smartTransfer(
+                            tokenAddress || "0x0000000000000000000000000000000000000000",
+                            depositAddress as Address,
+                            BigInt(amountToDeposit)
+                        );
+
+                        // Handle result types
+                        let txHash: string = "";
+                        if (transferResult && typeof transferResult === 'object') {
+                            if ('receipt' in transferResult && transferResult.receipt) {
+                                txHash = transferResult.receipt.transactionHash;
+                            } else if ('transactionHash' in transferResult) {
+                                // @ts-ignore
+                                txHash = transferResult.transactionHash;
+                            } else if ('userOpHash' in transferResult) {
+                                // @ts-ignore
+                                txHash = transferResult.receipt?.transactionHash;
+                            }
+                        } else if (typeof transferResult === 'string') {
+                            txHash = transferResult;
+                        }
+
+                        if (!txHash) {
+                            throw new Error("Unknown transfer result format from SDK");
+                        }
+
+                        console.log("[Transfer] Deposit successful:", txHash);
+                        updateRouteStatus("burning", "Finalizando puente...");
+
+                        // Retry execution with hash
+                        context.depositTxHash = txHash;
+
+                        console.log("Waiting for block propagation (5s)...");
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+
+                        // Mutate result to the new response
+                        const retryResult = await transferManager.execute(context as any);
+                        console.log("[TransferManager] Retry Response:", JSON.stringify(retryResult, null, 2));
+
+                        // Update 'result' variable to point to the new final result
+                        Object.assign(result, retryResult);
+                    }
+
+                    // [NEW] Handle Direct Transfer
+                    if (result.success && result.transactionHash === "DIRECT_TRANSFER_REQUIRED") {
+                        console.log("🔹 Direct Transfer Signal CAUGHT! Executing Smart Transfer...");
+                        updateRouteStatus("burning", "Ejecutando transferencia directa...");
+
+                        try {
+                            const amountBigInt = parseUnits(totalAmount, tokenAsset?.decimals || 6);
+                            const transferRes = await account.smartTransfer(
+                                tokenAddress || "0x0000000000000000000000000000000000000000",
+                                recipient as Address,
+                                amountBigInt
+                            );
+
+                            let realHash = "";
+                            if (typeof transferRes === 'string') {
+                                realHash = transferRes;
+                            } else if (typeof transferRes === 'object') {
+                                // @ts-ignore
+                                realHash = transferRes.receipt?.transactionHash || transferRes.transactionHash || transferRes.hash;
+                            }
+
+                            if (!realHash) throw new Error("No hash returned from smartTransfer");
+
+                            console.log("🔹 Direct Transfer SUCCESS:", realHash);
+                            result.transactionHash = realHash;
+
+                        } catch (dtError: any) {
+                            console.error("Direct Transfer Failed:", dtError);
+                            throw new Error("Direct Transfer Failed: " + dtError.message);
+                        }
+                    }
 
                     if (result.success) {
                         updateRouteStatus("done", "Completado");
@@ -539,7 +622,7 @@ export const useSendMoneyModal = () => {
                     const errorMessage = e.message || "Error Desconocido";
 
                     updateRouteStatus("error", errorMessage);
-                    toast.error(`Error en ${fromValidChain}: ${errorMessage}. Corrige el error y vuelve a intentar.`);
+                    toast.error(`Error en ${fromValidChain}: ${errorMessage}.Corrige el error y vuelve a intentar.`);
                     return;
                 }
             }
@@ -593,17 +676,50 @@ export const useSendMoneyModal = () => {
     };
 
 
+
     const sourceToken = watch("sourceToken") || "USDC";
 
-    // [UPDATED] Max Balance = Total Balance of SELECTED TOKEN across all wallets
+    // [UPDATED] Max Balance = Total Target Asset + (Total Stables / Target Price)
+    // This allows "Paying with USDC" for "OP" destination.
     const maxSendAmount = wallets.reduce((total, wallet) => {
         const walletTotal = wallet.chains.reduce((sum, c) => {
-            // Check tokens map first, fallback to amount if USDC (legacy compatibility)
-            const tokenBalance = (c.tokens as any)?.[sourceToken] ?? (sourceToken === "USDC" ? (c.amount || 0) : 0);
-            return sum + (tokenBalance || 0);
+            const tokens = (c.tokens as any);
+            let targetBalance = tokens?.[sourceToken] || 0;
+
+            // Legacy USDC fallback
+            if (sourceToken === "USDC" && targetBalance === 0) targetBalance = c.amount || 0;
+
+            let stableBalance = 0;
+            // Add Stables (USDC/USDT) to liquidity pool
+            if (sourceToken !== "USDC") stableBalance += (tokens?.["USDC"] || (c.tokens as any)?.["USDC"] || 0);
+            if (sourceToken !== "USDT") stableBalance += (tokens?.["USDT"] || 0);
+            if (sourceToken !== "DAI") stableBalance += (tokens?.["DAI"] || 0);
+
+            // Conversion
+            const price = effectivePrice || 0; // effectivePrice comes from useTokenPrice
+            let convertedStables = 0;
+
+            if (["USDC", "USDT", "DAI"].includes(sourceToken)) {
+                // If Target is Stable, assume 1:1 for simplicity
+                convertedStables = stableBalance;
+            } else if (price > 0) {
+                // If Target is Volatile, convert Stables ($1) to Target Units
+                convertedStables = stableBalance / price;
+            }
+
+            return sum + targetBalance + convertedStables;
         }, 0);
         return total + walletTotal;
     }, 0);
+
+    // [DEBUG] Log Max Calculation
+    useEffect(() => {
+        if (isOpen) {
+            console.log(`[MaxCalc] SourceToken: ${sourceToken}, Total: ${maxSendAmount}`,
+                wallets.map(w => w.chains.map(c => `${(c as any).name}: ${(c.tokens as any)?.[sourceToken]}`))
+            );
+        }
+    }, [maxSendAmount, sourceToken, isOpen, wallets]);
 
     // Format to 6 decimals for display
     const formattedMaxSendAmount = maxSendAmount > 0 ? parseFloat(maxSendAmount.toFixed(6)) : 0;

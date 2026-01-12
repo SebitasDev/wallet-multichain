@@ -297,10 +297,11 @@ export const ensureTokenApproval = async (
     tokenAddress: Address,
     spender: Address,
     amount: bigint,
-    publicClient?: PublicClient
+    publicClient?: PublicClient,
+    ownerOverride?: Address
 ): Promise<boolean> => {
     try {
-        const ownerAddr = await account.getOwner();
+        const ownerAddr = ownerOverride || await account.getOwner();
         let currentAllowance = BigInt(0);
 
         // Check allowance robustly using PublicClient if available (for specific spender)

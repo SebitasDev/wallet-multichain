@@ -10,7 +10,7 @@ import { XdaiIcon } from "@/app/components/atoms/XdaiIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
-export const GNOSIS: ChainConfig = {
+export const Gnosis: ChainConfig = {
     assets: [
         {
             name: "USDC",
@@ -61,7 +61,7 @@ export const GNOSIS: ChainConfig = {
         supports7702: true,
         erc4337: true,
     },
-    label: "GNOSIS",
+    label: "Gnosis",
     icon: <GnosisIcon />,
     chipLabel: "GNO",
     chipColor: "#133629",

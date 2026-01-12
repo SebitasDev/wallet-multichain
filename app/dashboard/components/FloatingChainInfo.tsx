@@ -204,7 +204,7 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
                 {/* HEADER */}
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        {config.icon}
+
 
                         {/* Network Switcher */}
                         <Select
@@ -219,9 +219,12 @@ export const FloatingChainInfo: React.FC<FloatingChainInfoProps> = ({
                                 "& .MuiSvgIcon-root": { fontSize: "1.5rem" }
                             }}
                         >
-                            {Object.values(NETWORKS).filter(n => n.evm).map((n) => (
-                                <MenuItem key={n.label} value={n.label}>
-                                    {n.label}
+                            {Object.entries(NETWORKS).filter(([_, n]) => n.evm).map(([key, n]) => (
+                                <MenuItem key={key} value={key}>
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        {n.icon}
+                                        <Typography fontWeight="bold">{n.label}</Typography>
+                                    </Box>
                                 </MenuItem>
                             ))}
                         </Select>

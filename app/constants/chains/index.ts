@@ -8,7 +8,7 @@ import { WORLD_CHAIN } from "@/app/constants/chains/Evm/WorldChain";
 import { STELLAR } from "@/app/constants/chains/NoEvm/Stellar";
 import { Monad } from "@/app/constants/chains/Evm/Monad";
 import { BNB } from "@/app/constants/chains/Evm/Binance";
-import { GNOSIS } from "./Evm/Gnosis";
+import { Gnosis } from "./Evm/Gnosis";
 
 export {
     OPTIMISM,
@@ -21,5 +21,5 @@ export {
     STELLAR,
     Monad,
     BNB,
-    GNOSIS
+    Gnosis
 }
