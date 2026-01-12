@@ -465,7 +465,7 @@ export const useSendMoneyModal = () => {
                     const tokenAddress = tokenAsset?.address as Address;
 
                     if (tokenAddress && tokenAddress !== "0x0000000000000000000000000000000000000000") {
-                        const spender = (fromNet.evm.paymasterAddress as Address) || tokenAddress;
+                        const spender = smartAccountAddress as Address;
                         updateRouteStatus("approving", "Verificando aprobación (Infinito)...");
 
                         const approved = await ensureTokenApproval(

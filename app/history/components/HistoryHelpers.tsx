@@ -35,8 +35,7 @@ export const CHAIN_COMPONENTS: Record<string, React.ElementType> = {
     "Monad": MonadIcon,
     "Unichain": UnichainIcon,
     "World Chain": WorldChainIcon,
-
-
+    "Gnosis": GnosisIcon,
 };
 
 export const TOKEN_COMPONENTS: Record<string, React.ElementType> = {
@@ -104,6 +103,7 @@ export const getExplorerUrl = (chain: string, hash: string) => {
         "Monad": "https://explorer.monad.xyz/tx/",
         "Unichain": "https://unichain-explorer.com/tx/",
         "World Chain": "https://worldchain-explorer.com/tx/",
+        "Gnosis": "https://gnosisscan.io/tx/",
         "Unknown": "#"
     };
     const base = baselines[chain] || baselines[Object.keys(baselines).find(k => chain.toLowerCase().includes(k.toLowerCase())) || "Unknown"];
