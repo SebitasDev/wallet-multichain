@@ -264,8 +264,6 @@ export const useCrossChainTransfer = () => {
 
         setIsApproving(true);
         try {
-            const config = NETWORKS[watchSourceChain];
-            // Correct spender for Smart Transfer (Pull) is the Smart Account itself
             const spender = smartAccountAddress as Address;
 
             return await ensureTokenApproval(smartAccount, tokenAddress, spender, amount, publicClient);

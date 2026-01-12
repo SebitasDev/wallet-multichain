@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { AccountAbstraction } from "@1llet.xyz/erc4337-gasless-sdk";
+import { AccountAbstraction, erc20Abi } from "@1llet.xyz/erc4337-gasless-sdk";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
@@ -292,48 +292,70 @@ export const ensureTokenApproval = async (
     publicClient?: PublicClient
 ): Promise<boolean> => {
     try {
-        const currentAllowance = await account.getAllowance(tokenAddress);
+        const ownerAddr = await account.getOwner();
+        let currentAllowance = BigInt(0);
+
+        // Check allowance robustly using PublicClient if available (for specific spender)
+        if (publicClient && ownerAddr) {
+            try {
+                currentAllowance = await publicClient.readContract({
+                    address: tokenAddress,
+                    abi: erc20Abi,
+                    functionName: 'allowance',
+                    args: [ownerAddr, spender]
+                }) as bigint;
+            } catch (err) {
+                console.warn("[ensureTokenApproval] Failed to read allowance via publicClient", err);
+                // Fallback to SDK (might check wrong spender)
+                currentAllowance = await account.getAllowance(tokenAddress);
+            }
+        } else {
+            currentAllowance = await account.getAllowance(tokenAddress);
+        }
+
         if (currentAllowance >= amount) {
             return true;
         }
 
-        const ownerAddr = await account.getOwner();
-
-        // Resolve ChainKey for API
-        // @ts-ignore
-        const chainId = (await account.getChainId()).toString();
-        const chainEntry = Object.entries(NETWORKS).find(([_, n]) => n.evm?.chain?.id?.toString() === chainId);
-        const chainKey = chainEntry ? chainEntry[0] : null;
-
-        if (chainKey) {
-            // 1. Request Gas Fund for EOA
-            try {
-                // toast.info("Checking gas for approval..."); // Toast might be too invasive here if used in background
-                await fetch("/api/relayer/fund-approval", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        chain: chainKey,
-                        walletAddress: ownerAddr,
-                        tokenAddress: tokenAddress,
-                        spender: spender
-                    })
-                });
-            } catch (fundErr) {
-                console.warn("Gas fund check failed:", fundErr);
-            }
+        // 1. Check & Request Gas Fund / Approval Support via SDK
+        try {
+            console.log("[ensureTokenApproval] Requesting Approval Support...");
+            await account.requestApprovalSupport(tokenAddress, spender, amount);
+        } catch (supportErr) {
+            console.warn("[ensureTokenApproval] Support request warning:", supportErr);
         }
 
         const result = await account.approveToken(tokenAddress, spender, maxUint256);
 
-        // Wait for mining if publicClient provided
-        if (result && result !== "NOT_NEEDED" && typeof result === 'string' && publicClient) {
-            console.log("[ensureTokenApproval] Waiting for approval mining...", result);
-            await publicClient.waitForTransactionReceipt({ hash: result as Hex });
-            console.log("[ensureTokenApproval] Approval mined");
+        // Wait for mining by polling Allowance (Robust & Faster than waiting for receipt)
+        if (result && result !== "NOT_NEEDED" && typeof result === 'string') {
+            const pollStart = Date.now();
+            const POLL_TIMEOUT = 30000; // 30s timeout
+            console.log("[ensureTokenApproval] Polling for allowance update...");
+
+            while (Date.now() - pollStart < POLL_TIMEOUT) {
+                await new Promise(r => setTimeout(r, 7000)); // 7s
+                try {
+                    let updatedAllowance = BigInt(0);
+                    if (publicClient && ownerAddr) {
+                        updatedAllowance = await publicClient.readContract({
+                            address: tokenAddress,
+                            abi: erc20Abi,
+                            functionName: 'allowance',
+                            args: [ownerAddr, spender]
+                        }) as bigint;
+                    }
+
+                    if (updatedAllowance >= amount) {
+                        console.log("[ensureTokenApproval] Allowance verified on-chain!");
+                        break;
+                    }
+                } catch (e) {
+                    // ignore read errors during poll
+                }
+            }
         }
 
-        // SDK returns "NOT_NEEDED" or a TX hash/receipt
         return result === "NOT_NEEDED" || !!result;
     } catch (e) {
         console.error("[ensureTokenApproval] Error:", e);

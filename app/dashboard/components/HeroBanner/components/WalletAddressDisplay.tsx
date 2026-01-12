@@ -103,28 +103,6 @@ export const WalletAddressDisplay = ({
 
             {/* ADDRESS DISPLAY SECTION */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-
-                {/* 1. Smart Account (Secondary) */}
-                {
-                    activeWallet === "EVM" && (smartAccountAddress || cachedSmartAccount) && (
-                        <Box
-                            sx={{
-                                background: "transparent",
-                                px: 0.5,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "flex-start",
-                            }}
-                        >
-                            <Typography variant="caption" sx={{ fontWeight: 700, mr: 1, color: "#666" }}>SA:</Typography>
-                            <Typography variant="caption" sx={{ fontFamily: "monospace", color: "#666" }}>
-                                {smartAccountAddress || cachedSmartAccount}
-                            </Typography>
-                        </Box>
-                    )
-                }
-
-                {/* 2. Main Address (EOA or Local) */}
                 <Box
                     sx={{
                         background: "#ffffff",

@@ -6,7 +6,7 @@ interface WalletConnectionMenuProps {
     open: boolean;
     onClose: () => void;
     hasPassword: boolean;
-    connectors: readonly any[]; // Wagmi connectors
+    connectors: readonly any[];
     onSelect: (type: 'local' | 'external', connector?: any) => void;
 }
 
@@ -44,7 +44,7 @@ export const WalletConnectionMenu = ({
                 </div>
             )}
 
-            {connectors.map((connector) => (
+            {connectors.filter(c => c.name === 'MetaMask').map((connector) => (
                 <MenuItem key={connector.uid || connector.id} onClick={() => onSelect('external', connector)}>
                     <ListItemIcon>
                         <Box

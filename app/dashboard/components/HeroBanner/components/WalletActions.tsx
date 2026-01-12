@@ -158,28 +158,11 @@ export const WalletActions = ({
                             ? "Conectando..."
                             : smartAccountAddress
                                 ? "Desconectar"
-                                : (currentPassword ? "Reconectar Local" : "External Wallet")
+                                : (currentPassword ? "Conectar wallet" : "External Wallet")
                         }
                     </Button>
 
-                    {/* Secondary External Wallet Button (if Local-ready but disconnected) */}
-                    {!smartAccountAddress && currentPassword && !isConnecting && (
-                        <Tooltip title="Conectar con External Wallet">
-                            <IconButton
-                                onClick={onConnectClick}
-                                sx={{
-                                    ml: 1,
-                                    background: "#ffffff",
-                                    border: "2px solid #000000",
-                                    borderRadius: 2,
-                                    p: "5px",
-                                    "&:hover": { background: "#f0f0f0" }
-                                }}
-                            >
-                                <AccountBalanceWalletIcon sx={{ fontSize: 20 }} />
-                            </IconButton>
-                        </Tooltip>
-                    )}
+
                 </>
             )}
         </Box>
