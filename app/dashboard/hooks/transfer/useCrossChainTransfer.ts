@@ -16,6 +16,10 @@ import { useForm } from "react-hook-form";
 import { getSmartAccountForChain, ensureTokenApproval } from "../useSmartAccount";
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { useWalletClient, useConnect, useSwitchChain, useConnectors, useConnections, usePublicClient } from "wagmi";
+import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
+import { getOneClickQuote, submitTxHash } from "@/app/stellar-transfer-core/sdk-service";
+import { StellarService } from "@1llet.xyz/erc4337-gasless-sdk";
+import { Keypair } from "stellar-sdk";
 
 interface BridgeContext {
     paymentPayload?: any;
@@ -48,6 +52,8 @@ export const useCrossChainTransfer = () => {
     const { setSmartAccount: storeSetSmartAccount, connectionMode, getActiveAddress } = useXOWalletStore();
 
     const encryptedPrivateKey = useXOWalletStore(s => s.mainWallet.encryptedPrivateKey);
+    const encryptedPrivateKeyStellar = useXOWalletStore(s => s.mainWallet.encryptedPrivateKeyStellar);
+    const addressStellar = useXOWalletStore(s => s.mainWallet.addressStellar);
     const salt = useXOWalletStore(s => s.mainWallet.salt);
     const iv = useXOWalletStore(s => s.mainWallet.iv);
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
@@ -106,6 +112,27 @@ export const useCrossChainTransfer = () => {
     const connectWallet = useCallback(async () => {
         setIsConnecting(true);
         try {
+            // [NEW] Stellar Logic Branch
+            if (watchSourceChain === "Stellar") {
+                if (!encryptedPrivateKeyStellar || !currentPassword || !salt || !iv) {
+                    throw new Error("Wallet locked. Please unlock to use Stellar.");
+                }
+
+                if (!addressStellar) {
+                    throw new Error("Stellar wallet not initialized.");
+                }
+
+                // Use the correctly derived address from the store
+                const publicKey = addressStellar;
+
+                setSmartAccount(null); // No Smart Account for Stellar
+                setSmartAccountAddress(publicKey); // Use Stellar Public Key as "Address"
+                setIsDeployed(true); // Always "deployed" (active) conceptually
+
+                return { account: null, address: publicKey };
+            }
+
+            // [EXISTING] EVM Logic
             const config = NETWORKS[watchSourceChain];
             if (!config || !config.evm) throw new Error("Invalid Chain Config or not EVM");
 
@@ -281,7 +308,7 @@ export const useCrossChainTransfer = () => {
         let senderAddr = smartAccountAddress;
 
         // Connect if not connected
-        if (!account) {
+        if (!senderAddr) {
             toast.info("Connecting wallet...");
             const result = await connectWallet();
             if (!result) return;
@@ -289,17 +316,74 @@ export const useCrossChainTransfer = () => {
             senderAddr = result.address;
         }
 
-        if (!account || !senderAddr) {
+        if (!senderAddr) {
             toast.error("Failed to resolve wallet address");
             return;
         }
 
         setIsExecuting(true);
         try {
+            // [NEW] Stellar Execution Branch
+            if (data.sourceChain === "Stellar") {
+                if (!encryptedPrivateKey || !currentPassword || !salt || !iv) {
+                    throw new Error("Local Wallet required for Stellar execution.");
+                }
+
+                // 1. Get Quote & Deposit Address
+                toast.info("Getting One-Click Quote...");
+                const { depositAddress, quote } = await getOneClickQuote({
+                    amount: data.amount,
+                    sourceChain: "Stellar",
+                    destinationChain: data.destChain,
+                    sourceToken: data.sourceToken, // e.g., 'USDC' or 'XLM'
+                    destinationToken: data.destToken,
+                    userSenderAddress: senderAddr,
+                    recipientStellar: data.recipient // Destination EVM address or otherwise
+                });
+
+                if (!depositAddress) throw new Error("Failed to get deposit address from bridge");
+
+                // @ts-ignore - Memo exists on response when depositMode is MEMO
+                const memo = quote.quote?.memo;
+                if (!memo) throw new Error("Bridge required a memo but none was returned.");
+                // 2. Sign & Send Stellar Transaction (via SDK)
+                toast.info("Signing Stellar Transaction...");
+
+                if (!encryptedPrivateKeyStellar) throw new Error("Stellar private key not found");
+
+                // Decrypt the stored Stellar secret (which matches the address in the wallet)
+                const stellarSecret = await decryptPrivateKey(encryptedPrivateKeyStellar, currentPassword, salt, iv);
+
+                const stellarService = new StellarService();
+                const xdr = await stellarService.buildTransferXdr(
+                    stellarSecret,
+                    depositAddress,
+                    data.amount,
+                    data.sourceToken,
+                    memo
+                );
+
+                const result = await stellarService.submitXdr(xdr);
+                const txHash = result.hash;
+
+                console.log("[Transfer] Stellar TX Hash:", txHash);
+
+                // 3. Submit Hash
+                toast.info("Submitting Transaction Hash...");
+                await submitTxHash(txHash, depositAddress);
+
+                toast.success(`Transfer Successful! TX: ${txHash}`);
+                closeModal();
+                reset();
+                return;
+            }
+
             const config = NETWORKS[data.sourceChain];
             if (!config?.evm) {
                 throw new Error("Invalid source chain");
             }
+            // Ensure Account Logic exists for EVM
+            if (!account) throw new Error("Smart Account not initialized for EVM chain");
 
             // 1. Ensure Smart Account is deployed
             const deployed = await account.isAccountDeployed();
@@ -492,6 +576,25 @@ export const useCrossChainTransfer = () => {
     // Balance Fetching
     useEffect(() => {
         const fetchBalance = async () => {
+            // [NEW] Stellar Balance
+            if (watchSourceChain === "Stellar") {
+                // Use smartAccountAddress because it holds the derived Stellar Public Key
+                // ownerAddress might still be the EVM address from the connected wallet
+                if (smartAccountAddress && smartAccountAddress.startsWith("G")) {
+                    try {
+                        const bal = await getStellarUSDCBalance(smartAccountAddress);
+                        setBalance(bal || 0);
+                    } catch (e) {
+                        console.error("Stellar balance fetch error", e);
+                        setBalance(0);
+                    }
+                    return;
+                }
+                // If address is not ready or is EVM address, clear balance to avoid stale display
+                setBalance(0);
+                return;
+            }
+
             const config = NETWORKS[watchSourceChain];
             const tokenName = watch("sourceToken");
             const asset = config?.assets?.find(a => a.name === tokenName);
