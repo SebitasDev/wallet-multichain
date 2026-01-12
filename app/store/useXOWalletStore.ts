@@ -41,8 +41,8 @@ interface WalletState {
     metaMaskConnection: MetaMaskConnection;
 
     // Explicit Connection Mode (Persisted)
-    connectionMode: 'local' | 'metamask' | null;
-    setConnectionMode: (mode: 'local' | 'metamask' | null) => void;
+    connectionMode: 'local' | 'metamask' | 'embedded' | null;
+    setConnectionMode: (mode: 'local' | 'metamask' | 'embedded' | null) => void;
 
     // Hydration flag
     hydrated: boolean;

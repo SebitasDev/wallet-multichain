@@ -21,7 +21,7 @@ import { Keypair } from "stellar-sdk";
 import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
 import { base, polygon } from "viem/chains";
 
-import { useXOWalletManager } from "./useXOWalletManager";
+import { useWalletStorage } from "./useWalletStorage";
 
 
 // =====================
@@ -51,7 +51,7 @@ export const NETWORKS = {
 
 export type AvailableChains = keyof typeof NETWORKS;
 
-interface XOContractsContextType {
+interface EmbeddedWalletContextType {
     connect: () => Promise<void>;
     address: string | null;
     client: any;
@@ -64,9 +64,9 @@ interface XOContractsContextType {
     provider: any; // Exposed for Facilitator usage
 }
 
-const XOContractsContext = createContext<XOContractsContextType | null>(null);
+const EmbeddedWalletContext = createContext<EmbeddedWalletContextType | null>(null);
 
-export const XOContractsProvider = ({
+export const EmbeddedWalletProvider = ({
     children,
     password,
 }: {
@@ -96,7 +96,7 @@ export const XOContractsProvider = ({
 
     // Sub-hooks
 
-    const { loadWallet, resetWallet, factoryReset } = useXOWalletManager({
+    const { loadWallet, resetWallet, factoryReset } = useWalletStorage({
         password,
         isUsingXO,
         setAddress,
@@ -225,7 +225,7 @@ export const XOContractsProvider = ({
     const currentNetwork = NETWORKS[selectedChain];
 
     return (
-        <XOContractsContext.Provider
+        <EmbeddedWalletContext.Provider
             value={{
                 connect,
                 address,
@@ -240,12 +240,12 @@ export const XOContractsProvider = ({
             }}
         >
             {children}
-        </XOContractsContext.Provider >
+        </EmbeddedWalletContext.Provider >
     );
 };
 
-export const useXOContracts = () => {
-    const ctx = useContext(XOContractsContext);
-    if (!ctx) throw new Error("useXOContracts must be used within XOContractsProvider");
+export const useEmbeddedWalletContext = () => {
+    const ctx = useContext(EmbeddedWalletContext);
+    if (!ctx) throw new Error("useEmbeddedWalletContext must be used within EmbeddedWalletProvider");
     return ctx;
 };

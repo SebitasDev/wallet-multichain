@@ -10,19 +10,19 @@ import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 
-interface UseXOWalletManagerProps {
+interface UseWalletStorageProps {
     password: string;
     isUsingXO: boolean;
     setAddress: (addr: string | null) => void;
     setIsUsingXO: (val: boolean) => void;
 }
 
-export const useXOWalletManager = ({
+export const useWalletStorage = ({
     password,
     isUsingXO,
     setAddress,
     setIsUsingXO,
-}: UseXOWalletManagerProps) => {
+}: UseWalletStorageProps) => {
     const setMainWallet = useXOWalletStore((s) => s.setMainWallet);
 
     // ======================

@@ -8,10 +8,10 @@ export const useWalletAutoconnect = (
     smartAccountAddress: string | null,
     isConnecting: boolean,
     hasManuallyDisconnected: MutableRefObject<boolean>,
-    connectionType: 'local' | 'metamask' | null,
+    connectionType: 'local' | 'metamask' | 'embedded' | null,
     currentPassword: string | null,
     selectedChain: ChainKey,
-    connect: (chainKey: ChainKey, useMetaMask?: boolean) => Promise<AccountAbstraction | null>
+    connect: (chainKey: ChainKey, useMetaMask?: boolean, externalProvider?: any) => Promise<AccountAbstraction | null>
 ) => {
     useEffect(() => {
         const autoConnect = async () => {

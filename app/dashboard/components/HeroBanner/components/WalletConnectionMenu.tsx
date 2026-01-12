@@ -7,7 +7,8 @@ interface WalletConnectionMenuProps {
     onClose: () => void;
     hasPassword: boolean;
     connectors: readonly any[];
-    onSelect: (type: 'local' | 'external', connector?: any) => void;
+    onSelect: (type: 'local' | 'external' | 'embedded', connector?: any) => void;
+    hideMetaMask?: boolean;
 }
 
 export const WalletConnectionMenu = ({
@@ -16,7 +17,8 @@ export const WalletConnectionMenu = ({
     onClose,
     hasPassword,
     connectors,
-    onSelect
+    onSelect,
+    hideMetaMask
 }: WalletConnectionMenuProps) => {
     return (
         <Menu
@@ -44,7 +46,7 @@ export const WalletConnectionMenu = ({
                 </div>
             )}
 
-            {connectors.filter(c => c.name === 'MetaMask').map((connector) => (
+            {!hideMetaMask && connectors.filter(c => c.name === 'MetaMask').map((connector) => (
                 <MenuItem key={connector.uid || connector.id} onClick={() => onSelect('external', connector)}>
                     <ListItemIcon>
                         <Box
@@ -59,7 +61,16 @@ export const WalletConnectionMenu = ({
                 </MenuItem>
             ))}
 
-            {connectors.length === 0 && (
+            {hideMetaMask && (
+                <MenuItem onClick={() => onSelect('embedded')}>
+                    <ListItemIcon>
+                        <AccountBalanceWalletIcon fontSize="small" color="primary" />
+                    </ListItemIcon>
+                    <ListItemText>Embedded Wallet</ListItemText>
+                </MenuItem>
+            )}
+
+            {!hideMetaMask && connectors.length === 0 && (
                 <MenuItem disabled>No external wallets found</MenuItem>
             )}
         </Menu>

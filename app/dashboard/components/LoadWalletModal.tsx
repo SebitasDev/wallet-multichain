@@ -2,7 +2,7 @@
 import { Box, Button, Modal, TextField, Typography, CircularProgress } from "@mui/material";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { useXOContracts } from "../hooks/wallet/useXOConnect";
+import { useEmbeddedWalletContext } from "../hooks/wallet/useEmbeddedWallet";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -12,7 +12,7 @@ interface LoadWalletModalProps {
 }
 
 export const LoadWalletModal = ({ open, onClose }: LoadWalletModalProps) => {
-    const { loadWallet } = useXOContracts();
+    const { loadWallet } = useEmbeddedWalletContext();
     const [mnemonic, setMnemonic] = useState("");
     const [password, setPassword] = useState("");
     const [currentPasswordInput, setCurrentPasswordInput] = useState("");

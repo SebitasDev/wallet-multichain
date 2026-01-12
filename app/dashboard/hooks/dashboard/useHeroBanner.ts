@@ -1,7 +1,7 @@
 import { useEffect, useState, MouseEvent, SetStateAction, Dispatch } from "react";
 import { toast } from "react-toastify";
 import { useWalletStore } from "@/app/store/useWalletsStore";
-import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
+import { useEmbeddedWalletContext } from "@/app/dashboard/hooks/wallet/useEmbeddedWallet";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
@@ -18,7 +18,7 @@ export const useHeroBanner = () => {
     const [activeWallet, setActiveWallet] = useState<ActiveWallet>("EVM");
 
     // XO (embedded) -> Current Network Provider info
-    const { address: xoAddress, currentNetwork } = useXOContracts();
+    const { address: xoAddress, currentNetwork } = useEmbeddedWalletContext();
 
     // Local fallback main wallet
     const {

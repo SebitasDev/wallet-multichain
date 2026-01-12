@@ -5,14 +5,14 @@ import { ChainKey } from "@/app/types/chain";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
-import { Address, WalletClient, Hex, maxUint256, PublicClient } from "viem";
+import { Address, WalletClient, Hex, maxUint256, PublicClient, createWalletClient, custom } from "viem";
 
 /**
  * Interface for the hook return value
  */
 interface UseSmartAccountResult {
     account: AccountAbstraction | null;
-    connectionType: 'local' | 'metamask' | null;
+    connectionType: 'local' | 'metamask' | 'embedded' | null;
     smartAccountAddress: string | null;
     ownerAddress: string | null;
     chainId: string | null;
@@ -21,7 +21,7 @@ interface UseSmartAccountResult {
     isDeploying: boolean;
     isApproving: boolean;
     error: string | null;
-    connect: (chainKey: ChainKey, useMetaMask?: boolean) => Promise<AccountAbstraction | null>;
+    connect: (chainKey: ChainKey, useMetaMask?: boolean, externalProvider?: any) => Promise<AccountAbstraction | null>;
     ensureDeployed: () => Promise<boolean>;
     ensureApproval: (tokenAddress: Address, spender: Address, amount: bigint) => Promise<boolean>;
     getBalance: (token: string | Address) => Promise<bigint>;
@@ -59,7 +59,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
     /**
      * Connect to Smart Account via Local Key or MetaMask
      */
-    const connect = useCallback(async (chainKey: ChainKey, useMetaMask: boolean = false): Promise<AccountAbstraction | null> => {
+    const connect = useCallback(async (chainKey: ChainKey, useMetaMask: boolean = false, externalProvider?: any): Promise<AccountAbstraction | null> => {
         setIsConnecting(true);
         setError(null);
 
@@ -77,7 +77,15 @@ export const useSmartAccount = (): UseSmartAccountResult => {
             const accountInstance = new AccountAbstraction(config.evm as any);
             let result: { owner: `0x${string}`; smartAccount: `0x${string}` };
 
-            if (useMetaMask) {
+            if (externalProvider) {
+                // EMBEDDED WALLET CONNECTION
+                const walletClient = createWalletClient({
+                    chain: config.evm.chain,
+                    transport: custom(externalProvider)
+                });
+                result = await accountInstance.connect(walletClient);
+                setConnectionMode('embedded');
+            } else if (useMetaMask) {
                 // FORCE CHAIN SWITCH for MetaMask
                 if (window.ethereum) {
                     try {

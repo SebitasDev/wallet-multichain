@@ -9,7 +9,7 @@ import CTFGameABI from "../../ctf/abis/CTFGame.json";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { decryptPrivateKey } from "@/app/utils/cripto";
-import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
+import { useEmbeddedWalletContext } from "../wallet/useEmbeddedWallet";
 import { ctfApi } from "@/app/services/api";
 
 // Deployed Address (Scroll Sepolia)
@@ -42,7 +42,7 @@ export const useCTF = () => {
     // Internal Wallet Stores
     const mainWallet = useXOWalletStore((s) => s.mainWallet);
     const { currentPassword, encryptedPassword } = useWalletPasswordStore();
-    const { isUsingXO, provider: xoProvider, address: xoAddress } = useXOContracts();
+    const { isUsingXO, provider: xoProvider, address: xoAddress } = useEmbeddedWalletContext();
 
     const [account, setAccount] = useState<Address | null>(null);
     const [walletClient, setWalletClient] = useState<any>(null);

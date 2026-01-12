@@ -4,7 +4,7 @@ import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { ActiveWallet, useMainWalletUI } from "@/app/dashboard/hooks/dashboard/useHeroBanner";
 import { Dispatch, SetStateAction, MouseEvent, useRef } from "react";
 import { LoadWalletModal } from "../LoadWalletModal";
-import { useXOContracts } from "../../hooks/wallet/useXOConnect";
+import { useEmbeddedWalletContext } from "@/app/dashboard/hooks/wallet/useEmbeddedWallet";
 import { PasswordModal } from "../../components/PasswordModal";
 import { ExportWalletModal } from "../../components/ExportWalletModal";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
@@ -44,7 +44,7 @@ export const HeroBannerMainWallet = ({
 
     const { mainWallet } = useXOWalletStore();
     const { currentPassword } = useWalletPasswordStore();
-    const { resetWallet, isUsingXO } = useXOContracts();
+    const { address: addressXO, resetWallet, isUsingXO, provider: embeddedProvider } = useEmbeddedWalletContext();
 
     // --- State Hook Overhaul ---
     const {
@@ -119,13 +119,16 @@ export const HeroBannerMainWallet = ({
         setWalletAnchorEl(event.currentTarget);
     };
 
-    const handleWalletSelect = async (type: 'local' | 'external', connector?: any) => {
+    const handleWalletSelect = async (type: 'local' | 'external' | 'embedded', connector?: any) => {
         setWalletAnchorEl(null);
         hasManuallyDisconnected.current = false;
 
         if (type === 'local') {
             console.log("Restoring Local Wallet connection...");
             await connect(selectedChain, false);
+        } else if (type === 'embedded') {
+            console.log("Connecting Embedded Wallet...");
+            await connect(selectedChain, false, embeddedProvider); // Pass provider!
         } else {
             try {
                 if (connector) {
@@ -184,6 +187,7 @@ export const HeroBannerMainWallet = ({
                 hasPassword={!!currentPassword}
                 connectors={connectors}
                 onSelect={handleWalletSelect}
+                hideMetaMask={isUsingXO}
             />
 
             {/* MODALS */}
