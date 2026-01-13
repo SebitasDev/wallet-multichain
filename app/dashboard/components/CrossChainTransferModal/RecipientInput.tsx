@@ -1,6 +1,6 @@
 import { Box, Typography, TextField } from "@mui/material";
 import { Controller, Control } from "react-hook-form";
-import { FormValues } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
+import { FormValues } from "@/app/dashboard/hooks/transfer/usePrimaryTransfer";
 
 type RecipientInputProps = {
     control: Control<FormValues>;

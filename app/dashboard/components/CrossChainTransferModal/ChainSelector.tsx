@@ -1,6 +1,6 @@
 import { Box, Typography, TextField, MenuItem, Stack, SxProps, useTheme, useMediaQuery } from "@mui/material";
 import { Controller, Control } from "react-hook-form";
-import { FormValues, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
+import { FormValues, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/transfer/usePrimaryTransfer";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { FacilitatorChainKey } from "@/app/facilitator";

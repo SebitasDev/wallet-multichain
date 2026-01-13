@@ -18,7 +18,7 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
-import { useCrossChainTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
+import { usePrimaryTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/transfer/usePrimaryTransfer";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { Controller } from "react-hook-form";
 import { TransferHeader } from "./TransferHeader";
@@ -74,7 +74,7 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
         onSubmit,
         tokenPrice,
         destTokenPrice,
-    } = useCrossChainTransfer();
+    } = usePrimaryTransfer();
 
     return (
         <>

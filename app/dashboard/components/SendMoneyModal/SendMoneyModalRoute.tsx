@@ -6,7 +6,7 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainConfig, ChainKey } from "@/app/types/chain";
 import { AllocationSummary } from "@/app/dashboard/types";
-import { RouteDetail } from "@/app/dashboard/hooks/transfer/useSendMoneyModal";
+import { RouteDetail } from "@/app/dashboard/hooks/transfer/useSecondaryTransfer";
 import { TokenSelector } from "@/app/dashboard/components/CrossChainTransferModal/TokenSelector";
 import { UseFormWatch, UseFormSetValue, Control, Controller } from "react-hook-form";
 import { SendForm } from "@/app/lib/zod/sendSchema";

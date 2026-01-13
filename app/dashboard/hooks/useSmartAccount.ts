@@ -258,7 +258,7 @@ async function safeCheckDeployment(account: AccountAbstraction): Promise<boolean
 
 /**
  * Helper to get or create AccountAbstraction for a specific chain
- * (Stateless version for usage in other hooks like useCrossChainTransfer)
+ * (Stateless version for usage in other hooks like usePrimaryTransfer)
  */
 export const getSmartAccountForChain = async (
     chainKey: ChainKey,

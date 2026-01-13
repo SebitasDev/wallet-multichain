@@ -27,6 +27,7 @@ import { getSmartAccountForChain, ensureTokenApproval, useSmartAccount } from ".
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 
 // Define BridgeContext based on SDK usage
+// Define BridgeContext based on SDK usage
 interface BridgeContext {
     paymentPayload?: any;
     sourceChain: ChainKey;
@@ -66,7 +67,7 @@ export type RouteDetail = {
 };
 
 
-export const useSendMoneyModal = () => {
+export const useSecondaryTransfer = () => {
     // [NEW] Consistent Dev Check
     const isDev = process.env.NEXT_PUBLIC_ENVIROMENT === "development" || process.env.NODE_ENV === "development";
     const publicClient = usePublicClient();

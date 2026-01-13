@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, Typography, Box } from "@mui/material";
 import { useState, useEffect } from "react";
-import { useSendMoneyModal } from "@/app/dashboard/hooks/transfer/useSendMoneyModal";
+import { useSecondaryTransfer } from "@/app/dashboard/hooks/transfer/useSecondaryTransfer";
 import { SendMoneyModalHeader } from "./SendMoneyModalHeader";
 import { SendMoneyModalForm } from "./SendMoneyModalForm";
 import { SendMoneyModalRoute } from "./SendMoneyModalRoute";
@@ -11,7 +11,7 @@ export const SendMoneyModal = ({ variant = "default" }: { variant?: "default" | 
         sendLoading, control, handleSubmit, errors, handleOnSend, handleOnConfirm,
         canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary, setValue,
         maxSendAmount, isExceedingMax, watch, setRouteSummary, wallets, priceMap
-    } = useSendMoneyModal();
+    } = useSecondaryTransfer();
 
     const [isEditing, setIsEditing] = useState(false);
     const [hasBlockingErrors, setHasBlockingErrors] = useState(false);

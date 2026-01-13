@@ -38,7 +38,7 @@ interface BridgeContext {
 }
 
 
-export const useCrossChainTransfer = () => {
+export const usePrimaryTransfer = () => {
     // 1. External Store & Hooks Access
     const { crossChainOpen: open, openCrossChain: setOpen, closeCrossChain: closeModal } = useDashboardModalsStore();
     const { getActiveAddress } = useXOWalletStore();
