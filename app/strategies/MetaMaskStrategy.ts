@@ -5,7 +5,7 @@ export class MetaMaskStrategy implements WalletStrategy {
     id: StrategyId = 'metamask';
     label = 'MetaMask';
 
-
+    // We can add an icon here later if needed, or handle it in the UI layer
 
     isAvailable(): boolean {
         return typeof window !== 'undefined' && !!window.ethereum;
@@ -18,7 +18,7 @@ export class MetaMaskStrategy implements WalletStrategy {
 
         const provider = new BrowserProvider(window.ethereum as any);
 
-
+        // Request accounts
         const accounts = await provider.send("eth_requestAccounts", []);
         if (!accounts || accounts.length === 0) {
             throw new Error("No accounts found");
@@ -26,10 +26,10 @@ export class MetaMaskStrategy implements WalletStrategy {
 
         const address = accounts[0];
 
-
+        // Switch chain if requested
         if (args?.chainId) {
             try {
-
+                // Ensure hex format
                 const chainIdHex = args.chainId.startsWith('0x')
                     ? args.chainId
                     : `0x${parseInt(args.chainId).toString(16)}`;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
 import { WalletStrategy, StrategyId, WalletConnectionResult } from '../strategies/types';
 import { MetaMaskStrategy } from '../strategies/MetaMaskStrategy';
 import { XOWalletStrategy } from '../strategies/XOWalletStrategy';
@@ -23,6 +23,7 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType | null>(null);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
+    // 1. Initialize Strategies
     // We memoize them so they don't get recreated on every render
     const strategies = useMemo(() => [
         new LocalWalletStrategy(),
@@ -31,7 +32,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         // Add more strategies here in the future
     ], []);
 
-
+    // 2. State
     const [activeStrategyId, setActiveStrategyId] = useState<StrategyId | null>(null);
     const [address, setAddress] = useState<string | null>(null);
     const [chainId, setChainId] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const setConnectionMode = useXOWalletStore((s) => s.setConnectionMode);
     const setMetaMaskConnection = useXOWalletStore((s) => s.setMetaMaskConnection);
 
-
+    // 3. Connect Function
     const connect = async (strategyId: StrategyId, args?: any): Promise<WalletConnectionResult> => {
         const strategy = strategies.find(s => s.id === strategyId);
         if (!strategy) {
@@ -73,7 +74,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-
+    // 4. Disconnect Function
     const disconnect = async () => {
         if (activeStrategyId) {
             const strategy = strategies.find(s => s.id === activeStrategyId);
@@ -88,7 +89,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         setConnectionMode(null);
     };
 
-
+    // 5. Getters
     const activeStrategy = useMemo(() =>
         strategies.find(s => s.id === activeStrategyId) || null
         , [strategies, activeStrategyId]);

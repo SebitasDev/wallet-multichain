@@ -36,7 +36,7 @@ export const POLYGON: ChainConfig = {
         chain: isDevelopment ? polygonAmoy : polygon,
         rpcUrl: isDevelopment ? "https://polygon-amoy.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://polygon-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
         supports7702: true,
-        erc4337: false,
+        erc4337: true,
     },
     label: "Polygon",
     icon: <PolygonIcon />,

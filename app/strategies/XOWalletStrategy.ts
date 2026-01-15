@@ -20,7 +20,7 @@ export class XOWalletStrategy implements WalletStrategy {
         // Dynamically import to avoid SSR issues if package is browser-only
         const { XOConnectProvider, XOConnect } = await import("xo-connect");
 
-
+        // Default config if not provided
         const rpcs = args?.chains || {
             ["0x2105"]: "https://mainnet.base.org",
             ["0x89"]: "https://polygon-rpc.com"
@@ -44,7 +44,7 @@ export class XOWalletStrategy implements WalletStrategy {
         const address = await signer.getAddress();
         const network = await ethersProvider.getNetwork();
 
-
+        // Also fetch the client if needed usually
         this.xoClient = await XOConnect.getClient();
 
         return {

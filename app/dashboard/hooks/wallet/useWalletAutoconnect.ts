@@ -38,6 +38,7 @@ export const useWalletAutoconnect = (
                         console.error("AutoConnect MetaMask failed", e);
                     }
                 } else if (currentPassword && connectionType === 'local') {
+                    console.log("[AutoConnect] Connecting Local Wallet SDK...");
                     try {
                         const { mainWallet } = useXOWalletStore.getState();
                         const { encryptedPrivateKey, salt, iv } = mainWallet;

@@ -16,7 +16,7 @@ import { FloatingChainInfo } from "../FloatingChainInfo";
 import { useConnect, useDisconnect } from "wagmi";
 import { useWallet } from "@/app/context/WalletContext";
 
-
+// --- New Components & Hooks ---
 import { useEoaBalance } from "../../hooks/wallet/useEoaBalance";
 import { useWalletAutoconnect } from "../../hooks/wallet/useWalletAutoconnect";
 import { WalletActions } from "./components/WalletActions";
@@ -49,7 +49,7 @@ export const HeroBannerMainWallet = ({
     const { currentPassword } = useWalletPasswordStore();
     const { address: addressXO, resetWallet, isUsingXO, provider: embeddedProvider } = useEmbeddedWalletContext();
 
-
+    // --- State Hook Overhaul ---
     const {
         loadWalletOpen, setLoadWalletOpen,
         walletAnchorEl, setWalletAnchorEl,
@@ -67,7 +67,7 @@ export const HeroBannerMainWallet = ({
     const { disconnect: disconnectWagmi } = useDisconnect();
     const hasManuallyDisconnected = useRef(false);
 
-
+    // Smart Account Logic
     const {
         account,
         connectionType,
@@ -84,13 +84,13 @@ export const HeroBannerMainWallet = ({
 
     const isUsingMetaMask = connectionType === 'metamask';
 
-
+    // Derived Logic
     const canRefresh = isUsingXO || !!burnedAddresses[activeWallet];
     const config = NETWORKS[selectedChain];
     const chainIdStr = config?.evm?.chain?.id?.toString();
     const cachedSmartAccount = chainIdStr ? mainWallet.smartAccounts?.[chainIdStr]?.address : null;
 
-
+    // --- Custom Hooks ---
     useWalletAutoconnect(
         activeWallet,
         smartAccountAddress,
@@ -113,7 +113,7 @@ export const HeroBannerMainWallet = ({
     // Determine Main Balance to display
     const mainBalance = (activeWallet === "EVM" && smartAccountAddress) ? eoaBalance : burnedBalances[activeWallet];
 
-
+    // --- Handlers ---
     const handleDisconnect = async () => {
         hasManuallyDisconnected.current = true;
         await walletContext.disconnect(); // Clear globally active strategy
@@ -129,6 +129,7 @@ export const HeroBannerMainWallet = ({
         hasManuallyDisconnected.current = false;
 
         if (type === 'local') {
+            console.log("Restoring Local Wallet connection...");
             try {
                 const { encryptedPrivateKey, salt, iv } = mainWallet;
                 if (!encryptedPrivateKey || !currentPassword || !salt || !iv) {
@@ -150,6 +151,7 @@ export const HeroBannerMainWallet = ({
             }
 
         } else if (type === 'embedded') {
+            console.log("Connecting Embedded Wallet...");
             try {
                 // XO Strategy
                 await walletContext.connect('xo', { defaultChainId: chainIdStr });
@@ -200,7 +202,7 @@ export const HeroBannerMainWallet = ({
                 {activeWallet === "EVM" ? (<EthIcon />) : (<StellarIcon />)}
             </Box>
 
-
+            {/* ACTION BUTTONS */}
             <WalletActions
                 activeWallet={activeWallet}
                 setActiveWallet={setActiveWallet}
@@ -216,7 +218,7 @@ export const HeroBannerMainWallet = ({
                 hasManuallyDisconnectedRef={hasManuallyDisconnected}
             />
 
-
+            {/* CONNECTION MENU */}
             <WalletConnectionMenu
                 anchorEl={walletAnchorEl}
                 open={Boolean(walletAnchorEl)}
@@ -227,7 +229,7 @@ export const HeroBannerMainWallet = ({
                 hideMetaMask={isUsingXO}
             />
 
-
+            {/* MODALS */}
             <LoadWalletModal open={loadWalletOpen} onClose={() => setLoadWalletOpen(false)} />
             <PasswordModal
                 open={passwordModalOpen}
@@ -259,7 +261,7 @@ export const HeroBannerMainWallet = ({
                 onRefresh={onRefresh}
             />
 
-
+            {/* FLOATING CHAIN INFO (EVM) */}
             {activeWallet === "EVM" && (
                 <FloatingChainInfo
                     selectedChain={selectedChain}
