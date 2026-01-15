@@ -136,15 +136,15 @@ export const HeroBannerMainWallet = ({
                     throw new Error("Local wallet not unlocked or not found");
                 }
 
-                await walletContext.connect('local', {
+                const result = await walletContext.connect('local', {
                     encryptedPrivateKey,
                     password: currentPassword,
                     salt,
                     iv
                 });
 
-                const signer = walletContext.getSigner();
-                await connect(selectedChain, signer);
+                // Use result.signer directly (avoiding context state race condition)
+                await connect(selectedChain, result.signer);
             } catch (e) {
                 console.error("Failed to connect local strategy", e);
                 toast.error("Could not connect local wallet (locked?)");
@@ -154,9 +154,8 @@ export const HeroBannerMainWallet = ({
             console.log("Connecting Embedded Wallet...");
             try {
                 // XO Strategy
-                await walletContext.connect('xo', { defaultChainId: chainIdStr });
-                const provider = walletContext.getProvider();
-                await connect(selectedChain, provider);
+                const result = await walletContext.connect('xo', { defaultChainId: chainIdStr });
+                await connect(selectedChain, result.provider);
             } catch (e: any) {
                 if (e.message && e.message.includes("No connection available")) {
                     console.warn("XO Wallet not available (likely outside compatible environment).");

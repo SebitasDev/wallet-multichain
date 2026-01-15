@@ -44,14 +44,13 @@ export const useWalletAutoconnect = (
                         const { encryptedPrivateKey, salt, iv } = mainWallet;
 
                         if (encryptedPrivateKey && salt && iv) {
-                            await walletContext.connect('local', {
+                            const result = await walletContext.connect('local', {
                                 encryptedPrivateKey,
                                 password: currentPassword,
                                 salt,
                                 iv
                             });
-                            const signer = walletContext.getSigner();
-                            await connect(selectedChain, signer);
+                            await connect(selectedChain, result.signer);
                         }
                     } catch (e) {
                         console.error("AutoConnect Local failed", e);
