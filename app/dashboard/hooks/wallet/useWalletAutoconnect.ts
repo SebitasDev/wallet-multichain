@@ -2,6 +2,9 @@ import { useEffect, MutableRefObject } from "react";
 import { ChainKey } from "@/app/types/chain";
 import { ActiveWallet } from "@/app/dashboard/hooks/dashboard/useHeroBanner";
 import { AccountAbstraction } from "@1llet.xyz/erc4337-gasless-sdk";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+
+import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 
 export const useWalletAutoconnect = (
     activeWallet: ActiveWallet,
@@ -11,7 +14,8 @@ export const useWalletAutoconnect = (
     connectionType: 'local' | 'metamask' | 'embedded' | null,
     currentPassword: string | null,
     selectedChain: ChainKey,
-    connect: (chainKey: ChainKey, useMetaMask?: boolean, externalProvider?: any) => Promise<AccountAbstraction | null>
+    connect: (chainKey: ChainKey, signerOrProvider: any) => Promise<AccountAbstraction | null>,
+    walletContext: any
 ) => {
     useEffect(() => {
         const autoConnect = async () => {
@@ -23,10 +27,35 @@ export const useWalletAutoconnect = (
             ) {
                 if (connectionType === 'metamask') {
                     console.log("[AutoConnect] Reconnecting MetaMask...");
-                    await connect(selectedChain, true);
-                } else if (currentPassword) {
+                    try {
+                        const config = NETWORKS[selectedChain];
+                        const chainIdStr = config?.evm?.chain?.id?.toString();
+
+                        await walletContext.connect('metamask', { chainId: chainIdStr });
+                        const signer = walletContext.getSigner();
+                        await connect(selectedChain, signer);
+                    } catch (e) {
+                        console.error("AutoConnect MetaMask failed", e);
+                    }
+                } else if (currentPassword && connectionType === 'local') {
                     console.log("[AutoConnect] Connecting Local Wallet SDK...");
-                    await connect(selectedChain, false);
+                    try {
+                        const { mainWallet } = useXOWalletStore.getState();
+                        const { encryptedPrivateKey, salt, iv } = mainWallet;
+
+                        if (encryptedPrivateKey && salt && iv) {
+                            await walletContext.connect('local', {
+                                encryptedPrivateKey,
+                                password: currentPassword,
+                                salt,
+                                iv
+                            });
+                            const signer = walletContext.getSigner();
+                            await connect(selectedChain, signer);
+                        }
+                    } catch (e) {
+                        console.error("AutoConnect Local failed", e);
+                    }
                 }
             }
         };
@@ -39,6 +68,7 @@ export const useWalletAutoconnect = (
         selectedChain,
         connectionType,
         hasManuallyDisconnected,
-        connect
+        connect,
+        walletContext
     ]);
 };

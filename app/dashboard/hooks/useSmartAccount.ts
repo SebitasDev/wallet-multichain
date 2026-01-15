@@ -21,7 +21,7 @@ interface UseSmartAccountResult {
     isDeploying: boolean;
     isApproving: boolean;
     error: string | null;
-    connect: (chainKey: ChainKey, useMetaMask?: boolean, externalProvider?: any) => Promise<AccountAbstraction | null>;
+    connect: (chainKey: ChainKey, signerOrProvider: any) => Promise<AccountAbstraction | null>;
     ensureDeployed: () => Promise<boolean>;
     ensureApproval: (tokenAddress: Address, spender: Address, amount: bigint) => Promise<boolean>;
     getBalance: (token: string | Address) => Promise<bigint>;
@@ -59,7 +59,10 @@ export const useSmartAccount = (): UseSmartAccountResult => {
     /**
      * Connect to Smart Account via Local Key or MetaMask
      */
-    const connect = useCallback(async (chainKey: ChainKey, useMetaMask: boolean = false, externalProvider?: any): Promise<AccountAbstraction | null> => {
+    /**
+     * Connect to Smart Account via Signer/Provider
+     */
+    const connect = useCallback(async (chainKey: ChainKey, signerOrProvider: any): Promise<AccountAbstraction | null> => {
         setIsConnecting(true);
         setError(null);
 
@@ -70,57 +73,53 @@ export const useSmartAccount = (): UseSmartAccountResult => {
             }
 
             const targetChainId = config.evm.chain.id.toString();
-            // Hex chainId for MetaMask (e.g. 0x64)
-            const targetChainIdHex = `0x${config.evm.chain.id.toString(16)}`;
 
             // Create AccountAbstraction instance
             const accountInstance = new AccountAbstraction(config.evm as any);
             let result: { owner: `0x${string}`; smartAccount: `0x${string}` };
 
-            if (externalProvider) {
-                // EMBEDDED WALLET CONNECTION
+            console.log("[useSmartAccount] connect called with:", signerOrProvider);
+
+            // Determine if signerOrProvider is a WalletClient (viem) or Signer (ethers) or Provider
+            // The SDK's `.connect()` can take:
+            // - nothing (reads from window.ethereum basically if not passed? or fails?)
+            // - WalletClient (viem)
+            // - JsonRpcSigner (ethers)
+            // - Private Key string
+
+            // We need to normalize what we pass to it.
+            // If it's a private key string (Local Strategy might return it if we want, or it returns a Wallet object)
+            // If it's an Ethers Wallet (Local Strategy), it works as a Signer.
+
+            // If it's a Provider (from XO / Embedded), we might need to wrap it in a WalletClient or pass it if SDK supports it.
+
+            // Let's assume signerOrProvider is compatible with SDK connect.
+            // If External (Connector/Provider from wagmi or XO - EIP-1193):
+            if (signerOrProvider && signerOrProvider.request) {
+                console.log("[useSmartAccount] Detected EIP-1193 Provider");
+
+                // Fetch account to ensure WalletClient has an account for signing
+                const accounts = await signerOrProvider.request({ method: 'eth_accounts' });
+                const accountAddress = accounts[0];
+                console.log("[useSmartAccount] Using account for WalletClient:", accountAddress);
+
                 const walletClient = createWalletClient({
+                    account: accountAddress as `0x${string}`,
                     chain: config.evm.chain,
-                    transport: custom(externalProvider)
+                    transport: custom(signerOrProvider)
                 });
                 result = await accountInstance.connect(walletClient);
-                setConnectionMode('embedded');
-            } else if (useMetaMask) {
-                // FORCE CHAIN SWITCH for MetaMask
-                if (window.ethereum) {
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: targetChainIdHex }],
-                        });
-                    } catch (switchError: any) {
-                        // Error 4902: Chain not added
-                        if (switchError.code === 4902) {
-                            throw new Error("This network is not available in your MetaMask, please add it manually.");
-                        }
-                        console.warn("Failed to switch chain, proceeding anyway:", switchError);
-                    }
-                }
-
-                // Connect with MetaMask (Signer)
-                result = await accountInstance.connect();
-                setMetaMaskConnection(result.owner, targetChainId);
-                setConnectionMode('metamask');
-            } else {
-                // Connect with Local Private Key
-                if (!mainWallet.encryptedPrivateKey || !currentPassword || !mainWallet.salt || !mainWallet.iv) {
-                    throw new Error("Wallet credentials not available. Please unlock your wallet.");
-                }
-
-                const privateKey = await decryptPrivateKey(
-                    mainWallet.encryptedPrivateKey,
-                    currentPassword,
-                    mainWallet.salt,
-                    mainWallet.iv
-                ) as `0x${string}`;
-
-                result = await accountInstance.connect(privateKey);
-                setConnectionMode('local');
+            }
+            // If it's an Ethers Wallet (Local Strategy), extract private key
+            else if (signerOrProvider && (signerOrProvider.privateKey || (signerOrProvider as any)._signingKey)) {
+                console.log("[useSmartAccount] Detected Ethers Wallet / Private Key Source");
+                const pk = signerOrProvider.privateKey || (signerOrProvider as any)._signingKey().privateKey;
+                result = await accountInstance.connect(pk);
+            }
+            // Fallback (e.g. WalletClient or Signer if SDK supports it directly)
+            else {
+                console.log("[useSmartAccount] Using Fallback Connection");
+                result = await accountInstance.connect(signerOrProvider);
             }
 
             // Sync State
@@ -146,7 +145,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
         } finally {
             setIsConnecting(false);
         }
-    }, [mainWallet, currentPassword, storeSetSmartAccount, updateSmartAccountDeployStatus, setMetaMaskConnection, setConnectionMode]);
+    }, [mainWallet, storeSetSmartAccount, updateSmartAccountDeployStatus]);
 
     /**
      * Ensure Smart Account is deployed

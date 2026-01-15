@@ -22,6 +22,7 @@ import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
 import { base, polygon } from "viem/chains";
 
 import { useWalletStorage } from "./useWalletStorage";
+import { useWallet } from "@/app/context/WalletContext";
 
 
 // =====================
@@ -87,6 +88,8 @@ export const EmbeddedWalletProvider = ({
     const setXOWallet = useXOWalletStore((s) => s.setXOWallet);
     const setXOClient = useXOWalletStore((s) => s.setXOClient);
 
+    const walletContext = useWallet();
+
     const canDecrypt =
         hydrated &&
         !!password &&
@@ -119,39 +122,42 @@ export const EmbeddedWalletProvider = ({
     // ======================
     //  CONNECT XO WALLET
     // ======================
+    // ======================
+    //  CONNECT XO WALLET (VIA STRATEGY)
+    // ======================
     const connect = async () => {
         try {
-            const { XOConnectProvider, XOConnect } = await import("xo-connect");
-            const { BrowserProvider } = await import("ethers");
-
             if (!isEmbedded) throw new Error("No XO Embedded");
 
-            const provider = new XOConnectProvider({
-                rpcs: {
-                    ["0x2105"]: "https://mainnet.base.org",
-                    ["0x89"]: "https://polygon-rpc.com"
-                },
-                defaultChainId: "0x89", // Default to Polygon for CTF as requested (or keep base? better to support both)
+            await walletContext.connect('xo', {
+                defaultChainId: "0x89" // Polygon default
             });
 
-            await provider.request({ method: "eth_requestAccounts" });
-            xoProviderRef.current = provider;
+            // The Strategy updates the store, but we might need to sync local state if needed
+            // But actually WalletContext also syncs store.
 
-            const ethersProvider = new BrowserProvider(provider);
-            const signer = await ethersProvider.getSigner();
-            const addr = await signer.getAddress();
+            // We still need to get the client explicitly if the strategy exposes it, 
+            // or we can rely on the store update that the strategy might have done?
+            // The XOWalletStrategy assigns xoClient to itself. We can retrieve it via getProvider() or custom method?
+            // The XOWalletStrategy has a `getClient` method but it is not on the generic interface.
+            // We can check if activeStrategy is XOWalletStrategy.
 
-            setAddress(addr);
-            setXOWallet({ address: addr });
+            const strategy = walletContext.strategies.find(s => s.id === 'xo') as any;
+            if (strategy && strategy.getClient) {
+                const client = strategy.getClient();
+                // If the client wasn't ready immediately, we might need to wait or it returns a promise?
+                // In the strategy implementation, getClient returns `this.xoClient`.
+                if (client) setXOClient(client);
+            }
+
             setIsUsingXO(true);
+            setAddress(walletContext.address);
 
-            const client = await XOConnect.getClient();
-            setXOClient(client);
-
-            toast.success(`Wallet XO conectada: ${addr}`);
-        } catch {
+            toast.success(`Wallet XO conectada`);
+        } catch (e) {
+            console.error("XO Connect failed", e);
             setIsUsingXO(false);
-            await generateLocalOrLoad();
+            await generateLocalOrLoad(); // Fallback to local
         }
     };
 

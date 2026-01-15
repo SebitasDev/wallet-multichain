@@ -14,6 +14,7 @@ import { useSmartAccount } from "../../hooks/useSmartAccount";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { FloatingChainInfo } from "../FloatingChainInfo";
 import { useConnect, useDisconnect } from "wagmi";
+import { useWallet } from "@/app/context/WalletContext";
 
 // --- New Components & Hooks ---
 import { useEoaBalance } from "../../hooks/wallet/useEoaBalance";
@@ -41,6 +42,8 @@ export const HeroBannerMainWallet = ({
     isRefreshing,
     onRefresh
 }: HeroBannerMainWalletProps) => {
+
+    const walletContext = useWallet();
 
     const { mainWallet } = useXOWalletStore();
     const { currentPassword } = useWalletPasswordStore();
@@ -96,7 +99,8 @@ export const HeroBannerMainWallet = ({
         connectionType,
         currentPassword,
         selectedChain,
-        connect
+        connect,
+        walletContext
     );
 
     const eoaBalance = useEoaBalance(
@@ -110,9 +114,10 @@ export const HeroBannerMainWallet = ({
     const mainBalance = (activeWallet === "EVM" && smartAccountAddress) ? eoaBalance : burnedBalances[activeWallet];
 
     // --- Handlers ---
-    const handleDisconnect = () => {
+    const handleDisconnect = async () => {
         hasManuallyDisconnected.current = true;
-        disconnect();
+        await walletContext.disconnect(); // Clear globally active strategy
+        disconnect(); // Clear useSmartAccount state
     };
 
     const handleConnectMenuOpen = (event: MouseEvent<HTMLElement>) => {
@@ -125,17 +130,51 @@ export const HeroBannerMainWallet = ({
 
         if (type === 'local') {
             console.log("Restoring Local Wallet connection...");
-            await connect(selectedChain, false);
+            try {
+                const { encryptedPrivateKey, salt, iv } = mainWallet;
+                if (!encryptedPrivateKey || !currentPassword || !salt || !iv) {
+                    throw new Error("Local wallet not unlocked or not found");
+                }
+
+                await walletContext.connect('local', {
+                    encryptedPrivateKey,
+                    password: currentPassword,
+                    salt,
+                    iv
+                });
+
+                const signer = walletContext.getSigner();
+                await connect(selectedChain, signer);
+            } catch (e) {
+                console.error("Failed to connect local strategy", e);
+                toast.error("Could not connect local wallet (locked?)");
+            }
+
         } else if (type === 'embedded') {
             console.log("Connecting Embedded Wallet...");
-            await connect(selectedChain, false, embeddedProvider); // Pass provider!
+            try {
+                // XO Strategy
+                await walletContext.connect('xo', { defaultChainId: chainIdStr });
+                const provider = walletContext.getProvider();
+                await connect(selectedChain, provider);
+            } catch (e: any) {
+                if (e.message && e.message.includes("No connection available")) {
+                    console.warn("XO Wallet not available (likely outside compatible environment).");
+                } else {
+                    console.error("XO connection failed", e);
+                }
+            }
         } else {
             try {
                 if (connector) {
                     disconnectWagmi();
                     connectWagmi({ connector });
                 }
-                await connect(selectedChain, true);
+
+                const result = await walletContext.connect('metamask', { chainId: chainIdStr });
+                // Use result directly!
+                // Prioritize provider (EIP-1193) so useSmartAccount uses viem logic
+                await connect(selectedChain, result.provider || result.signer);
             } catch (e) {
                 console.error("Connection failed:", e);
                 toast.error("Failed to connect wallet");
@@ -234,7 +273,37 @@ export const HeroBannerMainWallet = ({
                     setSelectedChain={async (chain) => {
                         setSelectedChain(chain);
                         console.log(`[FloatingChainInfo] Switch to ${chain}`);
-                        await connect(chain, isUsingMetaMask);
+
+                        try {
+                            if (isUsingMetaMask) {
+                                // We need to switch chain in MetaMask
+                                const chainConfig = NETWORKS[chain];
+                                const newChainId = chainConfig?.evm?.chain?.id?.toString();
+                                if (newChainId) {
+                                    // With the new context connect returning result, we can just await it
+                                    // and getting the provider from result is safer than context.getProvider() immediately
+                                    const result = await walletContext.connect('metamask', { chainId: newChainId });
+                                    // Prioritize provider for EIP-1193 compatibility
+                                    await connect(chain, result.provider || result.signer);
+                                    return;
+                                }
+                            }
+
+                            // If NOT metmask or just logic fallthrough (local/XO)
+                            // We might need to re-connect context if it was disconnected? 
+                            // Usually for local/xo switching chain doesn't need context reconnect unless provider changed
+                            // But let's be safe.
+
+                            const signer = walletContext.getSigner();
+                            const provider = walletContext.getProvider();
+                            await connect(chain, signer || provider); // This might still be risky if context is stale?
+
+                            // Ideally we should have a 'switchChain' method on context or strategy
+                            // For now, if local, signer is stable. 
+
+                        } catch (e) {
+                            console.error("Chain switch failed", e);
+                        }
                     }}
                     connectedChainId={chainId}
                     isConnecting={isConnecting}

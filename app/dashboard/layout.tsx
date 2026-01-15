@@ -10,6 +10,7 @@ import { PasswordModal } from "./components/PasswordModal";
 import { EmbeddedWalletProvider } from "@/app/dashboard/hooks/wallet/useEmbeddedWallet";
 import { EmbeddedProvider } from "@/app/dashboard/hooks/dashboard/embedded";
 import { ToastContainerCustom } from "@/app/components/atoms/ToastContainerCustom";
+import { WalletProvider } from "@/app/context/WalletContext";
 
 export default function DashboardLayout({
     children,
@@ -63,12 +64,14 @@ export default function DashboardLayout({
             {/* 🔒 Bloquea el dashboard si no validó contraseña */}
             {!askPassword && (
                 <EmbeddedProvider>
-                    <EmbeddedWalletProvider password={hasPassword ? currentPassword : ""}>
-                        <>
-                            {children}
-                            <ToastContainerCustom />
-                        </>
-                    </EmbeddedWalletProvider>
+                    <WalletProvider>
+                        <EmbeddedWalletProvider password={hasPassword ? currentPassword : ""}>
+                            <>
+                                {children}
+                                <ToastContainerCustom />
+                            </>
+                        </EmbeddedWalletProvider>
+                    </WalletProvider>
                 </EmbeddedProvider>
             )}
         </Box>
