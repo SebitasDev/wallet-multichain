@@ -28,9 +28,7 @@ interface UseSmartAccountResult {
     disconnect: () => void;
 }
 
-/**
- * Primary Guard: useSmartAccount Hook
- */
+
 export const useSmartAccount = (): UseSmartAccountResult => {
     // Local State
     const [account, setAccount] = useState<AccountAbstraction | null>(null);
@@ -56,12 +54,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
 
     const currentPassword = useWalletPasswordStore((s) => s.currentPassword);
 
-    /**
-     * Connect to Smart Account via Local Key or MetaMask
-     */
-    /**
-     * Connect to Smart Account via Signer/Provider
-     */
+
     const connect = useCallback(async (chainKey: ChainKey, signerOrProvider: any): Promise<AccountAbstraction | null> => {
         setIsConnecting(true);
         setError(null);
@@ -78,30 +71,11 @@ export const useSmartAccount = (): UseSmartAccountResult => {
             const accountInstance = new AccountAbstraction(config.evm as any);
             let result: { owner: `0x${string}`; smartAccount: `0x${string}` };
 
-            console.log("[useSmartAccount] connect called with:", signerOrProvider);
-
-            // Determine if signerOrProvider is a WalletClient (viem) or Signer (ethers) or Provider
-            // The SDK's `.connect()` can take:
-            // - nothing (reads from window.ethereum basically if not passed? or fails?)
-            // - WalletClient (viem)
-            // - JsonRpcSigner (ethers)
-            // - Private Key string
-
-            // We need to normalize what we pass to it.
-            // If it's a private key string (Local Strategy might return it if we want, or it returns a Wallet object)
-            // If it's an Ethers Wallet (Local Strategy), it works as a Signer.
-
-            // If it's a Provider (from XO / Embedded), we might need to wrap it in a WalletClient or pass it if SDK supports it.
-
-            // Let's assume signerOrProvider is compatible with SDK connect.
-            // If External (Connector/Provider from wagmi or XO - EIP-1193):
+            // Handle connection based on provider type
             if (signerOrProvider && signerOrProvider.request) {
-                console.log("[useSmartAccount] Detected EIP-1193 Provider");
-
-                // Fetch account to ensure WalletClient has an account for signing
+                // EIP-1193 Provider (MetaMask/WalletConnect/XO)
                 const accounts = await signerOrProvider.request({ method: 'eth_accounts' });
                 const accountAddress = accounts[0];
-                console.log("[useSmartAccount] Using account for WalletClient:", accountAddress);
 
                 const walletClient = createWalletClient({
                     account: accountAddress as `0x${string}`,
@@ -110,29 +84,22 @@ export const useSmartAccount = (): UseSmartAccountResult => {
                 });
                 result = await accountInstance.connect(walletClient);
             }
-            // If it's an Ethers Wallet (Local Strategy), extract private key
+            // Ethers Wallet (Local Strategy)
             else if (signerOrProvider && (signerOrProvider.privateKey || (signerOrProvider as any)._signingKey)) {
-                console.log("[useSmartAccount] Detected Ethers Wallet / Private Key Source");
                 const pk = signerOrProvider.privateKey || (signerOrProvider as any)._signingKey().privateKey;
                 result = await accountInstance.connect(pk);
             }
-            // Fallback (e.g. WalletClient or Signer if SDK supports it directly)
+            // Fallback (WalletClient/Signer)
             else {
-                console.log("[useSmartAccount] Using Fallback Connection");
                 result = await accountInstance.connect(signerOrProvider);
             }
 
-            // Sync State
-            setAccount(accountInstance);
-            setSmartAccountAddress(result.smartAccount);
-            setOwnerAddress(result.owner);
+
             setCurrentChainId(targetChainId);
 
-            // Check Deployment Status
             const isDeployedStatus = await safeCheckDeployment(accountInstance);
             setIsDeployed(isDeployedStatus);
 
-            // Sync Store
             storeSetSmartAccount(targetChainId, result.smartAccount, isDeployedStatus);
 
             return accountInstance;
@@ -147,9 +114,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
         }
     }, [mainWallet, storeSetSmartAccount, updateSmartAccountDeployStatus]);
 
-    /**
-     * Ensure Smart Account is deployed
-     */
+
     const ensureDeployed = useCallback(async () => {
         if (!account || !currentChainId) {
             console.warn("ensureDeployed called but no account is connected.");
@@ -177,9 +142,7 @@ export const useSmartAccount = (): UseSmartAccountResult => {
         }
     }, [account, currentChainId, isDeployed, updateSmartAccountDeployStatus]);
 
-    /**
-     * Ensure Token Approval (Wrapper around static helper)
-     */
+
     const ensureApproval = useCallback(async (tokenAddress: Address, spender: Address, amount: bigint) => {
         if (!account) return false;
         setIsApproving(true);
@@ -193,17 +156,13 @@ export const useSmartAccount = (): UseSmartAccountResult => {
         }
     }, [account]);
 
-    /**
-     * Get Token Balance
-     */
+
     const getBalance = useCallback(async (token: string | Address) => {
         if (!account) return BigInt(0);
         return await account.getBalance(token as Address);
     }, [account]);
 
-    /**
-     * Disconnect and Reset State
-     */
+
     const disconnect = useCallback(() => {
         setAccount(null);
         setSmartAccountAddress(null);

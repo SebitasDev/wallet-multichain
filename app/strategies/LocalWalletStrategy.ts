@@ -35,8 +35,6 @@ export class LocalWalletStrategy implements WalletStrategy {
                 args.iv
             );
 
-            // Create ethers wallet
-            // We can attach a provider if passed, or leave it cleaner
             this.wallet = new Wallet(privateKey, args.provider);
 
             return {
