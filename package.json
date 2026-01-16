@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@1llet.xyz/erc4337-gasless-sdk": "^0.4.52",
+    "@1llet.xyz/erc4337-gasless-sdk": "^0.4.55",
     "@account-abstraction/sdk": "^0.6.0",
     "@blend-capital/blend-sdk": "^3.2.1",
     "@circle-fin/adapter-viem-v2": "^1.1.1",

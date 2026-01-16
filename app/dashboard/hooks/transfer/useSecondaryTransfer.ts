@@ -8,7 +8,7 @@ import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useSessionWalletStore } from "@/app/store/useSessionWalletStore";
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { toast } from "react-toastify";
-import { Address, parseUnits, maxUint256 } from "viem";
+import { Address, parseUnits, maxUint256, createPublicClient, http } from "viem";
 import { usePublicClient } from "wagmi";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
@@ -465,6 +465,11 @@ export const useSecondaryTransfer = () => {
                     const tokenAsset = fromNet.assets.find(a => a.name === finalToken);
                     const tokenAddress = tokenAsset?.address as Address;
 
+                    const chainSpecificClient = createPublicClient({
+                        chain: fromNet.evm.chain,
+                        transport: http()
+                    });
+
                     if (tokenAddress && tokenAddress !== "0x0000000000000000000000000000000000000000") {
                         const spender = smartAccountAddress as Address;
                         updateRouteStatus("approving", "Verificando aprobación (Infinito)...");
@@ -474,7 +479,7 @@ export const useSecondaryTransfer = () => {
                             tokenAddress,
                             spender,
                             maxUint256,
-                            undefined,
+                            chainSpecificClient as any,
                             smartAccountAddress as Address
                         );
 
@@ -498,6 +503,7 @@ export const useSecondaryTransfer = () => {
                         sourceToken: finalToken,
                         destToken: watch("sourceToken"),
                         senderAddress: smartAccountAddress,
+                        facilitatorPrivateKey: process.env.NEXT_PUBLIC_FACILITATOR_PRIVATE_KEY,
                     };
 
                     const result = await transferManager.execute(context as any);
