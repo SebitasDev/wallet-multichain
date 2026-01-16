@@ -154,7 +154,8 @@ export const HeroBannerMainWallet = ({
             console.log("Connecting Embedded Wallet...");
             try {
                 // XO Strategy
-                const result = await walletContext.connect('xo', { defaultChainId: chainIdStr });
+                const hexChainId = chainIdStr ? `0x${Number(chainIdStr).toString(16)}` : "0x89";
+                const result = await walletContext.connect('xo', { defaultChainId: hexChainId });
                 await connect(selectedChain, result.provider);
             } catch (e: any) {
                 if (e.message && e.message.includes("No connection available")) {
