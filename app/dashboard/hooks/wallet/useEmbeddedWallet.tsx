@@ -119,6 +119,16 @@ export const EmbeddedWalletProvider = ({
         connect();
     }, [hydrated, isEmbedded, password]);
 
+    // [FIX] Sync with global WalletContext
+    // If WalletContext connects to XO (e.g. via HeroBanner), we must update local state
+    // so that 'address' exposed by this context is correct.
+    useEffect(() => {
+        if (walletContext.activeStrategyId === 'xo' && walletContext.address) {
+            setAddress(walletContext.address);
+            setIsUsingXO(true);
+        }
+    }, [walletContext.address, walletContext.activeStrategyId]);
+
     // ======================
     //  CONNECT XO WALLET
     // ======================
