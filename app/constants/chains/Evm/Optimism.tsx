@@ -13,7 +13,7 @@ export const OPTIMISM: ChainConfig = {
         {
             name: "USDC",
             decimals: 6,
-            address: (isDevelopment ? "0x5fd84259d66Cd46123540766Be93DFE6D43130D7" : "0x0b2C639c535313529b4613306ed90f968b598ce6") as Address,
+            address: (isDevelopment ? "0x5fd84259d66Cd46123540766Be93DFE6D43130D7" : "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85") as Address,
             icon: <UsdcIcon />,
             coingeckoId: "usd-coin"
         },
