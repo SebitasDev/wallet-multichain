@@ -99,17 +99,24 @@ export const usePrimaryTransfer = () => {
     // 5. Effects
 
     // Reset/Re-init on context change
+    // Reset/Re-init on context change
+    const [lastInitChain, setLastInitChain] = useState<ChainKey | null>(null);
+
     useEffect(() => {
+        // Only re-init if chain actually changed
+        if (watchSourceChain === lastInitChain) return;
+
         setSmartAccount(null);
         setSmartAccountAddress(null);
         setIsDeployed(false);
+        setLastInitChain(watchSourceChain);
 
         const reInit = async () => {
             await connectWallet();
         };
         reInit();
 
-    }, [watchSourceChain, connectWallet, setSmartAccount, setSmartAccountAddress, setIsDeployed]);
+    }, [watchSourceChain, lastInitChain, connectWallet, setSmartAccount, setSmartAccountAddress, setIsDeployed]);
 
     // Balance Fetching
     useEffect(() => {
