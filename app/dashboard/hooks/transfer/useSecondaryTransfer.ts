@@ -25,6 +25,7 @@ import {
 } from "@1llet.xyz/erc4337-gasless-sdk";
 import { getSmartAccountForChain, ensureTokenApproval, useSmartAccount } from "../useSmartAccount";
 import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
+import { FACILITATOR_ADDRESS } from "@/app/facilitator/config";
 
 // Define BridgeContext based on SDK usage
 // Define BridgeContext based on SDK usage
@@ -471,20 +472,20 @@ export const useSecondaryTransfer = () => {
                     });
 
                     if (tokenAddress && tokenAddress !== "0x0000000000000000000000000000000000000000") {
-                        const spender = smartAccountAddress as Address;
-                        updateRouteStatus("approving", "Verificando aprobación (Infinito)...");
+                        const spender = FACILITATOR_ADDRESS;
+                        updateRouteStatus("approving", "Verificando aprobación...");
 
                         const approved = await ensureTokenApproval(
                             account,
                             tokenAddress,
                             spender,
-                            maxUint256,
+                            BigInt(parseUnits(totalAmount, tokenAsset?.decimals || 6)), // Precise amount check
                             chainSpecificClient as any,
                             smartAccountAddress as Address
                         );
 
                         if (!approved) {
-                            console.warn("Approval verification had issues, attempting transfer anyway...");
+                            console.warn("Approval verification had issues or txn failed.");
                         }
                     }
 

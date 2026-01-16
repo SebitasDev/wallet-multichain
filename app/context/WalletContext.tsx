@@ -61,7 +61,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
                 setConnectionMode('metamask');
                 setMetaMaskConnection(result.address, result.chainId);
             } else if (strategyId === 'xo') {
-                setConnectionMode('embedded'); // Mapping 'xo' to 'embedded' for legacy compatible
+                setConnectionMode('embedded');
+                useXOWalletStore.getState().setXOWallet({ address: result.address });
             } else if (strategyId === 'local') {
                 setConnectionMode('local');
             }

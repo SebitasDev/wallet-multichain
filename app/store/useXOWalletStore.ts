@@ -129,11 +129,24 @@ export const useXOWalletStore = create<WalletState>()(
             },
 
             getActiveAddress: () => {
-                const { metaMaskConnection, mainWallet } = get();
-                // Priority: MetaMask > mainWallet
+                const { metaMaskConnection, mainWallet, xoWallet, connectionMode } = get();
+
+                if (connectionMode === 'embedded' && xoWallet.address) {
+                    return xoWallet.address;
+                }
+
+                if (connectionMode === 'metamask' && metaMaskConnection.address) {
+                    return metaMaskConnection.address;
+                }
+
+                // Priority Fallback: MetaMask > XO > MainWallet
                 if (metaMaskConnection.isConnected && metaMaskConnection.address) {
                     return metaMaskConnection.address;
                 }
+                if (xoWallet.address) {
+                    return xoWallet.address;
+                }
+
                 return mainWallet.address;
             },
 
