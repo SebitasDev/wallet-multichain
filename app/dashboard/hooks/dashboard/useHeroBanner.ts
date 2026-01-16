@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, MouseEvent, SetStateAction, Dispatch } from "react";
 import { toast } from "react-toastify";
 import { useWalletStore } from "@/app/store/useWalletsStore";
-import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect";
+import { useEmbeddedWalletContext } from "@/app/dashboard/hooks/wallet/useEmbeddedWallet";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
@@ -9,6 +9,7 @@ import { getBalanceFromChain } from "@/app/hooks/useGetBalanceFromChain";
 import { createUSDCTrustline } from "@/app/lib/stellar/createUSDCTrustline";
 import { decryptPrivateKey } from "@/app/utils/cripto";
 import { Address } from "viem";
+import { ChainKey } from "@/app/types/chain";
 
 export type ActiveWallet = "EVM" | "STELLAR";
 
@@ -17,7 +18,7 @@ export const useHeroBanner = () => {
     const [activeWallet, setActiveWallet] = useState<ActiveWallet>("EVM");
 
     // XO (embedded) -> Current Network Provider info
-    const { address: xoAddress, currentNetwork } = useXOContracts();
+    const { address: xoAddress, currentNetwork } = useEmbeddedWalletContext();
 
     // Local fallback main wallet
     const {
@@ -144,5 +145,110 @@ export const useHeroBanner = () => {
         // Actions
         handleRefreshBalances,
         handleRefreshMainWallet,
+    };
+};
+
+
+/**
+ * Extracted State Logic for HeroBannerMainWallet
+ */
+export const useMainWalletUI = (
+    activeWallet: ActiveWallet,
+    resetWallet: () => void
+) => {
+    // UI Local State
+    const [loadWalletOpen, setLoadWalletOpen] = useState(false);
+    const [walletAnchorEl, setWalletAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedChain, setSelectedChain] = useState<ChainKey>("Base");
+    const [chainMenuAnchorEl, setChainMenuAnchorEl] = useState<null | HTMLElement>(null);
+
+    // Export/Auth State
+    const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+    const [exportModalOpen, setExportModalOpen] = useState(false);
+    const [exportData, setExportData] = useState("");
+    const [exportType, setExportType] = useState<"mnemonic" | "privateKey">("mnemonic");
+    const [authAction, setAuthAction] = useState<"export" | "reset" | null>(null);
+
+    const handleAuthSuccess = async () => {
+        const { currentPassword } = useWalletPasswordStore.getState();
+
+        if (authAction === "reset") {
+            setPasswordModalOpen(false);
+            resetWallet();
+            return;
+        }
+
+        const { mainWallet } = useXOWalletStore.getState();
+
+        if (!currentPassword || !mainWallet) {
+            toast.error("Error: Información de wallet no encontrada.");
+            setPasswordModalOpen(false);
+            return;
+        }
+
+        try {
+            // Decrypt Mnemonic
+            if (mainWallet.encryptedMnemonic && mainWallet.salt && mainWallet.iv) {
+                try {
+                    const mnemonic = await decryptPrivateKey(
+                        mainWallet.encryptedMnemonic,
+                        currentPassword,
+                        mainWallet.salt,
+                        mainWallet.iv
+                    );
+                    if (mnemonic) {
+                        setExportData(mnemonic);
+                        setExportType("mnemonic");
+                        setPasswordModalOpen(false);
+                        setExportModalOpen(true);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn("Mnemonic decryption failed", e);
+                }
+            }
+
+            // Fallback: Private Key
+            let encryptedKey = activeWallet === "EVM"
+                ? mainWallet.encryptedPrivateKey
+                : mainWallet.encryptedPrivateKeyStellar;
+
+            if (encryptedKey && mainWallet.salt && mainWallet.iv) {
+                const pk = await decryptPrivateKey(
+                    encryptedKey,
+                    currentPassword,
+                    mainWallet.salt,
+                    mainWallet.iv
+                );
+                setExportData(pk);
+                setExportType("privateKey");
+                setPasswordModalOpen(false);
+                setExportModalOpen(true);
+            } else {
+                toast.error("No se encontró clave privada.");
+                setPasswordModalOpen(false);
+            }
+
+        } catch (error) {
+            console.error("Export error:", error);
+            toast.error("Error al desencriptar o contraseña incorrecta.");
+            setPasswordModalOpen(false);
+        }
+    };
+
+    return {
+        // State
+        loadWalletOpen, setLoadWalletOpen,
+        walletAnchorEl, setWalletAnchorEl,
+        selectedChain, setSelectedChain,
+        chainMenuAnchorEl, setChainMenuAnchorEl,
+        passwordModalOpen, setPasswordModalOpen,
+        exportModalOpen, setExportModalOpen,
+        exportData, setExportData,
+        exportType, setExportType,
+        authAction, setAuthAction,
+
+        // Handlers
+        handleAuthSuccess
     };
 };

@@ -119,7 +119,7 @@ export const approveAndBurn = async (
     const receiptApproveAndBurn = await bundlerClient.waitForUserOperationReceipt({ hash });
     console.log("Transaction hash en la blockchain de approve y burn:", receiptApproveAndBurn.receipt.transactionHash);
 
-    const domainStr = network.crossChainInformation.circleInformation?.cCTPInformation?.domain.toString();
+    const domainStr = network.crossChainInformation.circleInformation?.cCTPInformation?.domain?.toString();
     if (!domainStr) throw new Error("CCTP Domain not found");
 
     return await createRetrieveAttestation(receiptApproveAndBurn.receipt.transactionHash, domainStr);

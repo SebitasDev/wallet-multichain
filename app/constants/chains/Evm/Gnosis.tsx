@@ -10,7 +10,7 @@ import { XdaiIcon } from "@/app/components/atoms/XdaiIcon";
 
 const isDevelopment = process.env.NEXT_PUBLIC_ENVIROMENT === "development";
 
-export const GNOSIS: ChainConfig = {
+export const Gnosis: ChainConfig = {
     assets: [
         {
             name: "USDC",

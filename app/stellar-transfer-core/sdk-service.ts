@@ -1,5 +1,4 @@
 import { OpenAPI, OneClickService, QuoteRequest } from '@defuse-protocol/one-click-sdk-typescript';
-import { STELLAR } from '../constants/chains';
 
 // Initialize API
 OpenAPI.BASE = 'https://1click.chaindefuser.com';
@@ -17,7 +16,7 @@ const getAssetId = (chainName: string, tokenName: string = "USDC") => {
     const config = NETWORKS[chainName as ChainKey];
     // Special handling for Stellar config which is separate or integrated depending on version
     if (chainName === "Stellar" && !config) {
-        return STELLAR.crossChainInformation.nearIntentInformation?.assetsId[0].assetId;
+        return NETWORKS["Stellar"]?.crossChainInformation.nearIntentInformation?.assetsId[0].assetId;
     }
 
     if (!config) return undefined;

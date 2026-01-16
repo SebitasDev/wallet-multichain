@@ -1,28 +1,27 @@
-import {
-    Box,
-    Typography,
-    IconButton,
-} from "@mui/material";
-import { formatCurrency } from "@/app/utils/formatCurrency";
-import { SplitBalance } from "./SplitBalance";
+import { Box } from "@mui/material";
 import { EthIcon } from "@/app/components/atoms/EthIcon";
 import { StellarIcon } from "@/app/components/atoms/StellarIcon";
-import { ActiveWallet } from "@/app/dashboard/hooks/dashboard/useHeroBanner";
-import { Dispatch, SetStateAction, useState } from "react";
+import { ActiveWallet, useMainWalletUI } from "@/app/dashboard/hooks/dashboard/useHeroBanner";
+import { Dispatch, SetStateAction, MouseEvent, useRef } from "react";
 import { LoadWalletModal } from "../LoadWalletModal";
-import FileUploadIcon from "@mui/icons-material/FileUpload";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import { useXOContracts } from "../../hooks/wallet/useXOConnect";
+import { useEmbeddedWalletContext } from "@/app/dashboard/hooks/wallet/useEmbeddedWallet";
 import { PasswordModal } from "../../components/PasswordModal";
 import { ExportWalletModal } from "../../components/ExportWalletModal";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
-import { decryptPrivateKey } from "@/app/utils/cripto";
 import { toast } from "react-toastify";
-import CloseIcon from '@mui/icons-material/Close'; // Used if adding a close button to PasswordModal, but for now we rely on external state or maybe I need to update PasswordModal later.
+import { useSmartAccount } from "../../hooks/useSmartAccount";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { FloatingChainInfo } from "../FloatingChainInfo";
+import { useConnect, useDisconnect } from "wagmi";
+import { useWallet } from "@/app/context/WalletContext";
 
+// --- New Components & Hooks ---
+import { useEoaBalance } from "../../hooks/wallet/useEoaBalance";
+import { useWalletAutoconnect } from "../../hooks/wallet/useWalletAutoconnect";
+import { WalletActions } from "./components/WalletActions";
+import { WalletConnectionMenu } from "./components/WalletConnectionMenu";
+import { WalletAddressDisplay } from "./components/WalletAddressDisplay";
 
 interface HeroBannerMainWalletProps {
     activeWallet: ActiveWallet;
@@ -43,95 +42,149 @@ export const HeroBannerMainWallet = ({
     isRefreshing,
     onRefresh
 }: HeroBannerMainWalletProps) => {
-    const [loadWalletOpen, setLoadWalletOpen] = useState(false);
 
-    // EXPORT WALLET STATES
-    const [passwordModalOpen, setPasswordModalOpen] = useState(false);
-    const [exportModalOpen, setExportModalOpen] = useState(false);
-    const [exportData, setExportData] = useState("");
-    const [exportType, setExportType] = useState<"mnemonic" | "privateKey">("mnemonic");
-    const [authAction, setAuthAction] = useState<"export" | "reset" | null>(null);
+    const walletContext = useWallet();
 
-    const { resetWallet, isUsingXO } = useXOContracts();
+    const { mainWallet } = useXOWalletStore();
+    const { currentPassword } = useWalletPasswordStore();
+    const { address: addressXO, resetWallet, isUsingXO, provider: embeddedProvider } = useEmbeddedWalletContext();
 
+    // --- State Hook Overhaul ---
+    const {
+        loadWalletOpen, setLoadWalletOpen,
+        walletAnchorEl, setWalletAnchorEl,
+        selectedChain, setSelectedChain,
+        passwordModalOpen, setPasswordModalOpen,
+        exportModalOpen, setExportModalOpen,
+        exportData,
+        exportType,
+        authAction, setAuthAction,
+        handleAuthSuccess
+    } = useMainWalletUI(activeWallet, resetWallet);
+
+    // Hooks & Stores
+    const { connectors, connect: connectWagmi } = useConnect();
+    const { disconnect: disconnectWagmi } = useDisconnect();
+    const hasManuallyDisconnected = useRef(false);
+
+    // Smart Account Logic
+    const {
+        account,
+        connectionType,
+        ensureDeployed,
+        ensureApproval,
+        isDeployed,
+        smartAccountAddress,
+        ownerAddress,
+        connect,
+        disconnect,
+        chainId,
+        isConnecting
+    } = useSmartAccount();
+
+    const isUsingMetaMask = connectionType === 'metamask';
+
+    // Derived Logic
     const canRefresh = isUsingXO || !!burnedAddresses[activeWallet];
+    const config = NETWORKS[selectedChain];
+    const chainIdStr = config?.evm?.chain?.id?.toString();
+    const cachedSmartAccount = chainIdStr ? mainWallet.smartAccounts?.[chainIdStr]?.address : null;
 
-    const handleAuthSuccess = async () => {
-        // 1. Get password
-        const { currentPassword } = useWalletPasswordStore.getState();
+    // --- Custom Hooks ---
+    useWalletAutoconnect(
+        activeWallet,
+        smartAccountAddress,
+        isConnecting,
+        hasManuallyDisconnected,
+        connectionType,
+        currentPassword,
+        selectedChain,
+        connect,
+        walletContext
+    );
 
-        if (authAction === "reset") {
-            // Perform Reset
-            setPasswordModalOpen(false);
-            resetWallet();
-            return;
-        }
+    const eoaBalance = useEoaBalance(
+        activeWallet,
+        ownerAddress,
+        selectedChain,
+        isRefreshing ? 1 : 0
+    );
 
-        // Default: Export Logic
-        const { mainWallet } = useXOWalletStore.getState();
+    // Determine Main Balance to display
+    const mainBalance = (activeWallet === "EVM" && smartAccountAddress) ? eoaBalance : burnedBalances[activeWallet];
 
-        if (!currentPassword || !mainWallet) {
-            toast.error("Error: No se encontró la información de la wallet.");
-            setPasswordModalOpen(false);
-            return;
-        }
+    // --- Handlers ---
+    const handleDisconnect = async () => {
+        hasManuallyDisconnected.current = true;
+        await walletContext.disconnect(); // Clear globally active strategy
+        disconnect(); // Clear useSmartAccount state
+    };
 
-        try {
-            // 2. Try to decrypt Mnemonic first (Default)
-            if (mainWallet.encryptedMnemonic && mainWallet.salt && mainWallet.iv) {
-                try {
-                    const mnemonic = await decryptPrivateKey(
-                        mainWallet.encryptedMnemonic,
-                        currentPassword,
-                        mainWallet.salt,
-                        mainWallet.iv
-                    );
-                    if (mnemonic) {
-                        setExportData(mnemonic);
-                        setExportType("mnemonic");
-                        setPasswordModalOpen(false);
-                        setExportModalOpen(true);
-                        return;
-                    }
-                } catch (e) {
-                    console.warn("Could not decrypt mnemonic, falling back to private key", e);
+    const handleConnectMenuOpen = (event: MouseEvent<HTMLElement>) => {
+        setWalletAnchorEl(event.currentTarget);
+    };
+
+    const handleWalletSelect = async (type: 'local' | 'external' | 'embedded', connector?: any) => {
+        setWalletAnchorEl(null);
+        hasManuallyDisconnected.current = false;
+
+        if (type === 'local') {
+            console.log("Restoring Local Wallet connection...");
+            try {
+                const { encryptedPrivateKey, salt, iv } = mainWallet;
+                if (!encryptedPrivateKey || !currentPassword || !salt || !iv) {
+                    throw new Error("Local wallet not unlocked or not found");
+                }
+
+                const result = await walletContext.connect('local', {
+                    encryptedPrivateKey,
+                    password: currentPassword,
+                    salt,
+                    iv
+                });
+
+                // Use result.signer directly (avoiding context state race condition)
+                await connect(selectedChain, result.signer);
+            } catch (e) {
+                console.error("Failed to connect local strategy", e);
+                toast.error("Could not connect local wallet (locked?)");
+            }
+
+        } else if (type === 'embedded') {
+            console.log("Connecting Embedded Wallet...");
+            try {
+                // XO Strategy
+                const result = await walletContext.connect('xo', { defaultChainId: chainIdStr });
+                await connect(selectedChain, result.provider);
+            } catch (e: any) {
+                if (e.message && e.message.includes("No connection available")) {
+                    console.warn("XO Wallet not available (likely outside compatible environment).");
+                } else {
+                    console.error("XO connection failed", e);
                 }
             }
+        } else {
+            try {
+                if (connector) {
+                    disconnectWagmi();
+                    connectWagmi({ connector });
+                }
 
-            // 3. Fallback: Private Key of Active Wallet
-            let encryptedKey = null;
-            if (activeWallet === "EVM") encryptedKey = mainWallet.encryptedPrivateKey;
-            else encryptedKey = mainWallet.encryptedPrivateKeyStellar;
-
-            if (encryptedKey && mainWallet.salt && mainWallet.iv) {
-                const pk = await decryptPrivateKey(
-                    encryptedKey,
-                    currentPassword,
-                    mainWallet.salt,
-                    mainWallet.iv
-                );
-                setExportData(pk);
-                setExportType("privateKey");
-                setPasswordModalOpen(false);
-                setExportModalOpen(true);
-            } else {
-                toast.error("No se encontró clave privada para esta wallet.");
-                setPasswordModalOpen(false);
+                const result = await walletContext.connect('metamask', { chainId: chainIdStr });
+                // Use result directly!
+                // Prioritize provider (EIP-1193) so useSmartAccount uses viem logic
+                await connect(selectedChain, result.provider || result.signer);
+            } catch (e) {
+                console.error("Connection failed:", e);
+                toast.error("Failed to connect wallet");
             }
-
-            toast.error("No se encontró clave privada ni frase semilla.");
-            setPasswordModalOpen(false);
-
-        } catch (error) {
-            console.error("Export error:", error);
-            toast.error("Contraseña incorrecta o error al desencriptar.");
-            setPasswordModalOpen(false);
         }
     };
 
     return (
         <>
-            <Box /* ... existing icon box ... */
+            {/* Wallet Icon Badge */}
+            <Box
                 sx={{
                     position: "absolute",
                     top: 10,
@@ -141,7 +194,6 @@ export const HeroBannerMainWallet = ({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-
                     background: "#ffffff",
                     zIndex: 2,
                 }}
@@ -149,113 +201,35 @@ export const HeroBannerMainWallet = ({
                 {activeWallet === "EVM" ? (<EthIcon />) : (<StellarIcon />)}
             </Box>
 
-            {/* TOGGLE WALLET BUTTON & LOAD WALLET */}
-            <Box
-                sx={{
-                    display: "flex",
-                    flexWrap: "wrap", // Allow wrapping
-                    justifyContent: { xs: "space-between", sm: "flex-end" }, // Space out on mobile/tablet
-                    mb: 1,
-                    gap: 1,
-                    "& > button": {
-                        flex: { xs: "1 1 45%", sm: "initial" }, // Near 50% width on mobile, auto on desktop
-                        minWidth: "auto",
-                        whiteSpace: "nowrap" // Prevent text wrapping inside button
-                    }
-                }}
-            >
-                <IconButton
-                    id="tour-main-import"
-                    onClick={() => setLoadWalletOpen(true)}
-                    /* ... sx props ... */
-                    sx={{
-                        background: "#ffffff",
-                        border: "2px solid #000000",
-                        borderRadius: 2,
-                        px: 1.5,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        "&:hover": {
-                            background: "#00DC8C", // Branding Green
-                        },
-                    }}
-                >
-                    <FileUploadIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                    IMPORTAR
-                </IconButton>
+            {/* ACTION BUTTONS */}
+            <WalletActions
+                activeWallet={activeWallet}
+                setActiveWallet={setActiveWallet}
+                setSelectedChain={setSelectedChain}
+                onImportClick={() => setLoadWalletOpen(true)}
+                onExportClick={() => { setAuthAction("export"); setPasswordModalOpen(true); }}
+                onResetClick={() => { setAuthAction("reset"); setPasswordModalOpen(true); }}
+                onConnectClick={handleConnectMenuOpen}
+                onDisconnectClick={handleDisconnect}
+                isConnecting={isConnecting}
+                smartAccountAddress={smartAccountAddress}
+                currentPassword={currentPassword}
+                hasManuallyDisconnectedRef={hasManuallyDisconnected}
+            />
 
-                <IconButton
-                    id="tour-main-export"
-                    onClick={() => {
-                        setAuthAction("export");
-                        setPasswordModalOpen(true);
-                    }}
-                    /* ... sx props ... */
-                    sx={{
-                        background: "#ffffff",
-                        border: "2px solid #000000",
-                        borderRadius: 2,
-                        px: 1.5,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        "&:hover": {
-                            background: "#00DC8C",
-                        },
-                    }}
-                >
-                    <FileDownloadIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                    EXPORTAR
-                </IconButton>
+            {/* CONNECTION MENU */}
+            <WalletConnectionMenu
+                anchorEl={walletAnchorEl}
+                open={Boolean(walletAnchorEl)}
+                onClose={() => setWalletAnchorEl(null)}
+                hasPassword={!!currentPassword}
+                connectors={connectors}
+                onSelect={handleWalletSelect}
+                hideMetaMask={isUsingXO}
+            />
 
-                <IconButton
-                    onClick={() => {
-                        setAuthAction("reset");
-                        setPasswordModalOpen(true);
-                    }}
-                    sx={{
-                        background: "#ffffff",
-                        border: "2px solid #000000",
-                        borderRadius: 2,
-                        px: 1.5,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        "&:hover": {
-                            background: "#FF4444", // Danger Red
-                            color: "white"
-                        },
-                    }}
-                >
-                    <RestartAltIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                    RESETEAR
-                </IconButton>
-
-                <IconButton
-                    onClick={() =>
-                        setActiveWallet((prev) =>
-                            prev === "EVM" ? "STELLAR" : "EVM"
-                        )
-                    }
-                    /* ... sx props ... */
-                    sx={{
-                        background: "#ffffff",
-                        border: "2px solid #000000",
-                        borderRadius: 2,
-                        px: 1.5,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        "&:hover": {
-                            background: "#3CD2FF",
-                        },
-                    }}
-                >
-                    {activeWallet === "EVM" ? "→ STELLAR" : "→ EVM"}
-                </IconButton>
-            </Box>
-
-
-
+            {/* MODALS */}
             <LoadWalletModal open={loadWalletOpen} onClose={() => setLoadWalletOpen(false)} />
-
             <PasswordModal
                 open={passwordModalOpen}
                 mode="unlock"
@@ -264,7 +238,6 @@ export const HeroBannerMainWallet = ({
                 onSuccess={handleAuthSuccess}
                 onClose={() => setPasswordModalOpen(false)}
             />
-
             <ExportWalletModal
                 open={exportModalOpen}
                 onClose={() => setExportModalOpen(false)}
@@ -272,95 +245,69 @@ export const HeroBannerMainWallet = ({
                 type={exportType}
             />
 
-            {/* MAIN WALLET SECTION */}
-            <Box
-                sx={{
-                    background: "#f5f5f5",
-                    border: "2px solid #000000",
-                    borderRadius: 3,
-                    p: { xs: 2, md: 2.5 },
-                    mb: 2,
-                    position: "relative",
-                }}
-            >
-                <IconButton
-                    id="tour-main-reload"
-                    onClick={onRefresh}
-                    disabled={isRefreshing || !canRefresh}
-                    sx={{
-                        position: "absolute",
-                        top: 8,
-                        right: 8,
-                        width: 36,
-                        height: 36,
-                        background: "#ffffff",
-                        border: "2px solid #000000",
-                        borderRadius: 2,
-                        transition: "all 0.2s",
-                        "&:hover": {
-                            background: "#3CD2FF",
-                            transform: "scale(1.05)",
-                        },
-                        "&:disabled": {
-                            background: "#e0e0e0",
-                            border: "2px solid #999999",
-                        },
+            {/* MAIN DISPLAY */}
+            <WalletAddressDisplay
+                activeWallet={activeWallet}
+                xoClientAlias={xoClientAlias}
+                smartAccountAddress={smartAccountAddress}
+                cachedSmartAccount={cachedSmartAccount}
+                ownerAddress={ownerAddress}
+                burnedAddress={burnedAddresses[activeWallet]}
+                isUsingMetaMask={isUsingMetaMask}
+                mainBalance={mainBalance}
+                isRefreshing={isRefreshing}
+                canRefresh={canRefresh}
+                onRefresh={onRefresh}
+            />
+
+            {/* FLOATING CHAIN INFO (EVM) */}
+            {activeWallet === "EVM" && (
+                <FloatingChainInfo
+                    selectedChain={selectedChain}
+                    isDeployed={isDeployed}
+                    ensureDeployed={ensureDeployed}
+                    ensureApproval={ensureApproval}
+                    account={account}
+                    smartAccountAddress={smartAccountAddress}
+                    setSelectedChain={async (chain) => {
+                        setSelectedChain(chain);
+                        console.log(`[FloatingChainInfo] Switch to ${chain}`);
+
+                        try {
+                            if (isUsingMetaMask) {
+                                // We need to switch chain in MetaMask
+                                const chainConfig = NETWORKS[chain];
+                                const newChainId = chainConfig?.evm?.chain?.id?.toString();
+                                if (newChainId) {
+                                    // With the new context connect returning result, we can just await it
+                                    // and getting the provider from result is safer than context.getProvider() immediately
+                                    const result = await walletContext.connect('metamask', { chainId: newChainId });
+                                    // Prioritize provider for EIP-1193 compatibility
+                                    await connect(chain, result.provider || result.signer);
+                                    return;
+                                }
+                            }
+
+                            // If NOT metmask or just logic fallthrough (local/XO)
+                            // We might need to re-connect context if it was disconnected? 
+                            // Usually for local/xo switching chain doesn't need context reconnect unless provider changed
+                            // But let's be safe.
+
+                            const signer = walletContext.getSigner();
+                            const provider = walletContext.getProvider();
+                            await connect(chain, signer || provider); // This might still be risky if context is stale?
+
+                            // Ideally we should have a 'switchChain' method on context or strategy
+                            // For now, if local, signer is stable. 
+
+                        } catch (e) {
+                            console.error("Chain switch failed", e);
+                        }
                     }}
-                >
-                    <RefreshIcon sx={{ fontSize: 20, color: "#000000", animation: isRefreshing ? "spin 1s linear infinite" : "none", "@keyframes spin": { "0%": { transform: "rotate(0deg)" }, "100%": { transform: "rotate(360deg)" } } }} />
-                </IconButton>
-
-                <Typography
-                    variant="body2"
-                    sx={{
-                        textTransform: "uppercase",
-                        letterSpacing: 1,
-                        fontSize: { xs: 10, md: 11 },
-                        fontWeight: 700,
-                        color: "#666666",
-                        mb: 1,
-                    }}
-                >
-                    Main Wallet {activeWallet}
-                    {activeWallet === "EVM" && xoClientAlias
-                        ? ` de ${xoClientAlias}`
-                        : ""}
-                </Typography>
-
-                <Box sx={{ mb: 1.5 }}>
-                    <SplitBalance
-                        amount={burnedBalances[activeWallet]}
-                        mainFontSize={{ xs: 32, sm: 38, md: 44 }}
-                        smallFontSize={{ xs: 20, sm: 24, md: 28 }}
-                    />
-
-                </Box>
-
-                <Box
-                    sx={{
-                        background: "#ffffff",
-                        border: "2px solid #000000",
-                        borderRadius: 2,
-                        py: 0.75,
-                        px: 1.5,
-                        display: "inline-block",
-                        maxWidth: "100%",
-                    }}
-                >
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            fontSize: { xs: 10, md: 11 },
-                            fontWeight: 600,
-                            color: "#000000",
-                            fontFamily: "monospace",
-                            wordBreak: "break-all",
-                        }}
-                    >
-                        {burnedAddresses[activeWallet]}
-                    </Typography>
-                </Box>
-            </Box>
+                    connectedChainId={chainId}
+                    isConnecting={isConnecting}
+                />
+            )}
         </>
     );
 };

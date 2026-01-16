@@ -4,10 +4,9 @@ import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { NETWORKS } from "@/app/constants/chainsInformation";
-import { STELLAR } from "@/app/constants/chains/NoEvm/Stellar";
 import { ChainConfig, ChainKey } from "@/app/types/chain";
 import { AllocationSummary } from "@/app/dashboard/types";
-import { RouteDetail } from "@/app/dashboard/hooks/transfer/useSendMoneyModal";
+import { RouteDetail } from "@/app/dashboard/hooks/transfer/useSecondaryTransfer";
 import { TokenSelector } from "@/app/dashboard/components/CrossChainTransferModal/TokenSelector";
 import { UseFormWatch, UseFormSetValue, Control, Controller } from "react-hook-form";
 import { SendForm } from "@/app/lib/zod/sendSchema";
@@ -234,8 +233,8 @@ export const SendMoneyModalRoute = (
                                         {/* STELLAR OPTION */}
                                         <MenuItem key="Stellar" value="Stellar">
                                             <Stack direction="row" alignItems="center" spacing={1}>
-                                                <Box sx={{ width: 20, height: 20, display: "flex", "& svg": { width: "100%" } }}>{STELLAR.icon}</Box>
-                                                <Typography fontSize={13} fontWeight={600}>{STELLAR.label}</Typography>
+                                                <Box sx={{ width: 20, height: 20, display: "flex", "& svg": { width: "100%" } }}>{NETWORKS["Stellar"]?.icon || null}</Box>
+                                                <Typography fontSize={13} fontWeight={600}>{NETWORKS["Stellar"]?.label || "Stellar"}</Typography>
                                             </Stack>
                                         </MenuItem>
                                     </TextField>

@@ -1,6 +1,6 @@
 import { Box, Stack, Typography, TextField, IconButton, InputAdornment } from "@mui/material";
 import { Controller, Control, useWatch } from "react-hook-form";
-import { FormValues } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
+import { FormValues } from "@/app/dashboard/hooks/transfer/usePrimaryTransfer";
 import { SwapHoriz } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 

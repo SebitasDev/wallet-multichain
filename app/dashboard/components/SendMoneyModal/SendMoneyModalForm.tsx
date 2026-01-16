@@ -23,14 +23,15 @@ type Props = {
     watch: UseFormWatch<SendForm>;
     maxSendAmount: number;
     isExceedingMax: boolean;
-    variant: "default" | "simplified"; // [NEW]
+    variant: "default" | "simplified";
+    sourceToken: string; // [NEW]
 };
 
 // Re-using TokenSelector requires matching props or adapter. 
 // TokenSelector expects `chain` and `control`. 
 // We will adapt it here.
 
-export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, watch, maxSendAmount, isExceedingMax, variant }: Props) => {
+export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, watch, maxSendAmount, isExceedingMax, variant, sourceToken }: Props) => {
     const { language } = useLanguageStore();
     const selectedChain = watch("sendChain");
     const { initialChain } = useSendMoneyStore(); // [NEW] Check for prefill
@@ -182,7 +183,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                             color: "#666666"
                         }}
                     >
-                        {language === "es" ? "Monto (USDC)" : "Amount (USDC)"}
+                        {language === "es" ? `Monto (${sourceToken})` : `Amount (${sourceToken})`}
                     </Typography>
                     <Typography
                         fontSize={isSimple ? 10 : 11}
@@ -200,7 +201,7 @@ export const SendMoneyModalForm = ({ control, errors, sendLoading, setValue, wat
                             setValue("sendAmount", maxSendAmount.toString(), { shouldValidate: true });
                         }}
                     >
-                        {language === "es" ? "Máx" : "Max"}: {maxSendAmount} USDC
+                        {language === "es" ? "Máx" : "Max"}: {maxSendAmount} {sourceToken}
                     </Typography>
                 </Stack>
                 <Controller

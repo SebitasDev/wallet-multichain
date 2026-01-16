@@ -13,7 +13,7 @@ export const OPTIMISM: ChainConfig = {
         {
             name: "USDC",
             decimals: 6,
-            address: (isDevelopment ? "0x5fd84259d66Cd46123540766Be93DFE6D43130D7" : "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85") as Address,
+            address: (isDevelopment ? "0x5fd84259d66Cd46123540766Be93DFE6D43130D7" : "0x0b2C639c535313529b4613306ed90f968b598ce6") as Address,
             icon: <UsdcIcon />,
             coingeckoId: "usd-coin"
         },
@@ -42,8 +42,8 @@ export const OPTIMISM: ChainConfig = {
     evm: {
         chain: isDevelopment ? optimismSepolia : optimism,
         rpcUrl: isDevelopment ? "https://opt-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://opt-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
-        supports7702: false,
-        erc4337: false,
+        supports7702: true,
+        erc4337: true,
     },
     label: "Optimism",
     icon: <OPIcon />,

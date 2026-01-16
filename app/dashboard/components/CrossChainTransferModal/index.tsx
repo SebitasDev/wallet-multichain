@@ -18,7 +18,7 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
-import { useCrossChainTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
+import { usePrimaryTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/transfer/usePrimaryTransfer";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { Controller } from "react-hook-form";
 import { TransferHeader } from "./TransferHeader";
@@ -44,11 +44,10 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
     const {
         open,
         address,
-        privateKey,
-        provider,
         isLoading,
         error,
         routeError,
+        isDeployed,
 
         form: { control, setValue },
         watchAmount,
@@ -75,18 +74,17 @@ export const CrossChainTransferModal = ({ trigger }: CrossChainTransferModalProp
         onSubmit,
         tokenPrice,
         destTokenPrice,
-    } = useCrossChainTransfer();
+    } = usePrimaryTransfer();
 
     return (
         <>
             {trigger ? (
-                React.cloneElement(trigger as React.ReactElement<{ onClick: () => void }>, { onClick: openModal })
+                React.cloneElement(trigger as React.ReactElement<{ onClick: () => void }>, { onClick: () => openModal() })
             ) : (
                 <Button
                     variant="contained"
                     id="tour-bridge"
-                    onClick={openModal}
-                    disabled={!address || (!privateKey && !provider)}
+                    onClick={() => openModal()}
                     sx={{
                         background: "#00DC8C",
                         fontWeight: 800,

@@ -14,7 +14,7 @@ import {
     Switch // [NEW]
 } from "@mui/material";
 import { Close, ArrowDownward } from "@mui/icons-material";
-import { useCrossChainTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
+import { usePrimaryTransfer, STELLAR_CHAIN_KEY } from "@/app/dashboard/hooks/transfer/usePrimaryTransfer";
 import { ChainSelector } from "@/app/dashboard/components/CrossChainTransferModal/ChainSelector";
 import { TokenSelector } from "@/app/dashboard/components/CrossChainTransferModal/TokenSelector";
 import { AmountInput } from "@/app/dashboard/components/CrossChainTransferModal/AmountInput";
@@ -66,7 +66,7 @@ export const SimpleSwapModal = ({ trigger, initialSourceChain, lockSourceChain, 
         destTokenPrice,
         routeError,
         error
-    } = useCrossChainTransfer();
+    } = usePrimaryTransfer();
 
     // [NEW] Read Context Props from Store
     const { crossChainProps } = useDashboardModalsStore();

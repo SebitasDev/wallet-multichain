@@ -16,7 +16,7 @@ export function Chains({ lang }: { lang: Language }) {
         // Map display name to NETWORKS key if needed, or assume they match
         // keys in NETWORKS: Optimism, Arbitrum, Base, Unichain, Polygon, Avalanche, WorldChain, Stellar, Monad, BNB
         let key = chainName.split(" ").join(""); // "World Chain" -> "WorldChain"
-        if (key === "Gnosis") key = "GNOSIS";
+
         // Handle explicit mismatches if any
         const config = NETWORKS[key as ChainKey] || NETWORKS[chainName as ChainKey];
         return config?.assets || [];
