@@ -10,10 +10,12 @@ import { NETWORKS } from "@/app/constants/chainsInformation";
 import { ChainKey } from "@/app/types/chain";
 import { getSmartAccountForChain, ensureTokenApproval } from "../useSmartAccount";
 import { useStellarLogic } from "./useStellarLogic";
+import { useWallet } from "@/app/context/WalletContext";
 
 export const useTransferConnection = (watchSourceChain: ChainKey) => {
     const { setSmartAccount: storeSetSmartAccount, connectionMode } = useXOWalletStore();
     const { getStellarKeys } = useStellarLogic();
+    const { getSigner } = useWallet(); // Access signer from context
 
     // Store access
     const encryptedPrivateKey = useXOWalletStore(s => s.mainWallet.encryptedPrivateKey);
@@ -125,7 +127,18 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
                 throw new Error("Failed to initialize Smart Account with MetaMask");
             }
 
-            // --- MODE 2: Local ---
+            // --- MODE 2: Embedded ---
+            if (connectionMode === 'embedded') {
+                const signer = getSigner();
+                if (!signer) throw new Error("Embedded wallet not connected");
+
+                // Assuming signer is compatible with SDK (Provider or Signer)
+                const saResult = await getSmartAccountForChain(watchSourceChain, signer);
+                if (saResult) return updateState(saResult);
+                throw new Error("Failed to initialize Smart Account with Embedded Wallet");
+            }
+
+            // --- MODE 3: Local ---
             if (connectionMode === 'local') {
                 if (!encryptedPrivateKey || !currentPassword || !salt || !iv) {
                     throw new Error("Local Wallet locked or missing credentials");
