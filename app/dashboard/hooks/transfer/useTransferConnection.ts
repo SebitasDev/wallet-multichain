@@ -115,9 +115,10 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
                         await switchChainAsync({ chainId: targetChainId });
                         const { data } = await refetchWalletClient();
                         if (data) activeClient = data;
-                    } catch (e) {
+                    } catch (e: any) {
+                        console.error("Chain Switch Failed:", e);
                         // @ts-ignore
-                        throw new Error(`Please switch to ${watchSourceChain} to proceed.`);
+                        throw new Error(`Please switch to ${watchSourceChain} manually. Error: ${e.message || e}`);
                     }
                 }
 
