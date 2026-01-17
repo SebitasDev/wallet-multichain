@@ -42,6 +42,18 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const setMetaMaskConnection = useXOWalletStore((s) => s.setMetaMaskConnection);
 
     // 3. Connect Function
+    // Rehydration Logic
+    const connectionMode = useXOWalletStore((s) => s.connectionMode);
+    const hydrated = useXOWalletStore((s) => s.hydrated);
+
+    useEffect(() => {
+        if (hydrated && !activeStrategyId && connectionMode === 'embedded') {
+            console.log("Auto-reconnecting Embedded Wallet...");
+            connect('xo').catch((err) => {
+                console.warn("Failed to auto-reconnect embedded wallet", err);
+            });
+        }
+    }, [hydrated, connectionMode, activeStrategyId]);
     const connect = async (strategyId: StrategyId, args?: any): Promise<WalletConnectionResult> => {
         const strategy = strategies.find(s => s.id === strategyId);
         if (!strategy) {
