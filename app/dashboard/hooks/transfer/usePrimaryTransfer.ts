@@ -167,7 +167,7 @@ export const usePrimaryTransfer = () => {
 
         // Connect if not connected
         if (!senderAddr) {
-            toast.info("Connecting wallet...");
+            console.log("Auto-connecting wallet for transfer...");
             const result = await connectWallet();
             if (!result) return;
             account = result.account;
