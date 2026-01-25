@@ -20,6 +20,7 @@ import { StellarIcon } from "@/app/components/atoms/StellarIcon";
 import { BnbIcon } from "@/app/components/atoms/BnbIcon";
 import { MonadIcon } from "@/app/components/atoms/MonadIcon";
 import GnosisIcon from "@/app/components/atoms/GnosisIcon";
+import { NETWORKS } from "@/app/constants/chainsInformation";
 
 export type Language = "es" | "en";
 
@@ -233,15 +234,15 @@ export const heroContent = {
     ],
     cardCta: { es: "Empieza en menos de 30 segundos", en: "Start in under 30 seconds" },
     highlights: [
-        { title: { es: "6+ Chains", en: "6+ Chains" }, subtitle: { es: "Todas tus redes favoritas", en: "All your favorite networks" }, color: "#7852FF" },
-        { title: { es: "Fees 0.01%", en: "0.01% fees" }, subtitle: { es: "Las más bajas del mercado", en: "Lowest in the market" }, color: "#00DC8C" },
+        { title: { es: `${Object.keys(NETWORKS).length}+ Chains`, en: `${Object.keys(NETWORKS).length}+ Chains` }, subtitle: { es: "Todas tus redes favoritas", en: "All your favorite networks" }, color: "#7852FF" },
+        { title: { es: "Fees < $0.05", en: "Fees < $0.05" }, subtitle: { es: "Las más bajas del mercado", en: "Lowest in the market" }, color: "#00DC8C" },
         { title: { es: "100% Seguro", en: "100% Secure" }, subtitle: { es: "Cifrado local AES-256", en: "Local AES-256 encryption" }, color: "#3CD2FF" },
     ],
 };
 
 export const stats = [
-    { value: "6+", label: { es: "Chains soportadas", en: "Supported chains" }, color: "#7852FF" },
-    { value: "0.01%", label: { es: "Fee por transfer", en: "Transfer fee" }, color: "#00DC8C" },
+    { value: `${Object.keys(NETWORKS).length}+`, label: { es: "Chains soportadas", en: "Supported chains" }, color: "#7852FF" },
+    { value: "< $0.05", label: { es: "Fee por transfer", en: "Transfer fee" }, color: "#00DC8C" },
     { value: "< 30s", label: { es: "Setup inicial", en: "Initial setup" }, color: "#3CD2FF" },
     { value: "100%", label: { es: "100% Seguro", en: "100% Secure" }, color: "#FF007A" },
 ];

@@ -4,6 +4,9 @@ export type ChainInfo = {
   color: string;
   tokens: Record<string, number> | number;
   value: number;
+  // [NEW] Added for compatibility with EOA/modal logic
+  chainId?: string;
+  amount?: number;
 };
 
 export type Wallet = {

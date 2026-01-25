@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { PasswordModal } from "@/app/dashboard/components/PasswordModal";
-import { XOContractsProvider } from "@/app/dashboard/hooks/wallet/useXOConnect";
+import { EmbeddedWalletProvider } from "@/app/dashboard/hooks/wallet/useEmbeddedWallet";
 import { EmbeddedProvider } from "@/app/dashboard/hooks/dashboard/embedded";
 import { ToastContainerCustom } from "@/app/components/atoms/ToastContainerCustom";
 
@@ -60,12 +60,12 @@ export default function YieldLayout({
             {/* 🔒 Bloquea el dashboard si no validó contraseña */}
             {!askPassword && (
                 <EmbeddedProvider>
-                    <XOContractsProvider password={currentPassword!}>
+                    <EmbeddedWalletProvider password={currentPassword!}>
                         <>
                             {children}
                             <ToastContainerCustom />
                         </>
-                    </XOContractsProvider>
+                    </EmbeddedWalletProvider>
                 </EmbeddedProvider>
             )}
         </Box>

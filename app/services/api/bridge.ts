@@ -62,18 +62,8 @@ export interface VerifyCctpResponse {
 }
 
 export const bridgeApi = {
-    getQuote: async (data: BridgeQuoteRequest) => {
-        const response = await api.post<BridgeQuoteResponse>("/bridge/quote", data);
-        return response.data;
-    },
-
-    settle: async (data: SettleRequest) => {
-        const response = await api.post<SettleResponse>("/bridge/settle", data);
-        return response.data;
-    },
-
-    verifyCCTP: async (data: VerifyCctpRequest) => {
-        const response = await api.post<VerifyCctpResponse>("/bridge/cctp/verify", data);
+    settleStellar: async (data: SettleRequest) => {
+        const response = await api.post<SettleResponse>("/stellar/settle", data);
         return response.data;
     },
 

@@ -1,13 +1,11 @@
 import { useMemo } from "react";
 import { NETWORKS } from "@/app/constants/chainsInformation";
-import { STELLAR } from "@/app/constants/chains/NoEvm/Stellar";
 
 export const STELLAR_CHAIN_KEY = "Stellar";
 
 export const useRouteValidation = (sourceChain: string, destChain: string, sourceToken: string, destToken: string) => {
     return useMemo(() => {
         const getChainConfig = (key: string) => {
-            if (key === STELLAR_CHAIN_KEY) return STELLAR;
             return NETWORKS[key as keyof typeof NETWORKS];
         };
 

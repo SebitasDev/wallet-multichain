@@ -7,6 +7,19 @@ import { Address } from "viem";
 import { getStellarUSDCBalance } from "@/app/lib/stellar/getStellarUSDCBalance";
 import { pricesApi } from "@/app/services/api/prices";
 
+// Smart Account addresses per chain (chainId -> SA address)
+interface SmartAccountInfo {
+    address: string;
+    isDeployed: boolean;
+}
+
+// MetaMask connection state
+interface MetaMaskConnection {
+    isConnected: boolean;
+    address: string | null;
+    chainId: string | null;
+}
+
 interface WalletState {
     mainWallet: {
         address: string | null;
@@ -17,11 +30,19 @@ interface WalletState {
         salt: string | null;
         iv: string | null;
         chains: ChainInfo[]; // Added chains
+        smartAccounts: Record<string, SmartAccountInfo>; // chainId -> SA info
     };
     xoWallet: {
         address: string | null;
     };
     xoClient: any;
+
+    // MetaMask connection state
+    metaMaskConnection: MetaMaskConnection;
+
+    // Explicit Connection Mode (Persisted)
+    connectionMode: 'local' | 'metamask' | 'embedded' | null;
+    setConnectionMode: (mode: 'local' | 'metamask' | 'embedded' | null) => void;
 
     // Hydration flag
     hydrated: boolean;
@@ -31,6 +52,17 @@ interface WalletState {
     setXOWallet: (data: any) => void;
     setXOClient: (client: any) => void;
     refreshMainWalletBalances: (overrideEVMAddress?: string) => Promise<void>;
+
+    // Smart Account Management
+    setSmartAccount: (chainId: string, address: string, isDeployed: boolean) => void;
+    getSmartAccount: (chainId: string) => SmartAccountInfo | null;
+    updateSmartAccountDeployStatus: (chainId: string, isDeployed: boolean) => void;
+
+    // MetaMask Management
+    setMetaMaskConnection: (address: string, chainId: string) => void;
+    disconnectMetaMask: () => void;
+    isMetaMaskConnected: () => boolean;
+    getActiveAddress: () => string | null; // Returns MetaMask address if connected, otherwise mainWallet address
 
     // New Getters
     getMainWalletTotalBalance: () => number;
@@ -48,10 +80,22 @@ export const useXOWalletStore = create<WalletState>()(
                 encryptedMnemonic: null,
                 salt: null,
                 iv: null,
-                chains: [] // Initial empty chains
+                chains: [], // Initial empty chains
+                smartAccounts: {} // chainId -> SA info
             },
             xoWallet: { address: null },
             xoClient: null,
+
+            // MetaMask connection state
+            metaMaskConnection: {
+                isConnected: false,
+                address: null,
+                chainId: null
+            },
+
+            // Explicit Connection Mode
+            connectionMode: null,
+            setConnectionMode: (mode) => set({ connectionMode: mode }),
 
             hydrated: false,
             setHydrated: (hydrated: boolean) => set({ hydrated }),
@@ -62,9 +106,86 @@ export const useXOWalletStore = create<WalletState>()(
             setXOWallet: (data) => set({ xoWallet: data }),
             setXOClient: (client) => set({ xoClient: client }),
 
-            refreshMainWalletBalances: async (overrideEVMAddress?: string) => {
+            // MetaMask Management
+            setMetaMaskConnection: (address: string, chainId: string) => set({
+                metaMaskConnection: {
+                    isConnected: true,
+                    address,
+                    chainId
+                }
+            }),
+
+            disconnectMetaMask: () => set({
+                metaMaskConnection: {
+                    isConnected: false,
+                    address: null,
+                    chainId: null
+                }
+            }),
+
+            isMetaMaskConnected: () => {
+                const { metaMaskConnection } = get();
+                return metaMaskConnection.isConnected && !!metaMaskConnection.address;
+            },
+
+            getActiveAddress: () => {
+                const { metaMaskConnection, mainWallet, xoWallet, connectionMode } = get();
+
+                if (connectionMode === 'embedded' && xoWallet.address) {
+                    return xoWallet.address;
+                }
+
+                if (connectionMode === 'metamask' && metaMaskConnection.address) {
+                    return metaMaskConnection.address;
+                }
+
+                // Priority Fallback: MetaMask > XO > MainWallet
+                if (metaMaskConnection.isConnected && metaMaskConnection.address) {
+                    return metaMaskConnection.address;
+                }
+                if (xoWallet.address) {
+                    return xoWallet.address;
+                }
+
+                return mainWallet.address;
+            },
+
+            // Smart Account Management
+            setSmartAccount: (chainId: string, address: string, isDeployed: boolean) => set((state) => ({
+                mainWallet: {
+                    ...state.mainWallet,
+                    smartAccounts: {
+                        ...state.mainWallet.smartAccounts,
+                        [chainId]: { address, isDeployed }
+                    }
+                }
+            })),
+
+            getSmartAccount: (chainId: string) => {
                 const { mainWallet } = get();
-                const addressToUse = overrideEVMAddress || mainWallet.address;
+                return mainWallet.smartAccounts[chainId] || null;
+            },
+
+            updateSmartAccountDeployStatus: (chainId: string, isDeployed: boolean) => set((state) => {
+                const existing = state.mainWallet.smartAccounts[chainId];
+                if (!existing) return state;
+                return {
+                    mainWallet: {
+                        ...state.mainWallet,
+                        smartAccounts: {
+                            ...state.mainWallet.smartAccounts,
+                            [chainId]: { ...existing, isDeployed }
+                        }
+                    }
+                };
+            }),
+
+            refreshMainWalletBalances: async (overrideEVMAddress?: string) => {
+                const { mainWallet, metaMaskConnection } = get();
+                // Priority: override > MetaMask > mainWallet
+                const addressToUse = overrideEVMAddress
+                    || (metaMaskConnection.isConnected ? metaMaskConnection.address : null)
+                    || mainWallet.address;
 
                 // We need at least one address to be valid to fetch something
                 if (!addressToUse && !mainWallet.addressStellar) return;
@@ -90,13 +211,17 @@ export const useXOWalletStore = create<WalletState>()(
                 // 2. Fetch Prices
                 const prices = await pricesApi.getPrices(Array.from(allAssetIds));
 
-                // 3. Fetch EVM Balances & Calculate USD
+                // 3. Fetch EVM Balances & Calculate USD (EOA + Smart Account)
                 const evmPromises = addressToUse ? networks.map(async (network) => {
                     if (!network.evm) return null;
 
                     const chainId = network.evm.chain.id.toString();
                     const existingChain = existingChainsMap.get(chainId);
                     const currentTokens = existingChain ? existingChain.tokens : {};
+
+                    // Check if we have a Smart Account for this chain (with fallback for old persisted data)
+                    const smartAccountInfo = mainWallet.smartAccounts?.[chainId];
+                    const smartAccountAddress = smartAccountInfo?.address;
 
                     try {
                         const tokenBalances: Record<string, number> = { ...currentTokens };
@@ -106,14 +231,31 @@ export const useXOWalletStore = create<WalletState>()(
                         await Promise.all(network.assets.map(async (asset) => {
                             if (!asset.address) return;
                             try {
-                                const { balance } = await getBalanceFromChain(
+                                // Fetch EOA balance
+                                const { balance: eoaBalance } = await getBalanceFromChain(
                                     network.evm!.chain,
                                     addressToUse as Address,
                                     asset.address as Address,
                                     asset.decimals
                                 );
-                                const numBalance = Number(balance || 0);
-                                const safeBalance = isNaN(numBalance) ? 0 : numBalance;
+                                let totalBalance = Number(eoaBalance || 0);
+
+                                // Also fetch Smart Account balance if available
+                                if (smartAccountAddress) {
+                                    try {
+                                        const { balance: saBalance } = await getBalanceFromChain(
+                                            network.evm!.chain,
+                                            smartAccountAddress as Address,
+                                            asset.address as Address,
+                                            asset.decimals
+                                        );
+                                        totalBalance += Number(saBalance || 0);
+                                    } catch (saErr) {
+                                        // SA might not be deployed, ignore
+                                    }
+                                }
+
+                                const safeBalance = isNaN(totalBalance) ? 0 : totalBalance;
                                 tokenBalances[asset.name] = safeBalance;
 
                                 // Calculate USD

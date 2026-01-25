@@ -1,37 +1,13 @@
 import { FacilitatorChainKey } from "@/app/facilitator/config";
 import { SettleResponse, FacilitatorPaymentPayload } from "@/app/facilitator/types";
-import { STELLAR } from "@/app/constants/chains";
+import { NETWORKS } from "@/app/constants/chainsInformation";
 import * as StellarSdk from "stellar-sdk";
 import { toast } from "react-toastify";
 import { bridgeApi } from "@/app/services/api";
 
 const LOG_PREFIX = "[Facilitator Stellar]";
 
-export const executeStellarBridgeTransfer = async (
-    paymentPayload: FacilitatorPaymentPayload,
-    sourceChain: FacilitatorChainKey,
-    amount: string,
-    recipientStellar: string,
-    destToken?: string,
-    sourceToken?: string
-): Promise<SettleResponse> => {
-    console.log(LOG_PREFIX, "Calling Smart Router API");
-    const result = await bridgeApi.settle({
-        paymentPayload,
-        sourceChain,
-        destChain: "Stellar", // EVM -> Stellar
-        amount,
-        recipient: recipientStellar,
-        destToken,
-        sourceToken
-    });
-
-    if (!result.success) {
-        throw new Error(result.errorReason || "Stellar bridge failed");
-    }
-
-    return result as SettleResponse;
-};
+// function executeStellarBridgeTransfer removed. Use SDK for EVM -> Stellar.
 
 export const executeStellarToEvmTransfer = async (
     amount: string,
@@ -95,7 +71,7 @@ export const executeStellarToEvmTransfer = async (
 
 
             // 2. Load User Account (Source)
-            const serverUrl = STELLAR.nonEvm?.serverURL;
+            const serverUrl = NETWORKS["Stellar"].nonEvm?.rpcUrl;
             if (!serverUrl) throw new Error("Stellar server URL not configured");
             const server = new StellarSdk.Horizon.Server(serverUrl);
 
@@ -104,11 +80,11 @@ export const executeStellarToEvmTransfer = async (
             const sourceAccount = await server.loadAccount(userKeypair.publicKey());
 
             // 3. Build Transaction
-            const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address;
+            const usdcAddress = NETWORKS["Stellar"].assets.find(a => a.name === "USDC")?.address;
             if (!usdcAddress) throw new Error("USDC address not found");
             const usdcAsset = new StellarSdk.Asset("USDC", usdcAddress);
 
-            const passphrase = STELLAR.nonEvm?.networkPassphrase;
+            const passphrase = NETWORKS["Stellar"].nonEvm?.networkPassphrase;
             if (!passphrase) throw new Error("Stellar passphrase not configured");
 
             const tx = new StellarSdk.TransactionBuilder(sourceAccount, {
@@ -135,7 +111,7 @@ export const executeStellarToEvmTransfer = async (
     }
 
     // Call Smart Router API
-    const result = await bridgeApi.settle({
+    const result = await bridgeApi.settleStellar({
         sourceChain: "Stellar",
         destChain: destinationChain, // Mapped from targetChain
         amount,
@@ -176,20 +152,20 @@ export const executeStellarTransfer = async (
     }
 
     try {
-        const serverUrl = STELLAR.nonEvm?.serverURL;
+        const serverUrl = NETWORKS["Stellar"].nonEvm?.rpcUrl;
         if (!serverUrl) throw new Error("Stellar server URL not configured");
         const server = new StellarSdk.Horizon.Server(serverUrl);
 
         const userKeypair = StellarSdk.Keypair.fromSecret(stellarPrivateKey);
         const sourceAccount = await server.loadAccount(userKeypair.publicKey());
 
-        const passphrase = STELLAR.nonEvm?.networkPassphrase;
+        const passphrase = NETWORKS["Stellar"].nonEvm?.networkPassphrase;
         if (!passphrase) throw new Error("Stellar passphrase not configured");
 
         // Resolve Assets
         const getAsset = (token: string) => {
             if (token === "XLM") return StellarSdk.Asset.native();
-            const addr = STELLAR.assets.find(a => a.name === token)?.address;
+            const addr = NETWORKS["Stellar"].assets.find(a => a.name === token)?.address;
             if (!addr) throw new Error(`Asset address not found for ${token}`);
             return new StellarSdk.Asset(token, addr);
         };

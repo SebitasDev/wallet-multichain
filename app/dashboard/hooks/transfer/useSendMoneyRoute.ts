@@ -4,8 +4,7 @@ import { SendForm } from "@/app/lib/zod/sendSchema";
 import { AllocationSummary } from "@/app/dashboard/types";
 import { ChainConfig, ChainKey } from "@/app/types/chain";
 import { CHAIN_ID_TO_KEY, NETWORKS } from "@/app/constants/chainsInformation";
-import { bridgeApi } from "@/app/services/api";
-import { createPublicClient, http, formatEther } from "viem";
+import { runTransferSimulation } from "./transferUtils";
 
 type UseSendMoneyRouteProps = {
     routeSummary: AllocationSummary | null;
@@ -15,7 +14,7 @@ type UseSendMoneyRouteProps = {
     isEditing: boolean;
     watch: UseFormWatch<SendForm>;
     setSimulationError: (id: string, hasError: boolean) => void;
-    priceMap?: Record<string, number>; // [NEW]
+    priceMap?: Record<string, number>;
 };
 
 export const useSendMoneyRoute = ({
@@ -49,64 +48,26 @@ export const useSendMoneyRoute = ({
         try {
             const destChainKey = watch("sendChain");
 
-            const isDev = process.env.NODE_ENV === 'development';
-            const baseFee = (sourceChainKey === destChainKey) ? 0.01 : 0.02;
-            const fee = isDev ? 0 : baseFee;
+            const result = await runTransferSimulation(
+                sourceChainKey,
+                destChainKey,
+                amount,
+                token,                          // Source Token
+                watch("sourceToken") || "USDC", // Destination Token (Target)
+                true // Enable Gas Deduction
+            );
 
-            // [FIX] Gas Deduction Logic for Native Tokens
-            const sourceConfig = NETWORKS[sourceChainKey as keyof typeof NETWORKS];
-            const asset = sourceConfig?.assets?.find(a => a.name === token);
-            const isNative = asset?.address === "0x0000000000000000000000000000000000000000" || (!!asset?.address && asset.address.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-
-            let netAmount = amount;
-
-            if (isNative && sourceConfig?.evm) {
-                try {
-                    const publicClient = createPublicClient({
-                        chain: sourceConfig.evm.chain,
-                        transport: http()
-                    });
-                    const gasPrice = await publicClient.getGasPrice();
-                    const gasCostWei = (BigInt(21000) * gasPrice * BigInt(150)) / BigInt(100); // 21k Gas + 50% Buffer
-                    const gasCostEth = parseFloat(formatEther(gasCostWei));
-
-                    console.log(`[Simulate] Gas Deduction (${token}): ${gasCostEth.toFixed(6)}`);
-                    netAmount = Math.max(0, amount - gasCostEth);
-
-                    if (netAmount <= 0) {
-                        throw new Error(`Insufficient funds for gas (Need ${gasCostEth.toFixed(6)} ${token})`);
-                    }
-
-                } catch (e: any) {
-                    console.warn("[Simulate] Gas Estimation Failed:", e);
-                    // Don't block simulation if gas check fails, but maybe user has insufficient funds.
-                    // Fallback to original amount logic or throw? 
-                    // Throwing helps user know why it might fail.
-                    if (e.message.includes("Insufficient")) throw e;
-                }
-            }
-
-            const totalAmountToSimulate = (netAmount + fee).toFixed(6);
-
-            const data = await bridgeApi.getQuote({
-                sourceChain: sourceChainKey,
-                targetChain: destChainKey,
-                amount: totalAmountToSimulate,
-                token: watch("sourceToken") || "USDC",
-                sourceToken: token
-            });
-
-            if (data.success && data.estimatedReceived) {
-                setSimulationResults(prev => ({ ...prev, [id]: data.estimatedReceived }));
+            if (result.success && result.estimatedReceived) {
+                setSimulationResults(prev => ({ ...prev, [id]: result.estimatedReceived }));
                 setSimulationError(id, false);
             } else {
-                const errorMsg = data.error || "Simulation failed";
+                const errorMsg = result.error || "Simulation failed";
                 setSimulationErrorMessages(prev => ({ ...prev, [id]: errorMsg }));
                 setSimulationError(id, true);
             }
         } catch (error) {
             console.error("Simulation error:", error);
-            const errorMessage = (error as any)?.response?.data?.error || (error as any)?.message || "Failed to simulate";
+            const errorMessage = (error as any)?.message || "Failed to simulate";
             setSimulationErrorMessages(prev => ({ ...prev, [id]: errorMessage }));
             setSimulationError(id, true);
         } finally {

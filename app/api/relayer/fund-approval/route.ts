@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         const estimatedCost = gasEstimate * gasPrice;
 
         // Safety Margin (1.5x)
-        const SAFE_THRESHOLD = (estimatedCost * BigInt("150")) / BigInt("100"); // 1.5x
+        const SAFE_THRESHOLD = (estimatedCost * BigInt("110")) / BigInt("100"); // 1.1x
 
 
         console.log(`[Relayer] Gas Check: Cost ${formatEther(estimatedCost)} ETH, Threshold ${formatEther(SAFE_THRESHOLD)} ETH`);

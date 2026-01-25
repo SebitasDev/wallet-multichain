@@ -1,78 +1,40 @@
-import { Dialog, DialogContent } from "@mui/material";
-import { useEffect } from "react";
-import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
+import { Dialog, DialogContent, Typography, Box } from "@mui/material";
+import { useState, useEffect } from "react";
+import { useSecondaryTransfer } from "@/app/dashboard/hooks/transfer/useSecondaryTransfer";
 import { SendMoneyModalHeader } from "./SendMoneyModalHeader";
 import { SendMoneyModalForm } from "./SendMoneyModalForm";
+import { SendMoneyModalRoute } from "./SendMoneyModalRoute";
 import { SendMoneyModalActions } from "./SendMoneyModalActions";
-import { useCrossChainTransfer } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
 
 export const SendMoneyModal = ({ variant = "default" }: { variant?: "default" | "simplified" }) => {
-    const { isOpen, setSendModal, initialChain } = useSendMoneyStore(); // State from Send Store
-
-    // Use the existing hook as requested
     const {
-        form,
-        isLoading,
-        simulation,
-        simulateTransfer,
-        onSubmit, // This is handleSubmit(onSubmit)
-        maxAmount,
-        isExceedingMax,
-        watchDestChain,
-        watchAmount,
-        routeError,
-        isAmountValid,
-        tokenPrice // [NEW] Get token price
-    } = useCrossChainTransfer();
+        sendLoading, control, handleSubmit, errors, handleOnSend, handleOnConfirm,
+        canSend, routeDetails, selected, isOpen, setSendModal, routeReady, routeSummary, setValue,
+        maxSendAmount, isExceedingMax, watch, setRouteSummary, wallets, priceMap
+    } = useSecondaryTransfer();
 
-    const { watch, setValue, formState: { isSubmitSuccessful, errors }, control } = form;
+    const [isEditing, setIsEditing] = useState(false);
+    const [hasBlockingErrors, setHasBlockingErrors] = useState(false);
 
     const handleClose = () => {
         setSendModal(false);
-        form.reset();
+        setIsEditing(false);
+        setHasBlockingErrors(false);
     };
 
-    // Close modal on successful submit
-    useEffect(() => {
-        if (isSubmitSuccessful) {
-            handleClose();
-        }
-    }, [isSubmitSuccessful]);
+    const isProcessing = routeReady && routeDetails.some(w => w.chains.some(c => c.status !== 'idle' && c.status !== 'done' && c.status !== 'error'));
 
-    // Handle initial chain from Store (e.g. from AssetModal)
-    useEffect(() => {
-        if (isOpen && initialChain) {
-            setValue("destChain", initialChain as any);
-            setValue("sourceChain", initialChain as any); // Force Source = Dest for Send
-        }
-    }, [isOpen, initialChain, setValue]);
+    const disabledReasons: string[] = [];
+    if (!canSend) disabledReasons.push("Cannot Send (internal check)");
+    if (routeReady) {
+        if (!watch("sendPassword") || !watch("sendPassword")?.length) disabledReasons.push("Password Empty");
+        if (isEditing) disabledReasons.push("Edit Mode Active");
+        if (!routeSummary?.allocations?.length) disabledReasons.push("No Chains");
+        if (hasBlockingErrors) disabledReasons.push("Blocking Simulation Error");
+        if (isProcessing) disabledReasons.push("Processing Transaction");
+    }
 
-    // Force Source = Dest when Dest changes (Simple Send behavior)
-    useEffect(() => {
-        if (watchDestChain) {
-            setValue("sourceChain", watchDestChain);
-        }
-    }, [watchDestChain, setValue]);
 
-    // Logic for Action Button (Simulate -> Confirm)
-    const isSameChain = watch("sourceChain") === watch("destChain");
-    const isReadyToSimulate = (!simulation.done || !!simulation.error) && !!watchAmount && isAmountValid && !isExceedingMax && !routeError;
-
-    const handleAction = () => {
-        if (isSameChain) {
-            onSubmit();
-            return;
-        }
-
-        if (isReadyToSimulate) {
-            simulateTransfer();
-        } else {
-            onSubmit();
-        }
-    };
-
-    const isProcessing = isLoading || simulation.loading;
-    const canSubmit = !!watchAmount && isAmountValid && !isExceedingMax && !routeError && !isProcessing;
 
     return (
         <Dialog
@@ -92,30 +54,50 @@ export const SendMoneyModal = ({ variant = "default" }: { variant?: "default" | 
         >
             <SendMoneyModalHeader
                 onClose={handleClose}
-                disabled={isProcessing}
+                disabled={sendLoading}
                 variant={variant}
             />
 
             <DialogContent sx={{ px: 3, py: 3, background: "#ffffff" }}>
-                <SendMoneyModalForm
-                    control={control as any}
-                    sendLoading={isProcessing}
-                    errors={errors as any}
-                    setValue={setValue as any}
-                    watch={watch as any}
-                    maxSendAmount={maxAmount}
-                    isExceedingMax={isExceedingMax}
-                    variant={variant}
-                    tokenPrice={tokenPrice} // [NEW] Pass token price
-                />
+                {!routeReady ? (
+                    <SendMoneyModalForm
+                        control={control as any}
+                        sendLoading={sendLoading}
+                        errors={errors}
+                        setValue={setValue}
+                        watch={watch}
+                        maxSendAmount={maxSendAmount}
+                        isExceedingMax={isExceedingMax}
+                        variant={variant}
+                        sourceToken={watch("sourceToken") || "USDC"}
+                    />
+                ) : (
+                    <SendMoneyModalRoute
+                        routeSummary={routeSummary}
+                        setRouteSummary={setRouteSummary}
+                        routeDetails={routeDetails}
+                        routeReady={routeReady}
+                        selected={selected}
+                        wallets={wallets}
+                        isEditing={isEditing}
+                        setIsEditing={setIsEditing}
+                        watch={watch}
+                        control={control}
+                        setValue={setValue}
+                        setHasBlockingErrors={setHasBlockingErrors}
+                        priceMap={priceMap}
+                        password={watch("sendPassword") || ""}
+                        setPassword={(val) => setValue("sendPassword", val, { shouldValidate: true, shouldDirty: true })}
+                    />
+                )}
             </DialogContent>
 
             <SendMoneyModalActions
                 onClose={handleClose}
-                onAction={handleAction}
-                loading={isProcessing}
-                disabled={!canSubmit}
-                routeReady={isSameChain || (simulation.done && !simulation.error)} // Skip simulation check for same chain
+                onAction={routeReady ? handleOnConfirm : handleSubmit(handleOnSend as any)}
+                loading={sendLoading}
+                disabled={!canSend || (routeReady && ((!watch("sendPassword") || !watch("sendPassword")?.length) || isEditing || !routeSummary?.allocations?.length || hasBlockingErrors || isProcessing))}
+                routeReady={routeReady}
             />
         </Dialog>
     );

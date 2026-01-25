@@ -6,7 +6,7 @@ import {
     TransactionBuilder,
     BASE_FEE,
 } from "stellar-sdk";
-import { STELLAR } from "@/app/constants/chains";
+import { NETWORKS } from "@/app/constants/chainsInformation";
 import { toast } from "react-toastify";
 
 export const createUSDCTrustline = async ({
@@ -16,9 +16,9 @@ export const createUSDCTrustline = async ({
     stellarAddress: string;
     secret: string;
 }) => {
-    const serverUrl = STELLAR.nonEvm?.serverURL;
-    const passphrase = STELLAR.nonEvm?.networkPassphrase;
-    const usdcAddress = STELLAR.assets.find(a => a.name === "USDC")?.address;
+    const serverUrl = NETWORKS["Stellar"]?.nonEvm?.rpcUrl;
+    const passphrase = NETWORKS["Stellar"]?.nonEvm?.networkPassphrase;
+    const usdcAddress = NETWORKS["Stellar"]?.assets?.find(a => a.name === "USDC")?.address;
 
     if (!serverUrl || !passphrase || !usdcAddress) {
         toast.error("Stellar Stellar configuration missing")

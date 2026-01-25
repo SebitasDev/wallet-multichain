@@ -10,19 +10,8 @@ import { ChainData } from "./ChainCard";
 import { useRouter } from "next/navigation";
 
 // Import Chain Constants for Icons
-import {
-    BASE,
-    OPTIMISM,
-    POLYGON,
-    ARBITRUM,
-    UNICHAIN,
-    AVALANCHE,
-    WORLD_CHAIN,
-    STELLAR,
-    Monad,
-    BNB,
-    GNOSIS
-} from "@/app/constants/chains";
+import { NETWORKS } from "@/app/constants/chainsInformation";
+import { ChainKey } from "@/app/types/chain";
 
 import { useLocalCurrency } from "@/app/hooks/useLocalCurrency";
 
@@ -107,17 +96,17 @@ export function WalletHeader() {
 
     // Template for static data (icons, colors, ids)
     const staticChainsData = [
-        { id: "base", networkKey: "Base", name: "Base", icon: BASE.icon, color: "#0052FF", configAssets: BASE.assets },
-        { id: "optimism", networkKey: "Optimism", name: "Optimism", icon: OPTIMISM.icon, color: "#FF0420", configAssets: OPTIMISM.assets },
-        { id: "arbitrum", networkKey: "Arbitrum", name: "Arbitrum", icon: ARBITRUM.icon, color: "#12AAFF", configAssets: ARBITRUM.assets },
-        { id: "gnosis", networkKey: "GNOSIS", name: "Gnosis", icon: GNOSIS.icon, color: "#04795B", configAssets: GNOSIS.assets }, // [MOVED UP]
-        { id: "polygon", networkKey: "Polygon", name: "Polygon", icon: POLYGON.icon, color: "#8247E5", configAssets: POLYGON.assets },
-        { id: "avalanche", networkKey: "Avalanche", name: "Avalanche", icon: AVALANCHE.icon, color: "#E84142", configAssets: AVALANCHE.assets },
-        { id: "bnb", networkKey: "BNB", name: "BNB Chain", icon: BNB.icon, color: "#F3BA2F", configAssets: BNB.assets },
-        { id: "unichain", networkKey: "Unichain", name: "Unichain", icon: UNICHAIN.icon, color: "#FF007A", configAssets: UNICHAIN.assets },
-        { id: "worldchain", networkKey: "WorldChain", name: "World Chain", icon: WORLD_CHAIN.icon, color: "#000000", configAssets: WORLD_CHAIN.assets },
-        { id: "monad", networkKey: "Monad", name: "Monad", icon: Monad.icon, color: "#836EF9", configAssets: Monad.assets },
-        { id: "stellar", networkKey: "Stellar", name: "Stellar", icon: STELLAR.icon, color: "#3E1B3C", configAssets: STELLAR.assets },
+        { id: "base", networkKey: "Base", name: "Base", icon: NETWORKS["Base"]?.icon, color: "#0052FF", configAssets: NETWORKS["Base"]?.assets || [] },
+        { id: "optimism", networkKey: "Optimism", name: "Optimism", icon: NETWORKS["Optimism"]?.icon, color: "#FF0420", configAssets: NETWORKS["Optimism"]?.assets || [] },
+        { id: "arbitrum", networkKey: "Arbitrum", name: "Arbitrum", icon: NETWORKS["Arbitrum"]?.icon, color: "#12AAFF", configAssets: NETWORKS["Arbitrum"]?.assets || [] },
+        { id: "gnosis", networkKey: "Gnosis", name: "Gnosis", icon: NETWORKS["Gnosis"]?.icon, color: "#04795B", configAssets: NETWORKS["Gnosis"]?.assets || [] },
+        { id: "polygon", networkKey: "Polygon", name: "Polygon", icon: NETWORKS["Polygon"]?.icon, color: "#8247E5", configAssets: NETWORKS["Polygon"]?.assets || [] },
+        { id: "avalanche", networkKey: "Avalanche", name: "Avalanche", icon: NETWORKS["Avalanche"]?.icon, color: "#E84142", configAssets: NETWORKS["Avalanche"]?.assets || [] },
+        { id: "bnb", networkKey: "BNB Chain", name: "BNB Chain", icon: NETWORKS["BNB"]?.icon, color: "#F3BA2F", configAssets: NETWORKS["BNB"]?.assets || [] },
+        { id: "unichain", networkKey: "Unichain", name: "Unichain", icon: NETWORKS["Unichain"]?.icon, color: "#FF007A", configAssets: NETWORKS["Unichain"]?.assets || [] },
+        { id: "worldchain", networkKey: "WorldChain", name: "World Chain", icon: NETWORKS["WorldChain"]?.icon, color: "#000000", configAssets: NETWORKS["WorldChain"]?.assets || [] },
+        { id: "monad", networkKey: "Monad", name: "Monad", icon: NETWORKS["Monad"]?.icon, color: "#836EF9", configAssets: NETWORKS["Monad"]?.assets || [] },
+        { id: "stellar", networkKey: "Stellar", name: "Stellar", icon: NETWORKS["Stellar"]?.icon, color: "#3E1B3C", configAssets: NETWORKS["Stellar"]?.assets || [] },
     ];
 
     // [NEW] Token Prices Logic
@@ -176,17 +165,27 @@ export function WalletHeader() {
         if (chainMetadata.id === "stellar") {
             storeChainId = "stellar";
         } else {
-            // @ts-ignore
-            storeChainId = chainMetadata.configAssets === BASE.assets ? BASE.evm?.chain.id.toString() :
-                chainMetadata.configAssets === OPTIMISM.assets ? OPTIMISM.evm?.chain.id.toString() :
-                    chainMetadata.configAssets === ARBITRUM.assets ? ARBITRUM.evm?.chain.id.toString() :
-                        chainMetadata.configAssets === POLYGON.assets ? POLYGON.evm?.chain.id.toString() :
-                            chainMetadata.configAssets === AVALANCHE.assets ? AVALANCHE.evm?.chain.id.toString() :
-                                chainMetadata.configAssets === BNB.assets ? BNB.evm?.chain.id.toString() :
-                                    chainMetadata.configAssets === UNICHAIN.assets ? UNICHAIN.evm?.chain.id.toString() :
-                                        chainMetadata.configAssets === WORLD_CHAIN.assets ? WORLD_CHAIN.evm?.chain.id.toString() :
-                                            chainMetadata.configAssets === Monad.assets ? Monad.evm?.chain.id.toString() :
-                                                chainMetadata.configAssets === GNOSIS.assets ? GNOSIS.evm?.chain.id.toString() : "unknown";
+            // Map metadata ID to ChainKey. 
+            // Note: chainMetadata.networkKey for "BNB Chain" is "BNB" in enum, "World Chain" is "WorldChain" in enum.
+            // Map simple ID to ChainKey manually if needed
+            let key: ChainKey | undefined;
+            switch (chainMetadata.id) {
+                case "base": key = "Base"; break;
+                case "optimism": key = "Optimism"; break;
+                case "arbitrum": key = "Arbitrum"; break;
+                case "gnosis": key = "Gnosis"; break;
+                case "polygon": key = "Polygon"; break;
+                case "avalanche": key = "Avalanche"; break;
+                case "bnb": key = "BNB"; break;
+                case "unichain": key = "Unichain"; break;
+                case "worldchain": key = "WorldChain"; break;
+                case "monad": key = "Monad"; break;
+                default: key = undefined;
+            }
+
+            if (key) {
+                storeChainId = NETWORKS[key]?.evm?.chain.id.toString() || "unknown";
+            }
         }
 
         const walletChain = (mainWallet.chains || []).find(c => c.chainId === storeChainId);

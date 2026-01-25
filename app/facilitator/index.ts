@@ -43,4 +43,6 @@ export {
 } from "./evm/cctpAbi";
 
 // Hook del cliente
-export { useFacilitator } from "./hooks/useFacilitator";
+// Export types or other configs if present
+export * from "./config";
+export * from "./types";

@@ -20,7 +20,7 @@ export const WORLD_CHAIN: ChainConfig = {
         chain: isDevelopment ? worldchainSepolia : worldchain,
         rpcUrl: isDevelopment ? worldchainSepolia.rpcUrls.default.http[0] : worldchain.rpcUrls.default.http[0],
         supports7702: true,
-        erc4337: false,
+        erc4337: true,
     },
     label: "World Chain",
     icon: <WorldChainIcon />,

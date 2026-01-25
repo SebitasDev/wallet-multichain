@@ -20,16 +20,6 @@ export const SUSDC_VAULT_ADDRESSES: Record<SavingsChainKey, Address> = {
 };
 
 /**
- * USDC token addresses per chain (from existing config)
- */
-export const USDC_ADDRESSES: Record<SavingsChainKey, Address> = {
-    Base: NETWORKS.Base.assets.find(a => a.name === 'USDC')?.address as Address,
-    Optimism: NETWORKS.Optimism.assets.find(a => a.name === 'USDC')?.address as Address,
-    Arbitrum: NETWORKS.Arbitrum.assets.find(a => a.name === 'USDC')?.address as Address,
-    Unichain: NETWORKS.Unichain.assets.find(a => a.name === 'USDC')?.address as Address,
-};
-
-/**
  * Chain configuration for savings operations
  */
 export interface SavingsChainConfig {
@@ -56,7 +46,8 @@ export function getSavingsChainConfig(chainKey: SavingsChainKey): SavingsChainCo
     return {
         chain: networkConfig.evm.chain,
         rpcUrl: networkConfig.evm.rpcUrl || "",
-        usdc: USDC_ADDRESSES[chainKey],
+        // Dynamically find USDC address to avoid top-level execution crash
+        usdc: networkConfig.assets.find(a => a.name === 'USDC')?.address as Address,
         sUsdcVault: SUSDC_VAULT_ADDRESSES[chainKey],
         chainId: networkConfig.evm.chain.id,
         label: networkConfig.label,

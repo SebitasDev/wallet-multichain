@@ -3,7 +3,7 @@ import { useState } from "react";
 import PersonIcon from '@mui/icons-material/Person';
 import StarIcon from '@mui/icons-material/Star';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import { useXOContracts } from "../../hooks/wallet/useXOConnect";
+import { useEmbeddedWalletContext } from "../../hooks/wallet/useEmbeddedWallet";
 import { PasswordModal } from "../PasswordModal"; // Import PasswordModal
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { toast } from "react-toastify";
@@ -14,7 +14,7 @@ export const TopBarProfile = () => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [passwordModalOpen, setPasswordModalOpen] = useState(false); // Modal State
     const open = Boolean(anchorEl);
-    const { factoryReset } = useXOContracts();
+    const { address, factoryReset } = useEmbeddedWalletContext();
     const router = useRouter();
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {

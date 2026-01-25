@@ -43,7 +43,7 @@ export const ARBITRUM: ChainConfig = {
         chain: isDevelopment ? arbitrumSepolia : arbitrum,
         rpcUrl: isDevelopment ? "https://arb-sepolia.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN" : "https://arb-mainnet.g.alchemy.com/v2/49fUGmuW05ynCui0VEvDN",
         supports7702: true, // Arbitrum supports EIP-7702 with EntryPoint v0.8
-        erc4337: false,
+        erc4337: true,
     },
     label: "Arbitrum",
     icon: <ArbIcon />,
@@ -56,6 +56,7 @@ export const ARBITRUM: ChainConfig = {
             cCTPInformation: {
                 supportCCTP: true,
                 domain: 3,
+                tokenMessenger: isDevelopment ? "0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5" : "0x19330d10d9cc8751218eaf51e8885d058642e08a",
             },
         },
         nearIntentInformation: {

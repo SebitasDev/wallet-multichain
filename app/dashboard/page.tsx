@@ -9,12 +9,12 @@ import { AddressCard } from "./components/AddressCard";
 import { useDashboardModalsStore } from "@/app/dashboard/store/useDashboardModalsStore";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 
-
-
 import { CrossChainTransferModal } from "@/app/dashboard/components/CrossChainTransferModal";
 import dynamic from "next/dynamic";
 import { TopBar } from "@/app/dashboard/components/TopBar";
 import { SidebarMainActions } from "@/app/dashboard/components/SidebarMainActions";
+
+// SmartAccountManager removed
 
 const DashboardTour = dynamic(
     () => import("@/app/dashboard/components/DashboardTour").then((mod) => mod.DashboardTour),
@@ -61,7 +61,6 @@ export default function Dashboard() {
                         mx: { xs: "auto", md: 0 },
                     }}
                 >
-                    {/* Título con línea decorativa */}
                     <Box
                         sx={{
                             display: "flex",
@@ -94,12 +93,12 @@ export default function Dashboard() {
                         />
                     </Box>
 
-
-
                     <CrossChainTransferModal trigger={<Box sx={{ display: "none" }} />} />
                     <SidebarMainActions />
                 </Box>
             </Box>
+
+            {/* SMART ACCOUNT MANAGER REMOVED */}
 
             <Box
                 id="wallets-list"

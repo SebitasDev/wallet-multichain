@@ -40,7 +40,7 @@ export const createAuthorizationPayload = async (
     if (!userAddress) throw new Error("User address is not defined");
 
     // The amount passed here is already the TOTAL amount (User Amount + Fee)
-    // calculated by the consumer (useCrossChainTransfer).
+    // calculated by the consumer (usePrimaryTransfer).
     // We should NOT add the fee again.
     const totalAmount = amount;
 

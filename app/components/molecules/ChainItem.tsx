@@ -18,7 +18,7 @@ import { UsdcIcon } from "@/app/components/atoms/UsdcIcon";
 import { Address } from "abitype";
 import { useWalletStore } from "@/app/store/useWalletsStore";
 import { NETWORKS } from "@/app/constants/chainsInformation";
-import { ChainKey, Asset } from "@/app/types/chain";
+import { ChainKey, UIAsset as Asset } from "@/app/types/chain";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { pricesApi } from "@/app/services/api/prices";
 
