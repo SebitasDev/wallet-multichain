@@ -109,13 +109,6 @@ export const runTransferSimulation = async (
     const fee = isDev ? 0 : baseFee;
 
     // Ensure we don't simulate negative amounts after fee
-    // Note: The original logic in useSendMoneyRoute added the fee to get "totalAmountToSimulate" 
-    // but the SDK expects the amount *user wants to send*. 
-    // Wait, useSendMoneyRoute lines 89-98:
-    // const totalAmountToSimulate = (netAmount + fee).toFixed(6);
-    // getNearSimulation(..., totalAmountToSimulate, ...)
-    // This implies the SDK simulation takes the TOTAL amount (including fee).
-
     const totalAmountToSimulate = (amountToSimulate + fee).toFixed(6);
 
     try {
@@ -123,8 +116,8 @@ export const runTransferSimulation = async (
             sourceChainKey as any,
             destChainKey as any,
             totalAmountToSimulate, // Passing total amount
-            sourceToken || "USDC",
-            destToken
+            destToken,            // SDK Arg 4: destToken
+            sourceToken           // SDK Arg 5: sourceToken
         );
 
         return {

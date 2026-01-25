@@ -52,8 +52,8 @@ export const useSendMoneyRoute = ({
                 sourceChainKey,
                 destChainKey,
                 amount,
-                watch("sourceToken") || "USDC",
-                token,
+                token,                          // Source Token
+                watch("sourceToken") || "USDC", // Destination Token (Target)
                 true // Enable Gas Deduction
             );
 
