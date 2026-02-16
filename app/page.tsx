@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Language } from "@/app/landing-translations";
@@ -12,6 +12,10 @@ import { Comparison } from "@/app/components/landing/Comparison";
 import { FAQ } from "@/app/components/landing/FAQ";
 import { CTA } from "@/app/components/landing/CTA";
 import { Footer } from "@/app/components/landing/Footer";
+
+
+
+
 
 export default function Home() {
     const [lang, setLang] = useState<Language>("es");
@@ -35,6 +39,9 @@ export default function Home() {
 
     return (
         <main style={{ backgroundColor: "#ffffff", color: "#000000", minHeight: "100vh" }}>
+
+
+
             <Hero lang={lang} onToggleLanguage={toggleLanguage} />
             <Stats lang={lang} />
             <Chains lang={lang} />

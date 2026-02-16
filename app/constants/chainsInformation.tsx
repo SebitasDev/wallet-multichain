@@ -12,7 +12,7 @@ import {
     gnosis
 } from "viem/chains";
 import { polygon } from "wagmi/chains";
-import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN, BNB, Gnosis } from "@/app/constants/chains";
+import { ARBITRUM, AVALANCHE, BASE, Monad, OPTIMISM, POLYGON, STELLAR, UNICHAIN, WORLD_CHAIN, BNB, Gnosis, STACKS } from "@/app/constants/chains";
 import { CHAIN_CONFIGS } from "@1llet.xyz/erc4337-gasless-sdk";
 import { ChainKey, ChainKeyEnum, ChainConfig } from "@/app/types/chain";
 
@@ -44,7 +44,9 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
         ...BASE,
         evm: {
             ...BASE.evm,
-            ...(getSDKConfig(isDevelopment ? baseSepolia.id : base.id) || {})
+            ...(getSDKConfig(isDevelopment ? baseSepolia.id : base.id) || {}),
+            // FORCE PAYMASTER
+            paymasterUrl: process.env.NEXT_PUBLIC_PAYMASTER_URL || "https://api.stackup.sh/v1/node/3400b6567433433989c629532502690d563503258d04760840b37774d08b3014"
         }
     },
     Unichain: {
@@ -96,7 +98,8 @@ export const NETWORKS: Record<ChainKey, ChainConfig> = {
             ...Gnosis.evm,
             ...(getSDKConfig(isDevelopment ? gnosisChiado.id : gnosis.id) || {})
         }
-    }
+    },
+    Stacks: STACKS
 };
 
 export const CHAIN_ID_TO_KEY: Record<string, string> = {

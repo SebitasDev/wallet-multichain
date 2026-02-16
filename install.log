@@ -1,0 +1,64 @@
+npm WARN ERESOLVE overriding peer dependency
+npm WARN While resolving: @wagmi/connectors@6.2.0
+npm WARN Found: @wagmi/core@3.0.0
+npm WARN node_modules/@wagmi/core
+npm WARN   peer @wagmi/core@">=2.16.3" from porto@0.2.35
+npm WARN   node_modules/porto
+npm WARN     porto@"0.2.35" from @wagmi/connectors@6.2.0
+npm WARN     node_modules/@wagmi/connectors
+npm WARN     1 more (@wagmi/connectors)
+npm WARN   2 more (wagmi, @wagmi/connectors)
+npm WARN 
+npm WARN Could not resolve dependency:
+npm WARN peer @wagmi/core@"2.22.1" from @wagmi/connectors@6.2.0
+npm WARN node_modules/@wagmi/connectors
+npm WARN   @wagmi/connectors@"6.2.0" from wagmi@2.19.5
+npm WARN   node_modules/x402-next/node_modules/wagmi
+npm WARN   1 more (wagmi)
+npm WARN 
+npm WARN Conflicting peer dependency: @wagmi/core@2.22.1
+npm WARN node_modules/@wagmi/core
+npm WARN   peer @wagmi/core@"2.22.1" from @wagmi/connectors@6.2.0
+npm WARN   node_modules/@wagmi/connectors
+npm WARN     @wagmi/connectors@"6.2.0" from wagmi@2.19.5
+npm WARN     node_modules/x402-next/node_modules/wagmi
+npm WARN     1 more (wagmi)
+npm ERR! code ERESOLVE
+npm ERR! ERESOLVE could not resolve
+npm ERR! 
+npm ERR! While resolving: react-shepherd@6.1.9
+npm ERR! Found: react@19.2.0
+npm ERR! node_modules/react
+npm ERR!   react@"19.2.0" from the root project
+npm ERR!   peerOptional react@">=18.0.0" from zustand@5.0.3
+npm ERR!   node_modules/@base-org/account/node_modules/zustand
+npm ERR!     zustand@"5.0.3" from @base-org/account@2.4.0
+npm ERR!     node_modules/@base-org/account
+npm ERR!       @base-org/account@"2.4.0" from @wagmi/connectors@6.2.0
+npm ERR!       node_modules/@wagmi/connectors
+npm ERR!         @wagmi/connectors@"6.2.0" from wagmi@2.19.5
+npm ERR!         node_modules/x402-next/node_modules/wagmi
+npm ERR!         1 more (wagmi)
+npm ERR!       1 more (@wagmi/connectors)
+npm ERR!   32 more (zustand, @emotion/react, @emotion/styled, ...)
+npm ERR! 
+npm ERR! Could not resolve dependency:
+npm ERR! peer react@"^18.2.0" from react-shepherd@6.1.9
+npm ERR! node_modules/react-shepherd
+npm ERR!   react-shepherd@"^6.1.9" from the root project
+npm ERR! 
+npm ERR! Conflicting peer dependency: react@18.3.1
+npm ERR! node_modules/react
+npm ERR!   peer react@"^18.2.0" from react-shepherd@6.1.9
+npm ERR!   node_modules/react-shepherd
+npm ERR!     react-shepherd@"^6.1.9" from the root project
+npm ERR! 
+npm ERR! Fix the upstream dependency conflict, or retry
+npm ERR! this command with --force or --legacy-peer-deps
+npm ERR! to accept an incorrect (and potentially broken) dependency resolution.
+npm ERR! 
+npm ERR! 
+npm ERR! For a full report see:
+npm ERR! C:\Users\tiago\AppData\Local\npm-cache\_logs\2026-01-25T17_56_57_261Z-eresolve-report.txt
+
+npm ERR! A complete log of this run can be found in: C:\Users\tiago\AppData\Local\npm-cache\_logs\2026-01-25T17_56_57_261Z-debug-0.log

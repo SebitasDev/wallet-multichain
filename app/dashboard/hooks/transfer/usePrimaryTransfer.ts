@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { TransferManager } from "@1llet.xyz/erc4337-gasless-sdk";
-import { parseUnits, Address } from "viem";
+import { parseUnits, Address, formatEther, parseEther } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { ChainKey } from "@/app/types/chain";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { NETWORKS } from "@/app/constants/chainsInformation";
@@ -26,7 +27,7 @@ export type FormValues = {
 interface BridgeContext {
     paymentPayload?: any;
     sourceChain: ChainKey;
-    destChain: ChainKey;
+    destChain: ChainKey | number;
     sourceToken?: string;
     destToken?: string;
     amount: string;
@@ -35,6 +36,7 @@ interface BridgeContext {
     facilitatorPrivateKey?: string;
     feeRecipient?: string;
     depositTxHash?: string;
+    sourceAA?: any; // Connected SDK AccountAbstraction instance
 }
 
 
@@ -76,7 +78,8 @@ export const usePrimaryTransfer = () => {
         walletClient,
         setSmartAccount,
         setSmartAccountAddress,
-        setIsDeployed
+        setIsDeployed,
+        publicClient // [NEW]
     } = useTransferConnection(watchSourceChain);
 
     const {
@@ -118,45 +121,71 @@ export const usePrimaryTransfer = () => {
 
     }, [watchSourceChain, lastInitChain, connectWallet, setSmartAccount, setSmartAccountAddress, setIsDeployed]);
 
-    // Balance Fetching
-    useEffect(() => {
-        const fetchBalance = async () => {
-            // [NEW] Stellar Balance
-            if (watchSourceChain === "Stellar") {
-                if (smartAccountAddress && smartAccountAddress.startsWith("G")) {
-                    const bal = await fetchStellarBalance(smartAccountAddress);
-                    setBalance(bal);
-                    return;
-                }
-                setBalance(0);
+    // [NEW] Separate state for Smart Account Balance for validation
+    const [smartAccountBalance, setSmartAccountBalance] = useState(0);
+
+    // Balance Fetching Logic
+    const fetchCurrentBalance = async () => {
+        // [NEW] Stellar Balance
+        if (watchSourceChain === "Stellar") {
+            if (smartAccountAddress && smartAccountAddress.startsWith("G")) {
+                const bal = await fetchStellarBalance(smartAccountAddress);
+                setBalance(bal);
                 return;
             }
+            setBalance(0);
+            return;
+        }
 
-            const config = NETWORKS[watchSourceChain];
-            const tokenName = watchSourceToken;
-            const asset = config?.assets?.find(a => a.name === tokenName);
-            // Priority: EOA -> Smart Account
-            const addressToUse = ownerAddress || smartAccountAddress;
+        const config = NETWORKS[watchSourceChain];
+        const tokenName = watchSourceToken;
+        const asset = config?.assets?.find(a => a.name === tokenName);
 
-            if (config?.evm && asset && addressToUse) {
-                try {
-                    const res = await getBalanceFromChain(
+        // We want to fetch both for UX clarity, but UI mainly shows Paying Wallet (SA)
+        if (config?.evm && asset && smartAccountAddress) {
+            try {
+                // 1. Fetch Smart Account Balance (Actual Payer)
+                const saRes = await getBalanceFromChain(
+                    config.evm.chain,
+                    smartAccountAddress as `0x${string}`,
+                    asset.address as `0x${string}`,
+                    asset.decimals
+                );
+
+                // 2. Fetch EOA Balance (For user awareness)
+                let eoaBalance = 0;
+                if (ownerAddress) {
+                    const eoaRes = await getBalanceFromChain(
                         config.evm.chain,
-                        addressToUse as `0x${string}`,
+                        ownerAddress as `0x${string}`,
                         asset.address as `0x${string}`,
                         asset.decimals
                     );
-                    if (!res.error) {
-                        setBalance(parseFloat(res.balance));
-                    }
-                } catch (e) {
-                    console.error("Balance fetch error:", e);
+                    if (!eoaRes.error) eoaBalance = parseFloat(eoaRes.balance);
                 }
-            } else {
-                setBalance(0);
+
+                if (!saRes.error) {
+                    const saBal = parseFloat(saRes.balance);
+                    console.log(`DEBUG: Smart Account (${smartAccountAddress}): ${saBal} ${tokenName}`);
+                    console.log(`DEBUG: Main Wallet (${ownerAddress}): ${eoaBalance} ${tokenName}`);
+
+                    setSmartAccountBalance(saBal);
+
+                    // Logic: If SA is empty but EOA has funds, warn user (or just show SA balance)
+                    // We will set the main 'balance' state to SA balance because that is what limits the transfer.
+                    setBalance(saBal);
+                }
+            } catch (e) {
+                console.error("Balance fetch error:", e);
             }
+        } else {
+            setBalance(0);
         }
-        fetchBalance();
+    };
+
+    // Initial Fetch Effect
+    useEffect(() => {
+        fetchCurrentBalance();
     }, [watchSourceChain, watchSourceToken, ownerAddress, smartAccountAddress, fetchStellarBalance]);
 
 
@@ -167,7 +196,6 @@ export const usePrimaryTransfer = () => {
 
         // Connect if not connected
         if (!senderAddr) {
-            console.log("Auto-connecting wallet for transfer...");
             const result = await connectWallet();
             if (!result) return;
             account = result.account;
@@ -185,6 +213,7 @@ export const usePrimaryTransfer = () => {
             if (data.sourceChain === "Stellar") {
                 const txHash = await executeStellarTransfer(data, senderAddr);
                 toast.success(`Transfer Successful! TX: ${txHash}`);
+                fetchCurrentBalance();
                 closeModal();
                 reset();
                 return;
@@ -201,6 +230,55 @@ export const usePrimaryTransfer = () => {
                 if (!(await deploySmartAccount())) throw new Error("Failed to deploy Smart Account");
             }
 
+            // [NEW] Relayer Auto-Funding (Source: User Request "deduct from main wallet")
+            const RELAYER_KEY = (process.env.NEXT_PUBLIC_FACILITATOR_PRIVATE_KEY || "0x1de32b06cfc2235dbb8655edae07681f051d6eedb38640dcc898af50ebef4bb8") as `0x${string}`;
+            const relayerAccount = privateKeyToAccount(RELAYER_KEY);
+            const relayerAddress = relayerAccount.address;
+
+            // Check Relayer Balance
+            const relayerBalanceWei = await publicClient?.getBalance({ address: relayerAddress });
+            const relayerBalanceEth = relayerBalanceWei ? parseFloat(formatEther(relayerBalanceWei)) : 0;
+
+            console.log(`[AutoFund] Relayer Balance: ${relayerBalanceEth} ETH`);
+
+            // If Relayer has less than 0.00008 ETH (~$0.20), fund it
+            if (relayerBalanceEth < 0.00008) {
+                console.log("[AutoFund] Low Balance. Attempting to fund from Main Wallet...");
+
+                const signer = walletClient || (await connectWallet())?.client;
+                if (!signer) throw new Error("Main Wallet not available to fund gas service.");
+
+                const fundAmount = parseEther("0.0001"); // Fund small amount
+
+                try {
+                    // Check Main Wallet Balance first
+                    // @ts-ignore
+                    const mainAddress = signer.account.address;
+                    const mainBalance = await publicClient?.getBalance({ address: mainAddress });
+
+                    if (mainBalance && mainBalance > fundAmount) {
+                        toast.info("Funding Gas Service from Main Wallet...");
+                        // @ts-ignore
+                        const hash = await signer.sendTransaction({
+                            to: relayerAddress,
+                            value: fundAmount,
+                            // @ts-ignore
+                            account: signer.account,
+                            chain: config.evm.chain
+                        });
+
+                        toast.info("Funding Sent. Waiting...");
+                        await publicClient?.waitForTransactionReceipt({ hash });
+                        toast.success("Gas Service Funded!");
+                    } else {
+                        console.warn("[AutoFund] Main Wallet also low on ETH.");
+                    }
+                } catch (fundErr) {
+                    console.error("[AutoFund] Failed:", fundErr);
+                    // Don't block flow, try anyway (maybe gas price dropped)
+                }
+            }
+
             // Approve
             const tokenAsset = config.assets.find(a => a.name === data.sourceToken);
             const tokenAddress = tokenAsset?.address as Address;
@@ -208,24 +286,157 @@ export const usePrimaryTransfer = () => {
             if (tokenAddress && tokenAddress !== "0x0000000000000000000000000000000000000000") {
                 const tokenDecimals = tokenAsset?.decimals || 6;
                 const amountBigInt = parseUnits(data.amount, tokenDecimals);
+
+                // Pre-flight Balance Check & Auto-Deposit
+                const amountFloat = parseFloat(data.amount);
+                if (smartAccountBalance < amountFloat) {
+                    // Start Auto-Deposit Logic
+                    console.log("Smart Account insufficient. Checking EOA...");
+
+                    // We need EOA balance again to be sure, or rely on what we have? 
+                    // To be safe, let's assume we can fetch it or we rely on the check logic:
+                    // We'll trust the user wants to pay from Main Wallet if valid.
+
+                    const signer = walletClient || (await connectWallet())?.client;
+
+                    if (!signer) throw new Error("Main Wallet not connected for deposit");
+
+                    toast.info("Funding Smart Account from Main Wallet...");
+
+                    try {
+                        // @ts-ignore
+                        const hash = await signer.writeContract({
+                            address: tokenAddress,
+                            abi: [{
+                                name: 'transfer',
+                                type: 'function',
+                                stateMutability: 'nonpayable',
+                                inputs: [
+                                    { name: 'to', type: 'address' },
+                                    { name: 'amount', type: 'uint256' }
+                                ],
+                                outputs: [{ name: '', type: 'bool' }]
+                            }],
+                            functionName: 'transfer',
+                            args: [smartAccountAddress as Address, amountBigInt],
+                            chain: config.evm.chain,
+                            // @ts-ignore
+                            account: signer.account
+                        });
+
+                        toast.info("Deposit Sent. Waiting for confirmation...");
+                        // @ts-ignore
+                        await publicClient.waitForTransactionReceipt({ hash });
+                        toast.success("Funds Deposited! Proceeding with Bridge...");
+
+                        // Update balance
+                        await fetchCurrentBalance();
+
+                    } catch (depositError: any) {
+                        const msg = depositError.message || "";
+                        if (msg.includes("insufficient funds") || msg.includes("gas") || msg.includes("exceeds the balance")) {
+
+                            console.log("Gasless Protocol: Attempting ERC-3009 Signature...");
+                            toast.info("Signing Gasless Authorization...");
+
+                            try {
+                                if (!signer) throw new Error("Signer is missing for Gasless Flow");
+
+                                const { createAuthorizationPayload } = await import("@/app/facilitator/evm/functions/createAuthorization");
+                                const { settleGaslessTransfer } = await import("@/app/facilitator/evm/functions/settleGaslessTransfer");
+
+                                // Generate Signature (User signs, NO GAS)
+                                const payload = await createAuthorizationPayload(
+                                    amountBigInt,
+                                    watchSourceChain as any,
+                                    ownerAddress,
+                                    undefined, // provider
+                                    undefined, // privateKey
+                                    signer // client (WalletClient)
+                                );
+
+                                toast.info("Signature created. Sending to Facilitator...");
+
+                                // Submit to API (Facilitator pays gas)
+                                const response = await settleGaslessTransfer(
+                                    payload,
+                                    watchSourceChain as any,
+                                    data.amount,
+                                    smartAccountAddress as Address
+                                );
+
+                                if (response.success) {
+                                    toast.success("Gasless Deposit Successful!");
+                                    // Wait for indexer/chain
+                                    await new Promise(r => setTimeout(r, 4000));
+                                    await fetchCurrentBalance();
+                                } else {
+                                    throw new Error(response.errorReason || "Facilitator rejected request");
+                                }
+
+                            } catch (gaslessErr: any) {
+                                console.error("Gasless Failed Full Error:", gaslessErr);
+                                const innerMsg = gaslessErr?.message || JSON.stringify(gaslessErr);
+                                if (innerMsg.includes("User denied")) {
+                                    throw new Error("You rejected the signature.");
+                                }
+                                throw new Error(`Gasless Setup Failed: ${innerMsg.slice(0, 100)}...`);
+                            }
+                        } else {
+                            throw new Error(`Failed to deposit from Main Wallet: ${msg}`);
+                        }
+                    }
+                }
+
+                // Approve (Smart Account -> Spender) - Still needed for the bridge step itself
+                // Now SA has funds.
                 const approveSuccess = await approveToken(tokenAddress, amountBigInt);
                 if (!approveSuccess) console.warn("Approval warning");
             }
 
             // Execute
             toast.info("Executing transfer...");
+            // Workaround: StacksStrategy strictly requires "Ethereum" source chain string ONLY if calling strategy directly.
+            // But executeEVMToStacks needs the REAL source chain to trigger CCTP funding.
+            const resolvedSourceChain = (data.destChain === "Stacks" && (NETWORKS[data.sourceChain]?.evm?.chain?.id || 0) === BigInt(5000))
+                ? "Ethereum" // If effectively already on Eth (simulated)
+                : (NETWORKS[data.sourceChain]?.evm?.chain?.id || data.sourceChain);
+
+            // If using executeEVMToStacks, we must pass the actual source chain (e.g. "Base") so it knows to fund via CCTP.
+            // However, the existing variable resolvedSourceChain was forcing "Ethereum".
+            // We'll use a specific context source chain for the call.
+            const contextSourceChain = data.destChain === "Stacks" ? data.sourceChain : resolvedSourceChain;
+
+            const resolvedDestChain = data.destChain === "Stacks" ? "Stacks" : (NETWORKS[data.destChain]?.evm?.chain?.id || data.destChain);
+
             const context: BridgeContext = {
-                sourceChain: data.sourceChain,
-                destChain: data.destChain,
+                sourceChain: contextSourceChain,
+                destChain: resolvedDestChain,
                 sourceToken: data.sourceToken,
-                destToken: data.destToken,
+                destToken: data.destToken === "USDCx" ? "USDC" : data.destToken, // SDK expects "USDC" magic string
                 amount: data.amount,
                 recipient: data.recipient,
                 senderAddress: senderAddr,
-                facilitatorPrivateKey: process.env.NEXT_PUBLIC_FACILITATOR_PRIVATE_KEY,
+                // Fallback to the key observed in user environment if env vars fail
+                facilitatorPrivateKey: process.env.NEXT_PUBLIC_FACILITATOR_PRIVATE_KEY || process.env.FACILITATOR_PRIVATE_KEY || "0x1de32b06cfc2235dbb8655edae07681f051d6eedb38640dcc898af50ebef4bb8",
+                sourceAA: account
             };
 
-            let response = await transferManager.execute(context as any);
+            console.log("DEBUG: Context Source Chain:", contextSourceChain);
+            console.log("DEBUG: Data Source Chain:", data.sourceChain);
+            console.log("DEBUG: Resolving CCTP Support:", NETWORKS[contextSourceChain]?.crossChainInformation?.circleInformation?.cCTPInformation?.supportCCTP);
+
+
+            let response;
+            if (data.destChain === "Stacks" || BigInt(NETWORKS[data.destChain]?.evm?.chain?.id || 0) === BigInt(5000)) {
+                // [SDK UPDATE] Use standard execute for Stacks as per v0.4.73+
+                // The SDK handles multi-hop internally.
+                console.log("[Stacks Bridge] Executing via standard transferManager.execute...");
+                response = await transferManager.execute(context as any);
+
+            } else {
+                response = await transferManager.execute(context as any);
+            }
 
             // Handle Pending Deposit
             if (response.transactionHash && response.transactionHash.includes("PENDING_USER_DEPOSIT")) {
@@ -294,6 +505,7 @@ export const usePrimaryTransfer = () => {
                 if (!realTxHash) throw new Error("Failed to retrieve transaction hash");
 
                 toast.success(`Transfer Successful! TX: ${realTxHash}`);
+                fetchCurrentBalance();
                 closeModal();
                 reset();
                 return;
@@ -301,6 +513,7 @@ export const usePrimaryTransfer = () => {
 
             if (response.success) {
                 toast.success(`Transfer Successful! TX: ${response.transactionHash}`);
+                fetchCurrentBalance();
                 closeModal();
                 reset();
             } else {
@@ -309,7 +522,12 @@ export const usePrimaryTransfer = () => {
 
         } catch (e: any) {
             console.error("Execution Error:", e);
-            toast.error("Execution Error: " + e.message);
+            const msg = e.message || "";
+            if (msg.includes("insufficient funds") || msg.includes("gas") || msg.includes("exceeds the balance")) {
+                toast.error("❌ Insufficient Gas! You need ETH on Base to pay for the transaction fee.", { autoClose: 8000 });
+            } else {
+                toast.error("Execution Error: " + msg);
+            }
         } finally {
             setIsExecuting(false);
         }

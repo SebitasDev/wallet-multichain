@@ -15,6 +15,9 @@ const nextConfig: NextConfig = {
         ]
       }
     ]
+  },
+  env: {
+    NEXT_PUBLIC_FACILITATOR_PRIVATE_KEY: process.env.FACILITATOR_PRIVATE_KEY,
   }
 };
 

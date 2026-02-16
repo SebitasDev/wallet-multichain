@@ -9,6 +9,7 @@ import { Monad } from "@/app/constants/chains/Evm/Monad";
 import { BNB } from "@/app/constants/chains/Evm/Binance";
 import { Gnosis } from "./Evm/Gnosis";
 import { POLYGON } from "./Evm/Polygon";
+import { STACKS } from "./NoEvm/Stacks";
 
 export {
     OPTIMISM,
@@ -21,5 +22,6 @@ export {
     STELLAR,
     Monad,
     BNB,
-    Gnosis
+    Gnosis,
+    STACKS
 }

@@ -32,7 +32,7 @@ import { FACILITATOR_ADDRESS } from "@/app/facilitator/config";
 interface BridgeContext {
     paymentPayload?: any;
     sourceChain: ChainKey;
-    destChain: ChainKey;
+    destChain: ChainKey | number;
     sourceToken?: string;
     destToken?: string;
     amount: string;
@@ -41,6 +41,7 @@ interface BridgeContext {
     facilitatorPrivateKey?: string;
     feeRecipient?: string;
     depositTxHash?: string;
+    sourceAA?: any; // Connected SDK AccountAbstraction instance
 }
 
 export type RouteStatus =
@@ -498,13 +499,14 @@ export const useSecondaryTransfer = () => {
                     // EXECUTE TRANSFER via SDK
                     const context: BridgeContext = {
                         amount: totalAmount,
-                        sourceChain: fromValidChain as any,
-                        destChain: toValidChain as any,
+                        sourceChain: NETWORKS[fromValidChain]?.evm?.chain?.id || fromValidChain,
+                        destChain: toValidChain === "Stacks" ? 5000 : toValidChain,
                         recipient: recipient,
                         sourceToken: finalToken,
-                        destToken: watch("sourceToken"),
+                        destToken: watch("sourceToken") === "USDCx" ? "USDC" : watch("sourceToken"), // Map for SDK
                         senderAddress: smartAccountAddress,
                         facilitatorPrivateKey: process.env.NEXT_PUBLIC_FACILITATOR_PRIVATE_KEY,
+                        sourceAA: account
                     };
 
                     const result = await transferManager.execute(context as any);

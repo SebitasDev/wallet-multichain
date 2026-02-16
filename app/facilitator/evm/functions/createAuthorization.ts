@@ -32,7 +32,8 @@ export const createAuthorizationPayload = async (
     sourceChain: FacilitatorChainKey,
     userAddress: Address,
     provider?: any,
-    privateKey?: `0x${string}`
+    privateKey?: `0x${string}`,
+    client?: any // Pre-configured WalletClient
 ): Promise<FacilitatorPaymentPayload> => {
     const networkConfig = FACILITATOR_NETWORKS[sourceChain];
     if (!networkConfig) throw new Error(`Unsupported chain: ${sourceChain}`);
@@ -100,7 +101,24 @@ export const createAuthorizationPayload = async (
 
     let signature: `0x${string}`;
 
-    if (provider) {
+    if (client) {
+        console.log(LOG_PREFIX, "Signing with provided WalletClient", {
+            hasAccount: !!client.account,
+            accountType: typeof client.account,
+            transport: client.transport?.type
+        });
+
+        // Ensure we use the client's hoisted account if available (crucial for Local Accounts with HTTP transport)
+        const accountToUse = client.account || userAddress;
+
+        signature = await client.signTypedData({
+            account: accountToUse,
+            domain,
+            types: TransferWithAuthorizationTypes,
+            primaryType: "TransferWithAuthorization",
+            message
+        });
+    } else if (provider) {
         console.log(LOG_PREFIX, "Signing with external provider");
         const walletClient = createWalletClient({
             chain: networkConfig.chain,
@@ -130,7 +148,7 @@ export const createAuthorizationPayload = async (
             message
         });
     } else {
-        throw new Error("No provider or private key provided");
+        throw new Error("CRITICAL_AUTH_ERROR: No client, provider, or private key provided. Signer was likely null.");
     }
 
     console.log(LOG_PREFIX, "Authorization signed successfully");

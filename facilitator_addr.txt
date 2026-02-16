@@ -1,0 +1,5 @@
+--- FACILITATOR WALLET INFO ---
+Private Key: 0x1de32b06...
+Address: 0xA08979bA1Aac1c19Dc659817C295C77018533a97
+-------------------------------
+Please check if THIS address has ETH on Base Mainnet.

@@ -273,7 +273,10 @@ export const getSmartAccountForChain = async (
             throw new Error(`Chain ${chainKey} is not configured for EVM operations`);
         }
 
-        const accountInstance = new AccountAbstraction(config.evm as any);
+        const accountInstance = new AccountAbstraction({
+            ...(config.evm as any),
+            paymasterUrl: process.env.NEXT_PUBLIC_PAYMASTER_URL || config.evm.paymasterUrl || "https://api.stackup.sh/v1/node/..." // Fallback or Env 
+        });
         const result = await accountInstance.connect(signer);
         const deployed = await safeCheckDeployment(accountInstance);
 

@@ -34,8 +34,14 @@ export class XOWalletStrategy implements WalletStrategy {
 
         try {
             await provider.request({ method: "eth_requestAccounts" });
-        } catch (e) {
-            throw new Error("No connection available for XO Wallet");
+        } catch (e: any) {
+            const isNoConnection = e?.message?.includes("No connection") || e === "No connection available";
+            if (isNoConnection) {
+                console.warn("XO Wallet not found (running standalone?).");
+            } else {
+                console.error("XO Wallet Connection Error:", e);
+            }
+            throw new Error("No connection available for XO Wallet: " + (e.message || e));
         }
         this.xoProvider = provider;
 

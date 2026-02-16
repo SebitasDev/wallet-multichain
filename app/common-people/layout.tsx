@@ -6,7 +6,7 @@ import { useWalletStore } from "@/app/store/useWalletsStore"; // Keep for fallba
 import { Box, CircularProgress } from "@mui/material";
 
 // Providers & Store
-import { XOContractsProvider } from "@/app/dashboard/hooks/wallet/useXOConnect";
+
 import { EmbeddedProvider } from "@/app/dashboard/hooks/dashboard/embedded";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
 import { PasswordModal } from "@/app/dashboard/components/PasswordModal";
@@ -82,12 +82,12 @@ export default function CommonPeopleLayout({ children }: { children: React.React
 
             {!askPassword && (
                 <EmbeddedProvider>
-                    <XOContractsProvider password={currentPassword!}>
-                        <>
-                            {children}
-                            <ToastContainerCustom />
-                        </>
-                    </XOContractsProvider>
+                    {/* <XOContractsProvider password={currentPassword!}> */}
+                    <>
+                        {children}
+                        <ToastContainerCustom />
+                    </>
+                    {/* </XOContractsProvider> */}
                 </EmbeddedProvider>
             )}
         </Box>

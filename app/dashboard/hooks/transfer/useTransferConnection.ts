@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import { toast } from "react-toastify";
 import { AccountAbstraction } from "@1llet.xyz/erc4337-gasless-sdk";
-import { Address, createWalletClient, custom, parseUnits } from "viem";
+import { Address, createWalletClient, custom, parseUnits, createPublicClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { useWalletClient, useConnect, useSwitchChain, useConnectors, useConnections, usePublicClient } from "wagmi";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { useWalletPasswordStore } from "@/app/store/useWalletPasswordStore";
@@ -53,11 +54,20 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
         setIsDeployed(deployed);
         const chainId = config?.evm?.chain.id.toString() || "0";
         if (config?.evm) storeSetSmartAccount(chainId, saAddress, deployed);
-        return { account, address: saAddress };
+        // @ts-ignore
+        return { account, address: saAddress, client: result.client || null };
     };
 
     const connectWallet = useCallback(async () => {
         setIsConnecting(true);
+        console.log("[connectWallet] Started. Mode:", connectionMode);
+        console.log("[connectWallet] Credentials:", {
+            hasEncrypted: !!encryptedPrivateKey,
+            hasPassword: !!currentPassword,
+            activeClient: !!walletClient,
+            isConnected
+        });
+
         try {
             // [NEW] Stellar Logic Branch
             if (watchSourceChain === "Stellar") {
@@ -74,11 +84,14 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
             const config = NETWORKS[watchSourceChain];
             if (!config || !config.evm) throw new Error("Invalid Chain Config or not EVM");
 
-            // --- MODE 1: MetaMask ---
-            if (connectionMode === 'metamask') {
+            // Prioritize Wagmi Client (MetaMask/Injected)
+            const effectiveMode = connectionMode || (walletClient ? 'metamask' : null);
+
+            // --- MODE 1: MetaMask (or available WalletClient) ---
+            if (effectiveMode === 'metamask' || walletClient) {
                 let activeClient = walletClient;
 
-                // 1. Recover Client if missing
+                // 1. Recover Client if missing but potentially connected
                 if (!activeClient) {
                     try {
                         if (!isConnected) {
@@ -104,28 +117,25 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
                     } catch (e) { console.error("Direct fallback failed", e); }
                 }
 
-                if (!activeClient) throw new Error("MetaMask connection lost. Please reconnect.");
-
-                // 3. Enforce Network Switch
-                const targetChainId = config.evm.chain.id;
-                const currentChainId = await activeClient.getChainId();
-
-                if (currentChainId !== targetChainId) {
+                if (activeClient) {
+                    // 3. Enforce Network Switch
+                    const targetChainId = config.evm.chain.id;
                     try {
-                        await switchChainAsync({ chainId: targetChainId });
-                        const { data } = await refetchWalletClient();
-                        if (data) activeClient = data;
-                    } catch (e: any) {
-                        console.error("Chain Switch Failed:", e);
-                        // @ts-ignore
-                        throw new Error(`Please switch to ${watchSourceChain} manually. Error: ${e.message || e}`);
-                    }
+                        const currentChainId = await activeClient.getChainId();
+                        if (currentChainId !== targetChainId) {
+                            await switchChainAsync({ chainId: targetChainId });
+                            const { data } = await refetchWalletClient();
+                            if (data) activeClient = data;
+                        }
+                    } catch (e) { console.warn("Chain check/switch warning:", e); }
+
+                    // 4. Init Smart Account
+                    const saResult = await getSmartAccountForChain(watchSourceChain, activeClient);
+                    if (saResult) return updateState({ ...saResult, client: activeClient });
                 }
 
-                // 4. Init Smart Account
-                const saResult = await getSmartAccountForChain(watchSourceChain, activeClient);
-                if (saResult) return updateState(saResult);
-                throw new Error("Failed to initialize Smart Account with MetaMask");
+                // If we fell through here in explicit metamask mode, throw.
+                if (effectiveMode === 'metamask') throw new Error("Failed to initialize Smart Account with MetaMask");
             }
 
             // --- MODE 2: Embedded ---
@@ -135,38 +145,31 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
 
                 // Assuming signer is compatible with SDK (Provider or Signer)
                 const saResult = await getSmartAccountForChain(watchSourceChain, signer);
-                if (saResult) return updateState(saResult);
+                if (saResult) return updateState({ ...saResult, client: signer });
                 throw new Error("Failed to initialize Smart Account with Embedded Wallet");
             }
 
             // --- MODE 3: Local ---
-            if (connectionMode === 'local') {
+            if (connectionMode === 'local' || (!walletClient && encryptedPrivateKey)) {
                 if (!encryptedPrivateKey || !currentPassword || !salt || !iv) {
-                    throw new Error("Local Wallet locked or missing credentials");
-                }
-                const privateKey = await decryptPrivateKey(encryptedPrivateKey, currentPassword, salt, iv) as `0x${string}`;
-                const saResult = await getSmartAccountForChain(watchSourceChain, privateKey);
-                if (saResult) return updateState(saResult);
-                throw new Error("Failed to initialize with Local Key");
-            }
+                    // Only throw if strictly in local mode
+                    if (connectionMode === 'local') throw new Error("Local Wallet locked or missing credentials");
+                } else {
+                    const privateKey = await decryptPrivateKey(encryptedPrivateKey, currentPassword, salt, iv) as `0x${string}`;
+                    const saResult = await getSmartAccountForChain(watchSourceChain, privateKey);
 
-            // --- MODE 3: Auto/Fallback (Legacy) ---
-            if (walletClient) {
-                const saResult = await getSmartAccountForChain(watchSourceChain, walletClient);
-                if (saResult) return updateState(saResult);
-            } else if (isConnected) {
-                const { data: refetched } = await refetchWalletClient();
-                if (refetched) {
-                    const saResult = await getSmartAccountForChain(watchSourceChain, refetched);
-                    if (saResult) return updateState(saResult);
+                    // Construct a WalletClient for Local Key to allow standard txs (like Deposit)
+                    if (saResult) {
+                        const localClient = createWalletClient({
+                            account: privateKeyToAccount(privateKey),
+                            chain: NETWORKS[watchSourceChain]?.evm?.chain,
+                            transport: http(NETWORKS[watchSourceChain]?.evm?.rpcUrl)
+                        });
+                        // @ts-ignore
+                        return updateState({ ...saResult, client: localClient });
+                    }
                 }
-            }
-
-            // Fallback: Local
-            if (!walletClient && encryptedPrivateKey && currentPassword && salt && iv) {
-                const privateKey = await decryptPrivateKey(encryptedPrivateKey, currentPassword, salt, iv) as `0x${string}`;
-                const saResult = await getSmartAccountForChain(watchSourceChain, privateKey);
-                if (saResult) return updateState(saResult);
+                if (connectionMode === 'local') throw new Error("Failed to initialize with Local Key");
             }
 
             return null;
@@ -219,7 +222,17 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
         setIsApproving(true);
         try {
             const spender = smartAccountAddress as Address;
-            return await ensureTokenApproval(smartAccount, tokenAddress, spender, amount, publicClient);
+
+            // Create a dedicated public client for this chain to ensure we are querying the correct network
+            const config = NETWORKS[watchSourceChain];
+            if (!config?.evm) throw new Error("Invalid EVM chain config");
+
+            const chainSpecificClient = createPublicClient({
+                chain: config.evm.chain,
+                transport: http(config.evm.rpcUrl)
+            });
+
+            return await ensureTokenApproval(smartAccount, tokenAddress, spender, amount, chainSpecificClient as any);
         } catch (e: any) {
             console.error("Approval helper failed:", e);
             toast.error("Approval failed: " + e.message);
@@ -241,7 +254,9 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
         isConnecting,
         connectWallet,
         deploySmartAccount,
+        deploySmartAccount,
         approveToken,
-        walletClient
+        walletClient,
+        publicClient
     };
 };

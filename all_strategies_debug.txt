@@ -1,0 +1,37 @@
+Initializing TransferManager...
+Strategies found: 5
+
+Testing Strategy: CCTP
+Source: canHandle(context) {        const { sourceChain, destChain, sourceToken, destToken } = context;     ...
+  [ID 8453 -> ID 5000] canHandle: false
+  [String 'Base' -> String 'Stacks'] canHandle: false
+  [String 'Base' -> ID 5000] canHandle: false
+  [ID 8453 -> String 'Stacks'] canHandle: false
+
+Testing Strategy: StargateFinance
+Source: canHandle(context) {        const { sourceChain, destChain, sourceToken } = context;        if (sour...
+  [ID 8453 -> ID 5000] canHandle: false
+  [String 'Base' -> String 'Stacks'] canHandle: false
+  [String 'Base' -> ID 5000] canHandle: false
+  [ID 8453 -> String 'Stacks'] canHandle: false
+
+Testing Strategy: StargateFinance
+Source: canHandle(context) {        const { sourceChain, destChain, sourceToken } = context;        if (sour...
+  [ID 8453 -> ID 5000] canHandle: false
+  [String 'Base' -> String 'Stacks'] canHandle: false
+  [String 'Base' -> ID 5000] canHandle: false
+  [ID 8453 -> String 'Stacks'] canHandle: false
+
+Testing Strategy: NearIntents
+Source: canHandle(context) {        const { sourceChain, destChain } = context;        const sourceConfig = ...
+  [ID 8453 -> ID 5000] canHandle: false
+  [String 'Base' -> String 'Stacks'] canHandle: false
+  [String 'Base' -> ID 5000] canHandle: false
+  [ID 8453 -> String 'Stacks'] canHandle: false
+
+Testing Strategy: Stacks
+Source: canHandle(context) {        return context.sourceChain === "Ethereum" && context.destChain === "Stac...
+  [ID 8453 -> ID 5000] canHandle: false
+  [String 'Base' -> String 'Stacks'] canHandle: false
+  [String 'Base' -> ID 5000] canHandle: false
+  [ID 8453 -> String 'Stacks'] canHandle: false

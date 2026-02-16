@@ -1,0 +1,11 @@
+Initializing...
+--- executeEVMToStacks Info ---
+Arity (args length): 4
+Source head:
+ async executeEVMToStacks(context, sourceAA, ethPrivateKey, logCallback) {
+        const log = logCallback || console.log;
+        log(`[TransferManager] Starting ${context.sourceChain} -> Stacks Flow...`);
+        const cctpStrategy = this.strategies.find((s) => s instanceof exports.CCTPStrategy);
+        const stacksStrategy = this.strategies.find((s) => s instanceof StacksStrategy);
+        if (context.sourceChain === "Ethereum") {
+          log("[TransferManager] Source is Ethereum. Executing

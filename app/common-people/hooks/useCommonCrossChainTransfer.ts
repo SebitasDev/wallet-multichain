@@ -1,10 +1,10 @@
 import { useEffect, useRef, useMemo } from "react";
-import { useCrossChainTransfer } from "@/app/dashboard/hooks/transfer/useCrossChainTransfer";
+import { usePrimaryTransfer as useCrossChainTransfer } from "@/app/dashboard/hooks/transfer/usePrimaryTransfer";
 import { useSendMoneyStore } from "@/app/dashboard/store/useSendMoneyStore";
 import { useXOWalletStore } from "@/app/store/useXOWalletStore";
 import { NETWORKS } from "@/app/constants/chainsInformation";
 import { useCommonMaxTransferAmount } from "./useCommonMaxTransferAmount";
-import { useXOContracts } from "@/app/dashboard/hooks/wallet/useXOConnect"; // [NEW IMPORT]
+
 
 export const useCommonCrossChainTransfer = () => {
     // 1. Core Logic (Now fully functional thanks to Providers in Layout)
@@ -116,7 +116,7 @@ export const useCommonCrossChainTransfer = () => {
     }, [isOpen, initialChain, chains, form, refreshBalances]);
 
     // 4. Overwrite MaxAmount Logic with Custom Hook (For Common People - bypasses 0.01 fee)
-    const { address } = useXOContracts(); // Or get from transferLogic if exposed, assuming we need it directly
+    // const { address } = useXOContracts(); // Removed unused broken import
     // Ideally we grab values from transferLogic logs or we pass them in.
     // useCrossChainTransfer exposes: form, watchSourceChain, etc.
     const { watch } = form;

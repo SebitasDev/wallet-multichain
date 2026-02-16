@@ -13,7 +13,7 @@ interface SimulationState {
 export const useTransferSimulation = (
     amount: string,
     sourceChain: ChainKey,
-    destChain: ChainKey,
+    destChain: ChainKey | number,
     sourceToken: string,
     destToken: string
 ) => {
@@ -37,7 +37,7 @@ export const useTransferSimulation = (
             try {
                 // Check for CCTP Bypass (USDC)
                 const srcConfig = NETWORKS[sourceChain];
-                const dstConfig = NETWORKS[destChain];
+                const dstConfig = typeof destChain === 'string' ? NETWORKS[destChain] : undefined;
 
                 const isCCTP =
                     (sourceToken === 'USDC' && destToken === 'USDC') &&
@@ -47,6 +47,14 @@ export const useTransferSimulation = (
                 let result;
                 if (isCCTP) {
                     // 1:1 for CCTP
+                    result = {
+                        success: true,
+                        estimatedReceived: amount,
+                        protocolFee: 0,
+                        error: null
+                    };
+                } else if (destChain === "Stacks" || destChain === 5000) {
+                    // Bypass SDK Simulation for Stacks
                     result = {
                         success: true,
                         estimatedReceived: amount,

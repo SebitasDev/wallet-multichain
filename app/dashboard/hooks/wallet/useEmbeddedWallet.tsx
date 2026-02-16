@@ -164,8 +164,13 @@ export const EmbeddedWalletProvider = ({
             setAddress(walletContext.address);
 
             toast.success(`Wallet XO conectada`);
-        } catch (e) {
-            console.error("XO Connect failed", e);
+        } catch (e: any) {
+            const msg = e?.message || e;
+            if (msg.toString().includes("No connection")) {
+                console.warn("XO Connect missing. Falling back to Local Wallet.");
+            } else {
+                console.error("XO Connect failed", e);
+            }
             setIsUsingXO(false);
             await generateLocalOrLoad(); // Fallback to local
         }
