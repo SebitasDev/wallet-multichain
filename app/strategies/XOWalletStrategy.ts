@@ -7,6 +7,7 @@ export class XOWalletStrategy implements WalletStrategy {
 
     private xoProvider: any = null;
     private xoClient: any = null;
+    private xoSigner: any = null;
 
     constructor() { }
 
@@ -41,6 +42,7 @@ export class XOWalletStrategy implements WalletStrategy {
 
         const ethersProvider = new BrowserProvider(provider);
         const signer = await ethersProvider.getSigner();
+        this.xoSigner = signer;
         const address = await signer.getAddress();
         const network = await ethersProvider.getNetwork();
 
@@ -58,10 +60,15 @@ export class XOWalletStrategy implements WalletStrategy {
     async disconnect(): Promise<void> {
         this.xoProvider = null;
         this.xoClient = null;
+        this.xoSigner = null;
     }
 
     getProvider(): any {
         return this.xoProvider;
+    }
+
+    getSigner(): any {
+        return this.xoSigner;
     }
 
     getClient(): any {
