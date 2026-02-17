@@ -15,7 +15,7 @@ import { useWallet } from "@/app/context/WalletContext";
 export const useTransferConnection = (watchSourceChain: ChainKey) => {
     const { setSmartAccount: storeSetSmartAccount, connectionMode } = useXOWalletStore();
     const { getStellarKeys } = useStellarLogic();
-    const { getSigner, getProvider } = useWallet(); // Access signer/provider from context
+    const { getSigner, getProvider, connect: walletConnect } = useWallet(); // Access signer/provider from context
 
     // Store access
     const encryptedPrivateKey = useXOWalletStore(s => s.mainWallet.encryptedPrivateKey);
@@ -129,7 +129,13 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
 
             // --- MODE 2: Embedded ---
             if (connectionMode === 'embedded') {
-                const xoProvider = getProvider();
+                let xoProvider = getProvider();
+
+                // Provider may not be ready if WalletContext hasn't auto-reconnected yet
+                if (!xoProvider) {
+                    const result = await walletConnect('xo', { defaultChainId: "0x89" });
+                    xoProvider = result.provider;
+                }
                 if (!xoProvider) throw new Error("Embedded wallet not connected");
 
                 // XO provider is EIP-1193; build a viem WalletClient for the SDK
