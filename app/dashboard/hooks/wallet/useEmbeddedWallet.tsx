@@ -126,6 +126,11 @@ export const EmbeddedWalletProvider = ({
         if (walletContext.activeStrategyId === 'xo' && walletContext.address) {
             setAddress(walletContext.address);
             setIsUsingXO(true);
+            // Sync provider from active strategy
+            const provider = walletContext.getProvider();
+            if (provider) {
+                xoProviderRef.current = provider;
+            }
         }
     }, [walletContext.address, walletContext.activeStrategyId]);
 
@@ -139,29 +144,23 @@ export const EmbeddedWalletProvider = ({
         try {
             if (!isEmbedded) throw new Error("No XO Embedded");
 
-            await walletContext.connect('xo', {
+            const result = await walletContext.connect('xo', {
                 defaultChainId: "0x89" // Polygon default
             });
 
-            // The Strategy updates the store, but we might need to sync local state if needed
-            // But actually WalletContext also syncs store.
-
-            // We still need to get the client explicitly if the strategy exposes it, 
-            // or we can rely on the store update that the strategy might have done?
-            // The XOWalletStrategy assigns xoClient to itself. We can retrieve it via getProvider() or custom method?
-            // The XOWalletStrategy has a `getClient` method but it is not on the generic interface.
-            // We can check if activeStrategy is XOWalletStrategy.
+            // Use result directly to avoid React state async lag
+            if (result.provider) {
+                xoProviderRef.current = result.provider;
+            }
 
             const strategy = walletContext.strategies.find(s => s.id === 'xo') as any;
             if (strategy && strategy.getClient) {
                 const client = strategy.getClient();
-                // If the client wasn't ready immediately, we might need to wait or it returns a promise?
-                // In the strategy implementation, getClient returns `this.xoClient`.
                 if (client) setXOClient(client);
             }
 
             setIsUsingXO(true);
-            setAddress(walletContext.address);
+            setAddress(result.address);
 
             toast.success(`Wallet XO conectada`);
         } catch (e) {

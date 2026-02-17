@@ -181,9 +181,10 @@ export const useXOWalletStore = create<WalletState>()(
             }),
 
             refreshMainWalletBalances: async (overrideEVMAddress?: string) => {
-                const { mainWallet, metaMaskConnection } = get();
-                // Priority: override > MetaMask > mainWallet
+                const { mainWallet, metaMaskConnection, xoWallet, connectionMode } = get();
+                // Priority: override > embedded XO > MetaMask > mainWallet
                 const addressToUse = overrideEVMAddress
+                    || (connectionMode === 'embedded' && xoWallet.address ? xoWallet.address : null)
                     || (metaMaskConnection.isConnected ? metaMaskConnection.address : null)
                     || mainWallet.address;
 

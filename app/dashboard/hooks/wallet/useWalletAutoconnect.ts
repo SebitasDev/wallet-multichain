@@ -55,6 +55,18 @@ export const useWalletAutoconnect = (
                     } catch (e) {
                         console.error("AutoConnect Local failed", e);
                     }
+                } else if (connectionType === 'embedded') {
+                    console.log("[AutoConnect] Reconnecting Embedded (XO)...");
+                    try {
+                        const result = await walletContext.connect('xo', {
+                            defaultChainId: "0x89"
+                        });
+                        if (result.provider) {
+                            await connect(selectedChain, result.provider);
+                        }
+                    } catch (e) {
+                        console.error("AutoConnect Embedded failed", e);
+                    }
                 }
             }
         };
