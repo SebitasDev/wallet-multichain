@@ -15,7 +15,7 @@ import { useWallet } from "@/app/context/WalletContext";
 export const useTransferConnection = (watchSourceChain: ChainKey) => {
     const { setSmartAccount: storeSetSmartAccount, connectionMode } = useXOWalletStore();
     const { getStellarKeys } = useStellarLogic();
-    const { getSigner } = useWallet(); // Access signer from context
+    const { getSigner, getProvider } = useWallet(); // Access signer/provider from context
 
     // Store access
     const encryptedPrivateKey = useXOWalletStore(s => s.mainWallet.encryptedPrivateKey);
@@ -129,12 +129,22 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
 
             // --- MODE 2: Embedded ---
             if (connectionMode === 'embedded') {
-                const signer = getSigner();
-                if (!signer) throw new Error("Embedded wallet not connected");
+                const xoProvider = getProvider();
+                if (!xoProvider) throw new Error("Embedded wallet not connected");
 
-                // Assuming signer is compatible with SDK (Provider or Signer)
-                const saResult = await getSmartAccountForChain(watchSourceChain, signer);
-                if (saResult) return updateState(saResult);
+                // XO provider is EIP-1193; build a viem WalletClient for the SDK
+                const accounts = await xoProvider.request({ method: 'eth_accounts' });
+                const accountAddress = accounts?.[0];
+                if (!accountAddress) throw new Error("No account from embedded wallet");
+
+                const xoWalletClient = createWalletClient({
+                    account: accountAddress as `0x${string}`,
+                    chain: config.evm.chain,
+                    transport: custom(xoProvider)
+                });
+
+                const saResult = await getSmartAccountForChain(watchSourceChain, xoWalletClient);
+                if (saResult) return updateState({ ...saResult, client: xoWalletClient });
                 throw new Error("Failed to initialize Smart Account with Embedded Wallet");
             }
 
@@ -177,7 +187,7 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
         } finally {
             setIsConnecting(false);
         }
-    }, [watchSourceChain, encryptedPrivateKey, currentPassword, salt, iv, storeSetSmartAccount, connectionMode, walletClient, isConnected, connectAsync, refetchWalletClient, connectors, switchChainAsync, getStellarKeys, getSigner]);
+    }, [watchSourceChain, encryptedPrivateKey, currentPassword, salt, iv, storeSetSmartAccount, connectionMode, walletClient, isConnected, connectAsync, refetchWalletClient, connectors, switchChainAsync, getStellarKeys, getProvider]);
 
     const deploySmartAccount = useCallback(async () => {
         if (!smartAccount) {
