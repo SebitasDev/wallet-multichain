@@ -177,7 +177,7 @@ export const useTransferConnection = (watchSourceChain: ChainKey) => {
         } finally {
             setIsConnecting(false);
         }
-    }, [watchSourceChain, encryptedPrivateKey, currentPassword, salt, iv, storeSetSmartAccount, connectionMode, walletClient, isConnected, connectAsync, refetchWalletClient, connectors, switchChainAsync, getStellarKeys]);
+    }, [watchSourceChain, encryptedPrivateKey, currentPassword, salt, iv, storeSetSmartAccount, connectionMode, walletClient, isConnected, connectAsync, refetchWalletClient, connectors, switchChainAsync, getStellarKeys, getSigner]);
 
     const deploySmartAccount = useCallback(async () => {
         if (!smartAccount) {

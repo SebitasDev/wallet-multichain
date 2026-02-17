@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode, useMemo } from 'react';
 import { WalletStrategy, StrategyId, WalletConnectionResult } from '../strategies/types';
 import { MetaMaskStrategy } from '../strategies/MetaMaskStrategy';
 import { XOWalletStrategy } from '../strategies/XOWalletStrategy';
@@ -95,8 +95,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         strategies.find(s => s.id === activeStrategyId) || null
         , [strategies, activeStrategyId]);
 
-    const getProvider = () => activeStrategy?.getProvider();
-    const getSigner = () => (activeStrategy as any)?.getSigner ? (activeStrategy as any).getSigner() : null;
+    const getProvider = useCallback(() => activeStrategy?.getProvider(), [activeStrategy]);
+    const getSigner = useCallback(() => (activeStrategy as any)?.getSigner ? (activeStrategy as any).getSigner() : null, [activeStrategy]);
 
     return (
         <WalletContext.Provider value={{
